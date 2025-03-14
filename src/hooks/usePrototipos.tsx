@@ -46,21 +46,29 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
       
       // If withDesarrollo is requested, fetch the desarrollo for each prototipo
       if (withDesarrollo && prototipos && prototipos.length > 0) {
-        const extendedPrototipos: ExtendedPrototipo[] = await Promise.all(
-          prototipos.map(async (prototipo) => {
-            // Fetch desarrollo relation
-            const { data: desarrollo, error: desarrolloError } = await supabase
-              .from('desarrollos')
-              .select('*')
-              .eq('id', prototipo.desarrollo_id)
-              .maybeSingle();
-            
-            return {
-              ...prototipo,
-              desarrollo: desarrolloError ? null : desarrollo
-            };
-          })
-        );
+        // Get all unique desarrollo_ids
+        const desarrolloIds = [...new Set(prototipos.map(p => p.desarrollo_id))];
+        
+        // Fetch all desarrollos in one query
+        const { data: desarrollos, error: desarrollosError } = await supabase
+          .from('desarrollos')
+          .select('*')
+          .in('id', desarrolloIds);
+          
+        if (desarrollosError) {
+          console.error('Error fetching desarrollos:', desarrollosError);
+          // Continue with null desarrollos
+          return prototipos as ExtendedPrototipo[];
+        }
+        
+        // Map desarrollos to prototipos
+        const extendedPrototipos: ExtendedPrototipo[] = prototipos.map(prototipo => {
+          const desarrollo = desarrollos.find(d => d.id === prototipo.desarrollo_id) || null;
+          return {
+            ...prototipo,
+            desarrollo
+          };
+        });
         
         console.log('Extended prototipos fetched:', extendedPrototipos);
         return extendedPrototipos;

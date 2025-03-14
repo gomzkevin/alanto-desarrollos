@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/select";
 import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 
-// Datos de ejemplo para propiedades
 const properties = [
   {
     id: '1',
@@ -83,30 +82,17 @@ const properties = [
   },
 ];
 
-const PropertiesPage = () => {
+const PropiedadesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredProperties, setFilteredProperties] = useState(properties);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    // Aquí conectaríamos con Supabase para cargar las propiedades reales
-    // const fetchProperties = async () => {
-    //   const { data, error } = await supabase
-    //     .from('propiedades')
-    //     .select('*');
-    //   
-    //   if (data) setFilteredProperties(data);
-    // };
-    
-    // fetchProperties();
-    
-    // Simular carga
     setTimeout(() => {
       setIsLoading(false);
     }, 1000);
   }, []);
   
-  // Filtrar propiedades basado en el término de búsqueda
   useEffect(() => {
     if (searchTerm.trim() === '') {
       setFilteredProperties(properties);
@@ -126,12 +112,14 @@ const PropertiesPage = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div className="space-y-1">
             <h1 className="text-3xl font-bold text-slate-800">Propiedades</h1>
-            <p className="text-slate-600">Gestiona y visualiza el inventario de propiedades disponibles.</p>
+            <p className="text-slate-600">Gestiona las propiedades disponibles para venta o renta</p>
           </div>
-          <Button>Nueva propiedad</Button>
+          
+          <Button onClick={() => alert('Funcionalidad en desarrollo')}>
+            Nueva propiedad
+          </Button>
         </div>
         
-        {/* Filtros y buscador */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
@@ -180,7 +168,6 @@ const PropertiesPage = () => {
           </div>
         </div>
         
-        {/* Lista de propiedades */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -215,4 +202,4 @@ const PropertiesPage = () => {
   );
 };
 
-export default PropertiesPage;
+export default PropiedadesPage;

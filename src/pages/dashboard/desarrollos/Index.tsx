@@ -40,6 +40,8 @@ const DesarrollosPage = () => {
             resourceType="desarrollos" 
             buttonText="Nuevo desarrollo" 
             onSuccess={refetch}
+            open={false}
+            onClose={() => {}}
           />
         </div>
 

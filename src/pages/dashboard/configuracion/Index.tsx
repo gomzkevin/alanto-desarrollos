@@ -14,6 +14,43 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Save, Trash, Plus, Settings, Users, Building2, CreditCard, Globe } from 'lucide-react';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import { supabase } from '@/integrations/supabase/client';
+import { Desarrollo } from '@/hooks/useDesarrollos';
+
+// Definimos los tipos para la configuración general
+interface ConfiguracionFinanciera {
+  tipoCambio: number;
+  tasaInteres: number;
+  moneda: string;
+  comisionOperador: number;
+  mantenimientoValor: number;
+  esMantenimientoPorcentaje: boolean;
+  gastosFijos: number;
+  esGastosFijosPorcentaje: boolean;
+  gastosVariables: number;
+  esGastosVariablesPorcentaje: boolean;
+  impuestos: number;
+  esImpuestosPorcentaje: boolean;
+  adr_base?: number;
+  ocupacion_anual?: number;
+}
+
+// Definimos los tipos para la configuración del desarrollo
+interface DesarrolloConfiguracion {
+  id: string;
+  nombre: string;
+  moneda: string;
+  comision_operador: number;
+  mantenimiento_valor: number;
+  es_mantenimiento_porcentaje: boolean;
+  gastos_fijos: number;
+  es_gastos_fijos_porcentaje: boolean;
+  gastos_variables: number;
+  es_gastos_variables_porcentaje: boolean;
+  impuestos: number;
+  es_impuestos_porcentaje: boolean;
+  adr_base?: number;
+  ocupacion_anual?: number;
+}
 
 // Datos de ejemplo para la configuración
 const configData = {
@@ -29,7 +66,9 @@ const configData = {
     gastosVariables: 12,
     esGastosVariablesPorcentaje: true,
     impuestos: 35,
-    esImpuestosPorcentaje: true
+    esImpuestosPorcentaje: true,
+    adr_base: 1800,
+    ocupacion_anual: 70
   },
   empresa: {
     nombre: 'Inversiones Turísticas S.A. de C.V.',
@@ -42,26 +81,10 @@ const configData = {
   }
 };
 
-// Definimos los tipos para la configuración del desarrollo
-interface DesarrolloConfiguracion {
-  id: string;
-  nombre: string;
-  moneda: string;
-  comisionOperador: number;
-  mantenimientoValor: number;
-  esMantenimientoPorcentaje: boolean;
-  gastosFijos: number;
-  esGastosFijosPorcentaje: boolean;
-  gastosVariables: number;
-  esGastosVariablesPorcentaje: boolean;
-  impuestos: number;
-  esImpuestosPorcentaje: boolean;
-}
-
 const ConfiguracionPage = () => {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(true);
-  const [finanzasConfig, setFinanzasConfig] = useState(configData.finanzas);
+  const [finanzasConfig, setFinanzasConfig] = useState<ConfiguracionFinanciera>(configData.finanzas);
   const [empresaConfig, setEmpresaConfig] = useState(configData.empresa);
   const [loading, setLoading] = useState(false);
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('');
@@ -120,20 +143,22 @@ const ConfiguracionPage = () => {
           }
           
           if (data) {
-            // Prepara los datos del desarrollo con valores por defecto para los campos de configuración
+            // Prepara los datos del desarrollo para su edición
             setDesarrolloConfig({
               id: data.id,
               nombre: data.nombre,
               moneda: data.moneda || 'MXN',
-              comisionOperador: data.comisionOperador || 15,
-              mantenimientoValor: data.mantenimientoValor || 5,
-              esMantenimientoPorcentaje: data.esMantenimientoPorcentaje !== undefined ? data.esMantenimientoPorcentaje : true,
-              gastosFijos: data.gastosFijos || 2500,
-              esGastosFijosPorcentaje: data.esGastosFijosPorcentaje !== undefined ? data.esGastosFijosPorcentaje : false,
-              gastosVariables: data.gastosVariables || 12,
-              esGastosVariablesPorcentaje: data.esGastosVariablesPorcentaje !== undefined ? data.esGastosVariablesPorcentaje : true,
+              comision_operador: data.comision_operador || 15,
+              mantenimiento_valor: data.mantenimiento_valor || 5,
+              es_mantenimiento_porcentaje: data.es_mantenimiento_porcentaje !== undefined ? data.es_mantenimiento_porcentaje : true,
+              gastos_fijos: data.gastos_fijos || 2500,
+              es_gastos_fijos_porcentaje: data.es_gastos_fijos_porcentaje !== undefined ? data.es_gastos_fijos_porcentaje : false,
+              gastos_variables: data.gastos_variables || 12,
+              es_gastos_variables_porcentaje: data.es_gastos_variables_porcentaje !== undefined ? data.es_gastos_variables_porcentaje : true,
               impuestos: data.impuestos || 35,
-              esImpuestosPorcentaje: data.esImpuestosPorcentaje !== undefined ? data.esImpuestosPorcentaje : true,
+              es_impuestos_porcentaje: data.es_impuestos_porcentaje !== undefined ? data.es_impuestos_porcentaje : true,
+              adr_base: data.adr_base || 1800,
+              ocupacion_anual: data.ocupacion_anual || 70
             });
           }
         } catch (error) {
@@ -157,15 +182,17 @@ const ConfiguracionPage = () => {
           .from('desarrollos')
           .update({
             moneda: desarrolloConfig.moneda,
-            comisionOperador: desarrolloConfig.comisionOperador,
-            mantenimientoValor: desarrolloConfig.mantenimientoValor,
-            esMantenimientoPorcentaje: desarrolloConfig.esMantenimientoPorcentaje,
-            gastosFijos: desarrolloConfig.gastosFijos,
-            esGastosFijosPorcentaje: desarrolloConfig.esGastosFijosPorcentaje,
-            gastosVariables: desarrolloConfig.gastosVariables,
-            esGastosVariablesPorcentaje: desarrolloConfig.esGastosVariablesPorcentaje,
+            comision_operador: desarrolloConfig.comision_operador,
+            mantenimiento_valor: desarrolloConfig.mantenimiento_valor,
+            es_mantenimiento_porcentaje: desarrolloConfig.es_mantenimiento_porcentaje,
+            gastos_fijos: desarrolloConfig.gastos_fijos,
+            es_gastos_fijos_porcentaje: desarrolloConfig.es_gastos_fijos_porcentaje,
+            gastos_variables: desarrolloConfig.gastos_variables,
+            es_gastos_variables_porcentaje: desarrolloConfig.es_gastos_variables_porcentaje,
             impuestos: desarrolloConfig.impuestos,
-            esImpuestosPorcentaje: desarrolloConfig.esImpuestosPorcentaje,
+            es_impuestos_porcentaje: desarrolloConfig.es_impuestos_porcentaje,
+            adr_base: desarrolloConfig.adr_base,
+            ocupacion_anual: desarrolloConfig.ocupacion_anual
           })
           .eq('id', selectedDesarrolloId);
         
@@ -308,9 +335,9 @@ const ConfiguracionPage = () => {
                       </Button>
                     )}
                   </div>
-                  {selectedDesarrolloId && (
+                  {selectedDesarrolloId && desarrolloConfig && (
                     <p className="text-sm text-slate-500 mt-2">
-                      Estás editando la configuración específica para: <span className="font-medium">{desarrolloConfig?.nombre}</span>
+                      Estás editando la configuración específica para: <span className="font-medium">{desarrolloConfig.nombre}</span>
                     </p>
                   )}
                 </div>
@@ -352,6 +379,42 @@ const ConfiguracionPage = () => {
                           </div>
                           <p className="text-xs text-slate-500">Rendimiento de inversión alternativa para comparar ROI</p>
                         </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="adr_base">ADR Promedio base</Label>
+                          <div className="flex">
+                            <Input
+                              id="adr_base"
+                              type="number"
+                              step="1"
+                              value={finanzasConfig.adr_base || 1800}
+                              onChange={(e) => setFinanzasConfig({...finanzasConfig, adr_base: parseFloat(e.target.value) || 0})}
+                            />
+                            <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
+                              <span className="text-sm text-slate-500">$</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-500">Tarifa diaria promedio para cálculos de proyección</p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="ocupacion_anual">Ocupación anual promedio</Label>
+                          <div className="flex">
+                            <Input
+                              id="ocupacion_anual"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              value={finanzasConfig.ocupacion_anual || 70}
+                              onChange={(e) => setFinanzasConfig({...finanzasConfig, ocupacion_anual: parseInt(e.target.value) || 0})}
+                            />
+                            <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
+                              <span className="text-sm text-slate-500">%</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-500">Porcentaje promedio de ocupación para cálculos de proyección</p>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -363,8 +426,8 @@ const ConfiguracionPage = () => {
                     <div className="flex items-center mb-2">
                       <Building2 className="mr-2 h-5 w-5 text-slate-500" />
                       <h3 className="text-lg font-medium">
-                        {selectedDesarrolloId 
-                          ? `Configuración para ${desarrolloConfig?.nombre}` 
+                        {selectedDesarrolloId && desarrolloConfig
+                          ? `Configuración para ${desarrolloConfig.nombre}` 
                           : 'Configuración por desarrollo (valores predeterminados)'}
                       </h3>
                     </div>
@@ -400,11 +463,11 @@ const ConfiguracionPage = () => {
                             type="number"
                             min="0"
                             max="100"
-                            value={selectedDesarrolloId && desarrolloConfig ? desarrolloConfig.comisionOperador : finanzasConfig.comisionOperador}
+                            value={selectedDesarrolloId && desarrolloConfig ? desarrolloConfig.comision_operador : finanzasConfig.comisionOperador}
                             onChange={(e) => {
                               const value = parseInt(e.target.value) || 0;
                               if (selectedDesarrolloId && desarrolloConfig) {
-                                setDesarrolloConfig({...desarrolloConfig, comisionOperador: value});
+                                setDesarrolloConfig({...desarrolloConfig, comision_operador: value});
                               } else {
                                 setFinanzasConfig({...finanzasConfig, comisionOperador: value});
                               }
@@ -423,11 +486,11 @@ const ConfiguracionPage = () => {
                             <Switch
                               id="mantenimientoTipo"
                               checked={selectedDesarrolloId && desarrolloConfig 
-                                ? desarrolloConfig.esMantenimientoPorcentaje 
+                                ? desarrolloConfig.es_mantenimiento_porcentaje 
                                 : finanzasConfig.esMantenimientoPorcentaje}
                               onCheckedChange={(checked) => {
                                 if (selectedDesarrolloId && desarrolloConfig) {
-                                  setDesarrolloConfig({...desarrolloConfig, esMantenimientoPorcentaje: checked});
+                                  setDesarrolloConfig({...desarrolloConfig, es_mantenimiento_porcentaje: checked});
                                 } else {
                                   setFinanzasConfig({...finanzasConfig, esMantenimientoPorcentaje: checked});
                                 }
@@ -435,7 +498,7 @@ const ConfiguracionPage = () => {
                             />
                             <Label htmlFor="mantenimientoTipo" className="text-xs">
                               {(selectedDesarrolloId && desarrolloConfig 
-                                ? desarrolloConfig.esMantenimientoPorcentaje 
+                                ? desarrolloConfig.es_mantenimiento_porcentaje 
                                 : finanzasConfig.esMantenimientoPorcentaje) 
                                 ? 'Porcentaje' : 'Monto fijo'}
                             </Label>
@@ -446,12 +509,12 @@ const ConfiguracionPage = () => {
                             id="mantenimientoValor"
                             type="number"
                             value={selectedDesarrolloId && desarrolloConfig 
-                              ? desarrolloConfig.mantenimientoValor 
+                              ? desarrolloConfig.mantenimiento_valor 
                               : finanzasConfig.mantenimientoValor}
                             onChange={(e) => {
                               const value = parseFloat(e.target.value) || 0;
                               if (selectedDesarrolloId && desarrolloConfig) {
-                                setDesarrolloConfig({...desarrolloConfig, mantenimientoValor: value});
+                                setDesarrolloConfig({...desarrolloConfig, mantenimiento_valor: value});
                               } else {
                                 setFinanzasConfig({...finanzasConfig, mantenimientoValor: value});
                               }
@@ -460,7 +523,7 @@ const ConfiguracionPage = () => {
                           <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
                             <span className="text-sm text-slate-500">
                               {(selectedDesarrolloId && desarrolloConfig 
-                                ? desarrolloConfig.esMantenimientoPorcentaje 
+                                ? desarrolloConfig.es_mantenimiento_porcentaje 
                                 : finanzasConfig.esMantenimientoPorcentaje)
                                 ? '%' 
                                 : (selectedDesarrolloId && desarrolloConfig 
@@ -478,11 +541,11 @@ const ConfiguracionPage = () => {
                             <Switch
                               id="gastosFijosTipo"
                               checked={selectedDesarrolloId && desarrolloConfig
-                                ? desarrolloConfig.esGastosFijosPorcentaje
+                                ? desarrolloConfig.es_gastos_fijos_porcentaje
                                 : finanzasConfig.esGastosFijosPorcentaje}
                               onCheckedChange={(checked) => {
                                 if (selectedDesarrolloId && desarrolloConfig) {
-                                  setDesarrolloConfig({...desarrolloConfig, esGastosFijosPorcentaje: checked});
+                                  setDesarrolloConfig({...desarrolloConfig, es_gastos_fijos_porcentaje: checked});
                                 } else {
                                   setFinanzasConfig({...finanzasConfig, esGastosFijosPorcentaje: checked});
                                 }
@@ -490,7 +553,7 @@ const ConfiguracionPage = () => {
                             />
                             <Label htmlFor="gastosFijosTipo" className="text-xs">
                               {(selectedDesarrolloId && desarrolloConfig
-                                ? desarrolloConfig.esGastosFijosPorcentaje
+                                ? desarrolloConfig.es_gastos_fijos_porcentaje
                                 : finanzasConfig.esGastosFijosPorcentaje)
                                 ? 'Porcentaje' : 'Monto fijo'}
                             </Label>
@@ -501,12 +564,12 @@ const ConfiguracionPage = () => {
                             id="gastosFijos"
                             type="number"
                             value={selectedDesarrolloId && desarrolloConfig
-                              ? desarrolloConfig.gastosFijos
+                              ? desarrolloConfig.gastos_fijos
                               : finanzasConfig.gastosFijos}
                             onChange={(e) => {
                               const value = parseFloat(e.target.value) || 0;
                               if (selectedDesarrolloId && desarrolloConfig) {
-                                setDesarrolloConfig({...desarrolloConfig, gastosFijos: value});
+                                setDesarrolloConfig({...desarrolloConfig, gastos_fijos: value});
                               } else {
                                 setFinanzasConfig({...finanzasConfig, gastosFijos: value});
                               }
@@ -515,7 +578,7 @@ const ConfiguracionPage = () => {
                           <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
                             <span className="text-sm text-slate-500">
                               {(selectedDesarrolloId && desarrolloConfig
-                                ? desarrolloConfig.esGastosFijosPorcentaje
+                                ? desarrolloConfig.es_gastos_fijos_porcentaje
                                 : finanzasConfig.esGastosFijosPorcentaje)
                                 ? '%'
                                 : (selectedDesarrolloId && desarrolloConfig
@@ -533,11 +596,11 @@ const ConfiguracionPage = () => {
                             <Switch
                               id="gastosVariablesTipo"
                               checked={selectedDesarrolloId && desarrolloConfig
-                                ? desarrolloConfig.esGastosVariablesPorcentaje
+                                ? desarrolloConfig.es_gastos_variables_porcentaje
                                 : finanzasConfig.esGastosVariablesPorcentaje}
                               onCheckedChange={(checked) => {
                                 if (selectedDesarrolloId && desarrolloConfig) {
-                                  setDesarrolloConfig({...desarrolloConfig, esGastosVariablesPorcentaje: checked});
+                                  setDesarrolloConfig({...desarrolloConfig, es_gastos_variables_porcentaje: checked});
                                 } else {
                                   setFinanzasConfig({...finanzasConfig, esGastosVariablesPorcentaje: checked});
                                 }
@@ -545,7 +608,7 @@ const ConfiguracionPage = () => {
                             />
                             <Label htmlFor="gastosVariablesTipo" className="text-xs">
                               {(selectedDesarrolloId && desarrolloConfig
-                                ? desarrolloConfig.esGastosVariablesPorcentaje
+                                ? desarrolloConfig.es_gastos_variables_porcentaje
                                 : finanzasConfig.esGastosVariablesPorcentaje)
                                 ? 'Porcentaje' : 'Monto fijo'}
                             </Label>
@@ -556,12 +619,12 @@ const ConfiguracionPage = () => {
                             id="gastosVariables"
                             type="number"
                             value={selectedDesarrolloId && desarrolloConfig
-                              ? desarrolloConfig.gastosVariables
+                              ? desarrolloConfig.gastos_variables
                               : finanzasConfig.gastosVariables}
                             onChange={(e) => {
                               const value = parseFloat(e.target.value) || 0;
                               if (selectedDesarrolloId && desarrolloConfig) {
-                                setDesarrolloConfig({...desarrolloConfig, gastosVariables: value});
+                                setDesarrolloConfig({...desarrolloConfig, gastos_variables: value});
                               } else {
                                 setFinanzasConfig({...finanzasConfig, gastosVariables: value});
                               }
@@ -570,7 +633,7 @@ const ConfiguracionPage = () => {
                           <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
                             <span className="text-sm text-slate-500">
                               {(selectedDesarrolloId && desarrolloConfig
-                                ? desarrolloConfig.esGastosVariablesPorcentaje
+                                ? desarrolloConfig.es_gastos_variables_porcentaje
                                 : finanzasConfig.esGastosVariablesPorcentaje)
                                 ? '%'
                                 : (selectedDesarrolloId && desarrolloConfig
@@ -588,11 +651,11 @@ const ConfiguracionPage = () => {
                             <Switch
                               id="impuestosTipo"
                               checked={selectedDesarrolloId && desarrolloConfig
-                                ? desarrolloConfig.esImpuestosPorcentaje
+                                ? desarrolloConfig.es_impuestos_porcentaje
                                 : finanzasConfig.esImpuestosPorcentaje}
                               onCheckedChange={(checked) => {
                                 if (selectedDesarrolloId && desarrolloConfig) {
-                                  setDesarrolloConfig({...desarrolloConfig, esImpuestosPorcentaje: checked});
+                                  setDesarrolloConfig({...desarrolloConfig, es_impuestos_porcentaje: checked});
                                 } else {
                                   setFinanzasConfig({...finanzasConfig, esImpuestosPorcentaje: checked});
                                 }
@@ -600,7 +663,7 @@ const ConfiguracionPage = () => {
                             />
                             <Label htmlFor="impuestosTipo" className="text-xs">
                               {(selectedDesarrolloId && desarrolloConfig
-                                ? desarrolloConfig.esImpuestosPorcentaje
+                                ? desarrolloConfig.es_impuestos_porcentaje
                                 : finanzasConfig.esImpuestosPorcentaje)
                                 ? 'Porcentaje' : 'Monto fijo'}
                             </Label>
@@ -625,7 +688,7 @@ const ConfiguracionPage = () => {
                           <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
                             <span className="text-sm text-slate-500">
                               {(selectedDesarrolloId && desarrolloConfig
-                                ? desarrolloConfig.esImpuestosPorcentaje
+                                ? desarrolloConfig.es_impuestos_porcentaje
                                 : finanzasConfig.esImpuestosPorcentaje)
                                 ? '%'
                                 : (selectedDesarrolloId && desarrolloConfig
@@ -635,6 +698,51 @@ const ConfiguracionPage = () => {
                           </div>
                         </div>
                       </div>
+                      
+                      {/* ADR base y ocupación para desarrollo específico */}
+                      {selectedDesarrolloId && desarrolloConfig && (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="adr_base_desarrollo">ADR Promedio base</Label>
+                            <div className="flex">
+                              <Input
+                                id="adr_base_desarrollo"
+                                type="number"
+                                step="1"
+                                value={desarrolloConfig.adr_base || 1800}
+                                onChange={(e) => setDesarrolloConfig({
+                                  ...desarrolloConfig, 
+                                  adr_base: parseFloat(e.target.value) || 0
+                                })}
+                              />
+                              <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
+                                <span className="text-sm text-slate-500">$</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="ocupacion_anual_desarrollo">Ocupación anual promedio</Label>
+                            <div className="flex">
+                              <Input
+                                id="ocupacion_anual_desarrollo"
+                                type="number"
+                                step="1"
+                                min="0"
+                                max="100"
+                                value={desarrolloConfig.ocupacion_anual || 70}
+                                onChange={(e) => setDesarrolloConfig({
+                                  ...desarrolloConfig, 
+                                  ocupacion_anual: parseInt(e.target.value) || 0
+                                })}
+                              />
+                              <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
+                                <span className="text-sm text-slate-500">%</span>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                   

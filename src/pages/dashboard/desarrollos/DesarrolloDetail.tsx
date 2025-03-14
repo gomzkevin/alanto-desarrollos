@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -12,7 +11,6 @@ import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 
 type Desarrollo = Tables<"desarrollos">;
 
-// Función para obtener un desarrollo por ID
 const fetchDesarrolloById = async (id: string) => {
   console.log('Fetching desarrollo with ID:', id);
   const { data, error } = await supabase
@@ -30,7 +28,6 @@ const fetchDesarrolloById = async (id: string) => {
   return data as Desarrollo;
 };
 
-// Helper function to determine desarrollo status based on comercial progress
 const getDesarrolloStatus = (desarrollo: Desarrollo) => {
   if (desarrollo.avance_porcentaje === 0) {
     return { label: 'Pre-venta', color: 'bg-blue-100 text-blue-800' };
@@ -45,7 +42,6 @@ const DesarrolloDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
-  // Obtener datos del desarrollo
   const { 
     data: desarrollo, 
     isLoading: isLoadingDesarrollo,
@@ -57,7 +53,6 @@ const DesarrolloDetailPage = () => {
     enabled: !!id,
   });
   
-  // Obtener prototipos del desarrollo usando nuestro hook
   const { 
     prototipos = [], 
     isLoading: isLoadingPrototipos,
@@ -107,7 +102,6 @@ const DesarrolloDetailPage = () => {
           </div>
         ) : desarrollo ? (
           <>
-            {/* Encabezado del desarrollo */}
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                 <div className="space-y-1">
@@ -184,7 +178,6 @@ const DesarrolloDetailPage = () => {
               </div>
             </div>
             
-            {/* Sección de prototipos */}
             <div className="mt-8 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                 <div className="space-y-1">
@@ -198,6 +191,8 @@ const DesarrolloDetailPage = () => {
                   buttonText="Nuevo prototipo" 
                   onSuccess={refetchPrototipos}
                   desarrolloId={id}
+                  open={false}
+                  onClose={() => {}}
                 />
               </div>
               
@@ -210,6 +205,8 @@ const DesarrolloDetailPage = () => {
                     buttonText="Agregar prototipo" 
                     onSuccess={refetchPrototipos}
                     desarrolloId={id}
+                    open={false}
+                    onClose={() => {}}
                   />
                 </div>
               ) : (

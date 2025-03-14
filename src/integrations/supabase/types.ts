@@ -120,37 +120,73 @@ export type Database = {
       }
       desarrollos: {
         Row: {
+          adr_base: number | null
           avance_porcentaje: number | null
+          comision_operador: number | null
           descripcion: string | null
+          es_gastos_fijos_porcentaje: boolean | null
+          es_gastos_variables_porcentaje: boolean | null
+          es_impuestos_porcentaje: boolean | null
+          es_mantenimiento_porcentaje: boolean | null
           fecha_entrega: string | null
           fecha_inicio: string | null
+          gastos_fijos: number | null
+          gastos_variables: number | null
           id: string
           imagen_url: string | null
+          impuestos: number | null
+          mantenimiento_valor: number | null
+          moneda: string | null
           nombre: string
+          ocupacion_anual: number | null
           total_unidades: number
           ubicacion: string
           unidades_disponibles: number
         }
         Insert: {
+          adr_base?: number | null
           avance_porcentaje?: number | null
+          comision_operador?: number | null
           descripcion?: string | null
+          es_gastos_fijos_porcentaje?: boolean | null
+          es_gastos_variables_porcentaje?: boolean | null
+          es_impuestos_porcentaje?: boolean | null
+          es_mantenimiento_porcentaje?: boolean | null
           fecha_entrega?: string | null
           fecha_inicio?: string | null
+          gastos_fijos?: number | null
+          gastos_variables?: number | null
           id?: string
           imagen_url?: string | null
+          impuestos?: number | null
+          mantenimiento_valor?: number | null
+          moneda?: string | null
           nombre: string
+          ocupacion_anual?: number | null
           total_unidades: number
           ubicacion: string
           unidades_disponibles: number
         }
         Update: {
+          adr_base?: number | null
           avance_porcentaje?: number | null
+          comision_operador?: number | null
           descripcion?: string | null
+          es_gastos_fijos_porcentaje?: boolean | null
+          es_gastos_variables_porcentaje?: boolean | null
+          es_impuestos_porcentaje?: boolean | null
+          es_mantenimiento_porcentaje?: boolean | null
           fecha_entrega?: string | null
           fecha_inicio?: string | null
+          gastos_fijos?: number | null
+          gastos_variables?: number | null
           id?: string
           imagen_url?: string | null
+          impuestos?: number | null
+          mantenimiento_valor?: number | null
+          moneda?: string | null
           nombre?: string
+          ocupacion_anual?: number | null
           total_unidades?: number
           ubicacion?: string
           unidades_disponibles?: number

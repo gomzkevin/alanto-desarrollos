@@ -1,5 +1,5 @@
-
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 import useLeads from '@/hooks/useLeads';
@@ -30,25 +30,22 @@ const LeadsPage = () => {
       <div className="space-y-6 p-6 pb-16">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-slate-800">Leads</h1>
-            <p className="text-slate-600">Gestiona y da seguimiento a tus leads de ventas</p>
+            <h1 className="text-3xl font-bold text-slate-800">Prospectos</h1>
+            <p className="text-slate-600">Gestiona tus prospectos y su seguimiento</p>
           </div>
-          <div className="flex space-x-2">
-            <AdminResourceDialog 
-              resourceType="leads" 
-              buttonText="Nuevo lead"
-              onSuccess={handleLeadCreated}
-            />
-            <ExportPDFButton 
-              resourceName="leads" 
-              buttonText="Exportar PDF" 
-            />
-          </div>
+          
+          <AdminResourceDialog 
+            resourceType="leads" 
+            buttonText="Nuevo prospecto" 
+            onSuccess={refetch}
+            open={false}
+            onClose={() => {}}
+          />
         </div>
         
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Leads</CardTitle>
+            <CardTitle>Lista de Prospectos</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -57,7 +54,7 @@ const LeadsPage = () => {
               </div>
             ) : leads.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-slate-500">No hay leads registrados.</p>
+                <p className="text-slate-500">No hay prospectos registrados.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">

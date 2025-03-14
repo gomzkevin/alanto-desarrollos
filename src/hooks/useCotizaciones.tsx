@@ -42,37 +42,31 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       
       // If relations are requested, fetch them for each cotizacion
       if (withRelations && cotizaciones && cotizaciones.length > 0) {
-        const extendedCotizaciones: ExtendedCotizacion[] = await Promise.all(
-          cotizaciones.map(async (cotizacion) => {
-            // Fetch lead relation
-            const { data: lead, error: leadError } = await supabase
-              .from('leads')
-              .select('*')
-              .eq('id', cotizacion.lead_id)
-              .maybeSingle();
-            
-            // Fetch desarrollo relation
-            const { data: desarrollo, error: desarrolloError } = await supabase
-              .from('desarrollos')
-              .select('*')
-              .eq('id', cotizacion.desarrollo_id)
-              .maybeSingle();
-            
-            // Fetch prototipo relation
-            const { data: prototipo, error: prototipoError } = await supabase
-              .from('prototipos')
-              .select('*')
-              .eq('id', cotizacion.prototipo_id)
-              .maybeSingle();
-            
-            return {
-              ...cotizacion,
-              lead: leadError ? null : lead,
-              desarrollo: desarrolloError ? null : desarrollo,
-              prototipo: prototipoError ? null : prototipo
-            };
-          })
-        );
+        // Get all unique IDs for related entities
+        const leadIds = [...new Set(cotizaciones.map(c => c.lead_id))];
+        const desarrolloIds = [...new Set(cotizaciones.map(c => c.desarrollo_id))];
+        const prototipoIds = [...new Set(cotizaciones.map(c => c.prototipo_id))];
+        
+        // Fetch all related entities in batch queries
+        const [leadsResponse, desarrollosResponse, prototipesResponse] = await Promise.all([
+          supabase.from('leads').select('*').in('id', leadIds),
+          supabase.from('desarrollos').select('*').in('id', desarrolloIds),
+          supabase.from('prototipos').select('*').in('id', prototipoIds)
+        ]);
+        
+        const leads = leadsResponse.error ? [] : leadsResponse.data;
+        const desarrollos = desarrollosResponse.error ? [] : desarrollosResponse.data;
+        const prototipos = prototipesResponse.error ? [] : prototipesResponse.data;
+        
+        // Map related entities to cotizaciones
+        const extendedCotizaciones: ExtendedCotizacion[] = cotizaciones.map(cotizacion => {
+          return {
+            ...cotizacion,
+            lead: leads.find(l => l.id === cotizacion.lead_id) || null,
+            desarrollo: desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null,
+            prototipo: prototipos.find(p => p.id === cotizacion.prototipo_id) || null
+          };
+        });
         
         console.log('Extended cotizaciones fetched:', extendedCotizaciones);
         return extendedCotizaciones;
