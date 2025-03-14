@@ -6,6 +6,9 @@ import { Tables } from '@/integrations/supabase/types';
 type Desarrollo = Tables<"desarrollos">;
 type Prototipo = Tables<"prototipos">;
 
+// Define the return type for results with prototipos
+type DesarrolloWithPrototipos = Desarrollo & { prototipos: Prototipo[] };
+
 type FetchDesarrollosOptions = {
   withPrototipos?: boolean;
   limit?: number;
@@ -43,7 +46,11 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     }
     
     console.log('Desarrollos fetched:', data);
-    return data as (withPrototipos extends true ? (Desarrollo & { prototipos: Prototipo[] })[] : Desarrollo[]);
+    
+    // Type casting to the correct types
+    return withPrototipos 
+      ? (data as DesarrolloWithPrototipos[]) 
+      : (data as Desarrollo[]);
   };
 
   // Use React Query to fetch and cache the data
