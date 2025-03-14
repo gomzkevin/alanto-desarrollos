@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -7,13 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Plus } from 'lucide-react';
+import { CalendarIcon, Plus, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { enUS, es } from 'date-fns/locale';
 import useCotizaciones from '@/hooks/useCotizaciones';
 import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 import { ExtendedCotizacion } from '@/hooks/useCotizaciones';
+import { ExportPDFButton } from '@/components/dashboard/ExportPDFButton';
 
 const formatter = new Intl.NumberFormat('es-MX', {
   style: 'currency',
@@ -26,6 +28,8 @@ const CotizacionesPage = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [limit, setLimit] = useState<number>(10);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [showDialog, setShowDialog] = useState<boolean>(false);
   
   const { 
     cotizaciones = [], 
@@ -43,12 +47,17 @@ const CotizacionesPage = () => {
             <p className="text-slate-600">Gestiona las cotizaciones generadas para tus clientes</p>
           </div>
           
+          <Button onClick={() => setShowDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva cotización
+          </Button>
+          
           <AdminResourceDialog 
             resourceType="cotizaciones" 
             buttonText="Nueva cotización" 
             onSuccess={() => refetch()}
-            open={false}
-            onClose={() => {}}
+            open={showDialog}
+            onClose={() => setShowDialog(false)}
           />
         </div>
         
@@ -78,7 +87,13 @@ const CotizacionesPage = () => {
               </PopoverContent>
             </Popover>
             
-            <Input type="search" placeholder="Buscar cotización..." className="max-w-md" />
+            <Input 
+              type="search" 
+              placeholder="Buscar cotización..." 
+              className="max-w-md" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
           
           <div className="flex items-center space-x-4">
@@ -118,13 +133,10 @@ const CotizacionesPage = () => {
           <div className="text-center py-10">
             <Plus className="h-12 w-12 text-slate-400 mx-auto mb-4" />
             <p className="text-slate-700 mb-4">No hay cotizaciones registradas</p>
-            <AdminResourceDialog 
-              resourceType="cotizaciones" 
-              buttonText="Nueva cotización" 
-              onSuccess={() => refetch()}
-              open={false}
-              onClose={() => {}}
-            />
+            <Button onClick={() => setShowDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nueva cotización
+            </Button>
           </div>
         ) : (
           <div className="overflow-hidden rounded-md border">
@@ -180,9 +192,18 @@ const CotizacionesPage = () => {
                           : 'N/A'}
                       </td>
                       <td className="py-3 px-4">
-                        <Button variant="ghost" size="sm">
-                          Ver detalles
-                        </Button>
+                        <div className="flex space-x-2">
+                          <Button variant="ghost" size="sm">
+                            Ver detalles
+                          </Button>
+                          <ExportPDFButton
+                            resourceName="cotización"
+                            resourceId={cotizacion.id}
+                            size="sm"
+                            variant="ghost"
+                            buttonText="PDF"
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))}

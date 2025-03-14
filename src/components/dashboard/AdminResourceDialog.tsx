@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,11 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import useLeads from '@/hooks/useLeads';
+import useDesarrollos from '@/hooks/useDesarrollos';
+import usePrototipos from '@/hooks/usePrototipos';
 
 // Define the allowed resource types
 export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones';
@@ -46,6 +52,19 @@ const AdminResourceDialog = ({
   const [resource, setResource] = useState<FormValues | null>(null);
   const [fields, setFields] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | null>(desarrolloId || null);
+  const [usarFiniquito, setUsarFiniquito] = useState(false);
+  
+  // Get leads for dropdown
+  const { leads } = useLeads();
+  
+  // Get desarrollos for dropdown
+  const { desarrollos } = useDesarrollos();
+  
+  // Get prototipos for the selected desarrollo
+  const { prototipos } = usePrototipos({ 
+    desarrolloId: selectedDesarrolloId 
+  });
 
   // Handle open state based on prop or controlled state
   const isOpen = open !== undefined ? open : dialogOpen;
@@ -101,6 +120,10 @@ const AdminResourceDialog = ({
             });
           } else {
             setResource(data);
+            if (resourceType === 'cotizaciones') {
+              setSelectedDesarrolloId(data.desarrollo_id);
+              setUsarFiniquito(data.usar_finiquito || false);
+            }
           }
         } catch (error) {
           console.error('Error in fetchResource:', error);
@@ -159,18 +182,18 @@ const AdminResourceDialog = ({
             { name: 'notas', label: 'Notas', type: 'textarea' },
           ];
           break;
-          case 'cotizaciones':
-            fieldDefinitions = [
-              { name: 'lead_id', label: 'Lead ID', type: 'text' },
-              { name: 'desarrollo_id', label: 'Desarrollo ID', type: 'text' },
-              { name: 'prototipo_id', label: 'Prototipo ID', type: 'text' },
-              { name: 'monto_anticipo', label: 'Monto Anticipo', type: 'number' },
-              { name: 'numero_pagos', label: 'Número de Pagos', type: 'number' },
-              { name: 'usar_finiquito', label: 'Usar Finiquito', type: 'switch' },
-              { name: 'monto_finiquito', label: 'Monto Finiquito', type: 'number' },
-              { name: 'notas', label: 'Notas', type: 'textarea' },
-            ];
-            break;
+        case 'cotizaciones':
+          fieldDefinitions = [
+            { name: 'lead_id', label: 'Lead', type: 'select', options: leads.map(lead => ({ value: lead.id, label: `${lead.nombre} ${lead.email ? `(${lead.email})` : lead.telefono ? `(${lead.telefono})` : ''}` })) },
+            { name: 'desarrollo_id', label: 'Desarrollo', type: 'select', options: desarrollos.map(desarrollo => ({ value: desarrollo.id, label: desarrollo.nombre })) },
+            { name: 'prototipo_id', label: 'Prototipo', type: 'select', options: prototipos.map(prototipo => ({ value: prototipo.id, label: prototipo.nombre })) },
+            { name: 'usar_finiquito', label: 'Liquidar con finiquito', type: 'switch' },
+            { name: 'monto_anticipo', label: 'Monto Anticipo', type: 'number' },
+            { name: 'numero_pagos', label: 'Número de Pagos', type: 'number' },
+            ...(usarFiniquito ? [{ name: 'monto_finiquito', label: 'Monto Finiquito', type: 'number' }] : []),
+            { name: 'notas', label: 'Notas', type: 'textarea' },
+          ];
+          break;
         default:
           fieldDefinitions = [];
           break;
@@ -183,15 +206,31 @@ const AdminResourceDialog = ({
       fetchResource();
       defineFields();
     }
-  }, [isOpen, resourceId, resourceType, toast]);
+  }, [isOpen, resourceId, resourceType, toast, leads, desarrollos, prototipos, usarFiniquito]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setResource(prev => prev ? ({ ...prev, [name]: value }) : { [name]: value });
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setResource(prev => prev ? ({ ...prev, [name]: value }) : { [name]: value });
+    
+    // Handle desarrollo_id changes to update the prototipo dropdown
+    if (name === 'desarrollo_id') {
+      setSelectedDesarrolloId(value);
+      // Clear the selected prototipo when desarrollo changes
+      setResource(prev => prev ? ({ ...prev, prototipo_id: '' }) : { prototipo_id: '' });
+    }
+  };
+
   const handleSwitchChange = (name: string, checked: boolean) => {
     setResource(prev => prev ? ({ ...prev, [name]: checked }) : { [name]: checked });
+    
+    // Handle specifically for the usar_finiquito switch to update the form fields
+    if (name === 'usar_finiquito') {
+      setUsarFiniquito(checked);
+    }
   };
 
   const saveResource = async (values: FormValues) => {
@@ -288,6 +327,86 @@ const AdminResourceDialog = ({
     return null;
   };
 
+  const renderFormField = (field: any) => {
+    switch (field.type) {
+      case 'select':
+        return (
+          <div key={field.name} className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor={field.name} className="text-right">
+              {field.label}
+            </Label>
+            <div className="col-span-3">
+              <Select 
+                value={resource ? (resource as any)[field.name] || '' : ''}
+                onValueChange={(value) => handleSelectChange(field.name, value)}
+              >
+                <SelectTrigger id={field.name}>
+                  <SelectValue placeholder={`Seleccionar ${field.label}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {field.options.map((option: { value: string, label: string }) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        );
+      case 'switch':
+        return (
+          <div key={field.name} className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor={field.name} className="text-right">
+              {field.label}
+            </Label>
+            <div className="col-span-3 flex items-center">
+              <Switch
+                id={field.name}
+                checked={resource ? (resource as any)[field.name] || false : false}
+                onCheckedChange={(checked) => handleSwitchChange(field.name, checked)}
+              />
+            </div>
+          </div>
+        );
+      case 'textarea':
+        return (
+          <div key={field.name} className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor={field.name} className="text-right">
+              {field.label}
+            </Label>
+            <div className="col-span-3">
+              <Input
+                id={field.name}
+                name={field.name}
+                value={resource ? (resource as any)[field.name] || '' : ''}
+                onChange={handleChange}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div key={field.name} className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor={field.name} className="text-right">
+              {field.label}
+            </Label>
+            <div className="col-span-3">
+              <Input
+                type={field.type}
+                id={field.name}
+                name={field.name}
+                value={resource ? (resource as any)[field.name] || '' : ''}
+                onChange={handleChange}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+        );
+    }
+  };
+
   return (
     <>
       {renderTriggerButton()}
@@ -301,39 +420,7 @@ const AdminResourceDialog = ({
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
-            {fields.map(field => (
-              <div key={field.name} className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor={field.name} className="text-right">
-                  {field.label}
-                </Label>
-                <div className="col-span-3">
-                  {field.type === 'textarea' ? (
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={resource ? (resource as any)[field.name] || '' : ''}
-                      onChange={handleChange}
-                      className="col-span-3"
-                    />
-                  ) : field.type === 'switch' ? (
-                    <Switch
-                      id={field.name}
-                      checked={resource ? (resource as any)[field.name] || false : false}
-                      onCheckedChange={(checked) => handleSwitchChange(field.name, checked)}
-                    />
-                  ) : (
-                    <Input
-                      type={field.type}
-                      id={field.name}
-                      name={field.name}
-                      value={resource ? (resource as any)[field.name] || '' : ''}
-                      onChange={handleChange}
-                      className="col-span-3"
-                    />
-                  )}
-                </div>
-              </div>
-            ))}
+            {fields.map(field => renderFormField(field))}
           </div>
 
           <DialogFooter>

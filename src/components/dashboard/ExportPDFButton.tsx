@@ -7,8 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 type ExportPDFButtonProps = {
   resourceName?: string;
   resourceId?: string;
-  elementId?: string; // For PDF export from DOM element
-  fileName?: string;  // For custom PDF file name
+  elementId?: string; // Para exportación de PDF desde un elemento DOM
+  fileName?: string;  // Para nombre personalizado de archivo PDF
   buttonText?: string;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   size?: "default" | "sm" | "lg" | "icon";
@@ -28,16 +28,15 @@ export const ExportPDFButton = ({
   const { toast } = useToast();
   const { role } = useUserRole();
   
-  // Admin and vendedor roles can export PDFs - show it regardless of permissions during development
-  // Remove this check completely to always show the button during development
-  const canExportPDF = true; // Force to true for development
+  // Admin y vendedor pueden exportar PDFs - mostrar siempre durante desarrollo
+  const canExportPDF = true; // Forzar a true para desarrollo
   
   if (!canExportPDF) {
     return null;
   }
   
   const handleExport = () => {
-    // In a future implementation, this would connect to a PDF generation service
+    // En una implementación futura, esto se conectaría a un servicio de generación de PDF
     toast({
       title: "Función en desarrollo",
       description: `La exportación de ${elementId ? fileName || "documento" : resourceName} a PDF estará disponible próximamente.`,
