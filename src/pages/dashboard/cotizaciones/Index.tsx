@@ -116,7 +116,7 @@ const CotizacionesPage = () => {
             <AdminResourceDialog 
               resourceType="cotizaciones" 
               buttonText="Nueva cotización"
-              onSuccess={refetch}
+              onSuccess={() => refetch()}
             />
             
             {canCreateResource('cotizacion') && (

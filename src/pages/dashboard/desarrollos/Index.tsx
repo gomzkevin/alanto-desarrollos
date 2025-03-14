@@ -37,7 +37,7 @@ const DesarrollosPage = () => {
           </div>
           
           <AdminResourceDialog 
-            resourceType="desarrollo" 
+            resourceType="desarrollos" 
             buttonText="Nuevo desarrollo" 
             onSuccess={refetch}
           />

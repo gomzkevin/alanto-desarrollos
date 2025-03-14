@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import usePrototipos from '@/hooks/usePrototipos';
 import { Tables } from '@/integrations/supabase/types';
-import { AdminResourceDialog } from '@/components/dashboard/AdminResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 
 type Desarrollo = Tables<"desarrollos">;
 
@@ -194,7 +194,7 @@ const DesarrolloDetailPage = () => {
                   </p>
                 </div>
                 <AdminResourceDialog 
-                  resourceType="prototipo" 
+                  resourceType="prototipos" 
                   buttonText="Nuevo prototipo" 
                   onSuccess={refetchPrototipos}
                   desarrolloId={id}
@@ -206,7 +206,7 @@ const DesarrolloDetailPage = () => {
                   <Home className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                   <p className="text-slate-700 mb-4">No hay prototipos registrados en este desarrollo</p>
                   <AdminResourceDialog 
-                    resourceType="prototipo" 
+                    resourceType="prototipos" 
                     buttonText="Agregar prototipo" 
                     onSuccess={refetchPrototipos}
                     desarrolloId={id}

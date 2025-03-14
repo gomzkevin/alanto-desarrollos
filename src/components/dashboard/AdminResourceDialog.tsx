@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -10,16 +9,18 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
-type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones';
+// Define the allowed resource types
+export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones';
 
-interface AdminResourceDialogProps {
-  open: boolean;
-  onClose: () => void;
+export interface AdminResourceDialogProps {
+  open?: boolean;
+  onClose?: () => void;
   resourceType: ResourceType;
   resourceId?: string;
   onSave?: () => void;
   buttonText?: string;
   onSuccess?: () => void;
+  desarrolloId?: string; // Used for creating prototipos with a pre-selected desarrollo
 }
 
 // Define a type for the form values based on the resource type
@@ -30,15 +31,16 @@ type FormValues =
   | Tables<'cotizaciones'>
   | Record<string, any>;
 
-const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({ 
+const AdminResourceDialog = ({ 
   open, 
   onClose, 
   resourceType, 
   resourceId, 
   onSave,
   buttonText,
-  onSuccess 
-}) => {
+  onSuccess,
+  desarrolloId
+}: AdminResourceDialogProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resource, setResource] = useState<FormValues | null>(null);

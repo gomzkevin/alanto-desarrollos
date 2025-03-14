@@ -35,7 +35,7 @@ const LeadsPage = () => {
           </div>
           <div className="flex space-x-2">
             <AdminResourceDialog 
-              resourceType="lead" 
+              resourceType="leads" 
               buttonText="Nuevo lead"
               onSuccess={handleLeadCreated}
             />

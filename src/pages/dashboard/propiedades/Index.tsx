@@ -128,10 +128,7 @@ const PropertiesPage = () => {
             <h1 className="text-3xl font-bold text-slate-800">Propiedades</h1>
             <p className="text-slate-600">Gestiona y visualiza el inventario de propiedades disponibles.</p>
           </div>
-          <AdminResourceDialog 
-            resourceType="propiedad" 
-            buttonText="Nueva propiedad" 
-          />
+          <Button>Nueva propiedad</Button>
         </div>
         
         {/* Filtros y buscador */}

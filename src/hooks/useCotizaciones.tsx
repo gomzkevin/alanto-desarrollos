@@ -6,7 +6,7 @@ import { Tables } from '@/integrations/supabase/types';
 // Define the Cotizacion type using Supabase generated types
 export type Cotizacion = Tables<"cotizaciones">;
 
-// Define extended types for relations
+// Define types for relations but avoid circular references
 export type ExtendedCotizacion = Cotizacion & {
   lead?: Tables<"leads"> | null;
   desarrollo?: Tables<"desarrollos"> | null;
@@ -68,10 +68,15 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       if (withRelations && cotizaciones && cotizaciones.length > 0) {
         const extendedCotizaciones: ExtendedCotizacion[] = await Promise.all(
           cotizaciones.map(async (cotizacion) => {
+            // Fetch associated relations
+            const leadPromise = supabase.from('leads').select('*').eq('id', cotizacion.lead_id).single();
+            const desarrolloPromise = supabase.from('desarrollos').select('*').eq('id', cotizacion.desarrollo_id).single();
+            const prototipoPromise = supabase.from('prototipos').select('*').eq('id', cotizacion.prototipo_id).single();
+            
             const [leadResult, desarrolloResult, prototipoResult] = await Promise.all([
-              supabase.from('leads').select('*').eq('id', cotizacion.lead_id).single(),
-              supabase.from('desarrollos').select('*').eq('id', cotizacion.desarrollo_id).single(),
-              supabase.from('prototipos').select('*').eq('id', cotizacion.prototipo_id).single()
+              leadPromise,
+              desarrolloPromise,
+              prototipoPromise
             ]);
             
             return {
