@@ -6,6 +6,13 @@ import { Tables } from '@/integrations/supabase/types';
 // Define the Cotizacion type using Supabase generated types
 export type Cotizacion = Tables<"cotizaciones">;
 
+// Define extended types for relations
+export type ExtendedCotizacion = Cotizacion & {
+  lead?: Tables<"leads"> | null;
+  desarrollo?: Tables<"desarrollos"> | null;
+  prototipo?: Tables<"prototipos"> | null;
+};
+
 type FetchCotizacionesOptions = {
   leadId?: string;
   desarrolloId?: string;
@@ -18,19 +25,13 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
   const { leadId, desarrolloId, limit, filters = {}, withRelations = true } = options;
   
   // Function to fetch cotizaciones
-  const fetchCotizaciones = async () => {
+  const fetchCotizaciones = async (): Promise<ExtendedCotizacion[]> => {
     console.log('Fetching cotizaciones with options:', options);
     
     try {
-      // Build the select query with optional relations
-      const selectQuery = withRelations 
-        ? `*, lead:leads(*), desarrollo:desarrollos(*), prototipo:prototipos(*)`
-        : '*';
+      // Build the query
+      let query = supabase.from('cotizaciones').select('*');
       
-      let query = supabase
-        .from('cotizaciones')
-        .select(selectQuery);
-        
       // Filter by lead_id if provided
       if (leadId) {
         query = query.eq('lead_id', leadId);
@@ -56,15 +57,38 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       // Order by created_at descending
       query = query.order('created_at', { ascending: false });
       
-      const { data, error } = await query;
+      const { data: cotizaciones, error } = await query;
       
       if (error) {
         console.error('Error fetching cotizaciones:', error);
         throw new Error(error.message);
       }
       
-      console.log('Cotizaciones fetched:', data);
-      return data;
+      // If relations are requested, fetch them for each cotizacion
+      if (withRelations && cotizaciones && cotizaciones.length > 0) {
+        const extendedCotizaciones: ExtendedCotizacion[] = await Promise.all(
+          cotizaciones.map(async (cotizacion) => {
+            const [leadResult, desarrolloResult, prototipoResult] = await Promise.all([
+              supabase.from('leads').select('*').eq('id', cotizacion.lead_id).single(),
+              supabase.from('desarrollos').select('*').eq('id', cotizacion.desarrollo_id).single(),
+              supabase.from('prototipos').select('*').eq('id', cotizacion.prototipo_id).single()
+            ]);
+            
+            return {
+              ...cotizacion,
+              lead: leadResult.error ? null : leadResult.data,
+              desarrollo: desarrolloResult.error ? null : desarrolloResult.data,
+              prototipo: prototipoResult.error ? null : prototipoResult.data
+            };
+          })
+        );
+        
+        console.log('Extended cotizaciones fetched:', extendedCotizaciones);
+        return extendedCotizaciones;
+      }
+      
+      console.log('Cotizaciones fetched:', cotizaciones);
+      return cotizaciones as ExtendedCotizacion[];
     } catch (error) {
       console.error('Error in fetchCotizaciones:', error);
       throw error;

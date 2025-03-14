@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { AdminResourceDialog } from '@/components/dashboard/AdminResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
 import useUserRole from '@/hooks/useUserRole';
@@ -14,11 +15,11 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import useCotizaciones, { Cotizacion } from '@/hooks/useCotizaciones';
+import useCotizaciones, { ExtendedCotizacion } from '@/hooks/useCotizaciones';
 
 const CotizacionesPage = () => {
   const { canCreateResource } = useUserRole();
-  const [selectedCotizacion, setSelectedCotizacion] = useState<Cotizacion | null>(null);
+  const [selectedCotizacion, setSelectedCotizacion] = useState<ExtendedCotizacion | null>(null);
   
   const { 
     cotizaciones, 
@@ -31,16 +32,15 @@ const CotizacionesPage = () => {
     alert('Exportar a PDF (función en desarrollo)');
   };
   
-  const handleViewCotizacion = (cotizacion: Cotizacion) => {
+  const handleViewCotizacion = (cotizacion: ExtendedCotizacion) => {
     setSelectedCotizacion(cotizacion);
   };
   
   // Generate payment schedule based on cotizacion data
-  const generatePaymentSchedule = (cotizacion: Cotizacion | null) => {
-    if (!cotizacion) return [];
+  const generatePaymentSchedule = (cotizacion: ExtendedCotizacion | null) => {
+    if (!cotizacion || !cotizacion.prototipo) return [];
     
     const prototipo = cotizacion.prototipo;
-    if (!prototipo) return [];
     
     const totalPrice = prototipo.precio;
     const downPayment = cotizacion.monto_anticipo || 0;
@@ -114,7 +114,7 @@ const CotizacionesPage = () => {
           </div>
           <div className="flex gap-2">
             <AdminResourceDialog 
-              resourceType="cotizacion" 
+              resourceType="cotizaciones" 
               buttonText="Nueva cotización"
               onSuccess={refetch}
             />
@@ -162,7 +162,7 @@ const CotizacionesPage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {cotizaciones.map((cotizacion: any) => (
+                      {cotizaciones.map((cotizacion: ExtendedCotizacion) => (
                         <TableRow 
                           key={cotizacion.id}
                           className={selectedCotizacion?.id === cotizacion.id ? 'bg-slate-50' : ''}

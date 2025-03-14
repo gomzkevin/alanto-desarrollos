@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AdminResourceDialog } from '@/components/dashboard/AdminResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 
 // Datos de ejemplo para propiedades
 const properties = [

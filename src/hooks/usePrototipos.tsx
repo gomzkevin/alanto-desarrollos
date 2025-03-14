@@ -15,7 +15,7 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
   const { desarrolloId, limit, filters = {} } = options;
   
   // Function to fetch prototipos
-  const fetchPrototipos = async () => {
+  const fetchPrototipos = async (): Promise<Prototipo[]> => {
     console.log('Fetching prototipos with options:', options);
     
     try {

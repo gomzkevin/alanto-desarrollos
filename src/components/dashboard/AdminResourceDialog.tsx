@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,8 @@ interface AdminResourceDialogProps {
   resourceType: ResourceType;
   resourceId?: string;
   onSave?: () => void;
+  buttonText?: string;
+  onSuccess?: () => void;
 }
 
 // Define a type for the form values based on the resource type
@@ -27,21 +30,65 @@ type FormValues =
   | Tables<'cotizaciones'>
   | Record<string, any>;
 
-const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({ open, onClose, resourceType, resourceId, onSave }) => {
+const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({ 
+  open, 
+  onClose, 
+  resourceType, 
+  resourceId, 
+  onSave,
+  buttonText,
+  onSuccess 
+}) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resource, setResource] = useState<FormValues | null>(null);
   const [fields, setFields] = useState<any[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Handle open state based on prop or controlled state
+  const isOpen = open !== undefined ? open : dialogOpen;
+  
+  const handleOpenChange = (newOpen: boolean) => {
+    if (onClose && !newOpen) {
+      onClose();
+    }
+    setDialogOpen(newOpen);
+  };
 
   useEffect(() => {
     const fetchResource = async () => {
       if (resourceId) {
         try {
-          const { data, error } = await supabase
-            .from(resourceType)
-            .select('*')
-            .eq('id', resourceId)
-            .single();
+          let query;
+          
+          // TypeScript-safe way to fetch resource by type
+          if (resourceType === 'desarrollos') {
+            query = supabase
+              .from('desarrollos')
+              .select('*')
+              .eq('id', resourceId)
+              .single();
+          } else if (resourceType === 'prototipos') {
+            query = supabase
+              .from('prototipos')
+              .select('*')
+              .eq('id', resourceId)
+              .single();
+          } else if (resourceType === 'leads') {
+            query = supabase
+              .from('leads')
+              .select('*')
+              .eq('id', resourceId)
+              .single();
+          } else if (resourceType === 'cotizaciones') {
+            query = supabase
+              .from('cotizaciones')
+              .select('*')
+              .eq('id', resourceId)
+              .single();
+          }
+          
+          const { data, error } = await query;
 
           if (error) {
             console.error('Error fetching resource:', error);
@@ -130,20 +177,21 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({ open, onClose
       setFields(fieldDefinitions);
     };
 
-    fetchResource();
-    defineFields();
-  }, [open, resourceId, resourceType, toast]);
+    if (isOpen) {
+      fetchResource();
+      defineFields();
+    }
+  }, [isOpen, resourceId, resourceType, toast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setResource(prev => ({ ...prev, [name]: value }));
+    setResource(prev => prev ? ({ ...prev, [name]: value }) : { [name]: value });
   };
 
   const handleSwitchChange = (name: string, checked: boolean) => {
-    setResource(prev => ({ ...prev, [name]: checked }));
+    setResource(prev => prev ? ({ ...prev, [name]: checked }) : { [name]: checked });
   };
 
-  // Fix the saveResource function that's causing TypeScript errors
   const saveResource = async (values: FormValues) => {
     setIsSubmitting(true);
     
@@ -152,97 +200,67 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({ open, onClose
       
       // Handle creation of new resource
       if (!resourceId) {
-        // Determine which table to insert into based on the resource type
         if (resourceType === 'desarrollos') {
-          const { data, error } = await supabase
-            .from(resourceType)
-            .insert(values as any);
-            
-          result = { data, error };
+          result = await supabase
+            .from('desarrollos')
+            .insert(values as Tables<'desarrollos'>);
         } else if (resourceType === 'prototipos') {
-          const { data, error } = await supabase
-            .from(resourceType)
-            .insert(values as any);
-            
-          result = { data, error };
+          result = await supabase
+            .from('prototipos')
+            .insert(values as Tables<'prototipos'>);
         } else if (resourceType === 'leads') {
-          const { data, error } = await supabase
-            .from(resourceType)
-            .insert(values as any);
-            
-          result = { data, error };
+          result = await supabase
+            .from('leads')
+            .insert(values as Tables<'leads'>);
         } else if (resourceType === 'cotizaciones') {
-          const { data, error } = await supabase
+          result = await supabase
             .from('cotizaciones')
-            .insert(values as any);
-            
-          result = { data, error };
-        } else {
-          // Default case for other resource types
-          const { data, error } = await supabase
-            .from(resourceType as any)
-            .insert(values as any);
-            
-          result = { data, error };
+            .insert(values as Tables<'cotizaciones'>);
         }
       } else {
         // Handle updating existing resource
         if (resourceType === 'desarrollos') {
-          const { data, error } = await supabase
-            .from(resourceType)
-            .update(values as any)
+          result = await supabase
+            .from('desarrollos')
+            .update(values as Tables<'desarrollos'>)
             .eq('id', resourceId);
-            
-          result = { data, error };
         } else if (resourceType === 'prototipos') {
-          const { data, error } = await supabase
-            .from(resourceType)
-            .update(values as any)
+          result = await supabase
+            .from('prototipos')
+            .update(values as Tables<'prototipos'>)
             .eq('id', resourceId);
-            
-          result = { data, error };
         } else if (resourceType === 'leads') {
-          const { data, error } = await supabase
-            .from(resourceType)
-            .update(values as any)
+          result = await supabase
+            .from('leads')
+            .update(values as Tables<'leads'>)
             .eq('id', resourceId);
-            
-          result = { data, error };
         } else if (resourceType === 'cotizaciones') {
-          const { data, error } = await supabase
+          result = await supabase
             .from('cotizaciones')
-            .update(values as any)
+            .update(values as Tables<'cotizaciones'>)
             .eq('id', resourceId);
-            
-          result = { data, error };
-        } else {
-          // Default case for other resource types
-          const { data, error } = await supabase
-            .from(resourceType as any)
-            .update(values as any)
-            .eq('id', resourceId);
-            
-          result = { data, error };
         }
       }
       
-      if (result.error) {
-        console.error('Error saving resource:', result.error);
+      const { error } = result || { error: null };
+      
+      if (error) {
+        console.error('Error saving resource:', error);
         toast({
           title: 'Error',
-          description: `No se pudo guardar: ${result.error.message}`,
+          description: `No se pudo guardar: ${error.message}`,
           variant: 'destructive',
         });
       } else {
-        console.log('Resource saved:', result.data);
         toast({
           title: 'Éxito',
           description: resourceId 
             ? 'El recurso ha sido actualizado correctamente'
             : 'El recurso ha sido creado correctamente',
         });
-        onClose();
+        handleOpenChange(false);
         if (onSave) onSave();
+        if (onSuccess) onSuccess();
       }
     } catch (error) {
       console.error('Error in saveResource:', error);
@@ -256,62 +274,77 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({ open, onClose
     }
   };
 
-  if (!open) return null;
+  // If the component is used with a button
+  const renderTriggerButton = () => {
+    if (open === undefined) {
+      return (
+        <Button onClick={() => setDialogOpen(true)}>
+          {buttonText || 'Nuevo recurso'}
+        </Button>
+      );
+    }
+    return null;
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{resourceId ? `Editar ${resourceType}` : `Crear nuevo ${resourceType}`}</DialogTitle>
-          <DialogDescription>
-            {resourceId ? 'Modifica los campos del recurso.' : 'Ingresa los datos del nuevo recurso.'}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      {renderTriggerButton()}
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{resourceId ? `Editar ${resourceType}` : `Crear nuevo ${resourceType}`}</DialogTitle>
+            <DialogDescription>
+              {resourceId ? 'Modifica los campos del recurso.' : 'Ingresa los datos del nuevo recurso.'}
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          {fields.map(field => (
-            <div key={field.name} className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor={field.name} className="text-right">
-                {field.label}
-              </Label>
-              <div className="col-span-3">
-                {field.type === 'textarea' ? (
-                  <Input
-                    id={field.name}
-                    value={resource ? (resource as any)[field.name] || '' : ''}
-                    onChange={handleChange}
-                    className="col-span-3"
-                  />
-                ) : field.type === 'switch' ? (
-                  <Switch
-                    id={field.name}
-                    checked={resource ? (resource as any)[field.name] || false : false}
-                    onCheckedChange={(checked) => handleSwitchChange(field.name, checked)}
-                  />
-                ) : (
-                  <Input
-                    type={field.type}
-                    id={field.name}
-                    value={resource ? (resource as any)[field.name] || '' : ''}
-                    onChange={handleChange}
-                    className="col-span-3"
-                  />
-                )}
+          <div className="grid gap-4 py-4">
+            {fields.map(field => (
+              <div key={field.name} className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor={field.name} className="text-right">
+                  {field.label}
+                </Label>
+                <div className="col-span-3">
+                  {field.type === 'textarea' ? (
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={resource ? (resource as any)[field.name] || '' : ''}
+                      onChange={handleChange}
+                      className="col-span-3"
+                    />
+                  ) : field.type === 'switch' ? (
+                    <Switch
+                      id={field.name}
+                      checked={resource ? (resource as any)[field.name] || false : false}
+                      onCheckedChange={(checked) => handleSwitchChange(field.name, checked)}
+                    />
+                  ) : (
+                    <Input
+                      type={field.type}
+                      id={field.name}
+                      name={field.name}
+                      value={resource ? (resource as any)[field.name] || '' : ''}
+                      onChange={handleChange}
+                      className="col-span-3"
+                    />
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <DialogFooter>
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" onClick={() => saveResource(resource as FormValues)} disabled={isSubmitting}>
-            {isSubmitting ? 'Guardando...' : 'Guardar'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" onClick={() => saveResource(resource as FormValues)} disabled={isSubmitting}>
+              {isSubmitting ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
