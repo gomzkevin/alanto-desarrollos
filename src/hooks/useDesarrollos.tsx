@@ -7,7 +7,9 @@ type Desarrollo = Tables<"desarrollos">;
 type Prototipo = Tables<"prototipos">;
 
 // Define the return type for results with prototipos
-type DesarrolloWithPrototipos = Desarrollo & { prototipos: Prototipo[] };
+interface DesarrolloWithPrototipos extends Desarrollo {
+  prototipos: Prototipo[];
+}
 
 type FetchDesarrollosOptions = {
   withPrototipos?: boolean;
@@ -22,9 +24,12 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   const fetchDesarrollos = async () => {
     console.log('Fetching desarrollos with options:', options);
     
+    // Create the select query based on whether we want to include prototipos
+    const selectQuery = withPrototipos ? '*, prototipos(*)' : '*';
+    
     let query = supabase
       .from('desarrollos')
-      .select(withPrototipos ? '*, prototipos(*)' : '*');
+      .select(selectQuery);
       
     // Apply limit if provided
     if (limit) {
@@ -47,10 +52,8 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     
     console.log('Desarrollos fetched:', data);
     
-    // Type casting to the correct types
-    return withPrototipos 
-      ? (data as DesarrolloWithPrototipos[]) 
-      : (data as Desarrollo[]);
+    // Return the properly typed data
+    return data || [];
   };
 
   // Use React Query to fetch and cache the data

@@ -47,7 +47,7 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
     }
     
     console.log('Prototipos fetched:', data);
-    return data as Prototipo[];
+    return data || [];
   };
 
   // Use React Query to fetch and cache the data
