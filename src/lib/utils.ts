@@ -14,3 +14,13 @@ export function formatCurrency(amount: number): string {
     maximumFractionDigits: 0
   }).format(amount);
 }
+
+export function formatCurrencyShort(amount: number): string {
+  if (amount >= 1000000) {
+    return `$${(amount / 1000000).toFixed(1)}M`;
+  } else if (amount >= 1000) {
+    return `$${(amount / 1000).toFixed(0)}K`;
+  } else {
+    return `$${amount.toFixed(0)}`;
+  }
+}

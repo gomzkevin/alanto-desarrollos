@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +10,7 @@ import { LineChart } from '@/components/ui/chart'; // Import from our chart comp
 import { Calculator } from '@/components/Calculator';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatCurrencyShort } from '@/lib/utils';
 import { 
   Table, 
   TableBody, 
@@ -48,17 +49,24 @@ export const ProyeccionesPage = () => {
   };
 
   const handleChartDataUpdate = (data: any[]) => {
-    setChartData(data);
+    // Add custom names for the chart categories
+    const enhancedData = data.map(item => ({
+      ...item,
+      "Renta vacacional": item.airbnbProfit,
+      "Bonos US": item.alternativeInvestment
+    }));
     
-    if (data.length > 0) {
-      const lastYear = data[data.length - 1];
-      const sumROI = data.reduce((acc, item) => acc + parseFloat(item.yearlyROI), 0);
+    setChartData(enhancedData);
+    
+    if (enhancedData.length > 0) {
+      const lastYear = enhancedData[enhancedData.length - 1];
+      const sumROI = enhancedData.reduce((acc, item) => acc + parseFloat(item.yearlyROI), 0);
       
       setSummaryData({
-        propertyValue: data[0].initialPropertyValue || 3500000, // Get initial property value
-        airbnbProfit: lastYear.airbnbProfit - data[0].initialPropertyValue, // Total profit (excluding initial investment)
-        altReturn: lastYear.alternativeInvestment - data[0].initialPropertyValue, // Total return (excluding initial investment)
-        avgROI: sumROI / data.length
+        propertyValue: enhancedData[0].initialPropertyValue || 3500000, // Get initial property value
+        airbnbProfit: lastYear.airbnbProfit - enhancedData[0].initialPropertyValue, // Total profit (excluding initial investment)
+        altReturn: lastYear.alternativeInvestment - enhancedData[0].initialPropertyValue, // Total return (excluding initial investment)
+        avgROI: sumROI / enhancedData.length
       });
     }
   };
@@ -132,7 +140,7 @@ export const ProyeccionesPage = () => {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-          <Card className="xl:col-span-5 xl:max-w-md">
+          <Card className="xl:col-span-4 xl:max-w-sm">
             <CardHeader>
               <CardTitle>Parámetros de proyección</CardTitle>
               <CardDescription>
@@ -156,7 +164,7 @@ export const ProyeccionesPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="xl:col-span-7">
+          <Card className="xl:col-span-8">
             <CardHeader>
               <CardTitle>Resultados de la proyección</CardTitle>
               <CardDescription>
@@ -183,15 +191,14 @@ export const ProyeccionesPage = () => {
                       <LineChart 
                         data={chartData}
                         index="year"
-                        categories={["airbnbProfit", "alternativeInvestment"]}
+                        categories={["Renta vacacional", "Bonos US"]}
                         colors={["indigo-600", "teal-600"]}
-                        valueFormatter={(value) => formatCurrency(value)}
+                        valueFormatter={(value) => formatCurrencyShort(value)}
                         showLegend={true}
                         showXAxis={true}
                         showYAxis={true}
                         yAxisWidth={80}
                         showAnimation={true}
-                        curveType="monotone"
                         showTooltip={true}
                         className="h-[400px]"
                       />
@@ -209,8 +216,8 @@ export const ProyeccionesPage = () => {
                       <TableHeader>
                         <TableRow className="bg-slate-50 border-b border-slate-200">
                           <TableHead className="text-left font-medium text-slate-700">AÑO</TableHead>
-                          <TableHead className="text-left font-medium text-slate-700">RETORNO AIRBNB</TableHead>
-                          <TableHead className="text-left font-medium text-slate-700">RETORNO INVERSIÓN ALT.</TableHead>
+                          <TableHead className="text-left font-medium text-slate-700">RENTA VACACIONAL</TableHead>
+                          <TableHead className="text-left font-medium text-slate-700">BONOS US</TableHead>
                           <TableHead className="text-left font-medium text-slate-700">DIFERENCIA</TableHead>
                           <TableHead className="text-left font-medium text-slate-700">ROI ANUAL</TableHead>
                         </TableRow>
