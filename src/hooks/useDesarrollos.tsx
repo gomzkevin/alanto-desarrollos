@@ -1,14 +1,15 @@
 
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Tables } from '@/integrations/supabase/types';
+
+type Desarrollo = Tables<"desarrollos">;
+type Prototipo = Tables<"prototipos">;
 
 type FetchDesarrollosOptions = {
   withPrototipos?: boolean;
   limit?: number;
-  filters?: {
-    [key: string]: any;
-  };
+  filters?: Record<string, any>;
 };
 
 export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
@@ -42,7 +43,7 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     }
     
     console.log('Desarrollos fetched:', data);
-    return data || [];
+    return data as (withPrototipos extends true ? (Desarrollo & { prototipos: Prototipo[] })[] : Desarrollo[]);
   };
 
   // Use React Query to fetch and cache the data

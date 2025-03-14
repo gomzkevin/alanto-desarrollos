@@ -1,13 +1,14 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Tables } from '@/integrations/supabase/types';
+
+type Prototipo = Tables<"prototipos">;
 
 type FetchPrototiposOptions = {
   desarrolloId?: string;
   limit?: number;
-  filters?: {
-    [key: string]: any;
-  };
+  filters?: Record<string, any>;
 };
 
 export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
@@ -46,7 +47,7 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
     }
     
     console.log('Prototipos fetched:', data);
-    return data || [];
+    return data as Prototipo[];
   };
 
   // Use React Query to fetch and cache the data

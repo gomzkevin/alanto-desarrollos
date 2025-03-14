@@ -3,11 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { ChevronLeft, Plus, CalendarClock, Home, Users, MapPin, Clock } from 'lucide-react';
+import { ChevronLeft, Plus, CalendarClock, Home, MapPin, Clock } from 'lucide-react';
 import PrototipoCard from '@/components/dashboard/PrototipoCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import usePrototipos from '@/hooks/usePrototipos';
+import { Tables } from '@/integrations/supabase/types';
+
+type Desarrollo = Tables<"desarrollos">;
 
 // Función para obtener un desarrollo por ID
 const fetchDesarrolloById = async (id: string) => {
@@ -24,7 +27,7 @@ const fetchDesarrolloById = async (id: string) => {
   }
   
   console.log('Desarrollo fetched:', data);
-  return data;
+  return data as Desarrollo;
 };
 
 const DesarrolloDetailPage = () => {

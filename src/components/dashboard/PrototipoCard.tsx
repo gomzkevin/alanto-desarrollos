@@ -1,99 +1,86 @@
 
-import { useState } from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Bed, Bath, Square, Home } from 'lucide-react';
+import React from 'react';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Tables } from '@/integrations/supabase/types';
 import { formatCurrency } from '@/lib/utils';
+import { Building2, Home, Ruler, Bed, Bath } from 'lucide-react';
 
-type PrototipoCardProps = {
-  prototipo: {
-    id: string;
-    nombre: string;
-    tipo: string;
-    habitaciones: number | null;
-    baños: number | null;
-    superficie: number | null;
-    precio: number;
-    total_unidades: number;
-    unidades_disponibles: number;
-    descripcion: string | null;
-    imagen_url: string | null;
+type Prototipo = Tables<"prototipos">;
+
+interface PrototipoCardProps {
+  prototipo: Prototipo;
+  onViewDetails?: (id: string) => void;
+}
+
+const PrototipoCard: React.FC<PrototipoCardProps> = ({ prototipo, onViewDetails }) => {
+  const handleCardClick = () => {
+    if (onViewDetails) {
+      onViewDetails(prototipo.id);
+    }
   };
-};
-
-const PrototipoCard = ({ prototipo }: PrototipoCardProps) => {
-  const [isImageError, setIsImageError] = useState(false);
 
   return (
-    <Card className="overflow-hidden h-full flex flex-col">
-      <div className="aspect-video w-full overflow-hidden bg-slate-100">
-        {prototipo.imagen_url && !isImageError ? (
-          <img
-            src={prototipo.imagen_url}
-            alt={prototipo.nombre}
-            className="h-full w-full object-cover"
-            onError={() => setIsImageError(true)}
+    <Card className="overflow-hidden transition-all hover:shadow-lg cursor-pointer" onClick={handleCardClick}>
+      <div className="h-48 bg-slate-200 relative">
+        {prototipo.imagen_url ? (
+          <img 
+            src={prototipo.imagen_url} 
+            alt={prototipo.nombre} 
+            className="w-full h-full object-cover"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-slate-100">
-            <Home className="h-12 w-12 text-slate-400" />
+          <div className="flex items-center justify-center h-full bg-slate-100">
+            <Home className="h-16 w-16 text-slate-400" />
           </div>
         )}
+        
+        <div className="absolute top-2 right-2 bg-white/90 text-slate-700 px-2 py-1 rounded text-sm font-medium">
+          {prototipo.tipo}
+        </div>
       </div>
-      <CardHeader>
-        <CardTitle className="flex justify-between items-start">
-          <div>
-            <h3 className="text-xl font-semibold">{prototipo.nombre}</h3>
-            <p className="text-sm text-slate-500">{prototipo.tipo}</p>
-          </div>
-          <span className="text-lg font-bold text-indigo-600">
-            {formatCurrency(prototipo.precio)}
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-grow">
-        <p className="text-sm text-slate-700 mb-4">{prototipo.descripcion}</p>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="space-y-2">
-            <div className="flex items-center text-slate-500">
-              <Bed className="h-4 w-4 mr-2" />
-              <span>Habitaciones</span>
+      
+      <CardContent className="p-4">
+        <h3 className="font-bold text-lg mb-1 text-slate-800">{prototipo.nombre}</h3>
+        
+        <div className="flex items-center text-slate-600 text-sm space-x-4 mb-3">
+          {prototipo.superficie && (
+            <div className="flex items-center">
+              <Ruler className="h-3.5 w-3.5 mr-1" />
+              <span>{prototipo.superficie} m²</span>
             </div>
-            <p className="font-medium">{prototipo.habitaciones || 'N/A'}</p>
-          </div>
+          )}
           
-          <div className="space-y-2">
-            <div className="flex items-center text-slate-500">
-              <Bath className="h-4 w-4 mr-2" />
-              <span>Baños</span>
+          {prototipo.habitaciones && (
+            <div className="flex items-center">
+              <Bed className="h-3.5 w-3.5 mr-1" />
+              <span>{prototipo.habitaciones}</span>
             </div>
-            <p className="font-medium">{prototipo.baños || 'N/A'}</p>
-          </div>
+          )}
           
-          <div className="space-y-2">
-            <div className="flex items-center text-slate-500">
-              <Square className="h-4 w-4 mr-2" />
-              <span>Superficie</span>
+          {prototipo.baños && (
+            <div className="flex items-center">
+              <Bath className="h-3.5 w-3.5 mr-1" />
+              <span>{prototipo.baños}</span>
             </div>
-            <p className="font-medium">
-              {prototipo.superficie ? `${prototipo.superficie} m²` : 'N/A'}
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center text-slate-500">
-              <Home className="h-4 w-4 mr-2" />
-              <span>Disponibilidad</span>
-            </div>
-            <p className="font-medium">
-              {prototipo.unidades_disponibles}/{prototipo.total_unidades} unidades
-            </p>
-          </div>
+          )}
+        </div>
+        
+        {prototipo.descripcion && (
+          <p className="text-slate-600 text-sm line-clamp-2 mb-2">{prototipo.descripcion}</p>
+        )}
+        
+        <div className="text-lg font-bold text-slate-800">
+          {formatCurrency(prototipo.precio)}
         </div>
       </CardContent>
-      <CardFooter className="justify-between">
-        <Button variant="outline" size="sm">Ver detalles</Button>
-        <Button variant="outline" size="sm">Cotizar</Button>
+      
+      <CardFooter className="p-4 pt-0 flex justify-between items-center border-t border-slate-100 mt-2">
+        <div className="text-sm text-slate-600">
+          <Building2 className="h-3.5 w-3.5 inline mr-1" />
+          <span>
+            {prototipo.unidades_disponibles}/{prototipo.total_unidades} disponibles
+          </span>
+        </div>
       </CardFooter>
     </Card>
   );
