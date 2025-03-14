@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +30,6 @@ export const ProyeccionesPage = () => {
   });
   const [activeTab, setActiveTab] = useState('grafica');
 
-  // Pass the chart data from Calculator to this component
   const handleChartDataUpdate = (data: any[]) => {
     setChartData(data);
     
@@ -56,7 +54,6 @@ export const ProyeccionesPage = () => {
             <p className="text-slate-600">Calcula y compara el rendimiento potencial de inversiones inmobiliarias.</p>
           </div>
           
-          {/* Development selector */}
           <div className="w-full sm:w-72">
             <Select
               value={selectedDesarrolloId}
@@ -83,7 +80,6 @@ export const ProyeccionesPage = () => {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* Parámetros de proyección */}
           <Card>
             <CardHeader>
               <CardTitle>Parámetros de proyección</CardTitle>
@@ -99,7 +95,6 @@ export const ProyeccionesPage = () => {
             </CardContent>
           </Card>
 
-          {/* Resultados de la proyección */}
           <Card>
             <CardHeader>
               <CardTitle>Resultados de la proyección</CardTitle>
@@ -135,7 +130,6 @@ export const ProyeccionesPage = () => {
                         showYAxis={true}
                         yAxisWidth={80}
                         showAnimation={true}
-                        showGradient={true}
                         curveType="monotone"
                         showTooltip={true}
                         className="h-[400px]"
