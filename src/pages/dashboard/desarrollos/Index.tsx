@@ -7,6 +7,9 @@ import useDesarrollos from '@/hooks/useDesarrollos';
 import DesarrolloCard from '@/components/dashboard/DesarrolloCard';
 import { AdminResourceDialog } from '@/components/dashboard/AdminResourceDialog';
 import useUserRole from '@/hooks/useUserRole';
+import { Tables } from '@/integrations/supabase/types';
+
+type Desarrollo = Tables<"desarrollos">;
 
 const DesarrollosPage = () => {
   const navigate = useNavigate();
@@ -59,7 +62,7 @@ const DesarrollosPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {desarrollos.map((desarrollo) => (
+            {(desarrollos as Desarrollo[]).map((desarrollo) => (
               <DesarrolloCard 
                 key={desarrollo.id} 
                 desarrollo={desarrollo}

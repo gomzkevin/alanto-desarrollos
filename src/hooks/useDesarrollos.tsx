@@ -49,7 +49,6 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       }
       
       console.log('Desarrollos fetched:', data);
-      
       return data || [];
     } catch (error) {
       console.error('Error in fetchDesarrollos:', error);
@@ -69,7 +68,7 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   });
 
   return {
-    desarrollos: desarrollos || [],
+    desarrollos: desarrollos as Desarrollo[],
     isLoading,
     error,
     refetch
