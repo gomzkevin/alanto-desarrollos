@@ -1,6 +1,5 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
@@ -31,13 +30,16 @@ interface FinancialConfig {
   tasa_interes: number;
 }
 
-// Add props interface to accept a desarrollo_id
+// Add props interface to accept a desarrollo_id and onDataUpdate callback
 interface CalculatorProps {
   desarrolloId?: string;
+  onDataUpdate?: (data: any[]) => void;
 }
 
-export const Calculator = ({ desarrolloId }: CalculatorProps) => {
+export const Calculator = ({ desarrolloId, onDataUpdate }: CalculatorProps) => {
   const [propertyValue, setPropertyValue] = useState(3500000);
+  const [downPaymentPercent, setDownPaymentPercent] = useState(20);  // Anticipo: 20%
+  const [downPaymentAmount, setDownPaymentAmount] = useState(700000); // 20% of 3,500,000
   const [occupancyRate, setOccupancyRate] = useState(74); // percentage
   const [nightlyRate, setNightlyRate] = useState(1800);
   const [years, setYears] = useState(10);
@@ -62,12 +64,19 @@ export const Calculator = ({ desarrolloId }: CalculatorProps) => {
   const form = useForm({
     defaultValues: {
       propertyValue: propertyValue,
+      downPaymentPercent: downPaymentPercent,
       occupancyRate: occupancyRate,
       nightlyRate: nightlyRate,
       annualGrowth: annualGrowth,
       years: years,
     }
   });
+
+  // Calculate the down payment amount when propertyValue or downPaymentPercent changes
+  useEffect(() => {
+    const amount = (propertyValue * downPaymentPercent) / 100;
+    setDownPaymentAmount(amount);
+  }, [propertyValue, downPaymentPercent]);
 
   // Fetch financial configuration from Supabase based on desarrollo_id
   useEffect(() => {
@@ -167,11 +176,11 @@ export const Calculator = ({ desarrolloId }: CalculatorProps) => {
       const propertyAppreciation = propertyValue * (Math.pow(1 + (plusvalia_anual / 100), year) - 1);
       
       // Calculate alternative investment (e.g., stocks)
-      const alternativeInvestmentReturn = propertyValue * (Math.pow(1 + (tasa_interes / 100), year) - 1);
+      const alternativeInvestmentReturn = downPaymentAmount * (Math.pow(1 + (tasa_interes / 100), year) - 1);
       alternativeCumulativeProfit = alternativeInvestmentReturn;
       
-      // Return on Investment (ROI)
-      const annualRoi = (thisYearNetProfit / propertyValue) * 100;
+      // Return on Investment (ROI) based on down payment
+      const annualRoi = (thisYearNetProfit / downPaymentAmount) * 100;
       
       // Difference between cumulative Airbnb profit and alternative investment
       const difference = (airbnbCumulativeProfit + propertyAppreciation) - alternativeCumulativeProfit;
@@ -187,7 +196,12 @@ export const Calculator = ({ desarrolloId }: CalculatorProps) => {
     }
     
     setChartData(data);
-  }, [propertyValue, occupancyRate, nightlyRate, years, annualGrowth, financialConfig]);
+    
+    // Pass the data to the parent component if the callback exists
+    if (onDataUpdate) {
+      onDataUpdate(data);
+    }
+  }, [propertyValue, occupancyRate, nightlyRate, years, annualGrowth, financialConfig, downPaymentAmount, onDataUpdate]);
   
   // Save financial configuration to Supabase
   const saveFinancialConfig = async () => {
@@ -319,6 +333,22 @@ export const Calculator = ({ desarrolloId }: CalculatorProps) => {
           <div className="space-y-1">
             <div className="flex justify-between items-center">
               <label className="text-sm font-medium text-slate-700">
+                Anticipo: {downPaymentPercent}% ({formatCurrency(downPaymentAmount)})
+              </label>
+            </div>
+            <Slider 
+              value={[downPaymentPercent]} 
+              max={100} 
+              min={10} 
+              step={1}
+              onValueChange={(value) => setDownPaymentPercent(value[0])}
+              className="py-4"
+            />
+          </div>
+          
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium text-slate-700">
                 Porcentaje de ocupación anual: {occupancyRate}%
               </label>
             </div>
@@ -385,67 +415,6 @@ export const Calculator = ({ desarrolloId }: CalculatorProps) => {
           </Button>
         </div>
       </Form>
-      
-      {/* Chart visualization - Will be shown in the parent component */}
-      <div className="hidden">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Comparativa de inversiones</h3>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="year" label={{ value: 'Años', position: 'insideBottomRight', offset: -5 }} />
-              <YAxis 
-                tickFormatter={(value) => formatCurrency(value).replace('MXN', '')}
-                label={{ value: 'Retorno (MXN)', angle: -90, position: 'insideLeft' }}
-              />
-              <Tooltip 
-                formatter={(value: number) => [formatCurrency(value), 'Retorno']}
-                labelFormatter={(label) => `Año ${label}`}
-              />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="airbnbProfit" 
-                name="Propiedad Airbnb"
-                stroke="#4F46E5" 
-                strokeWidth={3}
-                activeDot={{ r: 8 }} 
-              />
-              <Line 
-                type="monotone" 
-                dataKey="alternativeInvestment" 
-                name="Inversión Alternativa"
-                stroke="#14B8A6" 
-                strokeWidth={3}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-      
-      {/* Render the chart data as a table */}
-      <table className="w-full border-collapse hidden">
-        <thead>
-          <tr className="bg-slate-50 border-b border-slate-200">
-            <th className="text-left p-3 font-medium text-slate-700">AÑO</th>
-            <th className="text-left p-3 font-medium text-slate-700">RETORNO AIRBNB</th>
-            <th className="text-left p-3 font-medium text-slate-700">RETORNO INVERSIÓN ALT.</th>
-            <th className="text-left p-3 font-medium text-slate-700">DIFERENCIA</th>
-            <th className="text-left p-3 font-medium text-slate-700">ROI ANUAL</th>
-          </tr>
-        </thead>
-        <tbody>
-          {chartData.map((item) => (
-            <tr key={item.year} className="border-b border-slate-100 hover:bg-slate-50">
-              <td className="p-3">{item.year}</td>
-              <td className="p-3">{formatCurrency(item.airbnbProfit)}</td>
-              <td className="p-3">{formatCurrency(item.alternativeInvestment)}</td>
-              <td className="p-3">{formatCurrency(item.difference)}</td>
-              <td className="p-3">{item.yearlyROI}%</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 };

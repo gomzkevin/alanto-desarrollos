@@ -5,19 +5,46 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart, LineChart } from 'lucide-react';
+import { LineChart } from 'lucide-react';
 import { Calculator } from '@/components/Calculator';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import { formatCurrency } from '@/lib/utils';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
 
 export const ProyeccionesPage = () => {
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('');
   const { desarrollos = [], isLoading } = useDesarrollos();
+  const [chartData, setChartData] = useState<any[]>([]);
   const [summaryData, setSummaryData] = useState({
     airbnbReturn: 5655683,
     altReturn: 677006,
     avgROI: 56.8
   });
+  const [activeTab, setActiveTab] = useState('grafica');
+
+  // Pass the chart data from Calculator to this component
+  const handleChartDataUpdate = (data: any[]) => {
+    setChartData(data);
+    
+    if (data.length > 0) {
+      const lastYear = data[data.length - 1];
+      const sumROI = data.reduce((acc, item) => acc + parseFloat(item.yearlyROI), 0);
+      
+      setSummaryData({
+        airbnbReturn: lastYear.airbnbProfit,
+        altReturn: lastYear.alternativeInvestment,
+        avgROI: sumROI / data.length
+      });
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -64,7 +91,10 @@ export const ProyeccionesPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Calculator desarrolloId={selectedDesarrolloId} />
+              <Calculator 
+                desarrolloId={selectedDesarrolloId} 
+                onDataUpdate={handleChartDataUpdate} 
+              />
             </CardContent>
           </Card>
 
@@ -77,7 +107,12 @@ export const ProyeccionesPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <Tabs defaultValue="grafica" className="w-full">
+              <Tabs 
+                defaultValue="grafica" 
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="w-full"
+              >
                 <div className="px-6 pt-2">
                   <TabsList className="grid w-full max-w-[400px] grid-cols-2">
                     <TabsTrigger value="grafica">Gráfica</TabsTrigger>
@@ -86,27 +121,64 @@ export const ProyeccionesPage = () => {
                 </div>
                 
                 <TabsContent value="grafica" className="p-6">
-                  <div className="h-[400px] w-full">
-                    {/* El componente Calculator incluye la gráfica */}
-                  </div>
+                  {chartData.length > 0 ? (
+                    <div className="h-[400px] w-full">
+                      <LineChart 
+                        data={chartData}
+                        index="year"
+                        categories={["airbnbProfit", "alternativeInvestment"]}
+                        colors={["indigo", "teal"]}
+                        valueFormatter={(value) => formatCurrency(value)}
+                        showLegend={true}
+                        showXAxis={true}
+                        showYAxis={true}
+                        yAxisWidth={80}
+                        showAnimation={true}
+                        showGradient={true}
+                        curveType="monotone"
+                        showTooltip={true}
+                        className="h-[400px]"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-[400px] text-slate-500">
+                      Ajusta los parámetros para generar una proyección
+                    </div>
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="tabla" className="px-0">
                   <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200">
-                          <th className="text-left p-3 font-medium text-slate-700">AÑO</th>
-                          <th className="text-left p-3 font-medium text-slate-700">RETORNO AIRBNB</th>
-                          <th className="text-left p-3 font-medium text-slate-700">RETORNO INVERSIÓN ALT.</th>
-                          <th className="text-left p-3 font-medium text-slate-700">DIFERENCIA</th>
-                          <th className="text-left p-3 font-medium text-slate-700">ROI ANUAL</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Los datos de la tabla se generarán dinámicamente desde Calculator */}
-                      </tbody>
-                    </table>
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50 border-b border-slate-200">
+                          <TableHead className="text-left font-medium text-slate-700">AÑO</TableHead>
+                          <TableHead className="text-left font-medium text-slate-700">RETORNO AIRBNB</TableHead>
+                          <TableHead className="text-left font-medium text-slate-700">RETORNO INVERSIÓN ALT.</TableHead>
+                          <TableHead className="text-left font-medium text-slate-700">DIFERENCIA</TableHead>
+                          <TableHead className="text-left font-medium text-slate-700">ROI ANUAL</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {chartData.length > 0 ? (
+                          chartData.map((item) => (
+                            <TableRow key={item.year} className="border-b border-slate-100 hover:bg-slate-50">
+                              <TableCell>{item.year}</TableCell>
+                              <TableCell>{formatCurrency(item.airbnbProfit)}</TableCell>
+                              <TableCell>{formatCurrency(item.alternativeInvestment)}</TableCell>
+                              <TableCell>{formatCurrency(item.difference)}</TableCell>
+                              <TableCell>{item.yearlyROI}%</TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-4 text-slate-500">
+                              No hay datos disponibles. Ajusta los parámetros para generar una proyección.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
                   </div>
                 </TabsContent>
               </Tabs>
@@ -124,17 +196,17 @@ export const ProyeccionesPage = () => {
                 
                 <div className="bg-amber-50 p-4 rounded-lg">
                   <p className="text-sm text-amber-600 font-medium">ROI anual promedio</p>
-                  <p className="text-xl font-bold text-amber-700 mt-1">{summaryData.avgROI}%</p>
+                  <p className="text-xl font-bold text-amber-700 mt-1">{summaryData.avgROI.toFixed(1)}%</p>
                 </div>
               </div>
 
               <div className="flex justify-end p-6 pt-0">
-                <Button className="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Exportar PDF
-                </Button>
+                <ExportPDFButton
+                  buttonText="Exportar PDF"
+                  resourceName="proyeccion"
+                  fileName={`Proyeccion_${selectedDesarrolloId || 'Global'}`}
+                  className="flex items-center gap-2"
+                />
               </div>
             </CardContent>
           </Card>
