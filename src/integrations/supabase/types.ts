@@ -221,6 +221,62 @@ export type Database = {
           },
         ]
       }
+      prototipos: {
+        Row: {
+          baños: number | null
+          caracteristicas: Json | null
+          desarrollo_id: string
+          descripcion: string | null
+          habitaciones: number | null
+          id: string
+          imagen_url: string | null
+          nombre: string
+          precio: number
+          superficie: number | null
+          tipo: string
+          total_unidades: number
+          unidades_disponibles: number
+        }
+        Insert: {
+          baños?: number | null
+          caracteristicas?: Json | null
+          desarrollo_id: string
+          descripcion?: string | null
+          habitaciones?: number | null
+          id?: string
+          imagen_url?: string | null
+          nombre: string
+          precio: number
+          superficie?: number | null
+          tipo: string
+          total_unidades: number
+          unidades_disponibles: number
+        }
+        Update: {
+          baños?: number | null
+          caracteristicas?: Json | null
+          desarrollo_id?: string
+          descripcion?: string | null
+          habitaciones?: number | null
+          id?: string
+          imagen_url?: string | null
+          nombre?: string
+          precio?: number
+          superficie?: number | null
+          tipo?: string
+          total_unidades?: number
+          unidades_disponibles?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prototipos_desarrollo_id_fkey"
+            columns: ["desarrollo_id"]
+            isOneToOne: false
+            referencedRelation: "desarrollos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usuarios: {
         Row: {
           activo: boolean | null

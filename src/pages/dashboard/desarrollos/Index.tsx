@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -35,23 +36,9 @@ const fetchDesarrollos = async (): Promise<Desarrollo[]> => {
   return data || [];
 };
 
-// Función para obtener leads por desarrollo
-const fetchLeadsPorDesarrollo = async (desarrolloId: string): Promise<number> => {
-  const { count, error } = await supabase
-    .from('leads')
-    .select('*', { count: 'exact', head: true })
-    .eq('interes_en', desarrolloId);
-  
-  if (error) {
-    console.error('Error counting leads:', error);
-    return 0;
-  }
-  
-  return count || 0;
-};
-
 const DesarrollosPage = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Usar React Query para obtener los desarrollos
   const { 
@@ -78,6 +65,10 @@ const DesarrollosPage = () => {
       title: "Próximamente",
       description: "Esta funcionalidad estará disponible pronto.",
     });
+  };
+
+  const handleDesarrolloClick = (id: string) => {
+    navigate(`/dashboard/desarrollos/${id}`);
   };
 
   return (
@@ -114,7 +105,11 @@ const DesarrollosPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {desarrollos.map((desarrollo) => (
-              <Card key={desarrollo.id} className="overflow-hidden">
+              <Card 
+                key={desarrollo.id} 
+                className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleDesarrolloClick(desarrollo.id)}
+              >
                 <div className="aspect-video w-full overflow-hidden bg-slate-100">
                   {desarrollo.imagen_url ? (
                     <img
@@ -195,8 +190,21 @@ const DesarrollosPage = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="justify-between">
-                  <Button variant="outline" size="sm">Ver detalles</Button>
-                  <Button variant="outline" size="sm">Administrar leads</Button>
+                  <Button variant="outline" size="sm" onClick={(e) => {
+                    e.stopPropagation(); 
+                    handleDesarrolloClick(desarrollo.id);
+                  }}>
+                    Ver detalles
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={(e) => {
+                    e.stopPropagation();
+                    toast({
+                      title: "Próximamente",
+                      description: "Esta funcionalidad estará disponible pronto.",
+                    });
+                  }}>
+                    Administrar leads
+                  </Button>
                 </CardFooter>
               </Card>
             ))}
