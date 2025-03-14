@@ -6,12 +6,14 @@ import { Tables } from '@/integrations/supabase/types';
 export type Lead = Tables<"leads">;
 
 type FetchLeadsOptions = {
+  estado?: string;
+  agente?: string;
   limit?: number;
-  filters?: Record<string, any>;
+  search?: string;
 };
 
 export const useLeads = (options: FetchLeadsOptions = {}) => {
-  const { limit, filters = {} } = options;
+  const { estado, agente, limit, search } = options;
   
   // Function to fetch leads
   const fetchLeads = async () => {
@@ -22,17 +24,26 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
         .from('leads')
         .select('*');
         
+      // Apply filters
+      if (estado) {
+        query = query.eq('estado', estado);
+      }
+      
+      if (agente) {
+        query = query.eq('agente', agente);
+      }
+      
+      if (search) {
+        query = query.or(`nombre.ilike.%${search}%,email.ilike.%${search}%,telefono.ilike.%${search}%`);
+      }
+      
       // Apply limit if provided
       if (limit) {
         query = query.limit(limit);
       }
       
-      // Apply filters if any
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          query = query.eq(key, value);
-        }
-      });
+      // Order by fecha_creacion descending
+      query = query.order('fecha_creacion', { ascending: false });
       
       const { data, error } = await query;
       
@@ -50,21 +61,16 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
   };
 
   // Use React Query to fetch and cache the data
-  const { 
-    data: leads, 
-    isLoading, 
-    error, 
-    refetch 
-  } = useQuery({
-    queryKey: ['leads', limit, JSON.stringify(filters)],
+  const queryResult = useQuery({
+    queryKey: ['leads', estado, agente, limit, search],
     queryFn: fetchLeads
   });
 
   return {
-    leads: leads || [],
-    isLoading,
-    error,
-    refetch
+    leads: queryResult.data || [],
+    isLoading: queryResult.isLoading,
+    error: queryResult.error,
+    refetch: queryResult.refetch
   };
 };
 

@@ -56,22 +56,17 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
   };
 
   // Use React Query to fetch and cache the data
-  const { 
-    data: prototipos, 
-    isLoading, 
-    error, 
-    refetch 
-  } = useQuery({
+  const queryResult = useQuery({
     queryKey: ['prototipos', desarrolloId, limit, JSON.stringify(filters)],
     queryFn: fetchPrototipos,
     enabled: desarrolloId !== undefined || Object.keys(filters).length > 0
   });
 
   return {
-    prototipos: prototipos || [],
-    isLoading,
-    error,
-    refetch
+    prototipos: queryResult.data || [],
+    isLoading: queryResult.isLoading,
+    error: queryResult.error,
+    refetch: queryResult.refetch
   };
 };
 

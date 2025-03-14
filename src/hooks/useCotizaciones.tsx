@@ -1,24 +1,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Tables } from '@/integrations/supabase/types';
 
-// Define the Cotizacion type
-export type Cotizacion = {
-  id: string;
-  lead_id: string;
-  desarrollo_id: string;
-  prototipo_id: string;
-  monto_anticipo: number;
-  numero_pagos: number;
-  usar_finiquito: boolean;
-  monto_finiquito?: number;
-  notas?: string;
-  created_at: string;
-  // Include joined data
-  lead?: any;
-  desarrollo?: any;
-  prototipo?: any;
-};
+// Define the Cotizacion type using Supabase generated types
+export type Cotizacion = Tables<"cotizaciones">;
 
 type FetchCotizacionesOptions = {
   leadId?: string;
@@ -38,7 +24,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
     try {
       // Build the select query with optional relations
       const selectQuery = withRelations 
-        ? `*, lead:lead_id(*), desarrollo:desarrollo_id(*), prototipo:prototipo_id(*)`
+        ? `*, lead:leads(*), desarrollo:desarrollos(*), prototipo:prototipos(*)`
         : '*';
       
       let query = supabase
@@ -78,7 +64,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       }
       
       console.log('Cotizaciones fetched:', data);
-      return data as Cotizacion[];
+      return data;
     } catch (error) {
       console.error('Error in fetchCotizaciones:', error);
       throw error;
@@ -86,21 +72,16 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
   };
 
   // Use React Query to fetch and cache the data
-  const { 
-    data: cotizaciones, 
-    isLoading, 
-    error, 
-    refetch 
-  } = useQuery({
+  const queryResult = useQuery({
     queryKey: ['cotizaciones', leadId, desarrolloId, limit, JSON.stringify(filters), withRelations],
     queryFn: fetchCotizaciones
   });
 
   return {
-    cotizaciones: cotizaciones || [],
-    isLoading,
-    error,
-    refetch
+    cotizaciones: queryResult.data || [],
+    isLoading: queryResult.isLoading,
+    error: queryResult.error,
+    refetch: queryResult.refetch
   };
 };
 

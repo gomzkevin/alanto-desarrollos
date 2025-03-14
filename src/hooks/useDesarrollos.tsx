@@ -6,35 +6,30 @@ import { Tables } from '@/integrations/supabase/types';
 export type Desarrollo = Tables<"desarrollos">;
 
 type FetchDesarrollosOptions = {
-  withPrototipos?: boolean;
   limit?: number;
-  filters?: Record<string, any>;
+  withPrototipos?: boolean;
 };
 
 export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
-  const { withPrototipos = false, limit, filters = {} } = options;
+  const { limit, withPrototipos = false } = options;
   
   // Function to fetch desarrollos
   const fetchDesarrollos = async () => {
     console.log('Fetching desarrollos with options:', options);
     
     try {
-      // Use a simple query to avoid type issues
+      // Build the select query
       let query = supabase
         .from('desarrollos')
-        .select('*');
-        
+        .select(withPrototipos ? '*, prototipos(*)' : '*');
+      
       // Apply limit if provided
       if (limit) {
         query = query.limit(limit);
       }
       
-      // Apply filters if any
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          query = query.eq(key, value);
-        }
-      });
+      // Order by nombre
+      query = query.order('nombre');
       
       const { data, error } = await query;
       
@@ -52,21 +47,16 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   };
 
   // Use React Query to fetch and cache the data
-  const { 
-    data: desarrollos, 
-    isLoading, 
-    error, 
-    refetch 
-  } = useQuery({
-    queryKey: ['desarrollos', withPrototipos, limit, JSON.stringify(filters)],
+  const queryResult = useQuery({
+    queryKey: ['desarrollos', limit, withPrototipos],
     queryFn: fetchDesarrollos
   });
 
   return {
-    desarrollos: desarrollos || [],
-    isLoading,
-    error,
-    refetch
+    desarrollos: queryResult.data || [],
+    isLoading: queryResult.isLoading,
+    error: queryResult.error,
+    refetch: queryResult.refetch
   };
 };
 
