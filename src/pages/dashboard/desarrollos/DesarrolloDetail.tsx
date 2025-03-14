@@ -1,46 +1,17 @@
 
-import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, Plus, CalendarClock, Home, Users, MapPin, Clock } from 'lucide-react';
 import PrototipoCard from '@/components/dashboard/PrototipoCard';
-
-// Tipos
-type Desarrollo = {
-  id: string;
-  nombre: string;
-  ubicacion: string;
-  total_unidades: number;
-  unidades_disponibles: number;
-  avance_porcentaje?: number;
-  fecha_entrega?: string;
-  fecha_inicio?: string;
-  descripcion?: string;
-  imagen_url?: string;
-};
-
-type Prototipo = {
-  id: string;
-  desarrollo_id: string;
-  nombre: string;
-  tipo: string;
-  habitaciones: number | null;
-  baños: number | null;
-  superficie: number | null;
-  precio: number;
-  total_unidades: number;
-  unidades_disponibles: number;
-  descripcion: string | null;
-  caracteristicas?: any;
-  imagen_url: string | null;
-};
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import usePrototipos from '@/hooks/usePrototipos';
 
 // Función para obtener un desarrollo por ID
-const fetchDesarrolloById = async (id: string): Promise<Desarrollo> => {
+const fetchDesarrolloById = async (id: string) => {
+  console.log('Fetching desarrollo with ID:', id);
   const { data, error } = await supabase
     .from('desarrollos')
     .select('*')
@@ -52,22 +23,8 @@ const fetchDesarrolloById = async (id: string): Promise<Desarrollo> => {
     throw new Error(error.message);
   }
   
+  console.log('Desarrollo fetched:', data);
   return data;
-};
-
-// Función para obtener prototipos por desarrollo ID
-const fetchPrototiposByDesarrolloId = async (desarrolloId: string): Promise<Prototipo[]> => {
-  const { data, error } = await supabase
-    .from('prototipos')
-    .select('*')
-    .eq('desarrollo_id', desarrolloId);
-  
-  if (error) {
-    console.error('Error fetching prototipos:', error);
-    throw new Error(error.message);
-  }
-  
-  return data || [];
 };
 
 const DesarrolloDetailPage = () => {
@@ -86,26 +43,14 @@ const DesarrolloDetailPage = () => {
     enabled: !!id,
   });
   
-  // Obtener prototipos del desarrollo
+  // Obtener prototipos del desarrollo usando nuestro hook
   const { 
-    data: prototipos = [], 
+    prototipos = [], 
     isLoading: isLoadingPrototipos,
     error: errorPrototipos
-  } = useQuery({
-    queryKey: ['prototipos', id],
-    queryFn: () => fetchPrototiposByDesarrolloId(id as string),
-    enabled: !!id,
+  } = usePrototipos({
+    desarrolloId: id,
   });
-  
-  useEffect(() => {
-    if (errorDesarrollo || errorPrototipos) {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los datos del desarrollo. Por favor, intenta de nuevo.",
-        variant: "destructive"
-      });
-    }
-  }, [errorDesarrollo, errorPrototipos, toast]);
   
   const handleVolver = () => {
     navigate('/dashboard/desarrollos');

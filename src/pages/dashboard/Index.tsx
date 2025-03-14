@@ -1,72 +1,16 @@
-import { useState, useEffect } from 'react';
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Building2, Users, Home, BarChart3, CalendarClock, TrendingUp } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-
-// Datos de ejemplo para las gráficas
-const salesData = [
-  { name: 'Ene', ventas: 4000 },
-  { name: 'Feb', ventas: 3000 },
-  { name: 'Mar', ventas: 5000 },
-  { name: 'Abr', ventas: 2780 },
-  { name: 'May', ventas: 1890 },
-  { name: 'Jun', ventas: 2390 },
-];
-
-const inventoryData = [
-  { name: 'Disponible', value: 70 },
-  { name: 'Reservado', value: 15 },
-  { name: 'Vendido', value: 15 },
-];
+import { Link } from 'react-router-dom';
+import useDashboardMetrics from '@/hooks/useDashboardMetrics';
 
 const COLORS = ['#4F46E5', '#14B8A6', '#F97066'];
 
-// Función para obtener métricas del dashboard
-const fetchDashboardMetrics = async () => {
-  try {
-    // Obtener conteo de leads por estado
-    const { data: leads, error: leadsError } = await supabase
-      .from('leads')
-      .select('*');
-    
-    if (leadsError) throw leadsError;
-    
-    // Obtener conteo de desarrollos
-    const { data: desarrollos, error: desarrollosError } = await supabase
-      .from('desarrollos')
-      .select('*');
-    
-    if (desarrollosError) throw desarrollosError;
-
-    // Calcular métricas
-    const leadsTotal = leads?.length || 0;
-    const leadsSeguimiento = leads?.filter(lead => lead.estado === 'seguimiento').length || 0;
-    const leadsCotizacion = leads?.filter(lead => lead.estado === 'cotizacion').length || 0;
-    const leadsConvertidos = leads?.filter(lead => lead.estado === 'convertido').length || 0;
-    
-    return {
-      leads: leadsTotal,
-      prospectos: leadsSeguimiento,
-      cotizaciones: leadsCotizacion,
-      ventas: leadsConvertidos,
-      desarrollos: desarrollos || []
-    };
-  } catch (error) {
-    console.error('Error al obtener métricas:', error);
-    throw error;
-  }
-};
-
 const Dashboard = () => {
-  const { data: metrics, isLoading, error } = useQuery({
-    queryKey: ['dashboardMetrics'],
-    queryFn: fetchDashboardMetrics,
-    staleTime: 5 * 60 * 1000, // 5 minutos
-  });
+  const { metrics, isLoading, error } = useDashboardMetrics();
   
   const salesMetrics = {
     leads: metrics?.leads || 0,
@@ -76,6 +20,8 @@ const Dashboard = () => {
   };
   
   const desarrollos = metrics?.desarrollos || [];
+  const salesData = metrics?.salesData || [];
+  const inventoryData = metrics?.inventoryData || [];
 
   return (
     <DashboardLayout>
@@ -250,9 +196,9 @@ const Dashboard = () => {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <a href={`/dashboard/desarrollos/${desarrollo.id}`} className="text-indigo-600 text-sm font-medium hover:text-indigo-700">
+                    <Link to={`/dashboard/desarrollos/${desarrollo.id}`} className="text-indigo-600 text-sm font-medium hover:text-indigo-700">
                       Ver detalles →
-                    </a>
+                    </Link>
                   </CardFooter>
                 </Card>
               ))
@@ -265,4 +211,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
