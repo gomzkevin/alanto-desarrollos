@@ -21,7 +21,7 @@ import {
 import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
 
 export const ProyeccionesPage = () => {
-  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('');
+  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('global');
   const { desarrollos = [], isLoading } = useDesarrollos();
   const [chartData, setChartData] = useState<any[]>([]);
   const [summaryData, setSummaryData] = useState({
@@ -64,7 +64,7 @@ export const ProyeccionesPage = () => {
                 <SelectValue placeholder="Configuración global (por defecto)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Configuración global (por defecto)</SelectItem>
+                <SelectItem value="global">Configuración global (por defecto)</SelectItem>
                 {desarrollos.map((desarrollo) => (
                   <SelectItem key={desarrollo.id} value={desarrollo.id}>
                     {desarrollo.nombre}
@@ -73,7 +73,7 @@ export const ProyeccionesPage = () => {
               </SelectContent>
             </Select>
             <p className="text-xs text-slate-500 mt-1">
-              {selectedDesarrolloId 
+              {selectedDesarrolloId !== "global" 
                 ? "Usando configuración específica de desarrollo" 
                 : "Usando configuración global"}
             </p>
@@ -90,7 +90,7 @@ export const ProyeccionesPage = () => {
             </CardHeader>
             <CardContent>
               <Calculator 
-                desarrolloId={selectedDesarrolloId} 
+                desarrolloId={selectedDesarrolloId !== "global" ? selectedDesarrolloId : undefined} 
                 onDataUpdate={handleChartDataUpdate} 
               />
             </CardContent>
@@ -200,7 +200,7 @@ export const ProyeccionesPage = () => {
                 <ExportPDFButton
                   buttonText="Exportar PDF"
                   resourceName="proyeccion"
-                  fileName={`Proyeccion_${selectedDesarrolloId || 'Global'}`}
+                  fileName={`Proyeccion_${selectedDesarrolloId !== "global" ? selectedDesarrolloId : 'Global'}`}
                   className="flex items-center gap-2"
                 />
               </div>
