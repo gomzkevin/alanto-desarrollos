@@ -12,6 +12,8 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Save, Trash, Plus, Settings, Users, Building2, CreditCard, Globe } from 'lucide-react';
+import useDesarrollos from '@/hooks/useDesarrollos';
+import { supabase } from '@/integrations/supabase/client';
 
 // Datos de ejemplo para la configuración
 const configData = {
@@ -40,12 +42,33 @@ const configData = {
   }
 };
 
+// Definimos los tipos para la configuración del desarrollo
+interface DesarrolloConfiguracion {
+  id: string;
+  nombre: string;
+  moneda: string;
+  comisionOperador: number;
+  mantenimientoValor: number;
+  esMantenimientoPorcentaje: boolean;
+  gastosFijos: number;
+  esGastosFijosPorcentaje: boolean;
+  gastosVariables: number;
+  esGastosVariablesPorcentaje: boolean;
+  impuestos: number;
+  esImpuestosPorcentaje: boolean;
+}
+
 const ConfiguracionPage = () => {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(true);
   const [finanzasConfig, setFinanzasConfig] = useState(configData.finanzas);
   const [empresaConfig, setEmpresaConfig] = useState(configData.empresa);
   const [loading, setLoading] = useState(false);
+  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('');
+  const [desarrolloConfig, setDesarrolloConfig] = useState<DesarrolloConfiguracion | null>(null);
+  
+  const { desarrollos = [], isLoading: isLoadingDesarrollos } = useDesarrollos();
+  
   const [usuarios, setUsuarios] = useState([
     { id: '1', nombre: 'Juan Pérez', email: 'juan@ejemplo.com', rol: 'admin', activo: true },
     { id: '2', nombre: 'Ana López', email: 'ana@ejemplo.com', rol: 'vendedor', activo: true },
@@ -80,17 +103,103 @@ const ConfiguracionPage = () => {
     // checkUserRole();
   }, []);
 
-  const handleSaveFinanzas = () => {
+  // Cargar la configuración del desarrollo seleccionado
+  useEffect(() => {
+    if (selectedDesarrolloId) {
+      const loadDesarrolloConfig = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('desarrollos')
+            .select('*')
+            .eq('id', selectedDesarrolloId)
+            .single();
+            
+          if (error) {
+            console.error('Error al cargar la configuración del desarrollo:', error);
+            return;
+          }
+          
+          if (data) {
+            // Prepara los datos del desarrollo con valores por defecto para los campos de configuración
+            setDesarrolloConfig({
+              id: data.id,
+              nombre: data.nombre,
+              moneda: data.moneda || 'MXN',
+              comisionOperador: data.comisionOperador || 15,
+              mantenimientoValor: data.mantenimientoValor || 5,
+              esMantenimientoPorcentaje: data.esMantenimientoPorcentaje !== undefined ? data.esMantenimientoPorcentaje : true,
+              gastosFijos: data.gastosFijos || 2500,
+              esGastosFijosPorcentaje: data.esGastosFijosPorcentaje !== undefined ? data.esGastosFijosPorcentaje : false,
+              gastosVariables: data.gastosVariables || 12,
+              esGastosVariablesPorcentaje: data.esGastosVariablesPorcentaje !== undefined ? data.esGastosVariablesPorcentaje : true,
+              impuestos: data.impuestos || 35,
+              esImpuestosPorcentaje: data.esImpuestosPorcentaje !== undefined ? data.esImpuestosPorcentaje : true,
+            });
+          }
+        } catch (error) {
+          console.error('Error al cargar la configuración del desarrollo:', error);
+        }
+      };
+      
+      loadDesarrolloConfig();
+    } else {
+      setDesarrolloConfig(null);
+    }
+  }, [selectedDesarrolloId]);
+
+  const handleSaveFinanzas = async () => {
     setLoading(true);
     
-    // Simular guardado en Supabase
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      if (selectedDesarrolloId && desarrolloConfig) {
+        // Guardar la configuración específica del desarrollo
+        const { error } = await supabase
+          .from('desarrollos')
+          .update({
+            moneda: desarrolloConfig.moneda,
+            comisionOperador: desarrolloConfig.comisionOperador,
+            mantenimientoValor: desarrolloConfig.mantenimientoValor,
+            esMantenimientoPorcentaje: desarrolloConfig.esMantenimientoPorcentaje,
+            gastosFijos: desarrolloConfig.gastosFijos,
+            esGastosFijosPorcentaje: desarrolloConfig.esGastosFijosPorcentaje,
+            gastosVariables: desarrolloConfig.gastosVariables,
+            esGastosVariablesPorcentaje: desarrolloConfig.esGastosVariablesPorcentaje,
+            impuestos: desarrolloConfig.impuestos,
+            esImpuestosPorcentaje: desarrolloConfig.esImpuestosPorcentaje,
+          })
+          .eq('id', selectedDesarrolloId);
+        
+        if (error) {
+          console.error('Error al guardar la configuración del desarrollo:', error);
+          toast({
+            title: "Error al guardar",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Configuración guardada",
+            description: "La configuración del desarrollo ha sido actualizada correctamente.",
+          });
+        }
+      } else {
+        // Guardar la configuración global
+        // Aquí iría el código para guardar en la tabla configuracion_financiera
+        toast({
+          title: "Configuración guardada",
+          description: "Los parámetros financieros globales han sido actualizados correctamente.",
+        });
+      }
+    } catch (error) {
+      console.error('Error al guardar la configuración:', error);
       toast({
-        title: "Configuración guardada",
-        description: "Los parámetros financieros han sido actualizados correctamente.",
+        title: "Error al guardar",
+        description: "Ha ocurrido un error al guardar la configuración.",
+        variant: "destructive",
       });
-    }, 1000);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSaveEmpresa = () => {
@@ -168,60 +277,110 @@ const ConfiguracionPage = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Selector de desarrollo para configuración específica */}
+                <div className="mb-6">
+                  <Label htmlFor="desarrolloSelect" className="block text-lg font-medium mb-2">
+                    Selecciona un desarrollo para configurar sus parámetros específicos
+                  </Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={selectedDesarrolloId}
+                      onValueChange={setSelectedDesarrolloId}
+                    >
+                      <SelectTrigger className="w-[300px]">
+                        <SelectValue placeholder="Parámetros globales (por defecto)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Parámetros globales (por defecto)</SelectItem>
+                        {desarrollos.map((desarrollo) => (
+                          <SelectItem key={desarrollo.id} value={desarrollo.id}>
+                            {desarrollo.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedDesarrolloId && (
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setSelectedDesarrolloId('')}
+                      >
+                        Volver a parámetros globales
+                      </Button>
+                    )}
+                  </div>
+                  {selectedDesarrolloId && (
+                    <p className="text-sm text-slate-500 mt-2">
+                      Estás editando la configuración específica para: <span className="font-medium">{desarrolloConfig?.nombre}</span>
+                    </p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 gap-6">
                   {/* Nivel 1: Configuración global para la plataforma */}
-                  <div className="space-y-4">
-                    <div className="flex items-center mb-2">
-                      <Globe className="mr-2 h-5 w-5 text-slate-500" />
-                      <h3 className="text-lg font-medium">Configuración global para la plataforma</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-7">
-                      <div className="space-y-2">
-                        <Label htmlFor="tipoCambio">Tipo de cambio (MXN/USD)</Label>
-                        <Input
-                          id="tipoCambio"
-                          type="number"
-                          step="0.01"
-                          value={finanzasConfig.tipoCambio}
-                          onChange={(e) => setFinanzasConfig({...finanzasConfig, tipoCambio: parseFloat(e.target.value) || 0})}
-                        />
+                  {!selectedDesarrolloId && (
+                    <div className="space-y-4">
+                      <div className="flex items-center mb-2">
+                        <Globe className="mr-2 h-5 w-5 text-slate-500" />
+                        <h3 className="text-lg font-medium">Configuración global para la plataforma</h3>
                       </div>
                       
-                      <div className="space-y-2">
-                        <Label htmlFor="tasaInteres">Tasa de interés comparativa</Label>
-                        <div className="flex">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-7">
+                        <div className="space-y-2">
+                          <Label htmlFor="tipoCambio">Tipo de cambio (MXN/USD)</Label>
                           <Input
-                            id="tasaInteres"
+                            id="tipoCambio"
                             type="number"
-                            step="0.1"
-                            value={finanzasConfig.tasaInteres}
-                            onChange={(e) => setFinanzasConfig({...finanzasConfig, tasaInteres: parseFloat(e.target.value) || 0})}
+                            step="0.01"
+                            value={finanzasConfig.tipoCambio}
+                            onChange={(e) => setFinanzasConfig({...finanzasConfig, tipoCambio: parseFloat(e.target.value) || 0})}
                           />
-                          <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
-                            <span className="text-sm text-slate-500">%</span>
-                          </div>
                         </div>
-                        <p className="text-xs text-slate-500">Rendimiento de inversión alternativa para comparar ROI</p>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="tasaInteres">Tasa de interés comparativa</Label>
+                          <div className="flex">
+                            <Input
+                              id="tasaInteres"
+                              type="number"
+                              step="0.1"
+                              value={finanzasConfig.tasaInteres}
+                              onChange={(e) => setFinanzasConfig({...finanzasConfig, tasaInteres: parseFloat(e.target.value) || 0})}
+                            />
+                            <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
+                              <span className="text-sm text-slate-500">%</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-500">Rendimiento de inversión alternativa para comparar ROI</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                   
-                  <Separator />
+                  {!selectedDesarrolloId && <Separator />}
                   
                   {/* Nivel 2: Configuración por desarrollo */}
                   <div className="space-y-4">
                     <div className="flex items-center mb-2">
                       <Building2 className="mr-2 h-5 w-5 text-slate-500" />
-                      <h3 className="text-lg font-medium">Configuración por desarrollo (valores predeterminados)</h3>
+                      <h3 className="text-lg font-medium">
+                        {selectedDesarrolloId 
+                          ? `Configuración para ${desarrolloConfig?.nombre}` 
+                          : 'Configuración por desarrollo (valores predeterminados)'}
+                      </h3>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-7">
                       <div className="space-y-2">
                         <Label htmlFor="moneda">Moneda principal</Label>
                         <Select
-                          value={finanzasConfig.moneda}
-                          onValueChange={(value) => setFinanzasConfig({...finanzasConfig, moneda: value})}
+                          value={selectedDesarrolloId && desarrolloConfig ? desarrolloConfig.moneda : finanzasConfig.moneda}
+                          onValueChange={(value) => {
+                            if (selectedDesarrolloId && desarrolloConfig) {
+                              setDesarrolloConfig({...desarrolloConfig, moneda: value});
+                            } else {
+                              setFinanzasConfig({...finanzasConfig, moneda: value});
+                            }
+                          }}
                         >
                           <SelectTrigger id="moneda">
                             <SelectValue placeholder="Selecciona moneda" />
@@ -241,8 +400,15 @@ const ConfiguracionPage = () => {
                             type="number"
                             min="0"
                             max="100"
-                            value={finanzasConfig.comisionOperador}
-                            onChange={(e) => setFinanzasConfig({...finanzasConfig, comisionOperador: parseInt(e.target.value) || 0})}
+                            value={selectedDesarrolloId && desarrolloConfig ? desarrolloConfig.comisionOperador : finanzasConfig.comisionOperador}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              if (selectedDesarrolloId && desarrolloConfig) {
+                                setDesarrolloConfig({...desarrolloConfig, comisionOperador: value});
+                              } else {
+                                setFinanzasConfig({...finanzasConfig, comisionOperador: value});
+                              }
+                            }}
                           />
                           <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
                             <span className="text-sm text-slate-500">%</span>
@@ -256,11 +422,22 @@ const ConfiguracionPage = () => {
                           <div className="flex items-center space-x-2">
                             <Switch
                               id="mantenimientoTipo"
-                              checked={finanzasConfig.esMantenimientoPorcentaje}
-                              onCheckedChange={(checked) => setFinanzasConfig({...finanzasConfig, esMantenimientoPorcentaje: checked})}
+                              checked={selectedDesarrolloId && desarrolloConfig 
+                                ? desarrolloConfig.esMantenimientoPorcentaje 
+                                : finanzasConfig.esMantenimientoPorcentaje}
+                              onCheckedChange={(checked) => {
+                                if (selectedDesarrolloId && desarrolloConfig) {
+                                  setDesarrolloConfig({...desarrolloConfig, esMantenimientoPorcentaje: checked});
+                                } else {
+                                  setFinanzasConfig({...finanzasConfig, esMantenimientoPorcentaje: checked});
+                                }
+                              }}
                             />
                             <Label htmlFor="mantenimientoTipo" className="text-xs">
-                              {finanzasConfig.esMantenimientoPorcentaje ? 'Porcentaje' : 'Monto fijo'}
+                              {(selectedDesarrolloId && desarrolloConfig 
+                                ? desarrolloConfig.esMantenimientoPorcentaje 
+                                : finanzasConfig.esMantenimientoPorcentaje) 
+                                ? 'Porcentaje' : 'Monto fijo'}
                             </Label>
                           </div>
                         </div>
@@ -268,12 +445,27 @@ const ConfiguracionPage = () => {
                           <Input
                             id="mantenimientoValor"
                             type="number"
-                            value={finanzasConfig.mantenimientoValor}
-                            onChange={(e) => setFinanzasConfig({...finanzasConfig, mantenimientoValor: parseInt(e.target.value) || 0})}
+                            value={selectedDesarrolloId && desarrolloConfig 
+                              ? desarrolloConfig.mantenimientoValor 
+                              : finanzasConfig.mantenimientoValor}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value) || 0;
+                              if (selectedDesarrolloId && desarrolloConfig) {
+                                setDesarrolloConfig({...desarrolloConfig, mantenimientoValor: value});
+                              } else {
+                                setFinanzasConfig({...finanzasConfig, mantenimientoValor: value});
+                              }
+                            }}
                           />
                           <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
                             <span className="text-sm text-slate-500">
-                              {finanzasConfig.esMantenimientoPorcentaje ? '%' : finanzasConfig.moneda}
+                              {(selectedDesarrolloId && desarrolloConfig 
+                                ? desarrolloConfig.esMantenimientoPorcentaje 
+                                : finanzasConfig.esMantenimientoPorcentaje)
+                                ? '%' 
+                                : (selectedDesarrolloId && desarrolloConfig 
+                                  ? desarrolloConfig.moneda 
+                                  : finanzasConfig.moneda)}
                             </span>
                           </div>
                         </div>
@@ -285,11 +477,22 @@ const ConfiguracionPage = () => {
                           <div className="flex items-center space-x-2">
                             <Switch
                               id="gastosFijosTipo"
-                              checked={finanzasConfig.esGastosFijosPorcentaje}
-                              onCheckedChange={(checked) => setFinanzasConfig({...finanzasConfig, esGastosFijosPorcentaje: checked})}
+                              checked={selectedDesarrolloId && desarrolloConfig
+                                ? desarrolloConfig.esGastosFijosPorcentaje
+                                : finanzasConfig.esGastosFijosPorcentaje}
+                              onCheckedChange={(checked) => {
+                                if (selectedDesarrolloId && desarrolloConfig) {
+                                  setDesarrolloConfig({...desarrolloConfig, esGastosFijosPorcentaje: checked});
+                                } else {
+                                  setFinanzasConfig({...finanzasConfig, esGastosFijosPorcentaje: checked});
+                                }
+                              }}
                             />
                             <Label htmlFor="gastosFijosTipo" className="text-xs">
-                              {finanzasConfig.esGastosFijosPorcentaje ? 'Porcentaje' : 'Monto fijo'}
+                              {(selectedDesarrolloId && desarrolloConfig
+                                ? desarrolloConfig.esGastosFijosPorcentaje
+                                : finanzasConfig.esGastosFijosPorcentaje)
+                                ? 'Porcentaje' : 'Monto fijo'}
                             </Label>
                           </div>
                         </div>
@@ -297,12 +500,27 @@ const ConfiguracionPage = () => {
                           <Input
                             id="gastosFijos"
                             type="number"
-                            value={finanzasConfig.gastosFijos}
-                            onChange={(e) => setFinanzasConfig({...finanzasConfig, gastosFijos: parseInt(e.target.value) || 0})}
+                            value={selectedDesarrolloId && desarrolloConfig
+                              ? desarrolloConfig.gastosFijos
+                              : finanzasConfig.gastosFijos}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value) || 0;
+                              if (selectedDesarrolloId && desarrolloConfig) {
+                                setDesarrolloConfig({...desarrolloConfig, gastosFijos: value});
+                              } else {
+                                setFinanzasConfig({...finanzasConfig, gastosFijos: value});
+                              }
+                            }}
                           />
                           <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
                             <span className="text-sm text-slate-500">
-                              {finanzasConfig.esGastosFijosPorcentaje ? '%' : finanzasConfig.moneda}
+                              {(selectedDesarrolloId && desarrolloConfig
+                                ? desarrolloConfig.esGastosFijosPorcentaje
+                                : finanzasConfig.esGastosFijosPorcentaje)
+                                ? '%'
+                                : (selectedDesarrolloId && desarrolloConfig
+                                  ? desarrolloConfig.moneda
+                                  : finanzasConfig.moneda)}
                             </span>
                           </div>
                         </div>
@@ -314,11 +532,22 @@ const ConfiguracionPage = () => {
                           <div className="flex items-center space-x-2">
                             <Switch
                               id="gastosVariablesTipo"
-                              checked={finanzasConfig.esGastosVariablesPorcentaje}
-                              onCheckedChange={(checked) => setFinanzasConfig({...finanzasConfig, esGastosVariablesPorcentaje: checked})}
+                              checked={selectedDesarrolloId && desarrolloConfig
+                                ? desarrolloConfig.esGastosVariablesPorcentaje
+                                : finanzasConfig.esGastosVariablesPorcentaje}
+                              onCheckedChange={(checked) => {
+                                if (selectedDesarrolloId && desarrolloConfig) {
+                                  setDesarrolloConfig({...desarrolloConfig, esGastosVariablesPorcentaje: checked});
+                                } else {
+                                  setFinanzasConfig({...finanzasConfig, esGastosVariablesPorcentaje: checked});
+                                }
+                              }}
                             />
                             <Label htmlFor="gastosVariablesTipo" className="text-xs">
-                              {finanzasConfig.esGastosVariablesPorcentaje ? 'Porcentaje' : 'Monto fijo'}
+                              {(selectedDesarrolloId && desarrolloConfig
+                                ? desarrolloConfig.esGastosVariablesPorcentaje
+                                : finanzasConfig.esGastosVariablesPorcentaje)
+                                ? 'Porcentaje' : 'Monto fijo'}
                             </Label>
                           </div>
                         </div>
@@ -326,12 +555,27 @@ const ConfiguracionPage = () => {
                           <Input
                             id="gastosVariables"
                             type="number"
-                            value={finanzasConfig.gastosVariables}
-                            onChange={(e) => setFinanzasConfig({...finanzasConfig, gastosVariables: parseInt(e.target.value) || 0})}
+                            value={selectedDesarrolloId && desarrolloConfig
+                              ? desarrolloConfig.gastosVariables
+                              : finanzasConfig.gastosVariables}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value) || 0;
+                              if (selectedDesarrolloId && desarrolloConfig) {
+                                setDesarrolloConfig({...desarrolloConfig, gastosVariables: value});
+                              } else {
+                                setFinanzasConfig({...finanzasConfig, gastosVariables: value});
+                              }
+                            }}
                           />
                           <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
                             <span className="text-sm text-slate-500">
-                              {finanzasConfig.esGastosVariablesPorcentaje ? '%' : finanzasConfig.moneda}
+                              {(selectedDesarrolloId && desarrolloConfig
+                                ? desarrolloConfig.esGastosVariablesPorcentaje
+                                : finanzasConfig.esGastosVariablesPorcentaje)
+                                ? '%'
+                                : (selectedDesarrolloId && desarrolloConfig
+                                  ? desarrolloConfig.moneda
+                                  : finanzasConfig.moneda)}
                             </span>
                           </div>
                         </div>
@@ -343,11 +587,22 @@ const ConfiguracionPage = () => {
                           <div className="flex items-center space-x-2">
                             <Switch
                               id="impuestosTipo"
-                              checked={finanzasConfig.esImpuestosPorcentaje}
-                              onCheckedChange={(checked) => setFinanzasConfig({...finanzasConfig, esImpuestosPorcentaje: checked})}
+                              checked={selectedDesarrolloId && desarrolloConfig
+                                ? desarrolloConfig.esImpuestosPorcentaje
+                                : finanzasConfig.esImpuestosPorcentaje}
+                              onCheckedChange={(checked) => {
+                                if (selectedDesarrolloId && desarrolloConfig) {
+                                  setDesarrolloConfig({...desarrolloConfig, esImpuestosPorcentaje: checked});
+                                } else {
+                                  setFinanzasConfig({...finanzasConfig, esImpuestosPorcentaje: checked});
+                                }
+                              }}
                             />
                             <Label htmlFor="impuestosTipo" className="text-xs">
-                              {finanzasConfig.esImpuestosPorcentaje ? 'Porcentaje' : 'Monto fijo'}
+                              {(selectedDesarrolloId && desarrolloConfig
+                                ? desarrolloConfig.esImpuestosPorcentaje
+                                : finanzasConfig.esImpuestosPorcentaje)
+                                ? 'Porcentaje' : 'Monto fijo'}
                             </Label>
                           </div>
                         </div>
@@ -355,12 +610,27 @@ const ConfiguracionPage = () => {
                           <Input
                             id="impuestos"
                             type="number"
-                            value={finanzasConfig.impuestos}
-                            onChange={(e) => setFinanzasConfig({...finanzasConfig, impuestos: parseInt(e.target.value) || 0})}
+                            value={selectedDesarrolloId && desarrolloConfig
+                              ? desarrolloConfig.impuestos
+                              : finanzasConfig.impuestos}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value) || 0;
+                              if (selectedDesarrolloId && desarrolloConfig) {
+                                setDesarrolloConfig({...desarrolloConfig, impuestos: value});
+                              } else {
+                                setFinanzasConfig({...finanzasConfig, impuestos: value});
+                              }
+                            }}
                           />
                           <div className="flex items-center justify-center w-16 h-10 bg-slate-100 border border-l-0 border-slate-200 rounded-r-md">
                             <span className="text-sm text-slate-500">
-                              {finanzasConfig.esImpuestosPorcentaje ? '%' : finanzasConfig.moneda}
+                              {(selectedDesarrolloId && desarrolloConfig
+                                ? desarrolloConfig.esImpuestosPorcentaje
+                                : finanzasConfig.esImpuestosPorcentaje)
+                                ? '%'
+                                : (selectedDesarrolloId && desarrolloConfig
+                                  ? desarrolloConfig.moneda
+                                  : finanzasConfig.moneda)}
                             </span>
                           </div>
                         </div>

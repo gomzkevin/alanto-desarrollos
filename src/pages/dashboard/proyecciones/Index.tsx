@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,19 +8,23 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Calculator, Download } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import useDesarrollos from '@/hooks/useDesarrollos';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const ProyeccionesPage = () => {
   const [propertyValue, setPropertyValue] = useState(3500000);
-  const [downPayment, setDownPayment] = useState(20); // porcentaje
   const [occupancyRate, setOccupancyRate] = useState(70); // porcentaje
   const [nightlyRate, setNightlyRate] = useState(1800);
   const [years, setYears] = useState(10);
   const [annualGrowth, setAnnualGrowth] = useState(5); // porcentaje
+  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState('');
   
   // Tasa de inversión alternativa (para comparación)
   const alternativeRate = 7; // porcentaje
   
   const [chartData, setChartData] = useState<any[]>([]);
+  const { desarrollos = [], isLoading: isLoadingDesarrollos } = useDesarrollos();
   
   // Formato de valores monetarios
   const formatCurrency = (value: number) => {
@@ -31,9 +35,43 @@ const ProyeccionesPage = () => {
     }).format(value);
   };
   
+  // Cargar configuración del desarrollo seleccionado
+  useEffect(() => {
+    if (selectedDesarrolloId) {
+      const loadDesarrolloConfig = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('desarrollos')
+            .select('*')
+            .eq('id', selectedDesarrolloId)
+            .single();
+            
+          if (error) {
+            console.error('Error al cargar la configuración del desarrollo:', error);
+            return;
+          }
+          
+          if (data) {
+            // Actualizar los valores con los del desarrollo
+            if (data.adr_base) {
+              setNightlyRate(data.adr_base);
+            }
+            if (data.ocupacion_anual) {
+              setOccupancyRate(data.ocupacion_anual);
+            }
+          }
+        } catch (error) {
+          console.error('Error al cargar la configuración del desarrollo:', error);
+        }
+      };
+      
+      loadDesarrolloConfig();
+    }
+  }, [selectedDesarrolloId]);
+  
   // Calcular la proyección
   const calculateProjection = () => {
-    const downPaymentAmount = propertyValue * (downPayment / 100);
+    // Ya no necesitamos incluir el downPayment en el cálculo
     const annualRevenue = nightlyRate * 365 * (occupancyRate / 100);
     
     // Gastos operativos (estimados en 35% de los ingresos)
@@ -55,11 +93,11 @@ const ProyeccionesPage = () => {
       const propertyAppreciation = propertyValue * Math.pow(1.04, year) - propertyValue;
       
       // Calcular inversión alternativa (ej. acciones)
-      const alternativeInvestmentReturn = downPaymentAmount * Math.pow(1 + (alternativeRate / 100), year) - downPaymentAmount;
+      const alternativeInvestmentReturn = propertyValue * Math.pow(1 + (alternativeRate / 100), year) - propertyValue;
       alternativeCumulativeProfit = alternativeInvestmentReturn;
       
       // ROI anual
-      const roi = (thisYearProfit / downPaymentAmount) * 100;
+      const roi = (thisYearProfit / propertyValue) * 100;
       
       data.push({
         year,
@@ -88,30 +126,39 @@ const ProyeccionesPage = () => {
               <CardDescription>Ajusta los valores para personalizar el análisis</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Selector de desarrollo */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700">
+                  Desarrollo
+                </label>
+                <Select
+                  value={selectedDesarrolloId}
+                  onValueChange={setSelectedDesarrolloId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar desarrollo (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Personalizado</SelectItem>
+                    {desarrollos.map((desarrollo) => (
+                      <SelectItem key={desarrollo.id} value={desarrollo.id}>
+                        {desarrollo.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Valor de la propiedad: {formatCurrency(propertyValue)}
                 </label>
                 <Slider 
                   defaultValue={[propertyValue]} 
-                  max={10000000} 
+                  max={50000000} 
                   min={1000000} 
-                  step={50000}
+                  step={100000}
                   onValueChange={(value) => setPropertyValue(value[0])}
-                  className="py-4"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Anticipo: {downPayment}% ({formatCurrency(propertyValue * (downPayment / 100))})
-                </label>
-                <Slider 
-                  defaultValue={[downPayment]} 
-                  max={50} 
-                  min={10} 
-                  step={5}
-                  onValueChange={(value) => setDownPayment(value[0])}
                   className="py-4"
                 />
               </div>

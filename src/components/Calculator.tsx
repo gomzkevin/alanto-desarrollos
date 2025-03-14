@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 
 const Calculator = () => {
   const [propertyValue, setPropertyValue] = useState(3500000);
-  const [downPayment, setDownPayment] = useState(20); // percentage
   const [occupancyRate, setOccupancyRate] = useState(70); // percentage
   const [nightlyRate, setNightlyRate] = useState(1800);
   const [years, setYears] = useState(10);
@@ -29,7 +28,6 @@ const Calculator = () => {
   
   // Calculate the projection data
   useEffect(() => {
-    const downPaymentAmount = propertyValue * (downPayment / 100);
     const annualRevenue = nightlyRate * 365 * (occupancyRate / 100);
     
     // Operating expenses (estimated at 35% of revenue)
@@ -51,11 +49,11 @@ const Calculator = () => {
       const propertyAppreciation = propertyValue * Math.pow(1.04, year) - propertyValue;
       
       // Calculate alternative investment (e.g., stocks)
-      const alternativeInvestmentReturn = downPaymentAmount * Math.pow(1 + (alternativeRate / 100), year) - downPaymentAmount;
+      const alternativeInvestmentReturn = propertyValue * Math.pow(1 + (alternativeRate / 100), year) - propertyValue;
       alternativeCumulativeProfit = alternativeInvestmentReturn;
       
       // Yearly ROI
-      const roi = (thisYearProfit / downPaymentAmount) * 100;
+      const roi = (thisYearProfit / propertyValue) * 100;
       
       data.push({
         year,
@@ -66,7 +64,7 @@ const Calculator = () => {
     }
     
     setChartData(data);
-  }, [propertyValue, downPayment, occupancyRate, nightlyRate, years, annualGrowth]);
+  }, [propertyValue, occupancyRate, nightlyRate, years, annualGrowth]);
   
   // Animate the calculator when in view
   useEffect(() => {
@@ -114,24 +112,10 @@ const Calculator = () => {
               </label>
               <Slider 
                 defaultValue={[propertyValue]} 
-                max={10000000} 
+                max={50000000} 
                 min={1000000} 
-                step={50000}
+                step={100000}
                 onValueChange={(value) => setPropertyValue(value[0])}
-                className="py-4"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Anticipo: {downPayment}% ({formatCurrency(propertyValue * (downPayment / 100))})
-              </label>
-              <Slider 
-                defaultValue={[downPayment]} 
-                max={50} 
-                min={10} 
-                step={5}
-                onValueChange={(value) => setDownPayment(value[0])}
                 className="py-4"
               />
             </div>
@@ -182,7 +166,7 @@ const Calculator = () => {
               </label>
               <Slider 
                 defaultValue={[years]} 
-                max={10} 
+                max={20} 
                 min={1} 
                 step={1}
                 onValueChange={(value) => setYears(value[0])}

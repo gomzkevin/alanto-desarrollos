@@ -5,24 +5,28 @@ import { Tables } from '@/integrations/supabase/types';
 
 export type Prototipo = Tables<"prototipos">;
 
+// Define extended type without circular references
+export type ExtendedPrototipo = Prototipo & {
+  desarrollo?: Tables<"desarrollos"> | null;
+};
+
 type FetchPrototiposOptions = {
-  desarrolloId?: string;
   limit?: number;
-  filters?: Record<string, any>;
+  desarrolloId?: string | null;
+  withDesarrollo?: boolean;
 };
 
 export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
-  const { desarrolloId, limit, filters = {} } = options;
+  const { limit, desarrolloId, withDesarrollo = false } = options;
   
   // Function to fetch prototipos
-  const fetchPrototipos = async (): Promise<Prototipo[]> => {
+  const fetchPrototipos = async (): Promise<ExtendedPrototipo[]> => {
     console.log('Fetching prototipos with options:', options);
     
     try {
-      let query = supabase
-        .from('prototipos')
-        .select('*');
-        
+      // Build the basic query
+      let query = supabase.from('prototipos').select('*');
+      
       // Filter by desarrollo_id if provided
       if (desarrolloId) {
         query = query.eq('desarrollo_id', desarrolloId);
@@ -33,22 +37,37 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
         query = query.limit(limit);
       }
       
-      // Apply filters if any
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          query = query.eq(key, value);
-        }
-      });
-      
-      const { data, error } = await query;
+      const { data: prototipos, error } = await query;
       
       if (error) {
         console.error('Error fetching prototipos:', error);
         throw new Error(error.message);
       }
       
-      console.log('Prototipos fetched:', data);
-      return data as Prototipo[];
+      // If withDesarrollo is requested, fetch the desarrollo for each prototipo
+      if (withDesarrollo && prototipos && prototipos.length > 0) {
+        const extendedPrototipos: ExtendedPrototipo[] = await Promise.all(
+          prototipos.map(async (prototipo) => {
+            // Fetch desarrollo relation
+            const { data: desarrollo, error: desarrolloError } = await supabase
+              .from('desarrollos')
+              .select('*')
+              .eq('id', prototipo.desarrollo_id)
+              .maybeSingle();
+            
+            return {
+              ...prototipo,
+              desarrollo: desarrolloError ? null : desarrollo
+            };
+          })
+        );
+        
+        console.log('Extended prototipos fetched:', extendedPrototipos);
+        return extendedPrototipos;
+      }
+      
+      console.log('Prototipos fetched:', prototipos);
+      return prototipos as ExtendedPrototipo[];
     } catch (error) {
       console.error('Error in fetchPrototipos:', error);
       throw error;
@@ -57,9 +76,8 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
 
   // Use React Query to fetch and cache the data
   const queryResult = useQuery({
-    queryKey: ['prototipos', desarrolloId, limit, JSON.stringify(filters)],
-    queryFn: fetchPrototipos,
-    enabled: desarrolloId !== undefined || Object.keys(filters).length > 0
+    queryKey: ['prototipos', limit, desarrolloId, withDesarrollo],
+    queryFn: fetchPrototipos
   });
 
   return {
