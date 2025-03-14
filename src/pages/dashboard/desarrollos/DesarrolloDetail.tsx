@@ -191,8 +191,6 @@ const DesarrolloDetailPage = () => {
                   buttonText="Nuevo prototipo" 
                   onSuccess={refetchPrototipos}
                   desarrolloId={id}
-                  open={false}
-                  onClose={() => {}}
                 />
               </div>
               
@@ -205,8 +203,6 @@ const DesarrolloDetailPage = () => {
                     buttonText="Agregar prototipo" 
                     onSuccess={refetchPrototipos}
                     desarrolloId={id}
-                    open={false}
-                    onClose={() => {}}
                   />
                 </div>
               ) : (

@@ -69,18 +69,16 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
           </div>
         </div>
         
-        {isHovering && (
-          <Button 
-            variant="secondary"
-            className="w-full mt-4"
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewDetails(desarrollo.id);
-            }}
-          >
-            Ver detalles
-          </Button>
-        )}
+        <Button 
+          variant="secondary"
+          className="w-full mt-4"
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewDetails(desarrollo.id);
+          }}
+        >
+          Ver detalles
+        </Button>
       </CardContent>
     </Card>
   );
