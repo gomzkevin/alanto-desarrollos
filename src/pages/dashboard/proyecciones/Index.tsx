@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LineChart } from 'lucide-react';
+import { LineChart as LucideLineChart } from 'lucide-react'; // Rename to avoid confusion
+import { LineChart } from '@/components/ui/chart'; // Import from our chart components
 import { Calculator } from '@/components/Calculator';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import { formatCurrency } from '@/lib/utils';
