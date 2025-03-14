@@ -23,8 +23,11 @@ export const LineChart = (props) => (
     enableLegend={true}
     showLegend={props.showLegend !== false}
     showTooltip={props.showTooltip !== false}
-    showGradient={false}
-    lineThickness={3}
+    showGradient={true}
+    lineThickness={4}
+    valueFormatter={props.valueFormatter}
+    yAxisWidth={props.yAxisWidth || 80}
+    curveType={props.curveType || "linear"}
   />
 );
 

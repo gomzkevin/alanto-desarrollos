@@ -221,7 +221,8 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
         alternativeInvestment: alternativeTotalValue,
         yearlyROI: annualRoi.toFixed(1),
         difference: difference,
-        thisYearNetProfit: thisYearNetProfit
+        thisYearNetProfit: thisYearNetProfit,
+        initialPropertyValue: propertyValue // Store the initial property value for reference
       });
     }
     

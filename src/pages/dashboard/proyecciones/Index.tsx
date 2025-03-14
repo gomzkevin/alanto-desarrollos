@@ -20,6 +20,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 
 export const ProyeccionesPage = () => {
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('global');
@@ -30,9 +31,10 @@ export const ProyeccionesPage = () => {
   });
   const [chartData, setChartData] = useState<any[]>([]);
   const [summaryData, setSummaryData] = useState({
-    airbnbReturn: 5655683,
-    altReturn: 677006,
-    avgROI: 56.8
+    propertyValue: 3500000, // Initial property value
+    airbnbProfit: 5655683,  // Total profit from Airbnb
+    altReturn: 677006,      // Total from alternative investment
+    avgROI: 56.8           // Average ROI
   });
   const [activeTab, setActiveTab] = useState('grafica');
   const [shouldCalculate, setShouldCalculate] = useState(false);
@@ -54,8 +56,9 @@ export const ProyeccionesPage = () => {
       const sumROI = data.reduce((acc, item) => acc + parseFloat(item.yearlyROI), 0);
       
       setSummaryData({
-        airbnbReturn: lastYear.airbnbProfit,
-        altReturn: lastYear.alternativeInvestment,
+        propertyValue: data[0].initialPropertyValue || 3500000, // Get initial property value
+        airbnbProfit: lastYear.airbnbProfit - data[0].initialPropertyValue, // Total profit (excluding initial investment)
+        altReturn: lastYear.alternativeInvestment - data[0].initialPropertyValue, // Total return (excluding initial investment)
         avgROI: sumROI / data.length
       });
     }
@@ -131,7 +134,7 @@ export const ProyeccionesPage = () => {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-          <Card className="xl:col-span-4">
+          <Card className="xl:col-span-3">
             <CardHeader>
               <CardTitle>Parámetros de proyección</CardTitle>
               <CardDescription>
@@ -155,7 +158,7 @@ export const ProyeccionesPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="xl:col-span-8">
+          <Card className="xl:col-span-9">
             <CardHeader>
               <CardTitle>Resultados de la proyección</CardTitle>
               <CardDescription>
@@ -238,18 +241,43 @@ export const ProyeccionesPage = () => {
                 </TabsContent>
               </Tabs>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 pt-0 mt-4">
-                <div className="bg-indigo-50 p-4 rounded-lg">
-                  <p className="text-sm text-indigo-600 font-medium">Retorno total (Airbnb)</p>
-                  <p className="text-xl font-bold text-indigo-700 mt-1">{formatCurrency(summaryData.airbnbReturn)}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 pt-0 mt-4">
+                {/* Airbnb Investment Card */}
+                <div className="bg-indigo-50 rounded-lg overflow-hidden border border-indigo-100">
+                  <div className="p-3 border-b border-indigo-100 bg-indigo-100/50">
+                    <p className="text-sm text-indigo-700 font-medium">Inversión en Airbnb</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2">
+                    <div className="p-3 border-r border-indigo-100">
+                      <p className="text-xs text-indigo-600/70 font-medium">Valor de la propiedad</p>
+                      <p className="text-lg font-bold text-indigo-900 mt-1 financial-number">{formatCurrency(summaryData.propertyValue)}</p>
+                    </div>
+                    <div className="p-3">
+                      <p className="text-xs text-indigo-600/70 font-medium">Retorno total (Airbnb)</p>
+                      <p className="text-lg font-bold text-indigo-700 mt-1 financial-number">{formatCurrency(summaryData.airbnbProfit)}</p>
+                    </div>
+                  </div>
                 </div>
                 
-                <div className="bg-teal-50 p-4 rounded-lg">
-                  <p className="text-sm text-teal-600 font-medium">Retorno alternativo</p>
-                  <p className="text-xl font-bold text-teal-700 mt-1">{formatCurrency(summaryData.altReturn)}</p>
+                {/* Alternative Investment Card */}
+                <div className="bg-teal-50 rounded-lg overflow-hidden border border-teal-100">
+                  <div className="p-3 border-b border-teal-100 bg-teal-100/50">
+                    <p className="text-sm text-teal-700 font-medium">Inversión alternativa</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2">
+                    <div className="p-3 border-r border-teal-100">
+                      <p className="text-xs text-teal-600/70 font-medium">Capital inicial</p>
+                      <p className="text-lg font-bold text-teal-900 mt-1 financial-number">{formatCurrency(summaryData.propertyValue)}</p>
+                    </div>
+                    <div className="p-3">
+                      <p className="text-xs text-teal-600/70 font-medium">Retorno alternativo</p>
+                      <p className="text-lg font-bold text-teal-700 mt-1 financial-number">{formatCurrency(summaryData.altReturn)}</p>
+                    </div>
+                  </div>
                 </div>
                 
-                <div className="bg-amber-50 p-4 rounded-lg">
+                {/* ROI Card */}
+                <div className="md:col-span-2 bg-amber-50 p-4 rounded-lg border border-amber-100">
                   <p className="text-sm text-amber-600 font-medium">ROI anual promedio</p>
                   <p className="text-xl font-bold text-amber-700 mt-1">{summaryData.avgROI.toFixed(1)}%</p>
                 </div>
