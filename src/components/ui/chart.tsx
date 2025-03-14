@@ -16,7 +16,6 @@ export {
   BarList,
   Card,
   DateRangePicker,
-  DateRangePicker as Datepicker, // backwards compat.
   ProgressBar,
   Tab,
   TabGroup,
@@ -36,4 +35,4 @@ export {
 } from "@tremor/react";
 
 // Export types with the proper syntax
-export type { Color } from "@tremor/react";
+export type { Color, DateRangePickerValue } from "@tremor/react";

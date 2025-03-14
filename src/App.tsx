@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Dashboard from "./pages/dashboard/Index";
 import PropertiesPage from "./pages/dashboard/propiedades/Index";
-import ProyeccionesPage from "./pages/dashboard/proyecciones/Index";
+import { ProyeccionesPage } from "./pages/dashboard/proyecciones/Index";
 import NotFound from "./pages/NotFound";
 import DesarrollosPage from "./pages/dashboard/desarrollos/Index";
 import DesarrolloDetailPage from "./pages/dashboard/desarrollos/DesarrolloDetail";
