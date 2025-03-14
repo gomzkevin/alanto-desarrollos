@@ -131,7 +131,7 @@ export const ProyeccionesPage = () => {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-          <Card className="xl:col-span-3">
+          <Card className="xl:col-span-4">
             <CardHeader>
               <CardTitle>Parámetros de proyección</CardTitle>
               <CardDescription>
@@ -155,7 +155,7 @@ export const ProyeccionesPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="xl:col-span-9">
+          <Card className="xl:col-span-8">
             <CardHeader>
               <CardTitle>Resultados de la proyección</CardTitle>
               <CardDescription>

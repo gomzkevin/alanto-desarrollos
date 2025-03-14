@@ -168,7 +168,6 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
     
     let data = [];
     let airbnbCumulativeProfit = 0;
-    let alternativeCumulativeProfit = 0;
     
     for (let year = 1; year <= years; year++) {
       // Calculate Airbnb investment
@@ -205,18 +204,21 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
       
       // Calculate alternative investment - using full property value instead of just down payment
       const alternativeInvestmentReturn = propertyValue * (Math.pow(1 + (tasa_interes / 100), year) - 1);
-      alternativeCumulativeProfit = alternativeInvestmentReturn;
       
       // Return on Investment (ROI) based on full property value
       const annualRoi = (thisYearNetProfit / propertyValue) * 100;
       
-      // Difference between cumulative Airbnb profit and alternative investment
-      const difference = (airbnbCumulativeProfit + propertyAppreciation) - alternativeCumulativeProfit;
+      // Add initial property value to both calculations to start from the initial investment
+      const airbnbTotalValue = propertyValue + airbnbCumulativeProfit + propertyAppreciation;
+      const alternativeTotalValue = propertyValue + alternativeInvestmentReturn;
+      
+      // Difference between Airbnb value and alternative investment
+      const difference = airbnbTotalValue - alternativeTotalValue;
       
       data.push({
         year,
-        airbnbProfit: airbnbCumulativeProfit + propertyAppreciation,
-        alternativeInvestment: alternativeCumulativeProfit,
+        airbnbProfit: airbnbTotalValue,
+        alternativeInvestment: alternativeTotalValue,
         yearlyROI: annualRoi.toFixed(1),
         difference: difference,
         thisYearNetProfit: thisYearNetProfit
@@ -231,113 +233,6 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
     }
   }, [propertyValue, occupancyRate, nightlyRate, years, annualGrowth, financialConfig, shouldCalculate, onDataUpdate]);
   
-  // Save financial configuration to Supabase
-  const saveFinancialConfig = async () => {
-    try {
-      if (desarrolloId && desarrolloId !== 'global') {
-        // Find the specific configuration entry for this desarrollo
-        const { data: existingConfig, error: findError } = await supabase
-          .from('configuracion_financiera')
-          .select('id')
-          .eq('desarrollo_id', desarrolloId)
-          .maybeSingle();
-          
-        if (findError) {
-          console.error('Error finding financial configuration:', findError);
-          toast.error('Error al buscar la configuración del desarrollo');
-          return;
-        }
-        
-        if (existingConfig) {
-          // Update existing configuration
-          const { error } = await supabase
-            .from('configuracion_financiera')
-            .update({
-              comision_operador: financialConfig.comision_operador,
-              mantenimiento_valor: financialConfig.mantenimiento_valor,
-              es_mantenimiento_porcentaje: financialConfig.es_mantenimiento_porcentaje,
-              gastos_fijos: financialConfig.gastos_fijos,
-              es_gastos_fijos_porcentaje: financialConfig.es_gastos_fijos_porcentaje,
-              gastos_variables: financialConfig.gastos_variables,
-              es_gastos_variables_porcentaje: financialConfig.es_gastos_variables_porcentaje,
-              impuestos: financialConfig.impuestos,
-              es_impuestos_porcentaje: financialConfig.es_impuestos_porcentaje,
-              plusvalia_anual: financialConfig.plusvalia_anual,
-              tasa_interes: financialConfig.tasa_interes,
-              adr_base: nightlyRate,
-              ocupacion_anual: occupancyRate
-            })
-            .eq('id', existingConfig.id);
-          
-          if (error) {
-            console.error('Error updating financial configuration for desarrollo:', error);
-            toast.error('Error al guardar la configuración del desarrollo');
-          } else {
-            toast.success('Configuración del desarrollo guardada correctamente');
-          }
-        } else {
-          // Create a new configuration for this desarrollo
-          const { error } = await supabase
-            .from('configuracion_financiera')
-            .insert({
-              desarrollo_id: desarrolloId,
-              comision_operador: financialConfig.comision_operador,
-              mantenimiento_valor: financialConfig.mantenimiento_valor,
-              es_mantenimiento_porcentaje: financialConfig.es_mantenimiento_porcentaje,
-              gastos_fijos: financialConfig.gastos_fijos,
-              es_gastos_fijos_porcentaje: financialConfig.es_gastos_fijos_porcentaje,
-              gastos_variables: financialConfig.gastos_variables,
-              es_gastos_variables_porcentaje: financialConfig.es_gastos_variables_porcentaje,
-              impuestos: financialConfig.impuestos,
-              es_impuestos_porcentaje: financialConfig.es_impuestos_porcentaje,
-              plusvalia_anual: financialConfig.plusvalia_anual,
-              tasa_interes: financialConfig.tasa_interes,
-              adr_base: nightlyRate,
-              ocupacion_anual: occupancyRate
-            });
-          
-          if (error) {
-            console.error('Error creating financial configuration for desarrollo:', error);
-            toast.error('Error al crear la configuración del desarrollo');
-          } else {
-            toast.success('Configuración del desarrollo creada correctamente');
-          }
-        }
-      } else {
-        // Update global configuration
-        const { error } = await supabase
-          .from('configuracion_financiera')
-          .update({
-            comision_operador: financialConfig.comision_operador,
-            mantenimiento_valor: financialConfig.mantenimiento_valor,
-            es_mantenimiento_porcentaje: financialConfig.es_mantenimiento_porcentaje,
-            gastos_fijos: financialConfig.gastos_fijos,
-            es_gastos_fijos_porcentaje: financialConfig.es_gastos_fijos_porcentaje,
-            gastos_variables: financialConfig.gastos_variables,
-            es_gastos_variables_porcentaje: financialConfig.es_gastos_variables_porcentaje,
-            impuestos: financialConfig.impuestos,
-            es_impuestos_porcentaje: financialConfig.es_impuestos_porcentaje,
-            plusvalia_anual: financialConfig.plusvalia_anual,
-            tasa_interes: financialConfig.tasa_interes,
-            adr_base: nightlyRate,
-            ocupacion_anual: occupancyRate
-          })
-          .eq('id', 1);
-        
-        if (error) {
-          console.error('Error saving financial configuration:', error);
-          toast.error('Error al guardar la configuración');
-        } else {
-          console.log('Financial configuration saved successfully');
-          toast.success('Configuración guardada correctamente');
-        }
-      }
-    } catch (err) {
-      console.error('Error in saving financial config:', err);
-      toast.error('Error al guardar la configuración');
-    }
-  };
-
   return (
     <div className="space-y-6" ref={calculatorRef}>
       <Form {...form}>

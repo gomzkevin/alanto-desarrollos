@@ -6,7 +6,28 @@ import { BarChart as TremorBarChart } from "@tremor/react";
 import { DonutChart as TremorDonutChart } from "@tremor/react"; 
 
 // Re-export the Tremor components with our custom names
-export const LineChart = TremorLineChart;
+export const LineChart = (props) => (
+  <TremorLineChart 
+    {...props}
+    connectNulls={true}
+    enableLegendSlider={false}
+    showGridLines={true}
+    showAnimation={true}
+    className={`${props.className || ''} bg-white`}
+    colors={props.colors || ["indigo", "teal"]}
+    // Ensure line thickness is visible
+    customTooltip={props.customTooltip}
+    showXAxis={true}
+    showYAxis={true}
+    animationDuration={1000}
+    enableLegend={true}
+    showLegend={props.showLegend !== false}
+    showTooltip={props.showTooltip !== false}
+    showGradient={false}
+    lineThickness={3}
+  />
+);
+
 export const BarChart = TremorBarChart;
 export const PieChart = TremorDonutChart;
 
