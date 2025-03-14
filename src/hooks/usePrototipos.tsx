@@ -18,36 +18,41 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
   const fetchPrototipos = async () => {
     console.log('Fetching prototipos with options:', options);
     
-    let query = supabase
-      .from('prototipos')
-      .select('*');
-      
-    // Filter by desarrollo_id if provided
-    if (desarrolloId) {
-      query = query.eq('desarrollo_id', desarrolloId);
-    }
-    
-    // Apply limit if provided
-    if (limit) {
-      query = query.limit(limit);
-    }
-    
-    // Apply filters if any
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        query = query.eq(key, value);
+    try {
+      let query = supabase
+        .from('prototipos')
+        .select('*');
+        
+      // Filter by desarrollo_id if provided
+      if (desarrolloId) {
+        query = query.eq('desarrollo_id', desarrolloId);
       }
-    });
-    
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error('Error fetching prototipos:', error);
-      throw new Error(error.message);
+      
+      // Apply limit if provided
+      if (limit) {
+        query = query.limit(limit);
+      }
+      
+      // Apply filters if any
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query = query.eq(key, value);
+        }
+      });
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching prototipos:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('Prototipos fetched:', data);
+      return data || [];
+    } catch (error) {
+      console.error('Error in fetchPrototipos:', error);
+      return [];
     }
-    
-    console.log('Prototipos fetched:', data);
-    return data || [];
   };
 
   // Use React Query to fetch and cache the data

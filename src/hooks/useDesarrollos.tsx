@@ -24,36 +24,37 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   const fetchDesarrollos = async () => {
     console.log('Fetching desarrollos with options:', options);
     
-    // Create the select query based on whether we want to include prototipos
-    const selectQuery = withPrototipos ? '*, prototipos(*)' : '*';
-    
-    let query = supabase
-      .from('desarrollos')
-      .select(selectQuery);
-      
-    // Apply limit if provided
-    if (limit) {
-      query = query.limit(limit);
-    }
-    
-    // Apply filters if any
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        query = query.eq(key, value);
+    try {
+      let query = supabase
+        .from('desarrollos')
+        .select(withPrototipos ? '*, prototipos(*)' : '*');
+        
+      // Apply limit if provided
+      if (limit) {
+        query = query.limit(limit);
       }
-    });
-    
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error('Error fetching desarrollos:', error);
-      throw new Error(error.message);
+      
+      // Apply filters if any
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query = query.eq(key, value);
+        }
+      });
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching desarrollos:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('Desarrollos fetched:', data);
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error in fetchDesarrollos:', error);
+      return [];
     }
-    
-    console.log('Desarrollos fetched:', data);
-    
-    // Return the properly typed data
-    return data || [];
   };
 
   // Use React Query to fetch and cache the data

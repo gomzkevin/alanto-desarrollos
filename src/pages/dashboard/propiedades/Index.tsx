@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Filter, ArrowUpDown } from 'lucide-react';
+import { Search, Filter, ArrowUpDown } from 'lucide-react';
 import PropertyCard from '@/components/PropertyCard';
 import {
   Select,
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AdminResourceDialog } from '@/components/dashboard/AdminResourceDialog';
 
 // Datos de ejemplo para propiedades
 const properties = [
@@ -128,10 +129,10 @@ const PropertiesPage = () => {
             <h1 className="text-3xl font-bold text-slate-800">Propiedades</h1>
             <p className="text-slate-600">Gestiona y visualiza el inventario de propiedades disponibles.</p>
           </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva propiedad
-          </Button>
+          <AdminResourceDialog 
+            resourceType="propiedad" 
+            buttonText="Nueva propiedad" 
+          />
         </div>
         
         {/* Filtros y buscador */}

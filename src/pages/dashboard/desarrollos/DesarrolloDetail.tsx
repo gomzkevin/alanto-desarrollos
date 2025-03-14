@@ -1,14 +1,14 @@
 
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { ChevronLeft, Plus, CalendarClock, Home, MapPin, Clock } from 'lucide-react';
+import { ChevronLeft, Home } from 'lucide-react';
 import PrototipoCard from '@/components/dashboard/PrototipoCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import usePrototipos from '@/hooks/usePrototipos';
 import { Tables } from '@/integrations/supabase/types';
+import { AdminResourceDialog } from '@/components/dashboard/AdminResourceDialog';
 
 type Desarrollo = Tables<"desarrollos">;
 
@@ -33,13 +33,13 @@ const fetchDesarrolloById = async (id: string) => {
 const DesarrolloDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   // Obtener datos del desarrollo
   const { 
     data: desarrollo, 
     isLoading: isLoadingDesarrollo,
-    error: errorDesarrollo 
+    error: errorDesarrollo,
+    refetch: refetchDesarrollo 
   } = useQuery({
     queryKey: ['desarrollo', id],
     queryFn: () => fetchDesarrolloById(id as string),
@@ -50,7 +50,8 @@ const DesarrolloDetailPage = () => {
   const { 
     prototipos = [], 
     isLoading: isLoadingPrototipos,
-    error: errorPrototipos
+    error: errorPrototipos,
+    refetch: refetchPrototipos
   } = usePrototipos({
     desarrolloId: id,
   });
@@ -59,11 +60,9 @@ const DesarrolloDetailPage = () => {
     navigate('/dashboard/desarrollos');
   };
   
-  const handleNuevoPrototipo = () => {
-    toast({
-      title: "Próximamente",
-      description: "Esta funcionalidad estará disponible pronto.",
-    });
+  const handleRefresh = () => {
+    refetchDesarrollo();
+    refetchPrototipos();
   };
   
   const isLoading = isLoadingDesarrollo || isLoadingPrototipos;
@@ -90,7 +89,7 @@ const DesarrolloDetailPage = () => {
             <Button 
               variant="outline" 
               className="mt-4"
-              onClick={() => window.location.reload()}
+              onClick={handleRefresh}
             >
               Intentar de nuevo
             </Button>
@@ -185,20 +184,22 @@ const DesarrolloDetailPage = () => {
                     {prototipos.length} {prototipos.length === 1 ? 'prototipo' : 'prototipos'} en este desarrollo
                   </p>
                 </div>
-                <Button onClick={handleNuevoPrototipo}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nuevo prototipo
-                </Button>
+                <AdminResourceDialog 
+                  resourceType="prototipo" 
+                  buttonText="Nuevo prototipo" 
+                  onSuccess={refetchPrototipos}
+                />
               </div>
               
               {prototipos.length === 0 ? (
                 <div className="text-center py-10 bg-slate-50 rounded-lg">
                   <Home className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                   <p className="text-slate-700 mb-4">No hay prototipos registrados en este desarrollo</p>
-                  <Button onClick={handleNuevoPrototipo}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Agregar prototipo
-                  </Button>
+                  <AdminResourceDialog 
+                    resourceType="prototipo" 
+                    buttonText="Agregar prototipo" 
+                    onSuccess={refetchPrototipos}
+                  />
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

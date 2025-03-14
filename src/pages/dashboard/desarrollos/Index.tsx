@@ -1,29 +1,24 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import DesarrolloCard from '@/components/dashboard/DesarrolloCard';
+import { AdminResourceDialog } from '@/components/dashboard/AdminResourceDialog';
+import useUserRole from '@/hooks/useUserRole';
 
 const DesarrollosPage = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
   
   const { 
     desarrollos = [], 
     isLoading, 
-    error 
+    error,
+    refetch 
   } = useDesarrollos();
 
-  const handleNuevoDesarrollo = () => {
-    toast({
-      title: "Próximamente",
-      description: "Esta funcionalidad estará disponible pronto.",
-    });
-  };
+  const { canCreateResource } = useUserRole();
 
   const handleDesarrolloClick = (id: string) => {
     navigate(`/dashboard/desarrollos/${id}`);
@@ -37,10 +32,12 @@ const DesarrollosPage = () => {
             <h1 className="text-3xl font-bold text-slate-800">Desarrollos Inmobiliarios</h1>
             <p className="text-slate-600">Gestiona y monitorea tus desarrollos inmobiliarios</p>
           </div>
-          <Button onClick={handleNuevoDesarrollo}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo desarrollo
-          </Button>
+          
+          <AdminResourceDialog 
+            resourceType="desarrollo" 
+            buttonText="Nuevo desarrollo" 
+            onSuccess={refetch}
+          />
         </div>
 
         {isLoading ? (
@@ -55,7 +52,7 @@ const DesarrollosPage = () => {
             <Button 
               variant="outline" 
               className="mt-4"
-              onClick={() => window.location.reload()}
+              onClick={() => refetch()}
             >
               Intentar de nuevo
             </Button>
