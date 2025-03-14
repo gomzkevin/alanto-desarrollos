@@ -13,6 +13,7 @@ type Desarrollo = Tables<"desarrollos">;
 
 const DesarrollosPage = () => {
   const navigate = useNavigate();
+  const [openDialog, setOpenDialog] = useState(false);
   
   const { 
     desarrollos = [], 
@@ -36,12 +37,21 @@ const DesarrollosPage = () => {
             <p className="text-slate-600">Gestiona y monitorea tus desarrollos inmobiliarios</p>
           </div>
           
+          {canCreateResource && (
+            <Button 
+              onClick={() => setOpenDialog(true)}
+              className="flex items-center gap-2"
+            >
+              Nuevo desarrollo
+            </Button>
+          )}
+          
           <AdminResourceDialog 
             resourceType="desarrollos" 
             buttonText="Nuevo desarrollo" 
             onSuccess={refetch}
-            open={false}
-            onClose={() => {}}
+            open={openDialog}
+            onClose={() => setOpenDialog(false)}
           />
         </div>
 
