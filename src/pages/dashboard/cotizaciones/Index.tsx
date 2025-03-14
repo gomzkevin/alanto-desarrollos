@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -15,6 +14,8 @@ import { format } from 'date-fns';
 import { enUS, es } from 'date-fns/locale';
 import useCotizaciones from '@/hooks/useCotizaciones';
 import useLeads from '@/hooks/useLeads';
+import useDesarrollos from '@/hooks/useDesarrollos';
+import usePrototipos from '@/hooks/usePrototipos';
 import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 import { ExtendedCotizacion } from '@/hooks/useCotizaciones';
 import { ExportPDFButton } from '@/components/dashboard/ExportPDFButton';
@@ -64,6 +65,7 @@ const CotizacionesPage = () => {
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [showLeadsDropdown, setShowLeadsDropdown] = useState<boolean>(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('');
   
   // Form para la creación de cotización
   const form = useForm<CotizacionFormValues>({
@@ -83,6 +85,10 @@ const CotizacionesPage = () => {
   } = useCotizaciones({ limit, withRelations: true });
   
   const { leads } = useLeads({ limit: 100 });
+  const { desarrollos } = useDesarrollos();
+  const { prototipos } = usePrototipos({ 
+    desarrolloId: selectedDesarrolloId 
+  });
 
   // Filtrar leads al escribir en la búsqueda
   useEffect(() => {
@@ -98,15 +104,25 @@ const CotizacionesPage = () => {
     }
   }, [searchLeadTerm, leads]);
 
+  // Reset prototipo selection when desarrollo changes
+  useEffect(() => {
+    if (selectedDesarrolloId) {
+      form.setValue('prototipo_id', '');
+    }
+  }, [selectedDesarrolloId, form]);
+
   const handleNewCotizacion = () => {
     setShowCotizacionDialog(true);
     setIsExistingClient(false);
     setSelectedLead(null);
+    setSelectedDesarrolloId('');
     form.reset({
       isExistingClient: false,
       monto_anticipo: 0,
       numero_pagos: 6,
       usar_finiquito: false,
+      desarrollo_id: '',
+      prototipo_id: '',
     });
   };
 
@@ -130,6 +146,13 @@ const CotizacionesPage = () => {
       setSelectedLead(null);
       setSearchLeadTerm('');
     }
+  };
+
+  const handleSelectDesarrollo = (id: string) => {
+    setSelectedDesarrolloId(id);
+    form.setValue('desarrollo_id', id);
+    // Reset prototipo cuando cambia el desarrollo
+    form.setValue('prototipo_id', '');
   };
 
   const handleSubmitCotizacion = async (values: CotizacionFormValues) => {
@@ -350,8 +373,8 @@ const CotizacionesPage = () => {
                           <FormItem>
                             <FormLabel>Desarrollo</FormLabel>
                             <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
+                              onValueChange={(value) => handleSelectDesarrollo(value)}
+                              value={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -359,9 +382,11 @@ const CotizacionesPage = () => {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {/* Vamos a recuperar los desarrollos desde el hook useDesarrollos */}
-                                {/* Por ahora usamos un placeholder */}
-                                <SelectItem value="placeholder">Seleccionar...</SelectItem>
+                                {desarrollos.map((desarrollo) => (
+                                  <SelectItem key={desarrollo.id} value={desarrollo.id}>
+                                    {desarrollo.nombre}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </FormItem>
@@ -375,18 +400,27 @@ const CotizacionesPage = () => {
                           <FormItem>
                             <FormLabel>Prototipo</FormLabel>
                             <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
+                              onValueChange={field.onChange}
+                              value={field.value}
+                              disabled={!selectedDesarrolloId}
                             >
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Seleccionar prototipo" />
+                                  <SelectValue placeholder={
+                                    selectedDesarrolloId 
+                                      ? (prototipos.length > 0 
+                                          ? "Seleccionar prototipo" 
+                                          : "No hay prototipos disponibles")
+                                      : "Seleccione un desarrollo primero"
+                                  } />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {/* Vamos a recuperar los prototipos desde el hook usePrototipos */}
-                                {/* Por ahora usamos un placeholder */}
-                                <SelectItem value="placeholder">Seleccionar...</SelectItem>
+                                {prototipos.map((prototipo) => (
+                                  <SelectItem key={prototipo.id} value={prototipo.id}>
+                                    {prototipo.nombre} - {formatter.format(prototipo.precio)}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </FormItem>
@@ -493,7 +527,15 @@ const CotizacionesPage = () => {
                     >
                       Cancelar
                     </Button>
-                    <Button type="submit">
+                    <Button 
+                      type="submit"
+                      disabled={
+                        (!isExistingClient && !form.watch('nombre')) || 
+                        (isExistingClient && !selectedLead) ||
+                        !form.watch('desarrollo_id') ||
+                        !form.watch('prototipo_id')
+                      }
+                    >
                       Guardar cotización
                     </Button>
                   </DialogFooter>
@@ -556,7 +598,7 @@ const CotizacionesPage = () => {
           </div>
         </div>
         
-        {/* Tabla de cotizaciones - mantenemos el mismo código */}
+        {/* Tabla de cotizaciones */}
         {isLoading ? (
           <div className="text-center py-10">
             <p className="text-slate-500">Cargando cotizaciones...</p>
