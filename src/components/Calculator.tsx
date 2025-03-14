@@ -89,26 +89,16 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
           // Try to get prototipo-specific configuration
           const { data: prototipoData, error: prototipoError } = await supabase
             .from('prototipos')
-            .select('*, valor_estimado, adr_base, ocupacion_anual')
+            .select('*, precio')
             .eq('id', prototipoId)
             .single();
             
           if (prototipoError) {
             console.error('Error fetching prototipo data:', prototipoError);
           } else if (prototipoData) {
-            // Set property value from prototipo if available
-            if (prototipoData.valor_estimado) {
-              setPropertyValue(prototipoData.valor_estimado);
-            }
-            
-            // Set nightly rate if available
-            if (prototipoData.adr_base) {
-              setNightlyRate(prototipoData.adr_base);
-            }
-            
-            // Set occupancy rate if available
-            if (prototipoData.ocupacion_anual) {
-              setOccupancyRate(prototipoData.ocupacion_anual);
+            // Set property value from prototipo price if available
+            if (prototipoData.precio) {
+              setPropertyValue(prototipoData.precio);
             }
           }
         }
