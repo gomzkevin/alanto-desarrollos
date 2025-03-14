@@ -1,10 +1,11 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Building2, Users, Home, BarChart3, CalendarClock, TrendingUp } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 // Datos de ejemplo para las gráficas
 const salesData = [
@@ -24,34 +25,57 @@ const inventoryData = [
 
 const COLORS = ['#4F46E5', '#14B8A6', '#F97066'];
 
+// Función para obtener métricas del dashboard
+const fetchDashboardMetrics = async () => {
+  try {
+    // Obtener conteo de leads por estado
+    const { data: leads, error: leadsError } = await supabase
+      .from('leads')
+      .select('*');
+    
+    if (leadsError) throw leadsError;
+    
+    // Obtener conteo de desarrollos
+    const { data: desarrollos, error: desarrollosError } = await supabase
+      .from('desarrollos')
+      .select('*');
+    
+    if (desarrollosError) throw desarrollosError;
+
+    // Calcular métricas
+    const leadsTotal = leads?.length || 0;
+    const leadsSeguimiento = leads?.filter(lead => lead.estado === 'seguimiento').length || 0;
+    const leadsCotizacion = leads?.filter(lead => lead.estado === 'cotizacion').length || 0;
+    const leadsConvertidos = leads?.filter(lead => lead.estado === 'convertido').length || 0;
+    
+    return {
+      leads: leadsTotal,
+      prospectos: leadsSeguimiento,
+      cotizaciones: leadsCotizacion,
+      ventas: leadsConvertidos,
+      desarrollos: desarrollos || []
+    };
+  } catch (error) {
+    console.error('Error al obtener métricas:', error);
+    throw error;
+  }
+};
+
 const Dashboard = () => {
-  const [salesMetrics, setSalesMetrics] = useState({
-    leads: 128,
-    prospectos: 85,
-    cotizaciones: 42,
-    ventas: 18
+  const { data: metrics, isLoading, error } = useQuery({
+    queryKey: ['dashboardMetrics'],
+    queryFn: fetchDashboardMetrics,
+    staleTime: 5 * 60 * 1000, // 5 minutos
   });
   
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Aquí conectaríamos con Supabase para traer los datos reales
-    // const fetchDashboardData = async () => {
-    //   const { data, error } = await supabase
-    //     .from('metricas')
-    //     .select('*')
-    //     .single();
-    //   
-    //   if (data) setSalesMetrics(data);
-    // };
-    
-    // fetchDashboardData();
-    
-    // Simular carga
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-  }, []);
+  const salesMetrics = {
+    leads: metrics?.leads || 0,
+    prospectos: metrics?.prospectos || 0,
+    cotizaciones: metrics?.cotizaciones || 0,
+    ventas: metrics?.ventas || 0
+  };
+  
+  const desarrollos = metrics?.desarrollos || [];
 
   return (
     <DashboardLayout>
@@ -198,89 +222,41 @@ const Dashboard = () => {
           <h3 className="text-lg font-semibold mb-4">Desarrollos destacados</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle>Torre Horizonte</CardTitle>
-                <CardDescription>Polanco, CDMX</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Unidades:</span>
-                    <span className="text-sm font-medium">48/60 disponibles</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Ventas:</span>
-                    <span className="text-sm font-medium">12 unidades</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Avance:</span>
-                    <span className="text-sm font-medium">20%</span>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <a href="#" className="text-indigo-600 text-sm font-medium hover:text-indigo-700">
-                  Ver detalles →
-                </a>
-              </CardFooter>
-            </Card>
-            
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle>Oceana Residences</CardTitle>
-                <CardDescription>Playa del Carmen, Q.Roo</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Unidades:</span>
-                    <span className="text-sm font-medium">24/40 disponibles</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Ventas:</span>
-                    <span className="text-sm font-medium">16 unidades</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Avance:</span>
-                    <span className="text-sm font-medium">40%</span>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <a href="#" className="text-indigo-600 text-sm font-medium hover:text-indigo-700">
-                  Ver detalles →
-                </a>
-              </CardFooter>
-            </Card>
-            
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle>Bosque Vertical</CardTitle>
-                <CardDescription>Valle de Bravo, EdoMex</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Unidades:</span>
-                    <span className="text-sm font-medium">18/24 disponibles</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Ventas:</span>
-                    <span className="text-sm font-medium">6 unidades</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Avance:</span>
-                    <span className="text-sm font-medium">25%</span>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <a href="#" className="text-indigo-600 text-sm font-medium hover:text-indigo-700">
-                  Ver detalles →
-                </a>
-              </CardFooter>
-            </Card>
+            {isLoading ? (
+              [1, 2, 3].map((i) => (
+                <div key={i} className="h-[250px] bg-slate-100 animate-pulse rounded-xl" />
+              ))
+            ) : (
+              desarrollos.slice(0, 3).map((desarrollo) => (
+                <Card key={desarrollo.id} className="shadow-sm">
+                  <CardHeader>
+                    <CardTitle>{desarrollo.nombre}</CardTitle>
+                    <CardDescription>{desarrollo.ubicacion}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-slate-600">Unidades:</span>
+                        <span className="text-sm font-medium">{desarrollo.unidades_disponibles}/{desarrollo.total_unidades} disponibles</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-slate-600">Ventas:</span>
+                        <span className="text-sm font-medium">{desarrollo.total_unidades - desarrollo.unidades_disponibles} unidades</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-slate-600">Avance:</span>
+                        <span className="text-sm font-medium">{desarrollo.avance_porcentaje || '0'}%</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <a href={`/dashboard/desarrollos/${desarrollo.id}`} className="text-indigo-600 text-sm font-medium hover:text-indigo-700">
+                      Ver detalles →
+                    </a>
+                  </CardFooter>
+                </Card>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -289,3 +265,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

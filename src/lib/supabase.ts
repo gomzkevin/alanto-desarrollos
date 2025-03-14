@@ -13,12 +13,22 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Función auxiliar para comprobar si el usuario está autenticado
 export const isAuthenticated = async () => {
-  const { data } = await supabaseClient.auth.getSession();
-  return !!data.session;
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    return !!data.session;
+  } catch (error) {
+    console.error('Error checking authentication:', error);
+    return false;
+  }
 };
 
 // Función para obtener el usuario actual
 export const getCurrentUser = async () => {
-  const { data } = await supabaseClient.auth.getUser();
-  return data.user;
+  try {
+    const { data } = await supabaseClient.auth.getUser();
+    return data.user;
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    return null;
+  }
 };

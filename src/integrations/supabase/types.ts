@@ -9,7 +9,248 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      configuracion_financiera: {
+        Row: {
+          adr_base: number | null
+          comision_operador: number | null
+          es_mantenimiento_porcentaje: boolean | null
+          gastos_fijos: number | null
+          gastos_variables: number | null
+          id: number
+          impuestos: number | null
+          mantenimiento_valor: number | null
+          moneda: string | null
+          ocupacion_anual: number | null
+          plusvalia_anual: number | null
+          tasa_interes: number | null
+          tipo_cambio: number | null
+        }
+        Insert: {
+          adr_base?: number | null
+          comision_operador?: number | null
+          es_mantenimiento_porcentaje?: boolean | null
+          gastos_fijos?: number | null
+          gastos_variables?: number | null
+          id?: number
+          impuestos?: number | null
+          mantenimiento_valor?: number | null
+          moneda?: string | null
+          ocupacion_anual?: number | null
+          plusvalia_anual?: number | null
+          tasa_interes?: number | null
+          tipo_cambio?: number | null
+        }
+        Update: {
+          adr_base?: number | null
+          comision_operador?: number | null
+          es_mantenimiento_porcentaje?: boolean | null
+          gastos_fijos?: number | null
+          gastos_variables?: number | null
+          id?: number
+          impuestos?: number | null
+          mantenimiento_valor?: number | null
+          moneda?: string | null
+          ocupacion_anual?: number | null
+          plusvalia_anual?: number | null
+          tasa_interes?: number | null
+          tipo_cambio?: number | null
+        }
+        Relationships: []
+      }
+      desarrollos: {
+        Row: {
+          avance_porcentaje: number | null
+          descripcion: string | null
+          fecha_entrega: string | null
+          fecha_inicio: string | null
+          id: string
+          imagen_url: string | null
+          nombre: string
+          total_unidades: number
+          ubicacion: string
+          unidades_disponibles: number
+        }
+        Insert: {
+          avance_porcentaje?: number | null
+          descripcion?: string | null
+          fecha_entrega?: string | null
+          fecha_inicio?: string | null
+          id?: string
+          imagen_url?: string | null
+          nombre: string
+          total_unidades: number
+          ubicacion: string
+          unidades_disponibles: number
+        }
+        Update: {
+          avance_porcentaje?: number | null
+          descripcion?: string | null
+          fecha_entrega?: string | null
+          fecha_inicio?: string | null
+          id?: string
+          imagen_url?: string | null
+          nombre?: string
+          total_unidades?: number
+          ubicacion?: string
+          unidades_disponibles?: number
+        }
+        Relationships: []
+      }
+      empresa_info: {
+        Row: {
+          direccion: string | null
+          email: string | null
+          id: number
+          logo_url: string | null
+          nombre: string | null
+          rfc: string | null
+          sitio_web: string | null
+          telefono: string | null
+        }
+        Insert: {
+          direccion?: string | null
+          email?: string | null
+          id?: number
+          logo_url?: string | null
+          nombre?: string | null
+          rfc?: string | null
+          sitio_web?: string | null
+          telefono?: string | null
+        }
+        Update: {
+          direccion?: string | null
+          email?: string | null
+          id?: number
+          logo_url?: string | null
+          nombre?: string | null
+          rfc?: string | null
+          sitio_web?: string | null
+          telefono?: string | null
+        }
+        Relationships: []
+      }
+      leads: {
+        Row: {
+          agente: string | null
+          email: string | null
+          estado: string | null
+          fecha_creacion: string | null
+          id: string
+          interes_en: string | null
+          nombre: string
+          notas: string | null
+          origen: string | null
+          telefono: string | null
+          ultimo_contacto: string | null
+        }
+        Insert: {
+          agente?: string | null
+          email?: string | null
+          estado?: string | null
+          fecha_creacion?: string | null
+          id?: string
+          interes_en?: string | null
+          nombre: string
+          notas?: string | null
+          origen?: string | null
+          telefono?: string | null
+          ultimo_contacto?: string | null
+        }
+        Update: {
+          agente?: string | null
+          email?: string | null
+          estado?: string | null
+          fecha_creacion?: string | null
+          id?: string
+          interes_en?: string | null
+          nombre?: string
+          notas?: string | null
+          origen?: string | null
+          telefono?: string | null
+          ultimo_contacto?: string | null
+        }
+        Relationships: []
+      }
+      propiedades: {
+        Row: {
+          baños: number | null
+          desarrollo_id: string | null
+          descripcion: string | null
+          estado: string | null
+          habitaciones: number | null
+          id: string
+          imagen_url: string | null
+          nombre: string
+          precio: number
+          superficie: number | null
+          tipo: string
+        }
+        Insert: {
+          baños?: number | null
+          desarrollo_id?: string | null
+          descripcion?: string | null
+          estado?: string | null
+          habitaciones?: number | null
+          id?: string
+          imagen_url?: string | null
+          nombre: string
+          precio: number
+          superficie?: number | null
+          tipo: string
+        }
+        Update: {
+          baños?: number | null
+          desarrollo_id?: string | null
+          descripcion?: string | null
+          estado?: string | null
+          habitaciones?: number | null
+          id?: string
+          imagen_url?: string | null
+          nombre?: string
+          precio?: number
+          superficie?: number | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propiedades_desarrollo_id_fkey"
+            columns: ["desarrollo_id"]
+            isOneToOne: false
+            referencedRelation: "desarrollos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usuarios: {
+        Row: {
+          activo: boolean | null
+          auth_id: string | null
+          email: string
+          fecha_creacion: string | null
+          id: string
+          nombre: string
+          rol: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          auth_id?: string | null
+          email: string
+          fecha_creacion?: string | null
+          id?: string
+          nombre: string
+          rol?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          auth_id?: string | null
+          email?: string
+          fecha_creacion?: string | null
+          id?: string
+          nombre?: string
+          rol?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

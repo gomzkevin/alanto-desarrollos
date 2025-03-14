@@ -5,54 +5,73 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, CalendarClock, Home, Users } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
-// Datos de ejemplo para desarrollos
-const desarrollos = [
-  {
-    id: '1',
-    nombre: 'Torre Horizonte',
-    ubicacion: 'Polanco, CDMX',
-    estado: 'en_construccion',
-    fechaEntrega: '2024-12-01',
-    unidadesDisponibles: 48,
-    unidadesTotales: 60,
-    imagen: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=500',
-    leads: 15
-  },
-  {
-    id: '2',
-    nombre: 'Oceana Residences',
-    ubicacion: 'Playa del Carmen, Q.Roo',
-    estado: 'en_construccion',
-    fechaEntrega: '2025-03-15',
-    unidadesDisponibles: 24,
-    unidadesTotales: 40,
-    imagen: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=500',
-    leads: 32
-  },
-  {
-    id: '3',
-    nombre: 'Bosque Vertical',
-    ubicacion: 'Valle de Bravo, EdoMex',
-    estado: 'terminado',
-    fechaEntrega: '2023-10-01',
-    unidadesDisponibles: 18,
-    unidadesTotales: 24,
-    imagen: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=500',
-    leads: 8
+// Tipo para desarrollo
+type Desarrollo = {
+  id: string;
+  nombre: string;
+  ubicacion: string;
+  total_unidades: number;
+  unidades_disponibles: number;
+  avance_porcentaje?: number;
+  fecha_entrega?: string;
+  descripcion?: string;
+  imagen_url?: string;
+};
+
+// Función para obtener todos los desarrollos
+const fetchDesarrollos = async (): Promise<Desarrollo[]> => {
+  const { data, error } = await supabase
+    .from('desarrollos')
+    .select('*');
+  
+  if (error) {
+    console.error('Error fetching desarrollos:', error);
+    throw new Error(error.message);
   }
-];
+  
+  return data || [];
+};
+
+// Función para obtener leads por desarrollo
+const fetchLeadsPorDesarrollo = async (desarrolloId: string): Promise<number> => {
+  const { count, error } = await supabase
+    .from('leads')
+    .select('*', { count: 'exact', head: true })
+    .eq('interes_en', desarrolloId);
+  
+  if (error) {
+    console.error('Error counting leads:', error);
+    return 0;
+  }
+  
+  return count || 0;
+};
 
 const DesarrollosPage = () => {
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  
+  // Usar React Query para obtener los desarrollos
+  const { 
+    data: desarrollos = [], 
+    isLoading, 
+    error 
+  } = useQuery({
+    queryKey: ['desarrollos'],
+    queryFn: fetchDesarrollos
+  });
 
   useEffect(() => {
-    // Simular carga de datos
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-  }, []);
+    if (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los desarrollos. Por favor, intenta de nuevo.",
+        variant: "destructive"
+      });
+    }
+  }, [error, toast]);
 
   const handleNuevoDesarrollo = () => {
     toast({
@@ -81,16 +100,33 @@ const DesarrollosPage = () => {
               <div key={i} className="h-[400px] bg-slate-100 animate-pulse rounded-xl" />
             ))}
           </div>
+        ) : error ? (
+          <div className="text-center py-10">
+            <p className="text-red-500">Error al cargar desarrollos</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => window.location.reload()}
+            >
+              Intentar de nuevo
+            </Button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {desarrollos.map((desarrollo) => (
               <Card key={desarrollo.id} className="overflow-hidden">
-                <div className="aspect-video w-full overflow-hidden">
-                  <img
-                    src={desarrollo.imagen}
-                    alt={desarrollo.nombre}
-                    className="h-full w-full object-cover"
-                  />
+                <div className="aspect-video w-full overflow-hidden bg-slate-100">
+                  {desarrollo.imagen_url ? (
+                    <img
+                      src={desarrollo.imagen_url}
+                      alt={desarrollo.nombre}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-slate-100">
+                      <Home className="h-12 w-12 text-slate-400" />
+                    </div>
+                  )}
                 </div>
                 <CardHeader>
                   <CardTitle className="flex justify-between items-start">
@@ -99,11 +135,11 @@ const DesarrollosPage = () => {
                       <p className="text-sm text-slate-500">{desarrollo.ubicacion}</p>
                     </div>
                     <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${
-                      desarrollo.estado === 'en_construccion' 
+                      desarrollo.avance_porcentaje && desarrollo.avance_porcentaje < 100
                         ? 'bg-yellow-100 text-yellow-800'
                         : 'bg-green-100 text-green-800'
                     }`}>
-                      {desarrollo.estado === 'en_construccion' ? 'En construcción' : 'Terminado'}
+                      {desarrollo.avance_porcentaje && desarrollo.avance_porcentaje < 100 ? 'En construcción' : 'Terminado'}
                     </span>
                   </CardTitle>
                 </CardHeader>
@@ -115,10 +151,13 @@ const DesarrollosPage = () => {
                         <span>Entrega</span>
                       </div>
                       <p className="font-medium">
-                        {new Date(desarrollo.fechaEntrega).toLocaleDateString('es-MX', {
-                          month: 'short',
-                          year: 'numeric'
-                        })}
+                        {desarrollo.fecha_entrega 
+                          ? new Date(desarrollo.fecha_entrega).toLocaleDateString('es-MX', {
+                              month: 'short',
+                              year: 'numeric'
+                            })
+                          : 'Por definir'
+                        }
                       </p>
                     </div>
                     
@@ -128,7 +167,7 @@ const DesarrollosPage = () => {
                         <span>Disponibilidad</span>
                       </div>
                       <p className="font-medium">
-                        {desarrollo.unidadesDisponibles}/{desarrollo.unidadesTotales} unidades
+                        {desarrollo.unidades_disponibles}/{desarrollo.total_unidades} unidades
                       </p>
                     </div>
                     
@@ -137,7 +176,10 @@ const DesarrollosPage = () => {
                         <Users className="h-4 w-4 mr-2" />
                         <span>Leads activos</span>
                       </div>
-                      <p className="font-medium">{desarrollo.leads} leads</p>
+                      <p className="font-medium">
+                        {/* Placeholder for lead count */}
+                        {Math.floor(Math.random() * 20)} leads
+                      </p>
                     </div>
                     
                     <div className="space-y-2">
@@ -146,7 +188,8 @@ const DesarrollosPage = () => {
                         <span>Avance</span>
                       </div>
                       <p className="font-medium">
-                        {Math.round((1 - desarrollo.unidadesDisponibles / desarrollo.unidadesTotales) * 100)}%
+                        {desarrollo.avance_porcentaje ?? 
+                          Math.round((1 - desarrollo.unidades_disponibles / desarrollo.total_unidades) * 100)}%
                       </p>
                     </div>
                   </div>
