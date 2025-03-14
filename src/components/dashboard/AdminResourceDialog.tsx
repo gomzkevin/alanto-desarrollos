@@ -29,13 +29,63 @@ export interface AdminResourceDialogProps {
   desarrolloId?: string; // Used for creating prototipos with a pre-selected desarrollo
 }
 
-// Define a type for the form values based on the resource type
-type FormValues =
-  | Tables<'desarrollos'>
-  | Tables<'prototipos'>
-  | Tables<'leads'>
-  | Tables<'cotizaciones'>
-  | Record<string, any>;
+// Define type interfaces for different resource types
+interface DesarrolloResource {
+  id?: string;
+  nombre?: string;
+  ubicacion?: string;
+  total_unidades?: number;
+  unidades_disponibles?: number;
+  avance_porcentaje?: number;
+  fecha_inicio?: string;
+  fecha_entrega?: string;
+  descripcion?: string;
+  imagen_url?: string;
+}
+
+interface PrototipoResource {
+  id?: string;
+  nombre?: string;
+  tipo?: string;
+  precio?: number;
+  superficie?: number;
+  habitaciones?: number;
+  baños?: number;
+  total_unidades?: number;
+  unidades_disponibles?: number;
+  desarrollo_id?: string;
+  descripcion?: string;
+  imagen_url?: string;
+  unidades_vendidas?: number;
+  unidades_con_anticipo?: number;
+}
+
+interface LeadResource {
+  id?: string;
+  nombre?: string;
+  email?: string;
+  telefono?: string;
+  agente?: string;
+  estado?: string;
+  origen?: string;
+  interes_en?: string;
+  notas?: string;
+}
+
+interface CotizacionResource {
+  id?: string;
+  lead_id?: string;
+  desarrollo_id?: string;
+  prototipo_id?: string;
+  monto_anticipo?: number;
+  numero_pagos?: number;
+  monto_finiquito?: number;
+  usar_finiquito?: boolean;
+  notas?: string;
+}
+
+// Define a union type for all resources
+type FormValues = DesarrolloResource | PrototipoResource | LeadResource | CotizacionResource;
 
 // Tipos de propiedades para el dropdown de Tipo
 const TIPOS_PROPIEDADES = [
@@ -134,6 +184,8 @@ const AdminResourceDialog = ({
             if (resourceType === 'cotizaciones') {
               setSelectedDesarrolloId(data.desarrollo_id);
               setUsarFiniquito(data.usar_finiquito || false);
+            } else if (resourceType === 'prototipos' && data.desarrollo_id) {
+              setSelectedDesarrolloId(data.desarrollo_id);
             }
           }
         } catch (error) {
@@ -150,10 +202,10 @@ const AdminResourceDialog = ({
           setResource({
             desarrollo_id: desarrolloId,
             total_unidades: 0,
-            unidades_disponibles: 0,
             unidades_vendidas: 0,
-            unidades_con_anticipo: 0
-          });
+            unidades_con_anticipo: 0,
+            unidades_disponibles: 0
+          } as PrototipoResource);
         } else {
           setResource({});
         }
@@ -265,72 +317,83 @@ const AdminResourceDialog = ({
       const dataToSave = { ...values };
       
       // For prototipos, set the desarrollo_id from props if available
-      if (resourceType === 'prototipos' && desarrolloId && !resourceId) {
-        dataToSave.desarrollo_id = desarrolloId;
+      if (resourceType === 'prototipos') {
+        const prototipoData = dataToSave as PrototipoResource;
         
-        // Calculate unidades_disponibles based on total - vendidas - anticipos
-        const total = Number(dataToSave.total_unidades) || 0;
-        const vendidas = Number(dataToSave.unidades_vendidas) || 0;
-        const anticipos = Number(dataToSave.unidades_con_anticipo) || 0;
-        dataToSave.unidades_disponibles = total - vendidas - anticipos;
+        if (desarrolloId && !resourceId) {
+          prototipoData.desarrollo_id = desarrolloId;
+        }
         
-        // Remove custom fields not in the database
-        delete dataToSave.unidades_vendidas;
-        delete dataToSave.unidades_con_anticipo;
+        if (prototipoData.total_unidades !== undefined) {
+          // Calculate unidades_disponibles based on total - vendidas - anticipos
+          const total = Number(prototipoData.total_unidades) || 0;
+          const vendidas = Number(prototipoData.unidades_vendidas) || 0;
+          const anticipos = Number(prototipoData.unidades_con_anticipo) || 0;
+          prototipoData.unidades_disponibles = total - vendidas - anticipos;
+        }
       }
       
       // Handle creation of new resource
       if (!resourceId) {
         if (resourceType === 'desarrollos') {
+          // For new desarrollos
           result = await supabase
             .from('desarrollos')
-            .insert(dataToSave as Tables<'desarrollos'>);
+            .insert(dataToSave as DesarrolloResource);
         } else if (resourceType === 'prototipos') {
+          // For new prototipos
+          const prototipoData = { ...dataToSave as PrototipoResource };
+          
+          // Remove custom temporary fields before saving to database
+          const { unidades_vendidas, unidades_con_anticipo, ...dataToInsert } = prototipoData;
+          
           result = await supabase
             .from('prototipos')
-            .insert(dataToSave as Tables<'prototipos'>);
+            .insert(dataToInsert);
         } else if (resourceType === 'leads') {
           result = await supabase
             .from('leads')
-            .insert(dataToSave as Tables<'leads'>);
+            .insert(dataToSave as LeadResource);
         } else if (resourceType === 'cotizaciones') {
           result = await supabase
             .from('cotizaciones')
-            .insert(dataToSave as Tables<'cotizaciones'>);
+            .insert(dataToSave as CotizacionResource);
         }
       } else {
         // Handle updating existing resource
         if (resourceType === 'desarrollos') {
           result = await supabase
             .from('desarrollos')
-            .update(dataToSave as Tables<'desarrollos'>)
+            .update(dataToSave as DesarrolloResource)
             .eq('id', resourceId);
         } else if (resourceType === 'prototipos') {
-          // Para actualizaciones de prototipos, también calcular unidades_disponibles
-          if (resourceType === 'prototipos') {
-            const total = Number(dataToSave.total_unidades) || 0;
-            const vendidas = Number(dataToSave.unidades_vendidas) || 0;
-            const anticipos = Number(dataToSave.unidades_con_anticipo) || 0;
-            dataToSave.unidades_disponibles = total - vendidas - anticipos;
-            
-            // Remove custom fields not in the database
-            delete dataToSave.unidades_vendidas;
-            delete dataToSave.unidades_con_anticipo;
+          // Para actualizaciones de prototipos
+          const prototipoData = { ...dataToSave as PrototipoResource };
+          
+          if (prototipoData.total_unidades !== undefined) {
+            // Calculate unidades_disponibles based on total - vendidas - anticipos
+            const total = Number(prototipoData.total_unidades) || 0;
+            const vendidas = Number(prototipoData.unidades_vendidas) || 0;
+            const anticipos = Number(prototipoData.unidades_con_anticipo) || 0;
+            prototipoData.unidades_disponibles = total - vendidas - anticipos;
           }
+          
+          // Remove custom temporary fields before saving to database
+          const { unidades_vendidas, unidades_con_anticipo, ...dataToUpdate } = prototipoData;
           
           result = await supabase
             .from('prototipos')
-            .update(dataToSave as Tables<'prototipos'>)
+            .update(dataToUpdate)
             .eq('id', resourceId);
         } else if (resourceType === 'leads') {
           result = await supabase
             .from('leads')
-            .update(dataToSave as Tables<'leads'>)
+            .update(dataToSave as LeadResource)
             .eq('id', resourceId);
         } else if (resourceType === 'cotizaciones') {
           result = await supabase
             .from('cotizaciones')
-            .update(dataToSave as Tables<'cotizaciones'>)
+            .update(dataToSave as CotizacionResource)
             .eq('id', resourceId);
         }
       }
