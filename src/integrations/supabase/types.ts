@@ -57,6 +57,67 @@ export type Database = {
         }
         Relationships: []
       }
+      cotizaciones: {
+        Row: {
+          created_at: string
+          desarrollo_id: string
+          id: string
+          lead_id: string
+          monto_anticipo: number
+          monto_finiquito: number | null
+          notas: string | null
+          numero_pagos: number
+          prototipo_id: string
+          usar_finiquito: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          desarrollo_id: string
+          id?: string
+          lead_id: string
+          monto_anticipo: number
+          monto_finiquito?: number | null
+          notas?: string | null
+          numero_pagos: number
+          prototipo_id: string
+          usar_finiquito?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          desarrollo_id?: string
+          id?: string
+          lead_id?: string
+          monto_anticipo?: number
+          monto_finiquito?: number | null
+          notas?: string | null
+          numero_pagos?: number
+          prototipo_id?: string
+          usar_finiquito?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cotizaciones_desarrollo_id_fkey"
+            columns: ["desarrollo_id"]
+            isOneToOne: false
+            referencedRelation: "desarrollos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_prototipo_id_fkey"
+            columns: ["prototipo_id"]
+            isOneToOne: false
+            referencedRelation: "prototipos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       desarrollos: {
         Row: {
           avance_porcentaje: number | null

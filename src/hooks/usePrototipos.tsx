@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
-type Prototipo = Tables<"prototipos">;
+export type Prototipo = Tables<"prototipos">;
 
 type FetchPrototiposOptions = {
   desarrolloId?: string;
@@ -48,7 +48,7 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
       }
       
       console.log('Prototipos fetched:', data);
-      return data || [];
+      return data as Prototipo[];
     } catch (error) {
       console.error('Error in fetchPrototipos:', error);
       throw error;

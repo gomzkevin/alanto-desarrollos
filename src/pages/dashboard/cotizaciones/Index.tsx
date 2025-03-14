@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { AdminResourceDialog } from '@/components/dashboard/AdminResourceDialog';
@@ -14,55 +13,30 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tables } from '@/integrations/supabase/types';
-
-// Fetch cotizaciones with lead and prototipo info
-const fetchCotizaciones = async () => {
-  const { data, error } = await supabase
-    .from('cotizaciones')
-    .select(`
-      *,
-      lead:lead_id(*),
-      prototipo:prototipo_id(*),
-      desarrollo:desarrollo_id(*)
-    `)
-    .order('created_at', { ascending: false });
-    
-  if (error) {
-    console.error('Error fetching cotizaciones:', error);
-    throw error;
-  }
-  
-  return data || [];
-};
+import useCotizaciones, { Cotizacion } from '@/hooks/useCotizaciones';
 
 const CotizacionesPage = () => {
   const { canCreateResource } = useUserRole();
-  const [selectedCotizacion, setSelectedCotizacion] = useState<any>(null);
+  const [selectedCotizacion, setSelectedCotizacion] = useState<Cotizacion | null>(null);
   
   const { 
-    data: cotizaciones = [], 
+    cotizaciones, 
     isLoading, 
     error,
     refetch 
-  } = useQuery({
-    queryKey: ['cotizaciones'],
-    queryFn: fetchCotizaciones
-  });
+  } = useCotizaciones();
 
   const handleExportPDF = () => {
     alert('Exportar a PDF (función en desarrollo)');
   };
   
-  const handleViewCotizacion = (cotizacion: any) => {
+  const handleViewCotizacion = (cotizacion: Cotizacion) => {
     setSelectedCotizacion(cotizacion);
   };
   
   // Generate payment schedule based on cotizacion data
-  const generatePaymentSchedule = (cotizacion: any) => {
+  const generatePaymentSchedule = (cotizacion: Cotizacion | null) => {
     if (!cotizacion) return [];
     
     const prototipo = cotizacion.prototipo;
