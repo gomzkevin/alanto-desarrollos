@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -15,7 +14,6 @@ import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 
-// Define the allowed resource types
 export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones';
 
 export interface AdminResourceDialogProps {
@@ -26,85 +24,9 @@ export interface AdminResourceDialogProps {
   onSave?: () => void;
   buttonText?: string;
   onSuccess?: () => void;
-  desarrolloId?: string; // Used for creating prototipos with a pre-selected desarrollo
+  desarrolloId?: string;
 }
 
-// Define type interfaces matching the Supabase tables exactly
-interface DesarrolloResource {
-  id?: string;
-  nombre: string;
-  ubicacion: string;
-  total_unidades: number;
-  unidades_disponibles: number;
-  avance_porcentaje?: number;
-  fecha_inicio?: string;
-  fecha_entrega?: string;
-  descripcion?: string;
-  imagen_url?: string;
-  adr_base?: number;
-  comision_operador?: number;
-  es_gastos_fijos_porcentaje?: boolean;
-  es_gastos_variables_porcentaje?: boolean;
-  es_impuestos_porcentaje?: boolean;
-  es_mantenimiento_porcentaje?: boolean;
-  gastos_fijos?: number;
-  gastos_variables?: number;
-  impuestos?: number;
-  mantenimiento_valor?: number;
-  moneda?: string;
-  ocupacion_anual?: number;
-}
-
-interface PrototipoResource {
-  id?: string;
-  nombre: string;
-  tipo: string;
-  precio: number;
-  superficie?: number;
-  habitaciones?: number;
-  baños?: number;
-  total_unidades: number;
-  unidades_disponibles: number;
-  desarrollo_id: string;
-  descripcion?: string;
-  imagen_url?: string;
-  caracteristicas?: Json;
-  // These fields are only used for UI and calculations
-  unidades_vendidas?: number;
-  unidades_con_anticipo?: number;
-}
-
-interface LeadResource {
-  id?: string;
-  nombre: string;
-  email?: string;
-  telefono?: string;
-  agente?: string;
-  estado?: string;
-  origen?: string;
-  interes_en?: string;
-  notas?: string;
-  fecha_creacion?: string;
-  ultimo_contacto?: string;
-}
-
-interface CotizacionResource {
-  id?: string;
-  lead_id: string;
-  desarrollo_id: string;
-  prototipo_id: string;
-  monto_anticipo: number;
-  numero_pagos: number;
-  monto_finiquito?: number;
-  usar_finiquito?: boolean;
-  notas?: string;
-  created_at?: string;
-}
-
-// Define a union type for all resources
-type FormValues = DesarrolloResource | PrototipoResource | LeadResource | CotizacionResource;
-
-// Tipos de propiedades para el dropdown de Tipo
 const TIPOS_PROPIEDADES = [
   { value: 'apartamento', label: 'Apartamento' },
   { value: 'casa', label: 'Casa' },
@@ -133,20 +55,14 @@ const AdminResourceDialog = ({
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | null>(desarrolloId || null);
   const [usarFiniquito, setUsarFiniquito] = useState(false);
   
-  // Get leads for dropdown
   const { leads } = useLeads();
-  
-  // Get desarrollos for dropdown
   const { desarrollos } = useDesarrollos();
-  
-  // Get prototipos for the selected desarrollo
   const { prototipos } = usePrototipos({ 
     desarrolloId: selectedDesarrolloId 
   });
 
-  // Handle open state based on prop or controlled state
   const isOpen = open !== undefined ? open : dialogOpen;
-  
+
   const handleOpenChange = (newOpen: boolean) => {
     if (onClose && !newOpen) {
       onClose();
@@ -157,64 +73,53 @@ const AdminResourceDialog = ({
   useEffect(() => {
     const fetchResource = async () => {
       if (resourceId) {
-        try {
-          let query;
-          
-          // TypeScript-safe way to fetch resource by type
-          if (resourceType === 'desarrollos') {
-            query = supabase
-              .from('desarrollos')
-              .select('*')
-              .eq('id', resourceId)
-              .single();
-          } else if (resourceType === 'prototipos') {
-            query = supabase
-              .from('prototipos')
-              .select('*')
-              .eq('id', resourceId)
-              .single();
-          } else if (resourceType === 'leads') {
-            query = supabase
-              .from('leads')
-              .select('*')
-              .eq('id', resourceId)
-              .single();
-          } else if (resourceType === 'cotizaciones') {
-            query = supabase
-              .from('cotizaciones')
-              .select('*')
-              .eq('id', resourceId)
-              .single();
-          }
-          
-          const { data, error } = await query;
+        let query;
+        
+        if (resourceType === 'desarrollos') {
+          query = supabase
+            .from('desarrollos')
+            .select('*')
+            .eq('id', resourceId)
+            .single();
+        } else if (resourceType === 'prototipos') {
+          query = supabase
+            .from('prototipos')
+            .select('*')
+            .eq('id', resourceId)
+            .single();
+        } else if (resourceType === 'leads') {
+          query = supabase
+            .from('leads')
+            .select('*')
+            .eq('id', resourceId)
+            .single();
+        } else if (resourceType === 'cotizaciones') {
+          query = supabase
+            .from('cotizaciones')
+            .select('*')
+            .eq('id', resourceId)
+            .single();
+        }
+        
+        const { data, error } = await query;
 
-          if (error) {
-            console.error('Error fetching resource:', error);
-            toast({
-              title: 'Error',
-              description: `No se pudo cargar el recurso: ${error.message}`,
-              variant: 'destructive',
-            });
-          } else {
-            setResource(data);
-            if (resourceType === 'cotizaciones') {
-              setSelectedDesarrolloId(data.desarrollo_id);
-              setUsarFiniquito(data.usar_finiquito || false);
-            } else if (resourceType === 'prototipos' && data.desarrollo_id) {
-              setSelectedDesarrolloId(data.desarrollo_id);
-            }
-          }
-        } catch (error) {
-          console.error('Error in fetchResource:', error);
+        if (error) {
+          console.error('Error fetching resource:', error);
           toast({
             title: 'Error',
-            description: 'Ha ocurrido un error al cargar el recurso',
+            description: `No se pudo cargar el recurso: ${error.message}`,
             variant: 'destructive',
           });
+        } else {
+          setResource(data as FormValues);
+          if (resourceType === 'cotizaciones') {
+            setSelectedDesarrolloId(data.desarrollo_id);
+            setUsarFiniquito(data.usar_finiquito || false);
+          } else if (resourceType === 'prototipos' && data.desarrollo_id) {
+            setSelectedDesarrolloId(data.desarrollo_id);
+          }
         }
       } else {
-        // Inicializar con valores predeterminados
         if (resourceType === 'prototipos' && desarrolloId) {
           setResource({
             desarrollo_id: desarrolloId,
@@ -245,8 +150,6 @@ const AdminResourceDialog = ({
             monto_anticipo: 0,
             numero_pagos: 0
           } as CotizacionResource);
-        } else {
-          setResource({});
         }
       }
     };
@@ -323,24 +226,32 @@ const AdminResourceDialog = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setResource(prev => prev ? ({ ...prev, [name]: value }) : { [name]: value });
+    setResource(prev => prev ? ({ ...prev, [name]: value }) as FormValues : null);
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setResource(prev => prev ? ({ ...prev, [name]: value }) : { [name]: value });
+    setResource(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, [name]: value };
+      return updated as FormValues;
+    });
     
-    // Handle desarrollo_id changes to update the prototipo dropdown
     if (name === 'desarrollo_id') {
       setSelectedDesarrolloId(value);
-      // Clear the selected prototipo when desarrollo changes
-      setResource(prev => prev ? ({ ...prev, prototipo_id: '' }) : { prototipo_id: '' });
+      setResource(prev => {
+        if (!prev) return null;
+        return { ...prev, prototipo_id: '' } as FormValues;
+      });
     }
   };
 
   const handleSwitchChange = (name: string, checked: boolean) => {
-    setResource(prev => prev ? ({ ...prev, [name]: checked }) : { [name]: checked });
+    setResource(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, [name]: checked };
+      return updated as FormValues;
+    });
     
-    // Handle specifically for the usar_finiquito switch to update the form fields
     if (name === 'usar_finiquito') {
       setUsarFiniquito(checked);
     }
@@ -352,19 +263,15 @@ const AdminResourceDialog = ({
     try {
       let result;
       
-      // Prepare the data for saving
       const dataToSave = { ...values };
       
-      // For prototipos, handle special cases
       if (resourceType === 'prototipos') {
         const prototipoData = dataToSave as PrototipoResource;
         
-        // Make sure desarrollo_id is set if available from props
         if (desarrolloId && !resourceId) {
           prototipoData.desarrollo_id = desarrolloId;
         }
         
-        // Calculate unidades_disponibles
         if (prototipoData.total_unidades !== undefined) {
           const total = Number(prototipoData.total_unidades) || 0;
           const vendidas = Number(prototipoData.unidades_vendidas) || 0;
@@ -372,23 +279,19 @@ const AdminResourceDialog = ({
           prototipoData.unidades_disponibles = total - vendidas - anticipos;
         }
         
-        // Remove fields that aren't in the database
         const { unidades_vendidas, unidades_con_anticipo, ...dataToModify } = prototipoData;
         
-        // Handle creation of new resource
         if (!resourceId) {
           result = await supabase
             .from('prototipos')
             .insert(dataToModify);
         } else {
-          // Handle update of existing resource
           result = await supabase
             .from('prototipos')
             .update(dataToModify)
             .eq('id', resourceId);
         }
       } else if (resourceType === 'desarrollos') {
-        // Handle Desarrollo resources
         if (!resourceId) {
           const desarrolloData = dataToSave as DesarrolloResource;
           result = await supabase
@@ -401,7 +304,6 @@ const AdminResourceDialog = ({
             .eq('id', resourceId);
         }
       } else if (resourceType === 'leads') {
-        // Handle Lead resources
         if (!resourceId) {
           const leadData = dataToSave as LeadResource;
           result = await supabase
@@ -414,7 +316,6 @@ const AdminResourceDialog = ({
             .eq('id', resourceId);
         }
       } else if (resourceType === 'cotizaciones') {
-        // Handle Cotizacion resources
         if (!resourceId) {
           const cotizacionData = dataToSave as CotizacionResource;
           result = await supabase
@@ -460,7 +361,6 @@ const AdminResourceDialog = ({
     }
   };
 
-  // If the component is used with a button
   const renderTriggerButton = () => {
     if (open === undefined) {
       return (
@@ -473,7 +373,6 @@ const AdminResourceDialog = ({
   };
 
   const renderFormField = (field: any) => {
-    // Si es prototipo y el campo es desarrollo_id, omitir ya que usamos el ID desde los props
     if (resourceType === 'prototipos' && field.name === 'desarrollo_id' && desarrolloId) {
       return null;
     }
@@ -588,3 +487,4 @@ const AdminResourceDialog = ({
 };
 
 export default AdminResourceDialog;
+
