@@ -16,13 +16,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from "sonner";
 
+// Define an interface for the financial configuration
+interface FinancialConfig {
+  comision_operador: number;
+  mantenimiento_valor: number;
+  es_mantenimiento_porcentaje: boolean;
+  gastos_fijos: number;
+  es_gastos_fijos_porcentaje: boolean;
+  gastos_variables: number;
+  es_gastos_variables_porcentaje: boolean;
+  impuestos: number;
+  es_impuestos_porcentaje: boolean;
+  plusvalia_anual: number;
+  tasa_interes: number;
+}
+
 export const Calculator = () => {
   const [propertyValue, setPropertyValue] = useState(3500000);
   const [occupancyRate, setOccupancyRate] = useState(74); // percentage
   const [nightlyRate, setNightlyRate] = useState(1800);
   const [years, setYears] = useState(10);
   const [annualGrowth, setAnnualGrowth] = useState(5); // percentage
-  const [financialConfig, setFinancialConfig] = useState({
+  const [financialConfig, setFinancialConfig] = useState<FinancialConfig>({
     comision_operador: 15,
     mantenimiento_valor: 5,
     es_mantenimiento_porcentaje: true,
@@ -66,7 +81,7 @@ export const Calculator = () => {
         
         if (data) {
           // Convert the Supabase data to match our financialConfig state structure
-          const configData = {
+          const configData: FinancialConfig = {
             comision_operador: data.comision_operador || 15,
             mantenimiento_valor: data.mantenimiento_valor || 5,
             es_mantenimiento_porcentaje: data.es_mantenimiento_porcentaje !== null ? data.es_mantenimiento_porcentaje : true,
@@ -174,7 +189,19 @@ export const Calculator = () => {
     try {
       const { error } = await supabase
         .from('configuracion_financiera')
-        .update(financialConfig)
+        .update({
+          comision_operador: financialConfig.comision_operador,
+          mantenimiento_valor: financialConfig.mantenimiento_valor,
+          es_mantenimiento_porcentaje: financialConfig.es_mantenimiento_porcentaje,
+          gastos_fijos: financialConfig.gastos_fijos,
+          es_gastos_fijos_porcentaje: financialConfig.es_gastos_fijos_porcentaje,
+          gastos_variables: financialConfig.gastos_variables,
+          es_gastos_variables_porcentaje: financialConfig.es_gastos_variables_porcentaje,
+          impuestos: financialConfig.impuestos,
+          es_impuestos_porcentaje: financialConfig.es_impuestos_porcentaje,
+          plusvalia_anual: financialConfig.plusvalia_anual,
+          tasa_interes: financialConfig.tasa_interes
+        })
         .eq('id', 1);
       
       if (error) {

@@ -98,18 +98,46 @@ const ConfiguracionPage = () => {
     { id: '3', nombre: 'Carlos Rodríguez', email: 'carlos@ejemplo.com', rol: 'vendedor', activo: false }
   ]);
 
+  // Fetch global financial configuration from Supabase
   useEffect(() => {
-    // Aquí se cargarían los datos reales desde Supabase
-    // const fetchConfig = async () => {
-    //   const { data, error } = await supabase
-    //     .from('configuracion_financiera')
-    //     .select('*')
-    //     .single();
-    //   
-    //   if (data) setFinanzasConfig(data);
-    // };
+    const fetchGlobalConfig = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('configuracion_financiera')
+          .select('*')
+          .eq('id', 1)
+          .single();
+          
+        if (error) {
+          console.error('Error fetching financial configuration:', error);
+          return;
+        }
+        
+        if (data) {
+          // Map database fields to our state structure
+          setFinanzasConfig({
+            tipoCambio: data.tipo_cambio || 17.5,
+            tasaInteres: data.tasa_interes || 7,
+            moneda: data.moneda || 'MXN',
+            comisionOperador: data.comision_operador || 15,
+            mantenimientoValor: data.mantenimiento_valor || 5,
+            esMantenimientoPorcentaje: data.es_mantenimiento_porcentaje !== null ? data.es_mantenimiento_porcentaje : true,
+            gastosFijos: data.gastos_fijos || 2500,
+            esGastosFijosPorcentaje: data.es_gastos_fijos_porcentaje !== null ? data.es_gastos_fijos_porcentaje : false,
+            gastosVariables: data.gastos_variables || 12,
+            esGastosVariablesPorcentaje: data.es_gastos_variables_porcentaje !== null ? data.es_gastos_variables_porcentaje : true,
+            impuestos: data.impuestos || 35,
+            esImpuestosPorcentaje: data.es_impuestos_porcentaje !== null ? data.es_impuestos_porcentaje : true,
+            adr_base: data.adr_base || 1800,
+            ocupacion_anual: data.ocupacion_anual || 70
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching global config:', err);
+      }
+    };
     
-    // fetchConfig();
+    fetchGlobalConfig();
     
     // Verificar si el usuario es administrador
     // const checkUserRole = async () => {
@@ -211,11 +239,39 @@ const ConfiguracionPage = () => {
         }
       } else {
         // Guardar la configuración global
-        // Aquí iría el código para guardar en la tabla configuracion_financiera
-        toast({
-          title: "Configuración guardada",
-          description: "Los parámetros financieros globales han sido actualizados correctamente.",
-        });
+        const { error } = await supabase
+          .from('configuracion_financiera')
+          .update({
+            tipo_cambio: finanzasConfig.tipoCambio,
+            tasa_interes: finanzasConfig.tasaInteres,
+            moneda: finanzasConfig.moneda,
+            comision_operador: finanzasConfig.comisionOperador,
+            mantenimiento_valor: finanzasConfig.mantenimientoValor,
+            es_mantenimiento_porcentaje: finanzasConfig.esMantenimientoPorcentaje,
+            gastos_fijos: finanzasConfig.gastosFijos,
+            es_gastos_fijos_porcentaje: finanzasConfig.esGastosFijosPorcentaje,
+            gastos_variables: finanzasConfig.gastosVariables,
+            es_gastos_variables_porcentaje: finanzasConfig.esGastosVariablesPorcentaje,
+            impuestos: finanzasConfig.impuestos,
+            es_impuestos_porcentaje: finanzasConfig.esImpuestosPorcentaje,
+            adr_base: finanzasConfig.adr_base,
+            ocupacion_anual: finanzasConfig.ocupacion_anual
+          })
+          .eq('id', 1);
+          
+        if (error) {
+          console.error('Error al guardar la configuración global:', error);
+          toast({
+            title: "Error al guardar",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Configuración guardada",
+            description: "Los parámetros financieros globales han sido actualizados correctamente.",
+          });
+        }
       }
     } catch (error) {
       console.error('Error al guardar la configuración:', error);
@@ -1049,4 +1105,3 @@ const ConfiguracionPage = () => {
 };
 
 export default ConfiguracionPage;
-
