@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
-type Desarrollo = Tables<"desarrollos">;
+export type Desarrollo = Tables<"desarrollos">;
 
 type FetchDesarrollosOptions = {
   withPrototipos?: boolean;
@@ -19,7 +19,7 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     console.log('Fetching desarrollos with options:', options);
     
     try {
-      // Use a simple query without joining tables to avoid type issues
+      // Use a simple query to avoid type issues
       let query = supabase
         .from('desarrollos')
         .select('*');
@@ -44,10 +44,10 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       }
       
       console.log('Desarrollos fetched:', data);
-      return data || [];
+      return data as Desarrollo[];
     } catch (error) {
       console.error('Error in fetchDesarrollos:', error);
-      return [];
+      return [] as Desarrollo[];
     }
   };
 

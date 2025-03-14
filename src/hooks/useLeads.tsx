@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
-type Lead = Tables<"leads">;
+export type Lead = Tables<"leads">;
 
 type FetchLeadsOptions = {
   limit?: number;
@@ -42,10 +42,10 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
       }
       
       console.log('Leads fetched:', data);
-      return data || [];
+      return data as Lead[];
     } catch (error) {
       console.error('Error in fetchLeads:', error);
-      return [];
+      return [] as Lead[];
     }
   };
 
