@@ -133,7 +133,7 @@ const CotizacionesPage = () => {
             open={showCotizacionDialog}
             onClose={() => setShowCotizacionDialog(false)}
             onSuccess={handleCotizacionCreated}
-            lead_id={selectedLeadId}
+            lead_id={selectedLeadId || undefined}
           />
         </div>
         

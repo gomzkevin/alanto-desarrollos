@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -26,6 +25,7 @@ export interface AdminResourceDialogProps {
   buttonText?: string;
   onSuccess?: () => void;
   desarrolloId?: string;
+  lead_id?: string;
 }
 
 // Define interfaces for each resource type
@@ -119,7 +119,8 @@ const AdminResourceDialog = ({
   onSave,
   buttonText,
   onSuccess,
-  desarrolloId
+  desarrolloId,
+  lead_id
 }: AdminResourceDialogProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -218,7 +219,7 @@ const AdminResourceDialog = ({
           } as LeadResource);
         } else if (resourceType === 'cotizaciones') {
           setResource({
-            lead_id: '',
+            lead_id: lead_id || '',
             desarrollo_id: selectedDesarrolloId || '',
             prototipo_id: '',
             monto_anticipo: 0,
@@ -296,7 +297,7 @@ const AdminResourceDialog = ({
       fetchResource();
       defineFields();
     }
-  }, [isOpen, resourceId, resourceType, toast, leads, desarrollos, prototipos, usarFiniquito, desarrolloId, selectedDesarrolloId]);
+  }, [isOpen, resourceId, resourceType, toast, leads, desarrollos, prototipos, usarFiniquito, desarrolloId, selectedDesarrolloId, lead_id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -350,7 +351,6 @@ const AdminResourceDialog = ({
           prototipoData.unidades_disponibles = total - vendidas - anticipos;
         }
         
-        // No necesitamos enviar estos campos a la base de datos, los recalculamos
         const { unidades_vendidas, unidades_con_anticipo, ...dataToModify } = prototipoData;
         
         if (!resourceId) {
@@ -663,3 +663,4 @@ const AdminResourceDialog = ({
 };
 
 export default AdminResourceDialog;
+
