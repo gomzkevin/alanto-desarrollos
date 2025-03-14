@@ -134,7 +134,7 @@ export const ProyeccionesPage = () => {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-          <Card className="xl:col-span-3">
+          <Card className="xl:col-span-4 xl:max-w-sm">
             <CardHeader>
               <CardTitle>Parámetros de proyección</CardTitle>
               <CardDescription>
@@ -158,7 +158,7 @@ export const ProyeccionesPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="xl:col-span-9">
+          <Card className="xl:col-span-8">
             <CardHeader>
               <CardTitle>Resultados de la proyección</CardTitle>
               <CardDescription>
@@ -186,7 +186,7 @@ export const ProyeccionesPage = () => {
                         data={chartData}
                         index="year"
                         categories={["airbnbProfit", "alternativeInvestment"]}
-                        colors={["indigo", "teal"]}
+                        colors={["indigo-600", "teal-600"]}
                         valueFormatter={(value) => formatCurrency(value)}
                         showLegend={true}
                         showXAxis={true}
@@ -247,7 +247,7 @@ export const ProyeccionesPage = () => {
                   <div className="p-3 border-b border-indigo-100 bg-indigo-100/50">
                     <p className="text-sm text-indigo-700 font-medium">Inversión en Airbnb</p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2">
+                  <div className="grid grid-cols-2">
                     <div className="p-3 border-r border-indigo-100">
                       <p className="text-xs text-indigo-600/70 font-medium">Valor de la propiedad</p>
                       <p className="text-lg font-bold text-indigo-900 mt-1 financial-number">{formatCurrency(summaryData.propertyValue)}</p>
@@ -264,7 +264,7 @@ export const ProyeccionesPage = () => {
                   <div className="p-3 border-b border-teal-100 bg-teal-100/50">
                     <p className="text-sm text-teal-700 font-medium">Inversión alternativa</p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2">
+                  <div className="grid grid-cols-2">
                     <div className="p-3 border-r border-teal-100">
                       <p className="text-xs text-teal-600/70 font-medium">Capital inicial</p>
                       <p className="text-lg font-bold text-teal-900 mt-1 financial-number">{formatCurrency(summaryData.propertyValue)}</p>

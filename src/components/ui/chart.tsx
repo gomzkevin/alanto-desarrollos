@@ -14,7 +14,7 @@ export const LineChart = (props) => (
     showGridLines={true}
     showAnimation={true}
     className={`${props.className || ''} bg-white`}
-    colors={props.colors || ["indigo", "teal"]}
+    colors={props.colors || ["indigo-500", "teal-500"]}
     // Ensure line thickness is visible
     customTooltip={props.customTooltip}
     showXAxis={true}
@@ -24,7 +24,7 @@ export const LineChart = (props) => (
     showLegend={props.showLegend !== false}
     showTooltip={props.showTooltip !== false}
     showGradient={true}
-    lineThickness={4}
+    lineThickness={3}
     valueFormatter={props.valueFormatter}
     yAxisWidth={props.yAxisWidth || 80}
     curveType={props.curveType || "linear"}
