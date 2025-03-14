@@ -7,8 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 type ExportPDFButtonProps = {
   resourceName?: string;
   resourceId?: string;
-  elementId?: string; // Added for PDF export from DOM element
-  fileName?: string; // Added for custom PDF file name
+  elementId?: string; // For PDF export from DOM element
+  fileName?: string;  // For custom PDF file name
   buttonText?: string;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   size?: "default" | "sm" | "lg" | "icon";

@@ -15,10 +15,8 @@ export {
   AreaChart,
   BarList,
   Card,
-  Color,
   DateRangePicker,
   DateRangePicker as Datepicker, // backwards compat.
-  Dropdown,
   ProgressBar,
   Tab,
   TabGroup,
@@ -36,3 +34,6 @@ export {
   Title,
   Tracker,
 } from "@tremor/react";
+
+// Export types with the proper syntax
+export type { Color } from "@tremor/react";
