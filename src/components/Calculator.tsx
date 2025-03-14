@@ -33,10 +33,12 @@ interface FinancialConfig {
 // Add props interface to accept a desarrollo_id and onDataUpdate callback
 interface CalculatorProps {
   desarrolloId?: string;
+  prototipoId?: string;
   onDataUpdate?: (data: any[]) => void;
+  shouldCalculate?: boolean;
 }
 
-export const Calculator = ({ desarrolloId, onDataUpdate }: CalculatorProps) => {
+export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalculate = false }: CalculatorProps) => {
   const [propertyValue, setPropertyValue] = useState(3500000);
   const [downPaymentPercent, setDownPaymentPercent] = useState(20);  // Anticipo: 20%
   const [downPaymentAmount, setDownPaymentAmount] = useState(700000); // 20% of 3,500,000
@@ -78,10 +80,40 @@ export const Calculator = ({ desarrolloId, onDataUpdate }: CalculatorProps) => {
     setDownPaymentAmount(amount);
   }, [propertyValue, downPaymentPercent]);
 
-  // Fetch financial configuration from Supabase based on desarrollo_id
+  // Fetch financial configuration from Supabase based on desarrollo_id and prototipo_id
   useEffect(() => {
     const getFinancialConfig = async () => {
       try {
+        // If we have a prototipo_id, we prioritize its configuration
+        if (prototipoId && prototipoId !== 'global') {
+          // Try to get prototipo-specific configuration
+          const { data: prototipoData, error: prototipoError } = await supabase
+            .from('prototipos')
+            .select('*, valor_estimado, adr_base, ocupacion_anual')
+            .eq('id', prototipoId)
+            .single();
+            
+          if (prototipoError) {
+            console.error('Error fetching prototipo data:', prototipoError);
+          } else if (prototipoData) {
+            // Set property value from prototipo if available
+            if (prototipoData.valor_estimado) {
+              setPropertyValue(prototipoData.valor_estimado);
+            }
+            
+            // Set nightly rate if available
+            if (prototipoData.adr_base) {
+              setNightlyRate(prototipoData.adr_base);
+            }
+            
+            // Set occupancy rate if available
+            if (prototipoData.ocupacion_anual) {
+              setOccupancyRate(prototipoData.ocupacion_anual);
+            }
+          }
+        }
+        
+        // Proceed with fetching financial configuration (either desarrollo-specific or global)
         const configData = await fetchFinancialConfig(desarrolloId);
         
         if (configData) {
@@ -102,13 +134,17 @@ export const Calculator = ({ desarrolloId, onDataUpdate }: CalculatorProps) => {
           
           setFinancialConfig(config);
           
-          // Also set initial property value and occupancy rate if they exist in config
-          if (configData.adr_base) {
-            setNightlyRate(configData.adr_base);
-          }
-          
-          if (configData.ocupacion_anual) {
-            setOccupancyRate(configData.ocupacion_anual);
+          // If no prototipo is selected or no values were found, use desarrollo settings
+          if ((!prototipoId || prototipoId === 'global') && configData) {
+            // Set nightly rate if available
+            if (configData.adr_base) {
+              setNightlyRate(configData.adr_base);
+            }
+            
+            // Set occupancy rate if available
+            if (configData.ocupacion_anual) {
+              setOccupancyRate(configData.ocupacion_anual);
+            }
           }
         }
       } catch (err) {
@@ -117,10 +153,12 @@ export const Calculator = ({ desarrolloId, onDataUpdate }: CalculatorProps) => {
     };
     
     getFinancialConfig();
-  }, [desarrolloId]);
+  }, [desarrolloId, prototipoId]);
   
-  // Calculate the projection data
+  // Calculate the projection data when shouldCalculate is true
   useEffect(() => {
+    if (!shouldCalculate && chartData.length > 0) return;
+    
     const annualRevenue = nightlyRate * 365 * (occupancyRate / 100);
     
     // Get financial parameters
@@ -175,12 +213,12 @@ export const Calculator = ({ desarrolloId, onDataUpdate }: CalculatorProps) => {
       // Property appreciation (estimated using plusvalia_anual)
       const propertyAppreciation = propertyValue * (Math.pow(1 + (plusvalia_anual / 100), year) - 1);
       
-      // Calculate alternative investment (e.g., stocks)
-      const alternativeInvestmentReturn = downPaymentAmount * (Math.pow(1 + (tasa_interes / 100), year) - 1);
+      // Calculate alternative investment - using full property value instead of just down payment
+      const alternativeInvestmentReturn = propertyValue * (Math.pow(1 + (tasa_interes / 100), year) - 1);
       alternativeCumulativeProfit = alternativeInvestmentReturn;
       
-      // Return on Investment (ROI) based on down payment
-      const annualRoi = (thisYearNetProfit / downPaymentAmount) * 100;
+      // Return on Investment (ROI) based on full property value
+      const annualRoi = (thisYearNetProfit / propertyValue) * 100;
       
       // Difference between cumulative Airbnb profit and alternative investment
       const difference = (airbnbCumulativeProfit + propertyAppreciation) - alternativeCumulativeProfit;
@@ -201,12 +239,12 @@ export const Calculator = ({ desarrolloId, onDataUpdate }: CalculatorProps) => {
     if (onDataUpdate) {
       onDataUpdate(data);
     }
-  }, [propertyValue, occupancyRate, nightlyRate, years, annualGrowth, financialConfig, downPaymentAmount, onDataUpdate]);
+  }, [propertyValue, occupancyRate, nightlyRate, years, annualGrowth, financialConfig, shouldCalculate, onDataUpdate]);
   
   // Save financial configuration to Supabase
   const saveFinancialConfig = async () => {
     try {
-      if (desarrolloId) {
+      if (desarrolloId && desarrolloId !== 'global') {
         // Find the specific configuration entry for this desarrollo
         const { data: existingConfig, error: findError } = await supabase
           .from('configuracion_financiera')
@@ -405,14 +443,6 @@ export const Calculator = ({ desarrolloId, onDataUpdate }: CalculatorProps) => {
               className="py-4"
             />
           </div>
-          
-          <Button 
-            type="button" 
-            className="w-full bg-indigo-600 hover:bg-indigo-700"
-            onClick={saveFinancialConfig}
-          >
-            Guardar configuración
-          </Button>
         </div>
       </Form>
     </div>

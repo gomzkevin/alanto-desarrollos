@@ -9,6 +9,7 @@ import { LineChart as LucideLineChart } from 'lucide-react'; // Rename to avoid 
 import { LineChart } from '@/components/ui/chart'; // Import from our chart components
 import { Calculator } from '@/components/Calculator';
 import useDesarrollos from '@/hooks/useDesarrollos';
+import usePrototipos from '@/hooks/usePrototipos';
 import { formatCurrency } from '@/lib/utils';
 import { 
   Table, 
@@ -22,7 +23,11 @@ import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
 
 export const ProyeccionesPage = () => {
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('global');
-  const { desarrollos = [], isLoading } = useDesarrollos();
+  const [selectedPrototipoId, setSelectedPrototipoId] = useState<string>('global');
+  const { desarrollos = [], isLoading: desarrollosLoading } = useDesarrollos();
+  const { prototipos = [], isLoading: prototiposLoading } = usePrototipos({ 
+    desarrolloId: selectedDesarrolloId !== 'global' ? selectedDesarrolloId : null
+  });
   const [chartData, setChartData] = useState<any[]>([]);
   const [summaryData, setSummaryData] = useState({
     airbnbReturn: 5655683,
@@ -30,6 +35,16 @@ export const ProyeccionesPage = () => {
     avgROI: 56.8
   });
   const [activeTab, setActiveTab] = useState('grafica');
+  const [shouldCalculate, setShouldCalculate] = useState(false);
+
+  const handleDesarrolloChange = (value: string) => {
+    setSelectedDesarrolloId(value);
+    setSelectedPrototipoId('global'); // Reset prototipo selection when desarrollo changes
+  };
+
+  const handlePrototipoChange = (value: string) => {
+    setSelectedPrototipoId(value);
+  };
 
   const handleChartDataUpdate = (data: any[]) => {
     setChartData(data);
@@ -46,6 +61,17 @@ export const ProyeccionesPage = () => {
     }
   };
 
+  const handleCreateProjection = () => {
+    setShouldCalculate(true);
+  };
+
+  // Reset shouldCalculate after calculation is done
+  useEffect(() => {
+    if (shouldCalculate && chartData.length > 0) {
+      setShouldCalculate(false);
+    }
+  }, [chartData, shouldCalculate]);
+
   return (
     <DashboardLayout>
       <div className="space-y-6 p-6 pb-16">
@@ -55,33 +81,57 @@ export const ProyeccionesPage = () => {
             <p className="text-slate-600">Calcula y compara el rendimiento potencial de inversiones inmobiliarias.</p>
           </div>
           
-          <div className="w-full sm:w-72">
-            <Select
-              value={selectedDesarrolloId}
-              onValueChange={setSelectedDesarrolloId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Configuración global (por defecto)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="global">Configuración global (por defecto)</SelectItem>
-                {desarrollos.map((desarrollo) => (
-                  <SelectItem key={desarrollo.id} value={desarrollo.id}>
-                    {desarrollo.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-slate-500 mt-1">
-              {selectedDesarrolloId !== "global" 
-                ? "Usando configuración específica de desarrollo" 
-                : "Usando configuración global"}
-            </p>
+          <div className="space-y-2 flex flex-col sm:items-end">
+            <div className="w-full sm:w-60">
+              <Select
+                value={selectedDesarrolloId}
+                onValueChange={handleDesarrolloChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar desarrollo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="global">Todos los desarrollos</SelectItem>
+                  {desarrollos.map((desarrollo) => (
+                    <SelectItem key={desarrollo.id} value={desarrollo.id}>
+                      {desarrollo.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="w-full sm:w-60">
+              <Select
+                value={selectedPrototipoId}
+                onValueChange={handlePrototipoChange}
+                disabled={selectedDesarrolloId === 'global'}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar prototipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="global">Todos los prototipos</SelectItem>
+                  {prototipos.map((prototipo) => (
+                    <SelectItem key={prototipo.id} value={prototipo.id}>
+                      {prototipo.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500 mt-1">
+                {selectedDesarrolloId === 'global' 
+                  ? "Selecciona un desarrollo primero" 
+                  : selectedPrototipoId !== 'global'
+                    ? "Usando configuración específica de prototipo"
+                    : "Usando configuración de desarrollo"}
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <Card>
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+          <Card className="xl:col-span-3">
             <CardHeader>
               <CardTitle>Parámetros de proyección</CardTitle>
               <CardDescription>
@@ -90,13 +140,22 @@ export const ProyeccionesPage = () => {
             </CardHeader>
             <CardContent>
               <Calculator 
-                desarrolloId={selectedDesarrolloId !== "global" ? selectedDesarrolloId : undefined} 
-                onDataUpdate={handleChartDataUpdate} 
+                desarrolloId={selectedDesarrolloId !== "global" ? selectedDesarrolloId : undefined}
+                prototipoId={selectedPrototipoId !== "global" ? selectedPrototipoId : undefined}
+                onDataUpdate={handleChartDataUpdate}
+                shouldCalculate={shouldCalculate}
               />
+              
+              <Button 
+                onClick={handleCreateProjection} 
+                className="w-full bg-indigo-600 hover:bg-indigo-700 mt-6"
+              >
+                Crear Proyección
+              </Button>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="xl:col-span-9">
             <CardHeader>
               <CardTitle>Resultados de la proyección</CardTitle>
               <CardDescription>
@@ -138,7 +197,7 @@ export const ProyeccionesPage = () => {
                     </div>
                   ) : (
                     <div className="flex items-center justify-center h-[400px] text-slate-500">
-                      Ajusta los parámetros para generar una proyección
+                      Haz clic en "Crear Proyección" para generar el análisis
                     </div>
                   )}
                 </TabsContent>
@@ -169,7 +228,7 @@ export const ProyeccionesPage = () => {
                         ) : (
                           <TableRow>
                             <TableCell colSpan={5} className="text-center py-4 text-slate-500">
-                              No hay datos disponibles. Ajusta los parámetros para generar una proyección.
+                              Haz clic en "Crear Proyección" para generar el análisis.
                             </TableCell>
                           </TableRow>
                         )}
@@ -200,7 +259,7 @@ export const ProyeccionesPage = () => {
                 <ExportPDFButton
                   buttonText="Exportar PDF"
                   resourceName="proyeccion"
-                  fileName={`Proyeccion_${selectedDesarrolloId !== "global" ? selectedDesarrolloId : 'Global'}`}
+                  fileName={`Proyeccion_${selectedDesarrolloId !== "global" ? selectedDesarrolloId : 'Global'}_${selectedPrototipoId !== "global" ? selectedPrototipoId : 'Todos'}`}
                   className="flex items-center gap-2"
                 />
               </div>
