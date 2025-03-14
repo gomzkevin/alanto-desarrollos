@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,79 @@ export interface AdminResourceDialogProps {
   onSuccess?: () => void;
   desarrolloId?: string;
 }
+
+// Define interfaces for each resource type
+interface DesarrolloResource {
+  id?: string;
+  nombre: string;
+  ubicacion: string;
+  total_unidades: number;
+  unidades_disponibles: number;
+  avance_porcentaje?: number;
+  fecha_inicio?: string;
+  fecha_entrega?: string;
+  descripcion?: string;
+  imagen_url?: string;
+  moneda?: string;
+  comision_operador?: number;
+  mantenimiento_valor?: number;
+  es_mantenimiento_porcentaje?: boolean;
+  gastos_fijos?: number;
+  es_gastos_fijos_porcentaje?: boolean;
+  gastos_variables?: number;
+  es_gastos_variables_porcentaje?: boolean;
+  impuestos?: number;
+  es_impuestos_porcentaje?: boolean;
+  adr_base?: number;
+  ocupacion_anual?: number;
+}
+
+interface PrototipoResource {
+  id?: string;
+  nombre: string;
+  tipo: string;
+  precio: number;
+  superficie?: number;
+  habitaciones?: number;
+  baños?: number;
+  total_unidades: number;
+  unidades_disponibles: number;
+  unidades_vendidas?: number;
+  unidades_con_anticipo?: number;
+  desarrollo_id: string;
+  descripcion?: string;
+  imagen_url?: string;
+}
+
+interface LeadResource {
+  id?: string;
+  nombre: string;
+  email?: string;
+  telefono?: string;
+  interes_en?: string;
+  origen?: string;
+  estado?: string;
+  agente?: string;
+  notas?: string;
+  fecha_creacion?: string;
+  ultimo_contacto?: string;
+}
+
+interface CotizacionResource {
+  id?: string;
+  lead_id: string;
+  desarrollo_id: string;
+  prototipo_id: string;
+  monto_anticipo: number;
+  numero_pagos: number;
+  usar_finiquito?: boolean;
+  monto_finiquito?: number;
+  notas?: string;
+  created_at?: string;
+}
+
+// Union type for all resource types
+type FormValues = DesarrolloResource | PrototipoResource | LeadResource | CotizacionResource;
 
 const TIPOS_PROPIEDADES = [
   { value: 'apartamento', label: 'Apartamento' },
@@ -226,34 +300,31 @@ const AdminResourceDialog = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setResource(prev => prev ? ({ ...prev, [name]: value }) as FormValues : null);
+    if (resource) {
+      setResource({ ...resource, [name]: value } as FormValues);
+    }
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setResource(prev => {
-      if (!prev) return null;
-      const updated = { ...prev, [name]: value };
-      return updated as FormValues;
-    });
-    
-    if (name === 'desarrollo_id') {
-      setSelectedDesarrolloId(value);
-      setResource(prev => {
-        if (!prev) return null;
-        return { ...prev, prototipo_id: '' } as FormValues;
-      });
+    if (resource) {
+      setResource({ ...resource, [name]: value } as FormValues);
+      
+      if (name === 'desarrollo_id') {
+        setSelectedDesarrolloId(value);
+        if (resource) {
+          setResource({ ...resource, prototipo_id: '' } as FormValues);
+        }
+      }
     }
   };
 
   const handleSwitchChange = (name: string, checked: boolean) => {
-    setResource(prev => {
-      if (!prev) return null;
-      const updated = { ...prev, [name]: checked };
-      return updated as FormValues;
-    });
-    
-    if (name === 'usar_finiquito') {
-      setUsarFiniquito(checked);
+    if (resource) {
+      setResource({ ...resource, [name]: checked } as FormValues);
+      
+      if (name === 'usar_finiquito') {
+        setUsarFiniquito(checked);
+      }
     }
   };
 
@@ -279,52 +350,157 @@ const AdminResourceDialog = ({
           prototipoData.unidades_disponibles = total - vendidas - anticipos;
         }
         
+        // No necesitamos enviar estos campos a la base de datos, los recalculamos
         const { unidades_vendidas, unidades_con_anticipo, ...dataToModify } = prototipoData;
         
         if (!resourceId) {
           result = await supabase
             .from('prototipos')
-            .insert(dataToModify);
+            .insert({
+              nombre: dataToModify.nombre,
+              tipo: dataToModify.tipo,
+              precio: dataToModify.precio,
+              superficie: dataToModify.superficie,
+              habitaciones: dataToModify.habitaciones,
+              baños: dataToModify.baños,
+              total_unidades: dataToModify.total_unidades,
+              unidades_disponibles: dataToModify.unidades_disponibles,
+              desarrollo_id: dataToModify.desarrollo_id,
+              descripcion: dataToModify.descripcion,
+              imagen_url: dataToModify.imagen_url
+            });
         } else {
           result = await supabase
             .from('prototipos')
-            .update(dataToModify)
+            .update({
+              nombre: dataToModify.nombre,
+              tipo: dataToModify.tipo,
+              precio: dataToModify.precio,
+              superficie: dataToModify.superficie,
+              habitaciones: dataToModify.habitaciones,
+              baños: dataToModify.baños,
+              total_unidades: dataToModify.total_unidades,
+              unidades_disponibles: dataToModify.unidades_disponibles,
+              desarrollo_id: dataToModify.desarrollo_id,
+              descripcion: dataToModify.descripcion,
+              imagen_url: dataToModify.imagen_url
+            })
             .eq('id', resourceId);
         }
       } else if (resourceType === 'desarrollos') {
+        const desarrolloData = dataToSave as DesarrolloResource;
         if (!resourceId) {
-          const desarrolloData = dataToSave as DesarrolloResource;
           result = await supabase
             .from('desarrollos')
-            .insert(desarrolloData);
+            .insert({
+              nombre: desarrolloData.nombre,
+              ubicacion: desarrolloData.ubicacion,
+              total_unidades: desarrolloData.total_unidades,
+              unidades_disponibles: desarrolloData.unidades_disponibles,
+              avance_porcentaje: desarrolloData.avance_porcentaje,
+              fecha_inicio: desarrolloData.fecha_inicio,
+              fecha_entrega: desarrolloData.fecha_entrega,
+              descripcion: desarrolloData.descripcion,
+              imagen_url: desarrolloData.imagen_url,
+              moneda: desarrolloData.moneda,
+              comision_operador: desarrolloData.comision_operador,
+              mantenimiento_valor: desarrolloData.mantenimiento_valor,
+              es_mantenimiento_porcentaje: desarrolloData.es_mantenimiento_porcentaje,
+              gastos_fijos: desarrolloData.gastos_fijos,
+              es_gastos_fijos_porcentaje: desarrolloData.es_gastos_fijos_porcentaje,
+              gastos_variables: desarrolloData.gastos_variables,
+              es_gastos_variables_porcentaje: desarrolloData.es_gastos_variables_porcentaje,
+              impuestos: desarrolloData.impuestos,
+              es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje,
+              adr_base: desarrolloData.adr_base,
+              ocupacion_anual: desarrolloData.ocupacion_anual
+            });
         } else {
           result = await supabase
             .from('desarrollos')
-            .update(dataToSave as DesarrolloResource)
+            .update({
+              nombre: desarrolloData.nombre,
+              ubicacion: desarrolloData.ubicacion,
+              total_unidades: desarrolloData.total_unidades,
+              unidades_disponibles: desarrolloData.unidades_disponibles,
+              avance_porcentaje: desarrolloData.avance_porcentaje,
+              fecha_inicio: desarrolloData.fecha_inicio,
+              fecha_entrega: desarrolloData.fecha_entrega,
+              descripcion: desarrolloData.descripcion,
+              imagen_url: desarrolloData.imagen_url,
+              moneda: desarrolloData.moneda,
+              comision_operador: desarrolloData.comision_operador,
+              mantenimiento_valor: desarrolloData.mantenimiento_valor,
+              es_mantenimiento_porcentaje: desarrolloData.es_mantenimiento_porcentaje,
+              gastos_fijos: desarrolloData.gastos_fijos,
+              es_gastos_fijos_porcentaje: desarrolloData.es_gastos_fijos_porcentaje,
+              gastos_variables: desarrolloData.gastos_variables,
+              es_gastos_variables_porcentaje: desarrolloData.es_gastos_variables_porcentaje,
+              impuestos: desarrolloData.impuestos,
+              es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje,
+              adr_base: desarrolloData.adr_base,
+              ocupacion_anual: desarrolloData.ocupacion_anual
+            })
             .eq('id', resourceId);
         }
       } else if (resourceType === 'leads') {
+        const leadData = dataToSave as LeadResource;
         if (!resourceId) {
-          const leadData = dataToSave as LeadResource;
           result = await supabase
             .from('leads')
-            .insert(leadData);
+            .insert({
+              nombre: leadData.nombre,
+              email: leadData.email,
+              telefono: leadData.telefono,
+              interes_en: leadData.interes_en,
+              origen: leadData.origen,
+              estado: leadData.estado,
+              agente: leadData.agente,
+              notas: leadData.notas
+            });
         } else {
           result = await supabase
             .from('leads')
-            .update(dataToSave as LeadResource)
+            .update({
+              nombre: leadData.nombre,
+              email: leadData.email,
+              telefono: leadData.telefono,
+              interes_en: leadData.interes_en,
+              origen: leadData.origen,
+              estado: leadData.estado,
+              agente: leadData.agente,
+              notas: leadData.notas
+            })
             .eq('id', resourceId);
         }
       } else if (resourceType === 'cotizaciones') {
+        const cotizacionData = dataToSave as CotizacionResource;
         if (!resourceId) {
-          const cotizacionData = dataToSave as CotizacionResource;
           result = await supabase
             .from('cotizaciones')
-            .insert(cotizacionData);
+            .insert({
+              lead_id: cotizacionData.lead_id,
+              desarrollo_id: cotizacionData.desarrollo_id,
+              prototipo_id: cotizacionData.prototipo_id,
+              monto_anticipo: cotizacionData.monto_anticipo,
+              numero_pagos: cotizacionData.numero_pagos,
+              usar_finiquito: cotizacionData.usar_finiquito,
+              monto_finiquito: cotizacionData.monto_finiquito,
+              notas: cotizacionData.notas
+            });
         } else {
           result = await supabase
             .from('cotizaciones')
-            .update(dataToSave as CotizacionResource)
+            .update({
+              lead_id: cotizacionData.lead_id,
+              desarrollo_id: cotizacionData.desarrollo_id,
+              prototipo_id: cotizacionData.prototipo_id,
+              monto_anticipo: cotizacionData.monto_anticipo,
+              numero_pagos: cotizacionData.numero_pagos,
+              usar_finiquito: cotizacionData.usar_finiquito,
+              monto_finiquito: cotizacionData.monto_finiquito,
+              notas: cotizacionData.notas
+            })
             .eq('id', resourceId);
         }
       }
@@ -476,7 +652,7 @@ const AdminResourceDialog = ({
             <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" onClick={() => saveResource(resource as FormValues)} disabled={isSubmitting}>
+            <Button type="submit" onClick={() => resource && saveResource(resource)} disabled={isSubmitting || !resource}>
               {isSubmitting ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>
@@ -487,4 +663,3 @@ const AdminResourceDialog = ({
 };
 
 export default AdminResourceDialog;
-

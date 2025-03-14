@@ -16,6 +16,7 @@ import useCotizaciones from '@/hooks/useCotizaciones';
 import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 import { ExtendedCotizacion } from '@/hooks/useCotizaciones';
 import { ExportPDFButton } from '@/components/dashboard/ExportPDFButton';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const formatter = new Intl.NumberFormat('es-MX', {
   style: 'currency',
@@ -29,7 +30,12 @@ const CotizacionesPage = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [limit, setLimit] = useState<number>(10);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [showDialog, setShowDialog] = useState<boolean>(false);
+  
+  // Diálogos
+  const [showNewClientDialog, setShowNewClientDialog] = useState<boolean>(false);
+  const [showSelectClientDialog, setShowSelectClientDialog] = useState<boolean>(false);
+  const [showCotizacionDialog, setShowCotizacionDialog] = useState<boolean>(false);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   
   const { 
     cotizaciones = [], 
@@ -37,6 +43,33 @@ const CotizacionesPage = () => {
     error,
     refetch 
   } = useCotizaciones({ limit, withRelations: true });
+
+  const handleNewCotizacion = () => {
+    setShowNewClientDialog(true);
+  };
+
+  const handleSelectClient = () => {
+    setShowNewClientDialog(false);
+    setShowSelectClientDialog(true);
+  };
+
+  const handleNewClient = () => {
+    setShowNewClientDialog(false);
+    // Abrir diálogo para crear nuevo lead
+    // Después de crear el lead, se debería abrir el diálogo de cotización
+  };
+
+  const handleLeadSelected = (leadId: string) => {
+    setSelectedLeadId(leadId);
+    setShowSelectClientDialog(false);
+    setShowCotizacionDialog(true);
+  };
+
+  const handleCotizacionCreated = () => {
+    setShowCotizacionDialog(false);
+    setSelectedLeadId(null);
+    refetch();
+  };
 
   return (
     <DashboardLayout>
@@ -47,17 +80,60 @@ const CotizacionesPage = () => {
             <p className="text-slate-600">Gestiona las cotizaciones generadas para tus clientes</p>
           </div>
           
-          <Button onClick={() => setShowDialog(true)}>
+          <Button onClick={handleNewCotizacion}>
             <Plus className="mr-2 h-4 w-4" />
             Nueva cotización
           </Button>
           
+          {/* Diálogo para elegir tipo de cliente */}
+          <Dialog open={showNewClientDialog} onOpenChange={setShowNewClientDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Nueva Cotización</DialogTitle>
+                <DialogDescription>
+                  Selecciona el tipo de cliente para la nueva cotización
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-1 gap-4 py-4">
+                <Button onClick={handleSelectClient} className="w-full">
+                  Cliente existente
+                </Button>
+                <Button onClick={handleNewClient} variant="outline" className="w-full">
+                  Nuevo cliente
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Diálogo para seleccionar cliente existente */}
+          <Dialog open={showSelectClientDialog} onOpenChange={setShowSelectClientDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Seleccionar Cliente</DialogTitle>
+                <DialogDescription>
+                  Elige un cliente existente para la nueva cotización
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <AdminResourceDialog 
+                  resourceType="leads" 
+                  buttonText="Nuevo cliente" 
+                  onSuccess={() => {
+                    setShowSelectClientDialog(false);
+                    setShowCotizacionDialog(true);
+                  }}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          {/* Diálogo para crear cotización */}
           <AdminResourceDialog 
             resourceType="cotizaciones" 
-            buttonText="Nueva cotización" 
-            onSuccess={() => refetch()}
-            open={showDialog}
-            onClose={() => setShowDialog(false)}
+            open={showCotizacionDialog}
+            onClose={() => setShowCotizacionDialog(false)}
+            onSuccess={handleCotizacionCreated}
+            lead_id={selectedLeadId}
           />
         </div>
         
@@ -133,7 +209,7 @@ const CotizacionesPage = () => {
           <div className="text-center py-10">
             <Plus className="h-12 w-12 text-slate-400 mx-auto mb-4" />
             <p className="text-slate-700 mb-4">No hay cotizaciones registradas</p>
-            <Button onClick={() => setShowDialog(true)}>
+            <Button onClick={handleNewCotizacion}>
               <Plus className="mr-2 h-4 w-4" />
               Nueva cotización
             </Button>
