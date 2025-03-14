@@ -51,7 +51,7 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
       return data || [];
     } catch (error) {
       console.error('Error in fetchPrototipos:', error);
-      return [];
+      throw error;
     }
   };
 
@@ -68,7 +68,7 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
   });
 
   return {
-    prototipos: (prototipos || []) as Prototipo[],
+    prototipos: prototipos || [],
     isLoading,
     error,
     refetch

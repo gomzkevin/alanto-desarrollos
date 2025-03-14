@@ -45,7 +45,7 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
       return data as Lead[];
     } catch (error) {
       console.error('Error in fetchLeads:', error);
-      return [] as Lead[];
+      throw error;
     }
   };
 
@@ -61,7 +61,7 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
   });
 
   return {
-    leads: (leads || []) as Lead[],
+    leads: leads || [],
     isLoading,
     error,
     refetch

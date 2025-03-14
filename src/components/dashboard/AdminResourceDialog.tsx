@@ -10,17 +10,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus } from "lucide-react";
 import useUserRole from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import useDesarrollos from '@/hooks/useDesarrollos';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import useDesarrollos from '@/hooks/useDesarrollos';
+import useLeads from '@/hooks/useLeads';
+import { Switch } from '@/components/ui/switch';
 import { Tables } from '@/integrations/supabase/types';
 
 type ResourceType = 'desarrollo' | 'prototipo' | 'propiedad' | 'lead' | 'cotizacion';
@@ -81,9 +82,14 @@ type LeadFormValues = {
 };
 
 type CotizacionFormValues = {
-  lead: string;
-  propiedad: string;
-  monto: number;
+  lead_id: string;
+  lead_nombre?: string; // For display only
+  desarrollo_id: string;
+  prototipo_id: string;
+  monto_anticipo: number;
+  numero_pagos: number;
+  usar_finiquito: boolean;
+  monto_finiquito?: number;
   notas: string;
 };
 
@@ -104,9 +110,17 @@ export function AdminResourceDialog({
 }: AdminResourceDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>(desarrolloId || '');
+  const [availablePrototipos, setAvailablePrototipos] = useState<Tables<"prototipos">[]>([]);
   const { toast } = useToast();
   const { canCreateResource } = useUserRole();
   const { desarrollos } = useDesarrollos();
+  const { leads } = useLeads();
+  
+  // State for conditional fields in cotización
+  const [usarFiniquito, setUsarFiniquito] = useState(false);
+  const [isNewLead, setIsNewLead] = useState(true);
+  const [isExistingLeadSelected, setIsExistingLeadSelected] = useState(false);
   
   const getDefaultValues = (): any => {
     switch (resourceType) {
@@ -116,7 +130,7 @@ export function AdminResourceDialog({
           ubicacion: '',
           total_unidades: 0,
           unidades_disponibles: 0,
-          avance_porcentaje: 0,
+          avance_porcentaje: 0, // Default to 0 (pre-venta)
           descripcion: '',
           fecha_inicio: '',
           fecha_entrega: ''
@@ -158,9 +172,14 @@ export function AdminResourceDialog({
         } as LeadFormValues;
       case 'cotizacion':
         return {
-          lead: '',
-          propiedad: '',
-          monto: 0,
+          lead_id: '',
+          lead_nombre: '',
+          desarrollo_id: '',
+          prototipo_id: '',
+          monto_anticipo: 0,
+          numero_pagos: 12,
+          usar_finiquito: false,
+          monto_finiquito: 0,
           notas: ''
         } as CotizacionFormValues;
       default:
@@ -172,23 +191,104 @@ export function AdminResourceDialog({
     defaultValues: getDefaultValues()
   });
   
+  // Load prototipos when desarrollo is selected for cotizaciones
+  const handleDesarrolloChange = async (desarrolloId: string) => {
+    setSelectedDesarrolloId(desarrolloId);
+    
+    if (desarrolloId) {
+      try {
+        const { data, error } = await supabase
+          .from('prototipos')
+          .select('*')
+          .eq('desarrollo_id', desarrolloId);
+          
+        if (error) throw error;
+        setAvailablePrototipos(data || []);
+      } catch (error) {
+        console.error('Error fetching prototipos:', error);
+        setAvailablePrototipos([]);
+      }
+    } else {
+      setAvailablePrototipos([]);
+    }
+  };
+  
+  // Handle lead selection or creation toggle
+  const handleLeadSelectionChange = (isCreatingNew: boolean) => {
+    setIsNewLead(isCreatingNew);
+    form.setValue('lead_id', '');
+    form.setValue('lead_nombre', '');
+  };
+  
+  // Handle selecting an existing lead
+  const handleLeadSelection = (leadId: string) => {
+    const selectedLead = leads.find(lead => lead.id === leadId);
+    if (selectedLead) {
+      form.setValue('lead_id', selectedLead.id);
+      form.setValue('lead_nombre', selectedLead.nombre);
+      setIsExistingLeadSelected(true);
+    }
+  };
+  
   // Submit form to Supabase
   const handleSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     
     try {
-      // Determine which table to insert into based on resourceType
-      const tableName = getTableNameForResource(resourceType);
-      
-      // Insert data into the appropriate table
-      const { data, error } = await supabase
-        .from(tableName)
-        .insert(values)
-        .select()
-        .single();
-      
-      if (error) {
-        throw error;
+      // Special case for cotizaciones
+      if (resourceType === 'cotizacion') {
+        const cotizacionValues = values as CotizacionFormValues;
+        
+        // If creating a new lead first
+        if (isNewLead && !isExistingLeadSelected) {
+          // Create lead first
+          const leadData = {
+            nombre: form.getValues('lead_nombre'),
+            email: '',  // These fields would be added to the form
+            telefono: '',
+            estado: 'nuevo'
+          };
+          
+          const { data: newLead, error: leadError } = await supabase
+            .from('leads')
+            .insert(leadData)
+            .select()
+            .single();
+            
+          if (leadError) throw leadError;
+          
+          // Then use the new lead's ID
+          cotizacionValues.lead_id = newLead.id;
+        }
+        
+        // Now create the cotización
+        const { error: cotizacionError } = await supabase
+          .from('cotizaciones')
+          .insert({
+            lead_id: cotizacionValues.lead_id,
+            desarrollo_id: cotizacionValues.desarrollo_id,
+            prototipo_id: cotizacionValues.prototipo_id,
+            monto_anticipo: cotizacionValues.monto_anticipo,
+            numero_pagos: cotizacionValues.numero_pagos,
+            usar_finiquito: cotizacionValues.usar_finiquito,
+            monto_finiquito: cotizacionValues.usar_finiquito ? cotizacionValues.monto_finiquito : null,
+            notas: cotizacionValues.notas
+          });
+          
+        if (cotizacionError) throw cotizacionError;
+      } else {
+        // Regular case for other resources
+        const tableName = getTableNameForResource(resourceType);
+        
+        // Insert data into the appropriate table
+        const { data, error } = await supabase
+          .from(tableName)
+          .insert(values)
+          .select();
+        
+        if (error) {
+          throw error;
+        }
       }
       
       toast({
@@ -325,7 +425,7 @@ export function AdminResourceDialog({
                     name="avance_porcentaje"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>% Avance</FormLabel>
+                        <FormLabel>% Avance Comercial</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
@@ -942,61 +1042,248 @@ export function AdminResourceDialog({
               
               {resourceType === 'cotizacion' && (
                 <>
-                  <FormField
-                    control={form.control}
-                    name="lead"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Lead</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Nombre del lead" className="w-full" required />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                  <div className="p-4 mb-4 bg-slate-50 rounded-lg">
+                    <h3 className="font-medium mb-2">Información del Cliente</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <FormLabel>Tipo de cliente</FormLabel>
+                        <div className="flex space-x-4 mt-2">
+                          <Button 
+                            type="button" 
+                            variant={isNewLead ? "default" : "outline"}
+                            onClick={() => handleLeadSelectionChange(true)}
+                            className="w-full"
+                          >
+                            Nuevo cliente
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant={!isNewLead ? "default" : "outline"}
+                            onClick={() => handleLeadSelectionChange(false)}
+                            className="w-full"
+                          >
+                            Cliente existente
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {isNewLead ? (
+                      <FormField
+                        control={form.control}
+                        name="lead_nombre"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nombre del cliente</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Nombre completo" className="w-full" required />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <FormField
+                        control={form.control}
+                        name="lead_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Seleccionar cliente</FormLabel>
+                            <FormControl>
+                              <Select 
+                                onValueChange={(value) => {
+                                  field.onChange(value);
+                                  handleLeadSelection(value);
+                                }} 
+                                defaultValue={field.value} 
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Seleccionar cliente" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {leads.map(lead => (
+                                    <SelectItem key={lead.id} value={lead.id}>
+                                      {lead.nombre} {lead.telefono && `- ${lead.telefono}`}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="propiedad"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Propiedad</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Propiedad" className="w-full" required />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                  </div>
+                  
+                  <div className="p-4 mb-4 bg-slate-50 rounded-lg">
+                    <h3 className="font-medium mb-2">Información de la propiedad</h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="desarrollo_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Desarrollo</FormLabel>
+                          <FormControl>
+                            <Select 
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                handleDesarrolloChange(value);
+                              }} 
+                              defaultValue={field.value} 
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecciona desarrollo" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {desarrollos.map(desarrollo => (
+                                  <SelectItem key={desarrollo.id} value={desarrollo.id}>
+                                    {desarrollo.nombre}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="prototipo_id"
+                      render={({ field }) => (
+                        <FormItem className="mt-4">
+                          <FormLabel>Prototipo</FormLabel>
+                          <FormControl>
+                            <Select 
+                              onValueChange={field.onChange} 
+                              defaultValue={field.value}
+                              disabled={!selectedDesarrolloId}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecciona prototipo" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availablePrototipos.map(prototipo => (
+                                  <SelectItem key={prototipo.id} value={prototipo.id}>
+                                    {prototipo.nombre} - ${prototipo.precio.toLocaleString()}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="p-4 mb-4 bg-slate-50 rounded-lg">
+                    <h3 className="font-medium mb-2">Plan de Pagos</h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="usar_finiquito"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 mb-4">
+                          <div className="space-y-0.5">
+                            <FormLabel>Liquidar con finiquito</FormLabel>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked);
+                                setUsarFiniquito(checked);
+                              }}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="monto_anticipo"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Monto del anticipo</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                type="number" 
+                                min="0" 
+                                placeholder="Anticipo en pesos" 
+                                className="w-full" 
+                                required
+                                onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="numero_pagos"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Número de pagos</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                type="number" 
+                                min="1" 
+                                placeholder="Número de pagos" 
+                                className="w-full" 
+                                required
+                                onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    {usarFiniquito && (
+                      <FormField
+                        control={form.control}
+                        name="monto_finiquito"
+                        render={({ field }) => (
+                          <FormItem className="mt-4">
+                            <FormLabel>Monto del finiquito</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                type="number" 
+                                min="0" 
+                                placeholder="Monto del finiquito o crédito" 
+                                className="w-full" 
+                                required
+                                onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="monto"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Monto</FormLabel>
-                        <FormControl>
-                          <Input 
-                            {...field} 
-                            type="number" 
-                            min="1" 
-                            placeholder="Monto total" 
-                            className="w-full" 
-                            required 
-                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  </div>
+                  
                   <FormField
                     control={form.control}
                     name="notas"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Notas</FormLabel>
+                        <FormLabel>Notas adicionales</FormLabel>
                         <FormControl>
-                          <Textarea {...field} placeholder="Notas adicionales" className="w-full min-h-[120px]" />
+                          <Textarea {...field} placeholder="Notas sobre la cotización" className="w-full min-h-[120px]" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

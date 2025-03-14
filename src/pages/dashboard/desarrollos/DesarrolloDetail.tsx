@@ -30,6 +30,17 @@ const fetchDesarrolloById = async (id: string) => {
   return data as Desarrollo;
 };
 
+// Helper function to determine desarrollo status based on comercial progress
+const getDesarrolloStatus = (desarrollo: Desarrollo) => {
+  if (desarrollo.avance_porcentaje === 0) {
+    return { label: 'Pre-venta', color: 'bg-blue-100 text-blue-800' };
+  } else if (desarrollo.avance_porcentaje && desarrollo.avance_porcentaje < 100) {
+    return { label: 'En venta', color: 'bg-yellow-100 text-yellow-800' };
+  } else {
+    return { label: 'Vendido', color: 'bg-green-100 text-green-800' };
+  }
+};
+
 const DesarrolloDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -107,11 +118,9 @@ const DesarrolloDetailPage = () => {
                   </div>
                 </div>
                 <div className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${
-                  desarrollo.avance_porcentaje && desarrollo.avance_porcentaje < 100
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-green-100 text-green-800'
+                  getDesarrolloStatus(desarrollo).color
                 }`}>
-                  {desarrollo.avance_porcentaje && desarrollo.avance_porcentaje < 100 ? 'En construcción' : 'Terminado'}
+                  {getDesarrolloStatus(desarrollo).label}
                 </div>
               </div>
               
@@ -188,6 +197,7 @@ const DesarrolloDetailPage = () => {
                   resourceType="prototipo" 
                   buttonText="Nuevo prototipo" 
                   onSuccess={refetchPrototipos}
+                  desarrolloId={id}
                 />
               </div>
               
@@ -199,6 +209,7 @@ const DesarrolloDetailPage = () => {
                     resourceType="prototipo" 
                     buttonText="Agregar prototipo" 
                     onSuccess={refetchPrototipos}
+                    desarrolloId={id}
                   />
                 </div>
               ) : (
