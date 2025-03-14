@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
+import { toast } from "sonner";
 
 export const Calculator = () => {
   const [propertyValue, setPropertyValue] = useState(3500000);
@@ -64,7 +65,22 @@ export const Calculator = () => {
         }
         
         if (data) {
-          setFinancialConfig(data);
+          // Convert the Supabase data to match our financialConfig state structure
+          const configData = {
+            comision_operador: data.comision_operador || 15,
+            mantenimiento_valor: data.mantenimiento_valor || 5,
+            es_mantenimiento_porcentaje: data.es_mantenimiento_porcentaje !== null ? data.es_mantenimiento_porcentaje : true,
+            gastos_fijos: data.gastos_fijos || 2500,
+            es_gastos_fijos_porcentaje: data.es_gastos_fijos_porcentaje !== null ? data.es_gastos_fijos_porcentaje : false,
+            gastos_variables: data.gastos_variables || 12,
+            es_gastos_variables_porcentaje: data.es_gastos_variables_porcentaje !== null ? data.es_gastos_variables_porcentaje : true,
+            impuestos: data.impuestos || 35,
+            es_impuestos_porcentaje: data.es_impuestos_porcentaje !== null ? data.es_impuestos_porcentaje : true,
+            plusvalia_anual: data.plusvalia_anual || 4,
+            tasa_interes: data.tasa_interes || 7
+          };
+          
+          setFinancialConfig(configData);
         }
       } catch (err) {
         console.error('Error in financial config fetch:', err);
@@ -163,11 +179,14 @@ export const Calculator = () => {
       
       if (error) {
         console.error('Error saving financial configuration:', error);
+        toast.error('Error al guardar la configuración');
       } else {
         console.log('Financial configuration saved successfully');
+        toast.success('Configuración guardada correctamente');
       }
     } catch (err) {
       console.error('Error in saving financial config:', err);
+      toast.error('Error al guardar la configuración');
     }
   };
 
