@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -775,4 +776,277 @@ const ConfiguracionPage = () => {
           <TabsContent value="empresa">
             <Card>
               <CardHeader>
-                <CardTitle>
+                <CardTitle>Datos de empresa</CardTitle>
+                <CardDescription>
+                  Esta información se utilizará en documentos y comunicaciones
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="nombreEmpresa">Nombre de la empresa</Label>
+                    <Input
+                      id="nombreEmpresa"
+                      value={empresaConfig.nombre}
+                      onChange={(e) => setEmpresaConfig({...empresaConfig, nombre: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="rfc">RFC</Label>
+                    <Input
+                      id="rfc"
+                      value={empresaConfig.rfc}
+                      onChange={(e) => setEmpresaConfig({...empresaConfig, rfc: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="emailEmpresa">Email</Label>
+                    <Input
+                      id="emailEmpresa"
+                      type="email"
+                      value={empresaConfig.email}
+                      onChange={(e) => setEmpresaConfig({...empresaConfig, email: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="telefonoEmpresa">Teléfono</Label>
+                    <Input
+                      id="telefonoEmpresa"
+                      value={empresaConfig.telefono}
+                      onChange={(e) => setEmpresaConfig({...empresaConfig, telefono: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="sitioWeb">Sitio web</Label>
+                    <Input
+                      id="sitioWeb"
+                      value={empresaConfig.sitioWeb}
+                      onChange={(e) => setEmpresaConfig({...empresaConfig, sitioWeb: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="direccionEmpresa">Dirección</Label>
+                    <Input
+                      id="direccionEmpresa"
+                      value={empresaConfig.direccion}
+                      onChange={(e) => setEmpresaConfig({...empresaConfig, direccion: e.target.value})}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="logoEmpresa">Logo</Label>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-24 h-24 border rounded-md flex items-center justify-center overflow-hidden bg-white">
+                      <img 
+                        src={empresaConfig.logo || '/placeholder.svg'} 
+                        alt="Logo empresa" 
+                        className="max-w-full max-h-full" 
+                      />
+                    </div>
+                    <div>
+                      <Button type="button" variant="outline" size="sm">
+                        <label htmlFor="logoUpload" className="cursor-pointer">
+                          Seleccionar archivo
+                          <input 
+                            id="logoUpload" 
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*"
+                          />
+                        </label>
+                      </Button>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Formatos soportados: JPG, PNG, SVG. Tamaño máximo: 2MB
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-2 mt-6">
+                  <Button variant="outline">Cancelar</Button>
+                  <Button onClick={handleSaveEmpresa} disabled={loading}>
+                    {loading ? 'Guardando...' : 'Guardar información'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="usuarios">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Gestión de usuarios</CardTitle>
+                    <CardDescription>
+                      Administra a los usuarios que tienen acceso al sistema
+                    </CardDescription>
+                  </div>
+                  <Button size="sm">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nuevo usuario
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="rounded-md border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="px-4 py-3 text-left font-medium">Nombre</th>
+                          <th className="px-4 py-3 text-left font-medium">Email</th>
+                          <th className="px-4 py-3 text-left font-medium">Rol</th>
+                          <th className="px-4 py-3 text-left font-medium">Estado</th>
+                          <th className="px-4 py-3 text-right font-medium">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {usuarios.map((usuario) => (
+                          <tr key={usuario.id} className="border-b">
+                            <td className="px-4 py-3">{usuario.nombre}</td>
+                            <td className="px-4 py-3">{usuario.email}</td>
+                            <td className="px-4 py-3">
+                              <Badge variant={usuario.rol === 'admin' ? 'default' : 'secondary'}>
+                                {usuario.rol === 'admin' ? 'Administrador' : 'Vendedor'}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge variant={usuario.activo ? 'default' : 'outline'}>
+                                {usuario.activo ? 'Activo' : 'Inactivo'}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <Button variant="ghost" size="sm">
+                                <Settings className="h-4 w-4" />
+                                <span className="sr-only">Editar</span>
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Trash className="h-4 w-4" />
+                                <span className="sr-only">Eliminar</span>
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="sistema">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuración del sistema</CardTitle>
+                <CardDescription>
+                  Ajustes generales de la plataforma
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Notificaciones</h3>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="notifyLeads" className="flex items-center space-x-2">
+                        <span>Notificaciones de nuevos leads</span>
+                      </Label>
+                      <Switch id="notifyLeads" checked={true} />
+                    </div>
+                    <p className="text-sm text-slate-500">
+                      Recibe notificaciones cuando se registren nuevos leads en el sistema
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="notifyVentas" className="flex items-center space-x-2">
+                        <span>Notificaciones de ventas</span>
+                      </Label>
+                      <Switch id="notifyVentas" checked={true} />
+                    </div>
+                    <p className="text-sm text-slate-500">
+                      Recibe notificaciones cuando se realice una nueva venta
+                    </p>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <h3 className="text-lg font-medium">Seguridad</h3>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="twoFactor" className="flex items-center space-x-2">
+                        <span>Autenticación de dos factores</span>
+                      </Label>
+                      <Switch id="twoFactor" />
+                    </div>
+                    <p className="text-sm text-slate-500">
+                      Añade una capa extra de seguridad con autenticación de dos factores
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="sessionTimeout" className="flex items-center space-x-2">
+                        <span>Tiempo de sesión</span>
+                      </Label>
+                      <Select defaultValue="60">
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Seleccionar tiempo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="30">30 minutos</SelectItem>
+                          <SelectItem value="60">1 hora</SelectItem>
+                          <SelectItem value="120">2 horas</SelectItem>
+                          <SelectItem value="240">4 horas</SelectItem>
+                          <SelectItem value="480">8 horas</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <p className="text-sm text-slate-500">
+                      Tiempo de inactividad antes de cerrar la sesión automáticamente
+                    </p>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <h3 className="text-lg font-medium">Mantenimiento</h3>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="backup" className="flex items-center space-x-2">
+                        <span>Backups automáticos</span>
+                      </Label>
+                      <Switch id="backup" checked={true} />
+                    </div>
+                    <p className="text-sm text-slate-500">
+                      Realiza copias de seguridad automáticas de la base de datos
+                    </p>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <Button variant="outline" className="w-full">
+                      Restablecer todas las configuraciones
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default ConfiguracionPage;
+
