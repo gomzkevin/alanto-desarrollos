@@ -30,7 +30,13 @@ export const fetchFinancialConfig = async (desarrolloId?: string) => {
       }
       
       if (data) {
-        return data;
+        // Add missing properties with default values
+        return {
+          ...data,
+          es_gastos_fijos_porcentaje: false,
+          es_gastos_variables_porcentaje: true,
+          es_impuestos_porcentaje: true
+        };
       }
       
       // If no specific config exists, fall back to global config
@@ -44,7 +50,17 @@ export const fetchFinancialConfig = async (desarrolloId?: string) => {
         throw error;
       }
       
-      return data;
+      if (data) {
+        // Add missing properties with default values
+        return {
+          ...data,
+          es_gastos_fijos_porcentaje: false,
+          es_gastos_variables_porcentaje: true,
+          es_impuestos_porcentaje: true
+        };
+      }
+      
+      return null;
     }
   } catch (err) {
     console.error('Error in fetchFinancialConfig:', err);

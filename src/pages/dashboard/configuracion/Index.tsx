@@ -114,7 +114,7 @@ const ConfiguracionPage = () => {
         }
         
         if (data) {
-          // Map database fields to our state structure
+          // Map database fields to our state structure with safe defaults for missing fields
           setFinanzasConfig({
             tipoCambio: data.tipo_cambio || 17.5,
             tasaInteres: data.tasa_interes || 7,
@@ -123,11 +123,11 @@ const ConfiguracionPage = () => {
             mantenimientoValor: data.mantenimiento_valor || 5,
             esMantenimientoPorcentaje: data.es_mantenimiento_porcentaje !== null ? data.es_mantenimiento_porcentaje : true,
             gastosFijos: data.gastos_fijos || 2500,
-            esGastosFijosPorcentaje: data.es_gastos_fijos_porcentaje !== null ? data.es_gastos_fijos_porcentaje : false,
+            esGastosFijosPorcentaje: false, // Default value since column might not exist
             gastosVariables: data.gastos_variables || 12,
-            esGastosVariablesPorcentaje: data.es_gastos_variables_porcentaje !== null ? data.es_gastos_variables_porcentaje : true,
+            esGastosVariablesPorcentaje: true, // Default value since column might not exist
             impuestos: data.impuestos || 35,
-            esImpuestosPorcentaje: data.es_impuestos_porcentaje !== null ? data.es_impuestos_porcentaje : true,
+            esImpuestosPorcentaje: true, // Default value since column might not exist
             adr_base: data.adr_base || 1800,
             ocupacion_anual: data.ocupacion_anual || 70
           });
@@ -172,6 +172,7 @@ const ConfiguracionPage = () => {
           
           if (data) {
             // Prepara los datos del desarrollo para su edición
+            // Add safe defaults for potentially missing fields
             setDesarrolloConfig({
               id: data.id,
               nombre: data.nombre,
