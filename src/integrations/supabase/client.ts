@@ -10,3 +10,44 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Fetch financial configuration based on desarrollo_id
+// If desarrollo_id is null, it will fetch the global configuration (id=1)
+export const fetchFinancialConfig = async (desarrolloId?: string) => {
+  try {
+    let query = supabase
+      .from('configuracion_financiera')
+      .select('*');
+    
+    if (desarrolloId) {
+      // Try to get desarrollo-specific config first
+      const { data, error } = await query.eq('desarrollo_id', desarrolloId).maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching development financial configuration:', error);
+        // Fall back to global config
+        return fetchFinancialConfig();
+      }
+      
+      if (data) {
+        return data;
+      }
+      
+      // If no specific config exists, fall back to global config
+      return fetchFinancialConfig();
+    } else {
+      // Get global config
+      const { data, error } = await query.eq('id', 1).maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching global financial configuration:', error);
+        throw error;
+      }
+      
+      return data;
+    }
+  } catch (err) {
+    console.error('Error in fetchFinancialConfig:', err);
+    throw err;
+  }
+};

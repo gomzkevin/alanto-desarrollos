@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           adr_base: number | null
           comision_operador: number | null
+          desarrollo_id: string | null
           es_mantenimiento_porcentaje: boolean | null
           gastos_fijos: number | null
           gastos_variables: number | null
@@ -28,6 +29,7 @@ export type Database = {
         Insert: {
           adr_base?: number | null
           comision_operador?: number | null
+          desarrollo_id?: string | null
           es_mantenimiento_porcentaje?: boolean | null
           gastos_fijos?: number | null
           gastos_variables?: number | null
@@ -43,6 +45,7 @@ export type Database = {
         Update: {
           adr_base?: number | null
           comision_operador?: number | null
+          desarrollo_id?: string | null
           es_mantenimiento_porcentaje?: boolean | null
           gastos_fijos?: number | null
           gastos_variables?: number | null
@@ -55,7 +58,15 @@ export type Database = {
           tasa_interes?: number | null
           tipo_cambio?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "configuracion_financiera_desarrollo_id_fkey"
+            columns: ["desarrollo_id"]
+            isOneToOne: false
+            referencedRelation: "desarrollos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cotizaciones: {
         Row: {

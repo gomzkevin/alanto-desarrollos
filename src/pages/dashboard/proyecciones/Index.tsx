@@ -1,13 +1,24 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, LineChart } from 'lucide-react';
 import { Calculator } from '@/components/Calculator';
+import useDesarrollos from '@/hooks/useDesarrollos';
+import { formatCurrency } from '@/lib/utils';
 
 export const ProyeccionesPage = () => {
+  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('');
+  const { desarrollos = [], isLoading } = useDesarrollos();
+  const [summaryData, setSummaryData] = useState({
+    airbnbReturn: 5655683,
+    altReturn: 677006,
+    avgROI: 56.8
+  });
+
   return (
     <DashboardLayout>
       <div className="space-y-6 p-6 pb-16">
@@ -15,6 +26,31 @@ export const ProyeccionesPage = () => {
           <div className="space-y-1">
             <h1 className="text-3xl font-bold text-slate-800">Proyecciones Financieras</h1>
             <p className="text-slate-600">Calcula y compara el rendimiento potencial de inversiones inmobiliarias.</p>
+          </div>
+          
+          {/* Development selector */}
+          <div className="w-full sm:w-72">
+            <Select
+              value={selectedDesarrolloId}
+              onValueChange={setSelectedDesarrolloId}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Configuración global (por defecto)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Configuración global (por defecto)</SelectItem>
+                {desarrollos.map((desarrollo) => (
+                  <SelectItem key={desarrollo.id} value={desarrollo.id}>
+                    {desarrollo.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-slate-500 mt-1">
+              {selectedDesarrolloId 
+                ? "Usando configuración específica de desarrollo" 
+                : "Usando configuración global"}
+            </p>
           </div>
         </div>
 
@@ -28,7 +64,7 @@ export const ProyeccionesPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Calculator />
+              <Calculator desarrolloId={selectedDesarrolloId} />
             </CardContent>
           </Card>
 
@@ -78,17 +114,17 @@ export const ProyeccionesPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 pt-0 mt-4">
                 <div className="bg-indigo-50 p-4 rounded-lg">
                   <p className="text-sm text-indigo-600 font-medium">Retorno total (Airbnb)</p>
-                  <p className="text-xl font-bold text-indigo-700 mt-1">$5,655,683</p>
+                  <p className="text-xl font-bold text-indigo-700 mt-1">{formatCurrency(summaryData.airbnbReturn)}</p>
                 </div>
                 
                 <div className="bg-teal-50 p-4 rounded-lg">
                   <p className="text-sm text-teal-600 font-medium">Retorno alternativo</p>
-                  <p className="text-xl font-bold text-teal-700 mt-1">$677,006</p>
+                  <p className="text-xl font-bold text-teal-700 mt-1">{formatCurrency(summaryData.altReturn)}</p>
                 </div>
                 
                 <div className="bg-amber-50 p-4 rounded-lg">
                   <p className="text-sm text-amber-600 font-medium">ROI anual promedio</p>
-                  <p className="text-xl font-bold text-amber-700 mt-1">56.8%</p>
+                  <p className="text-xl font-bold text-amber-700 mt-1">{summaryData.avgROI}%</p>
                 </div>
               </div>
 
