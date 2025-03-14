@@ -3,25 +3,23 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
-type Desarrollo = Tables<"desarrollos">;
+type Lead = Tables<"leads">;
 
-type FetchDesarrollosOptions = {
-  withPrototipos?: boolean;
+type FetchLeadsOptions = {
   limit?: number;
   filters?: Record<string, any>;
 };
 
-export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
-  const { withPrototipos = false, limit, filters = {} } = options;
+export const useLeads = (options: FetchLeadsOptions = {}) => {
+  const { limit, filters = {} } = options;
   
-  // Function to fetch desarrollos
-  const fetchDesarrollos = async () => {
-    console.log('Fetching desarrollos with options:', options);
+  // Function to fetch leads
+  const fetchLeads = async () => {
+    console.log('Fetching leads with options:', options);
     
     try {
-      // Use a simple query without joining tables to avoid type issues
       let query = supabase
-        .from('desarrollos')
+        .from('leads')
         .select('*');
         
       // Apply limit if provided
@@ -39,35 +37,35 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       const { data, error } = await query;
       
       if (error) {
-        console.error('Error fetching desarrollos:', error);
+        console.error('Error fetching leads:', error);
         throw new Error(error.message);
       }
       
-      console.log('Desarrollos fetched:', data);
+      console.log('Leads fetched:', data);
       return data || [];
     } catch (error) {
-      console.error('Error in fetchDesarrollos:', error);
+      console.error('Error in fetchLeads:', error);
       return [];
     }
   };
 
   // Use React Query to fetch and cache the data
   const { 
-    data: desarrollos, 
+    data: leads, 
     isLoading, 
     error, 
     refetch 
   } = useQuery({
-    queryKey: ['desarrollos', withPrototipos, limit, JSON.stringify(filters)],
-    queryFn: fetchDesarrollos
+    queryKey: ['leads', limit, JSON.stringify(filters)],
+    queryFn: fetchLeads
   });
 
   return {
-    desarrollos: (desarrollos || []) as Desarrollo[],
+    leads: (leads || []) as Lead[],
     isLoading,
     error,
     refetch
   };
 };
 
-export default useDesarrollos;
+export default useLeads;
