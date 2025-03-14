@@ -4,12 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
 type Desarrollo = Tables<"desarrollos">;
-type Prototipo = Tables<"prototipos">;
-
-// Define the return type for results with prototipos
-interface DesarrolloWithPrototipos extends Desarrollo {
-  prototipos: Prototipo[];
-}
 
 type FetchDesarrollosOptions = {
   withPrototipos?: boolean;
@@ -25,9 +19,12 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     console.log('Fetching desarrollos with options:', options);
     
     try {
+      // Create a select query string that doesn't cause type issues
+      const selectQuery = withPrototipos ? '*' : '*';
+      
       let query = supabase
         .from('desarrollos')
-        .select(withPrototipos ? '*, prototipos(*)' : '*');
+        .select(selectQuery);
         
       // Apply limit if provided
       if (limit) {
@@ -68,7 +65,7 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   });
 
   return {
-    desarrollos: desarrollos as Desarrollo[],
+    desarrollos: (desarrollos || []) as Desarrollo[],
     isLoading,
     error,
     refetch

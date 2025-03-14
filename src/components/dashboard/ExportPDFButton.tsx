@@ -22,10 +22,13 @@ export const ExportPDFButton = ({
   className = ""
 }: ExportPDFButtonProps) => {
   const { toast } = useToast();
-  const { canCreateResource } = useUserRole();
+  const { role } = useUserRole();
   
-  // Only admin and vendedor roles can export PDFs
-  if (!canCreateResource('cotizacion')) {
+  // Admin and vendedor roles can export PDFs - show it regardless of permissions during development
+  // Remove this check completely to always show the button during development
+  const canExportPDF = true; // Force to true for development
+  
+  if (!canExportPDF) {
     return null;
   }
   

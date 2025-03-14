@@ -68,7 +68,7 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
   });
 
   return {
-    prototipos: prototipos as Prototipo[],
+    prototipos: (prototipos || []) as Prototipo[],
     isLoading,
     error,
     refetch
