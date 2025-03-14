@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -52,7 +51,6 @@ const ConfiguracionPage = () => {
     { id: '3', nombre: 'Carlos Rodríguez', email: 'carlos@ejemplo.com', rol: 'vendedor', activo: false }
   ]);
 
-  // Efectos para cargar datos de Supabase (simulados)
   useEffect(() => {
     // Aquí se cargarían los datos reales desde Supabase
     // const fetchConfig = async () => {
@@ -107,7 +105,6 @@ const ConfiguracionPage = () => {
     }, 1000);
   };
 
-  // Si no es admin, mostrar mensaje de acceso restringido
   if (!isAdmin) {
     return (
       <DashboardLayout>
@@ -161,7 +158,6 @@ const ConfiguracionPage = () => {
             </TabsTrigger>
           </TabsList>
           
-          {/* Configuración de parámetros financieros */}
           <TabsContent value="finanzas">
             <Card>
               <CardHeader>
@@ -375,7 +371,6 @@ const ConfiguracionPage = () => {
             </Card>
           </TabsContent>
           
-          {/* Configuración de datos de empresa */}
           <TabsContent value="empresa">
             <Card>
               <CardHeader>
@@ -473,7 +468,6 @@ const ConfiguracionPage = () => {
             </Card>
           </TabsContent>
           
-          {/* Gestión de usuarios */}
           <TabsContent value="usuarios">
             <Card>
               <CardHeader>
@@ -513,7 +507,7 @@ const ConfiguracionPage = () => {
                               </Badge>
                             </td>
                             <td className="p-4 align-middle">
-                              <Badge variant={usuario.activo ? 'success' : 'destructive'}>
+                              <Badge variant={usuario.activo ? 'default' : 'destructive'} className={usuario.activo ? 'bg-green-100 text-green-800' : ''}>
                                 {usuario.activo ? 'Activo' : 'Inactivo'}
                               </Badge>
                             </td>
@@ -535,7 +529,6 @@ const ConfiguracionPage = () => {
             </Card>
           </TabsContent>
           
-          {/* Configuración del sistema */}
           <TabsContent value="sistema">
             <Card>
               <CardHeader>

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +11,8 @@ import ProyeccionesPage from "./pages/dashboard/proyecciones/Index";
 import NotFound from "./pages/NotFound";
 import DesarrollosPage from "./pages/dashboard/desarrollos/Index";
 import ConfiguracionPage from "./pages/dashboard/configuracion/Index";
+import LeadsPage from "./pages/dashboard/leads/Index";
+import CotizacionesPage from "./pages/dashboard/cotizaciones/Index";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +28,8 @@ const App = () => (
           <Route path="/dashboard/propiedades" element={<PropertiesPage />} />
           <Route path="/dashboard/desarrollos" element={<DesarrollosPage />} />
           <Route path="/dashboard/proyecciones" element={<ProyeccionesPage />} />
+          <Route path="/dashboard/leads" element={<LeadsPage />} />
+          <Route path="/dashboard/cotizaciones" element={<CotizacionesPage />} />
           <Route path="/dashboard/configuracion" element={<ConfiguracionPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
