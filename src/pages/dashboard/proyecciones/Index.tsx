@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -68,7 +67,6 @@ export const ProyeccionesPage = () => {
     setShouldCalculate(true);
   };
 
-  // Reset shouldCalculate after calculation is done
   useEffect(() => {
     if (shouldCalculate && chartData.length > 0) {
       setShouldCalculate(false);
@@ -85,18 +83,18 @@ export const ProyeccionesPage = () => {
           </div>
           
           <div className="space-y-2 flex flex-col sm:items-end">
-            <div className="w-full sm:w-60">
+            <div className="w-full sm:w-72">
               <Select
                 value={selectedDesarrolloId}
                 onValueChange={handleDesarrolloChange}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-gradient-to-r from-indigo-50 to-indigo-100 border-indigo-200 hover:border-indigo-300 font-medium text-indigo-700 shadow-sm">
                   <SelectValue placeholder="Seleccionar desarrollo" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="global">Todos los desarrollos</SelectItem>
+                <SelectContent className="bg-white border-indigo-100 shadow-md">
+                  <SelectItem value="global" className="font-medium text-indigo-700">Todos los desarrollos</SelectItem>
                   {desarrollos.map((desarrollo) => (
-                    <SelectItem key={desarrollo.id} value={desarrollo.id}>
+                    <SelectItem key={desarrollo.id} value={desarrollo.id} className="text-slate-700 hover:text-indigo-600">
                       {desarrollo.nombre}
                     </SelectItem>
                   ))}
@@ -104,19 +102,19 @@ export const ProyeccionesPage = () => {
               </Select>
             </div>
             
-            <div className="w-full sm:w-60">
+            <div className="w-full sm:w-72">
               <Select
                 value={selectedPrototipoId}
                 onValueChange={handlePrototipoChange}
                 disabled={selectedDesarrolloId === 'global'}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-gradient-to-r from-teal-50 to-teal-100 border-teal-200 hover:border-teal-300 font-medium text-teal-700 shadow-sm">
                   <SelectValue placeholder="Seleccionar prototipo" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="global">Todos los prototipos</SelectItem>
+                <SelectContent className="bg-white border-teal-100 shadow-md">
+                  <SelectItem value="global" className="font-medium text-teal-700">Todos los prototipos</SelectItem>
                   {prototipos.map((prototipo) => (
-                    <SelectItem key={prototipo.id} value={prototipo.id}>
+                    <SelectItem key={prototipo.id} value={prototipo.id} className="text-slate-700 hover:text-teal-600">
                       {prototipo.nombre}
                     </SelectItem>
                   ))}
@@ -134,7 +132,7 @@ export const ProyeccionesPage = () => {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-          <Card className="xl:col-span-4 xl:max-w-sm">
+          <Card className="xl:col-span-5 xl:max-w-md">
             <CardHeader>
               <CardTitle>Parámetros de proyección</CardTitle>
               <CardDescription>
@@ -158,7 +156,7 @@ export const ProyeccionesPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="xl:col-span-8">
+          <Card className="xl:col-span-7">
             <CardHeader>
               <CardTitle>Resultados de la proyección</CardTitle>
               <CardDescription>

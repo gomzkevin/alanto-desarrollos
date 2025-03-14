@@ -24,10 +24,10 @@ export const LineChart = (props) => (
     showLegend={props.showLegend !== false}
     showTooltip={props.showTooltip !== false}
     showGradient={true}
-    lineThickness={3}
+    lineThickness={5}
     valueFormatter={props.valueFormatter}
     yAxisWidth={props.yAxisWidth || 80}
-    curveType={props.curveType || "linear"}
+    curveType={props.curveType || "monotone"}
   />
 );
 
