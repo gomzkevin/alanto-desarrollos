@@ -164,8 +164,9 @@ const ProyeccionesPage = () => {
           
           <div>
             <ExportPDFButton 
-              elementId="proyeccion-container" 
+              resourceName="Proyección Financiera"
               fileName="Proyeccion_Financiera"
+              buttonText="Exportar PDF"
             />
           </div>
         </div>

@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 
@@ -353,6 +354,227 @@ function getPayloadConfigFromPayload(
     : config[key as keyof typeof config]
 }
 
+// Add chart components
+interface ChartProps {
+  data: Record<string, any>[];
+  index: string;
+  categories: string[];
+  colors?: string[];
+  valueFormatter?: (value: number) => string;
+  showLegend?: boolean;
+  layout?: "horizontal" | "vertical";
+  showXAxis?: boolean;
+  showYAxis?: boolean;
+  yAxisWidth?: number;
+  showTooltip?: boolean;
+}
+
+// Bar Chart Component
+const BarChart = ({
+  data,
+  index,
+  categories,
+  colors = ["#0ea5e9"],
+  valueFormatter = (value: number) => value.toString(),
+  showLegend = true,
+  layout = "horizontal",
+  showXAxis = true,
+  showYAxis = true,
+  yAxisWidth = 56,
+  showTooltip = true,
+}: ChartProps) => {
+  const config: ChartConfig = React.useMemo(() => {
+    return categories.reduce((acc, category, i) => {
+      acc[category] = {
+        label: category,
+        color: colors[i % colors.length],
+      };
+      return acc;
+    }, {} as ChartConfig);
+  }, [categories, colors]);
+
+  return (
+    <ChartContainer config={config}>
+      <RechartsPrimitive.BarChart
+        data={data}
+        layout={layout}
+        margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+      >
+        {showXAxis && (
+          <RechartsPrimitive.XAxis
+            dataKey={index}
+            tickLine={false}
+            axisLine={false}
+            hide={!showXAxis}
+            padding={{ left: 20, right: 20 }}
+          />
+        )}
+        {showYAxis && (
+          <RechartsPrimitive.YAxis
+            width={yAxisWidth}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(value) => valueFormatter(value)}
+            hide={!showYAxis}
+          />
+        )}
+        <RechartsPrimitive.CartesianGrid vertical={false} strokeDasharray="3 3" />
+        {showTooltip && (
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                formatter={(value, name) => [valueFormatter(value as number), name]}
+              />
+            }
+          />
+        )}
+        {showLegend && (
+          <ChartLegend content={<ChartLegendContent />} />
+        )}
+        {categories.map((category, i) => (
+          <RechartsPrimitive.Bar
+            key={category}
+            dataKey={category}
+            fill={colors[i % colors.length]}
+            radius={4}
+          />
+        ))}
+      </RechartsPrimitive.BarChart>
+    </ChartContainer>
+  );
+};
+
+// Line Chart Component
+const LineChart = ({
+  data,
+  index,
+  categories,
+  colors = ["#0ea5e9"],
+  valueFormatter = (value: number) => value.toString(),
+  showLegend = true,
+  showXAxis = true,
+  showYAxis = true,
+  yAxisWidth = 56,
+  showTooltip = true,
+}: ChartProps) => {
+  const config: ChartConfig = React.useMemo(() => {
+    return categories.reduce((acc, category, i) => {
+      acc[category] = {
+        label: category,
+        color: colors[i % colors.length],
+      };
+      return acc;
+    }, {} as ChartConfig);
+  }, [categories, colors]);
+
+  return (
+    <ChartContainer config={config}>
+      <RechartsPrimitive.LineChart
+        data={data}
+        margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+      >
+        {showXAxis && (
+          <RechartsPrimitive.XAxis
+            dataKey={index}
+            tickLine={false}
+            axisLine={false}
+            hide={!showXAxis}
+            padding={{ left: 20, right: 20 }}
+          />
+        )}
+        {showYAxis && (
+          <RechartsPrimitive.YAxis
+            width={yAxisWidth}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(value) => valueFormatter(value)}
+            hide={!showYAxis}
+          />
+        )}
+        <RechartsPrimitive.CartesianGrid vertical={false} strokeDasharray="3 3" />
+        {showTooltip && (
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                formatter={(value, name) => [valueFormatter(value as number), name]}
+              />
+            }
+          />
+        )}
+        {showLegend && (
+          <ChartLegend content={<ChartLegendContent />} />
+        )}
+        {categories.map((category, i) => (
+          <RechartsPrimitive.Line
+            key={category}
+            type="monotone"
+            dataKey={category}
+            stroke={colors[i % colors.length]}
+            activeDot={{ r: 8 }}
+            strokeWidth={2}
+          />
+        ))}
+      </RechartsPrimitive.LineChart>
+    </ChartContainer>
+  );
+};
+
+// Pie Chart Component
+const PieChart = ({
+  data,
+  index,
+  categories,
+  colors = ["#0ea5e9", "#22c55e", "#f59e0b", "#ef4444"],
+  valueFormatter = (value: number) => value.toString(),
+  showLegend = true,
+  showTooltip = true,
+}: Omit<ChartProps, 'layout' | 'showXAxis' | 'showYAxis' | 'yAxisWidth'>) => {
+  const config: ChartConfig = React.useMemo(() => {
+    return categories.reduce((acc, category, i) => {
+      acc[category] = {
+        label: category,
+        color: colors[i % colors.length],
+      };
+      return acc;
+    }, {} as ChartConfig);
+  }, [categories, colors]);
+
+  return (
+    <ChartContainer config={config}>
+      <RechartsPrimitive.PieChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+        {showTooltip && (
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                formatter={(value, name) => [valueFormatter(value as number), name]}
+              />
+            }
+          />
+        )}
+        {showLegend && (
+          <ChartLegend content={<ChartLegendContent />} />
+        )}
+        <RechartsPrimitive.Pie
+          data={data}
+          nameKey={index}
+          dataKey={categories[0]}
+          cx="50%"
+          cy="50%"
+          outerRadius={80}
+          fill="#8884d8"
+        >
+          {data.map((entry, i) => (
+            <RechartsPrimitive.Cell 
+              key={`cell-${i}`} 
+              fill={colors[i % colors.length]} 
+            />
+          ))}
+        </RechartsPrimitive.Pie>
+      </RechartsPrimitive.PieChart>
+    </ChartContainer>
+  );
+};
+
 export {
   ChartContainer,
   ChartTooltip,
@@ -360,4 +582,8 @@ export {
   ChartLegend,
   ChartLegendContent,
   ChartStyle,
+  // Export new chart components
+  BarChart,
+  LineChart,
+  PieChart
 }

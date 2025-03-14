@@ -5,8 +5,10 @@ import useUserRole from '@/hooks/useUserRole';
 import { useToast } from "@/hooks/use-toast";
 
 type ExportPDFButtonProps = {
-  resourceName: string;
+  resourceName?: string;
   resourceId?: string;
+  elementId?: string; // Added for PDF export from DOM element
+  fileName?: string; // Added for custom PDF file name
   buttonText?: string;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   size?: "default" | "sm" | "lg" | "icon";
@@ -14,8 +16,10 @@ type ExportPDFButtonProps = {
 };
 
 export const ExportPDFButton = ({ 
-  resourceName, 
+  resourceName = "documento", 
   resourceId,
+  elementId,
+  fileName,
   buttonText = "Exportar PDF", 
   variant = "outline",
   size = "default",
@@ -36,7 +40,7 @@ export const ExportPDFButton = ({
     // In a future implementation, this would connect to a PDF generation service
     toast({
       title: "Función en desarrollo",
-      description: `La exportación de ${resourceName} a PDF estará disponible próximamente.`,
+      description: `La exportación de ${elementId ? fileName || "documento" : resourceName} a PDF estará disponible próximamente.`,
     });
   };
   
