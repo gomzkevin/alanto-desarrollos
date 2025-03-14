@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,15 +49,12 @@ export const ProyeccionesPage = () => {
   };
 
   const handleChartDataUpdate = (data: any[]) => {
-    console.log("Raw chart data received:", JSON.stringify(data, null, 2));
-    
+    // Add custom names for the chart categories
     const enhancedData = data.map(item => ({
       ...item,
       "Renta vacacional": item.airbnbProfit,
       "Bonos US": item.alternativeInvestment
     }));
-    
-    console.log("Enhanced chart data:", JSON.stringify(enhancedData, null, 2));
     
     setChartData(enhancedData);
     
@@ -98,7 +96,7 @@ export const ProyeccionesPage = () => {
                 value={selectedDesarrolloId}
                 onValueChange={handleDesarrolloChange}
               >
-                <SelectTrigger className="bg-white border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all font-medium text-indigo-700 shadow-sm">
+                <SelectTrigger className="bg-gradient-to-r from-indigo-50 to-indigo-100 border-indigo-200 hover:border-indigo-300 font-medium text-indigo-700 shadow-sm">
                   <SelectValue placeholder="Seleccionar desarrollo" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-indigo-100 shadow-md">
@@ -118,7 +116,7 @@ export const ProyeccionesPage = () => {
                 onValueChange={handlePrototipoChange}
                 disabled={selectedDesarrolloId === 'global'}
               >
-                <SelectTrigger className="bg-white border-teal-200 hover:border-teal-300 hover:bg-teal-50 transition-all font-medium text-teal-700 shadow-sm">
+                <SelectTrigger className="bg-gradient-to-r from-teal-50 to-teal-100 border-teal-200 hover:border-teal-300 font-medium text-teal-700 shadow-sm">
                   <SelectValue placeholder="Seleccionar prototipo" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-teal-100 shadow-md">
@@ -142,7 +140,7 @@ export const ProyeccionesPage = () => {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-          <Card className="xl:col-span-3 xl:max-w-md">
+          <Card className="xl:col-span-4 xl:max-w-sm">
             <CardHeader>
               <CardTitle>Parámetros de proyección</CardTitle>
               <CardDescription>
@@ -166,11 +164,11 @@ export const ProyeccionesPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="xl:col-span-9">
+          <Card className="xl:col-span-8">
             <CardHeader>
               <CardTitle>Resultados de la proyección</CardTitle>
               <CardDescription>
-                Compar  ativa de rendimientos a lo largo del tiempo
+                Comparativa de rendimientos a lo largo del tiempo
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
@@ -199,7 +197,7 @@ export const ProyeccionesPage = () => {
                         showLegend={true}
                         showXAxis={true}
                         showYAxis={true}
-                        yAxisWidth={60}
+                        yAxisWidth={80}
                         showAnimation={true}
                         showTooltip={true}
                         className="h-[400px]"
@@ -249,6 +247,7 @@ export const ProyeccionesPage = () => {
               </Tabs>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 pt-0 mt-4">
+                {/* Airbnb Investment Card */}
                 <div className="bg-indigo-50 rounded-lg overflow-hidden border border-indigo-100">
                   <div className="p-3 border-b border-indigo-100 bg-indigo-100/50">
                     <p className="text-sm text-indigo-700 font-medium">Inversión en Airbnb</p>
@@ -265,6 +264,7 @@ export const ProyeccionesPage = () => {
                   </div>
                 </div>
                 
+                {/* Alternative Investment Card */}
                 <div className="bg-teal-50 rounded-lg overflow-hidden border border-teal-100">
                   <div className="p-3 border-b border-teal-100 bg-teal-100/50">
                     <p className="text-sm text-teal-700 font-medium">Inversión alternativa</p>
@@ -281,6 +281,7 @@ export const ProyeccionesPage = () => {
                   </div>
                 </div>
                 
+                {/* ROI Card */}
                 <div className="md:col-span-2 bg-amber-50 p-4 rounded-lg border border-amber-100">
                   <p className="text-sm text-amber-600 font-medium">ROI anual promedio</p>
                   <p className="text-xl font-bold text-amber-700 mt-1">{summaryData.avgROI.toFixed(1)}%</p>
