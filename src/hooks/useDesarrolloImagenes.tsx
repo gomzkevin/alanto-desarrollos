@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
@@ -69,23 +70,29 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
     mutationFn: async (file: File) => {
       if (!desarrolloId) throw new Error('Desarrollo ID is required');
       
-      const fileName = `${desarrolloId}/${Date.now()}-${file.name}`;
+      const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
       
+      // Upload to storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('desarrollo-images')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
       
       if (uploadError) {
         console.error('Error uploading file:', uploadError);
         throw uploadError;
       }
       
+      // Get the public URL
       const { data: publicUrlData } = supabase.storage
         .from('desarrollo-images')
         .getPublicUrl(fileName);
       
       const url = publicUrlData.publicUrl;
       
+      // Save to database
       const { data: imageData, error: imageError } = await supabase
         .from('desarrollo_imagenes')
         .insert([{
@@ -133,10 +140,11 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
         throw getError;
       }
       
+      // Extract filename from URL
       const url = image.url;
-      const pathParts = url.split('/');
-      const path = `${desarrolloId}/${pathParts[pathParts.length - 1]}`;
+      const fileName = url.split('/').pop();
       
+      // Delete from database first
       const { error: deleteError } = await supabase
         .from('desarrollo_imagenes')
         .delete()
@@ -147,13 +155,15 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
         throw deleteError;
       }
       
+      // Then try to delete from storage (best effort)
       try {
         const { error: storageError } = await supabase.storage
           .from('desarrollo-images')
-          .remove([path]);
+          .remove([fileName]);
           
         if (storageError) {
           console.error('Error deleting image from storage:', storageError);
+          // We don't throw here as the database deletion succeeded
         }
       } catch (e) {
         console.error('Error trying to delete from storage:', e);
@@ -181,6 +191,7 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
     mutationFn: async (imageId: string) => {
       if (!desarrolloId) throw new Error('Desarrollo ID is required');
       
+      // First, unset all images as principal
       const { error: unsetError } = await supabase
         .from('desarrollo_imagenes')
         .update({ es_principal: false })
@@ -191,6 +202,7 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
         throw unsetError;
       }
       
+      // Then set the selected image as principal
       const { data, error } = await supabase
         .from('desarrollo_imagenes')
         .update({ es_principal: true })

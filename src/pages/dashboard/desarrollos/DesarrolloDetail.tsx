@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -9,6 +10,7 @@ import usePrototipos from '@/hooks/usePrototipos';
 import { Tables } from '@/integrations/supabase/types';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import DesarrolloImageCarousel from '@/components/dashboard/DesarrolloImageCarousel';
+import DesarrolloEditButton from '@/components/dashboard/DesarrolloEditButton';
 import { useUserRole } from '@/hooks';
 import { Badge } from '@/components/ui/badge';
 
@@ -98,11 +100,13 @@ const DesarrolloDetailPage = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6 p-6 pb-16">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-between">
           <Button variant="outline" size="sm" onClick={handleVolver}>
             <ChevronLeft className="mr-1 h-4 w-4" />
             Volver
           </Button>
+          
+          {desarrollo && <DesarrolloEditButton desarrollo={desarrollo} onSuccess={handleRefresh} />}
         </div>
         
         {isLoading ? (
