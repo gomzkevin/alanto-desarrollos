@@ -30,6 +30,12 @@ interface FormFieldProps {
   resourceType: string;
 }
 
+// Add fields to FormFieldsProps
+interface FormFieldsProps extends FormFieldProps {
+  fields: FieldDefinition[];
+  tabName?: string;
+}
+
 export const FormField = ({
   field,
   resource,
@@ -230,7 +236,7 @@ export default function FormFields({
   desarrolloId,
   resourceId,
   resourceType
-}: FormFieldProps & { tabName?: string }) {
+}: FormFieldsProps) {
   const filteredFields = tabName 
     ? fields.filter(field => field.tab === tabName)
     : fields;

@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import usePrototipos from '@/hooks/usePrototipos';
 import { Tables } from '@/integrations/supabase/types';
-import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import DesarrolloImageCarousel from '@/components/dashboard/DesarrolloImageCarousel';
 import { useUserRole } from '@/hooks';
 import { Badge } from '@/components/ui/badge';
