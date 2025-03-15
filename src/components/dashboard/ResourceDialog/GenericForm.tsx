@@ -21,6 +21,8 @@ interface GenericFormProps {
   resourceType: string;
   resourceId?: string;
   desarrolloId?: string;
+  prototipo_id?: string;  // Added missing property
+  lead_id?: string;       // Also added this for consistency
   handleDateChange?: (date: Date | undefined) => void;
   handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleAmenitiesChange?: (amenities: string[]) => void;
@@ -43,7 +45,9 @@ export default function GenericForm({
   uploading,
   selectedAmenities,
   desarrolloId,
-  resourceId
+  resourceId,
+  prototipo_id,
+  lead_id
 }: GenericFormProps) {
   const { leads = [] } = useLeads({});
   const { desarrollos = [] } = useDesarrollos({});
