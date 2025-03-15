@@ -34,9 +34,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             // Try to parse as number, but don't modify the input value
             // to allow typing decimal points, etc.
             try {
-              // Only convert completed numbers
-              const numValue = value === '-' ? value : Number(value);
-              onChange(isNaN(numValue) ? value : numValue);
+              // Just pass the raw value to allow typing
+              onChange(value);
             } catch (e) {
               // If parsing fails, just pass the raw value
               onChange(value);
