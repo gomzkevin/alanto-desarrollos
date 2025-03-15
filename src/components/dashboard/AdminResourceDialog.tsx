@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -364,9 +365,15 @@ const AdminResourceDialog = ({
   }, [isOpen, resourceId, resourceType, toast, leads, desarrollos, prototipos, usarFiniquito, desarrolloId, selectedDesarrolloId, lead_id, statusOptions, getSubstatusOptions, originOptions, selectedStatus]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target as HTMLInputElement;
+    
     if (resource) {
-      setResource({ ...resource, [name]: value } as FormValues);
+      // For number inputs, convert the string value to a number
+      if (type === 'number') {
+        setResource({ ...resource, [name]: value === '' ? '' : Number(value) } as FormValues);
+      } else {
+        setResource({ ...resource, [name]: value } as FormValues);
+      }
     }
   };
 
@@ -390,6 +397,7 @@ const AdminResourceDialog = ({
 
   const handleSwitchChange = (name: string, checked: boolean) => {
     if (resource) {
+      console.log(`Switch ${name} changed to:`, checked);
       setResource({ ...resource, [name]: checked } as FormValues);
       
       if (name === 'usar_finiquito') {
@@ -542,6 +550,16 @@ const AdminResourceDialog = ({
         }
         
         console.log('Saving desarrollo with amenities:', selectedAmenities);
+        console.log('Datos financieros a guardar:', {
+          mantenimiento_valor: desarrolloData.mantenimiento_valor,
+          es_mantenimiento_porcentaje: desarrolloData.es_mantenimiento_porcentaje,
+          gastos_fijos: desarrolloData.gastos_fijos,
+          es_gastos_fijos_porcentaje: desarrolloData.es_gastos_fijos_porcentaje,
+          gastos_variables: desarrolloData.gastos_variables,
+          es_gastos_variables_porcentaje: desarrolloData.es_gastos_variables_porcentaje,
+          impuestos: desarrolloData.impuestos,
+          es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje
+        });
         
         if (!resourceId) {
           result = await supabase
@@ -811,7 +829,7 @@ const AdminResourceDialog = ({
             <Label htmlFor={field.name}>{field.label}</Label>
             <Switch
               id={field.name}
-              checked={resource ? (resource as any)[field.name] || false : false}
+              checked={resource ? Boolean((resource as any)[field.name]) : false}
               onCheckedChange={(checked) => handleSwitchChange(field.name, checked)}
             />
           </div>
