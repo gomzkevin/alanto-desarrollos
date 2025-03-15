@@ -20,7 +20,7 @@ const DesarrollosPage = () => {
     isLoading, 
     error,
     refetch 
-  } = useDesarrollos();
+  } = useDesarrollos({ withPrototipos: true });  // Agregamos withPrototipos
 
   const { canCreateResource } = useUserRole();
 
