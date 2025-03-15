@@ -5,6 +5,26 @@ import { Tables } from '@/integrations/supabase/types';
 
 export type Lead = Tables<"leads">;
 
+export const LEAD_STATUS_OPTIONS = [
+  { value: 'nuevo', label: 'Nuevo' },
+  { value: 'contactado', label: 'Contactado' },
+  { value: 'interesado', label: 'Interesado' },
+  { value: 'calificado', label: 'Calificado' },
+  { value: 'negociacion', label: 'En negociación' },
+  { value: 'convertido', label: 'Convertido' },
+  { value: 'perdido', label: 'Perdido' }
+];
+
+export const LEAD_ORIGIN_OPTIONS = [
+  { value: 'sitio_web', label: 'Sitio web' },
+  { value: 'referido', label: 'Referido' },
+  { value: 'evento', label: 'Evento' },
+  { value: 'llamada', label: 'Llamada' },
+  { value: 'redes_sociales', label: 'Redes sociales' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'otro', label: 'Otro' }
+];
+
 type FetchLeadsOptions = {
   estado?: string;
   agente?: string;
@@ -70,7 +90,9 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
     leads: queryResult.data || [],
     isLoading: queryResult.isLoading,
     error: queryResult.error,
-    refetch: queryResult.refetch
+    refetch: queryResult.refetch,
+    statusOptions: LEAD_STATUS_OPTIONS,
+    originOptions: LEAD_ORIGIN_OPTIONS
   };
 };
 

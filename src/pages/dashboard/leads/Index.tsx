@@ -8,9 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ExportPDFButton } from '@/components/dashboard/ExportPDFButton';
-import { Loader2, Mail, Phone, Calendar, Tag, Plus } from 'lucide-react';
+import { Loader2, Mail, Phone, Calendar, Tag, Plus, Edit, Eye } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const LeadsPage = () => {
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { leads, isLoading, refetch } = useLeads();
   
   const formatDate = (dateString: string | null) => {
@@ -20,6 +23,42 @@ const LeadsPage = () => {
       month: 'short',
       day: 'numeric'
     });
+  };
+  
+  const handleViewDetails = (leadId: string) => {
+    setSelectedLeadId(leadId);
+    setEditDialogOpen(true);
+  };
+  
+  const handleCloseDialog = () => {
+    setEditDialogOpen(false);
+    setSelectedLeadId(null);
+  };
+  
+  const getStatusStyle = (status: string | null) => {
+    switch(status) {
+      case 'nuevo':
+        return 'bg-blue-100 text-blue-800';
+      case 'contactado':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'interesado':
+        return 'bg-purple-100 text-purple-800';
+      case 'calificado':
+        return 'bg-green-100 text-green-800';
+      case 'negociacion':
+        return 'bg-amber-100 text-amber-800';
+      case 'convertido':
+        return 'bg-emerald-100 text-emerald-800';
+      case 'perdido':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
+  const capitalizeFirstLetter = (text: string | null) => {
+    if (!text) return '';
+    return text.charAt(0).toUpperCase() + text.slice(1);
   };
   
   return (
@@ -73,46 +112,48 @@ const LeadsPage = () => {
                           <div className="flex flex-col space-y-1">
                             {lead.email && (
                               <div className="flex items-center text-sm">
-                                <Mail className="mr-2 h-3 w-3" />
+                                <Mail className="mr-2 h-3 w-3 text-slate-400" />
                                 {lead.email}
                               </div>
                             )}
                             {lead.telefono && (
                               <div className="flex items-center text-sm">
-                                <Phone className="mr-2 h-3 w-3" />
+                                <Phone className="mr-2 h-3 w-3 text-slate-400" />
                                 {lead.telefono}
                               </div>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            lead.estado === 'nuevo' ? 'bg-blue-100 text-blue-800' :
-                            lead.estado === 'contactado' ? 'bg-yellow-100 text-yellow-800' :
-                            lead.estado === 'calificado' ? 'bg-green-100 text-green-800' :
-                            lead.estado === 'perdido' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {lead.estado?.charAt(0).toUpperCase() + (lead.estado?.slice(1) || '')}
-                          </span>
+                          <Badge variant="outline" className={`${getStatusStyle(lead.estado)}`}>
+                            {capitalizeFirstLetter(lead.estado || 'Nuevo')}
+                          </Badge>
                         </TableCell>
                         <TableCell>{lead.interes_en || '-'}</TableCell>
                         <TableCell>
                           {lead.origen && (
                             <div className="flex items-center">
-                              <Tag className="mr-1 h-3 w-3" />
+                              <Tag className="mr-1 h-3 w-3 text-slate-400" />
                               {lead.origen}
                             </div>
                           )}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center">
-                            <Calendar className="mr-1 h-3 w-3" />
+                            <Calendar className="mr-1 h-3 w-3 text-slate-400" />
                             {formatDate(lead.ultimo_contacto)}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="sm">Ver detalles</Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleViewDetails(lead.id)}
+                            className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            Ver detalles
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -123,6 +164,17 @@ const LeadsPage = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Dialog for editing lead details */}
+      {editDialogOpen && (
+        <AdminResourceDialog
+          open={editDialogOpen}
+          onClose={handleCloseDialog}
+          resourceType="leads"
+          resourceId={selectedLeadId || undefined}
+          onSuccess={refetch}
+        />
+      )}
     </DashboardLayout>
   );
 };
