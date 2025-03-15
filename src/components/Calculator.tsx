@@ -44,6 +44,7 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
   const [downPaymentAmount, setDownPaymentAmount] = useState(700000); // 20% of 3,500,000
   const [occupancyRate, setOccupancyRate] = useState(74); // percentage
   const [nightlyRate, setNightlyRate] = useState(1800);
+  const [nightlyRateDisplay, setNightlyRateDisplay] = useState('1,800'); // Formatted display value
   const [years, setYears] = useState(10);
   const [annualGrowth, setAnnualGrowth] = useState(5); // percentage
   const [financialConfig, setFinancialConfig] = useState<FinancialConfig>({
@@ -68,17 +69,32 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
       propertyValue: propertyValue,
       downPaymentPercent: downPaymentPercent,
       occupancyRate: occupancyRate,
-      nightlyRate: nightlyRate,
+      nightlyRate: nightlyRateDisplay,
       annualGrowth: annualGrowth,
       years: years,
     }
   });
+
+  // Format a number with commas
+  const formatNumberWithCommas = (num: number): string => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
+  // Parse a string with commas to get the number value
+  const parseNumberWithCommas = (str: string): number => {
+    return parseInt(str.replace(/,/g, ""), 10) || 0;
+  };
 
   // Calculate the down payment amount when propertyValue or downPaymentPercent changes
   useEffect(() => {
     const amount = (propertyValue * downPaymentPercent) / 100;
     setDownPaymentAmount(amount);
   }, [propertyValue, downPaymentPercent]);
+
+  // Update the formatted display value when nightlyRate changes
+  useEffect(() => {
+    setNightlyRateDisplay(formatNumberWithCommas(nightlyRate));
+  }, [nightlyRate]);
 
   // Fetch financial configuration from Supabase based on desarrollo_id and prototipo_id
   useEffect(() => {
@@ -234,6 +250,22 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
     }
   }, [propertyValue, occupancyRate, nightlyRate, years, annualGrowth, financialConfig, shouldCalculate, onDataUpdate]);
   
+  // Handle changes to the nightly rate input
+  const handleNightlyRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value.replace(/,/g, ''); // Remove any existing commas
+    
+    if (inputValue === '') {
+      // Allow empty input for better UX
+      setNightlyRateDisplay('');
+      setNightlyRate(0);
+    } else if (/^\d+$/.test(inputValue)) {
+      // Only accept digits
+      const numValue = parseInt(inputValue, 10);
+      setNightlyRate(numValue);
+      setNightlyRateDisplay(formatNumberWithCommas(numValue));
+    }
+  };
+  
   return (
     <div className="space-y-6" ref={calculatorRef}>
       <Form {...form}>
@@ -291,10 +323,11 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
               Tarifa promedio por noche (MXN)
             </label>
             <Input 
-              type="number" 
-              value={nightlyRate} 
-              onChange={(e) => setNightlyRate(parseInt(e.target.value) || 0)}
+              type="text" 
+              value={nightlyRateDisplay} 
+              onChange={handleNightlyRateChange}
               className="border border-slate-300"
+              placeholder="0"
             />
           </div>
           
