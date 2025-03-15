@@ -8,7 +8,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, formatCurrency = false, ...props }, ref) => {
-    // For currency formatting
+    // Para el formateo de moneda
     const displayValue = React.useMemo(() => {
       if (formatCurrency && props.value !== undefined && props.value !== '') {
         return new Intl.NumberFormat('es-MX', {
@@ -33,15 +33,19 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         onChange={(e) => {
           if (props.onChange) {
             if (formatCurrency) {
-              // For currency inputs, extract only numbers
+              // Para entradas de moneda, extraer solo números
               const numericValue = e.target.value.replace(/[^0-9]/g, '');
-              // Create a synthetic event with the processed value
-              const syntheticEvent = Object.create(e);
-              Object.defineProperty(syntheticEvent, 'target', {
-                writable: true,
-                value: { ...e.target, value: numericValue }
-              });
-              props.onChange(syntheticEvent);
+              
+              // Crear un evento sintético con el valor procesado
+              const syntheticEvent = {
+                ...e,
+                target: {
+                  ...e.target,
+                  value: numericValue
+                }
+              };
+              
+              props.onChange(syntheticEvent as React.ChangeEvent<HTMLInputElement>);
             } else {
               props.onChange(e);
             }
