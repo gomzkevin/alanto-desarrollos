@@ -50,18 +50,17 @@ export const LineChart = (props) => {
       showXAxis={props.showXAxis !== false}
       showYAxis={props.showYAxis !== false}
       yAxisWidth={props.yAxisWidth || 60}
-      lineThickness={props.lineThickness || 3}
+      // Removed lineThickness as it doesn't exist in the type definitions
       showPoints={props.showPoints !== false}
       connectNulls={props.connectNulls !== false}
       curveType={props.curveType || "linear"}
       showAnimation={props.showAnimation !== false}
       showGridLines={true}
       animationDuration={1000}
-      enableLegend={true}
+      // Removed enableLegend as it doesn't exist in the type definitions
       showGradient={props.showGradient !== false}
       areaOpacity={0.2}
       autoMinValue={true}
-      fontSize={10}
       valueFormatter={props.valueFormatter}
     />
   );
@@ -92,10 +91,9 @@ export const BarChart = (props) => {
       showAnimation={props.showAnimation !== false}
       showGridLines={true}
       animationDuration={1000}
-      enableLegend={true}
+      // Removed enableLegend as it doesn't exist in the type definitions
       autoMinValue={true}
       minValue={0}
-      fontSize={10}
       valueFormatter={props.valueFormatter}
     />
   );

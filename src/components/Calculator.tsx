@@ -294,7 +294,11 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
               type="number" 
               value={nightlyRate} 
               formatCurrency={true}
-              onChange={(value) => setNightlyRate(value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                // Extract the numeric value from the input
+                const value = e.target.value.replace(/[^0-9]/g, '');
+                setNightlyRate(value === '' ? 0 : Number(value));
+              }}
               className="border border-slate-300"
             />
           </div>
