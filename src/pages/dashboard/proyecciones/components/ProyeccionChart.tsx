@@ -39,9 +39,6 @@ export const ProyeccionChart = ({ chartData }: ProyeccionChartProps) => {
         showAnimation={true}
         showTooltip={true}
         showGradient={false}
-        lineThickness={3}
-        showPoints={true}
-        connectNulls={true}
         curveType="linear"
         className="h-[400px] text-xs"
       />
