@@ -1,5 +1,4 @@
 
-import FormFields from './FormFields';
 import { FormValues } from './types';
 
 interface GenericFormProps {
@@ -8,15 +7,9 @@ interface GenericFormProps {
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleSelectChange: (name: string, value: string) => void;
   handleSwitchChange: (name: string, checked: boolean) => void;
-  handleDateChange: (date: Date | undefined) => void;
-  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleAmenitiesChange: (amenities: string[]) => void;
-  selectedDate?: Date;
-  uploading: boolean;
-  selectedAmenities: string[];
-  desarrolloId?: string;
-  resourceId?: string;
   resourceType: string;
+  resourceId?: string;
+  desarrolloId?: string;
 }
 
 export default function GenericForm({
@@ -25,34 +18,20 @@ export default function GenericForm({
   handleChange,
   handleSelectChange,
   handleSwitchChange,
-  handleDateChange,
-  handleImageUpload,
-  handleAmenitiesChange,
-  selectedDate,
-  uploading,
-  selectedAmenities,
-  desarrolloId,
+  resourceType,
   resourceId,
-  resourceType
+  desarrolloId
 }: GenericFormProps) {
+  if (!resource) return null;
+  
+  // Currently this is a placeholder until we implement specific forms
+  // for the other resource types
   return (
     <div className="grid gap-4 py-4">
-      <FormFields
-        fields={fields}
-        resource={resource}
-        handleChange={handleChange}
-        handleSelectChange={handleSelectChange}
-        handleSwitchChange={handleSwitchChange}
-        handleDateChange={handleDateChange}
-        handleImageUpload={handleImageUpload}
-        handleAmenitiesChange={handleAmenitiesChange}
-        selectedDate={selectedDate}
-        uploading={uploading}
-        selectedAmenities={selectedAmenities}
-        desarrolloId={desarrolloId}
-        resourceId={resourceId}
-        resourceType={resourceType}
-      />
+      <p className="text-md text-center">
+        El formulario para {resourceType} está en desarrollo.
+        Pronto tendrá disponible todas las funcionalidades.
+      </p>
     </div>
   );
 }

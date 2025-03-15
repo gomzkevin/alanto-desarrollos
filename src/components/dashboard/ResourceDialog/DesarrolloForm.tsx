@@ -1,6 +1,6 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FormValues } from './types';
+import { DesarrolloResource } from './types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,15 +16,19 @@ import { cn } from '@/lib/utils';
 import { AmenitiesSelector } from '../AmenitiesSelector';
 
 interface DesarrolloFormProps {
-  resource: FormValues | null;
-  setResource: (resource: FormValues) => void;
+  resource: DesarrolloResource | null;
+  setResource: (resource: DesarrolloResource) => void;
   resourceId?: string;
+  selectedAmenities: string[];
+  onAmenitiesChange: (amenities: string[]) => void;
 }
 
 export default function DesarrolloForm({
   resource,
   setResource,
-  resourceId
+  resourceId,
+  selectedAmenities,
+  onAmenitiesChange
 }: DesarrolloFormProps) {
   const [activeTab, setActiveTab] = useState("general");
   
@@ -35,30 +39,25 @@ export default function DesarrolloForm({
     const { name, value, type } = e.target as HTMLInputElement;
     
     if (type === 'number') {
-      setResource({ ...resource, [name]: value === '' ? '' : Number(value) } as FormValues);
+      setResource({ ...resource, [name]: value === '' ? '' : Number(value) });
     } else {
-      setResource({ ...resource, [name]: value } as FormValues);
+      setResource({ ...resource, [name]: value });
     }
   };
   
   const handleSelectChange = (name: string, value: string) => {
     if (!resource) return;
-    setResource({ ...resource, [name]: value } as FormValues);
+    setResource({ ...resource, [name]: value });
   };
   
   const handleSwitchChange = (name: string, checked: boolean) => {
     if (!resource) return;
-    setResource({ ...resource, [name]: checked } as FormValues);
+    setResource({ ...resource, [name]: checked });
   };
   
   const handleDateChange = (name: string, date: Date | undefined) => {
     if (!resource || !date) return;
-    setResource({ ...resource, [name]: date.toISOString() } as FormValues);
-  };
-  
-  const handleAmenitiesChange = (amenities: string[]) => {
-    if (!resource) return;
-    setResource({ ...resource, amenidades: amenities } as FormValues);
+    setResource({ ...resource, [name]: date.toISOString() });
   };
   
   // Si no hay recurso, no renderizar nada
@@ -209,8 +208,8 @@ export default function DesarrolloForm({
         <div className="space-y-3">
           <Label>Amenidades</Label>
           <AmenitiesSelector 
-            selectedAmenities={(resource.amenidades as string[]) || []} 
-            onChange={handleAmenitiesChange} 
+            selectedAmenities={selectedAmenities} 
+            onChange={onAmenitiesChange} 
           />
         </div>
       </TabsContent>

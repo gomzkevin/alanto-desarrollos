@@ -1,12 +1,13 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AdminResourceDialogProps, FormValues } from './types';
+import { AdminResourceDialogProps, FormValues, DesarrolloResource } from './types';
 import DesarrolloForm from './DesarrolloForm';
 import GenericForm from './GenericForm';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 const AdminResourceDialog = ({ 
   open, 
@@ -25,6 +26,7 @@ const AdminResourceDialog = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resource, setResource] = useState<FormValues | null>(null);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const { toast } = useToast();
   
   const isOpen = open !== undefined ? open : dialogOpen;
@@ -35,6 +37,21 @@ const AdminResourceDialog = ({
     }
     setDialogOpen(newOpen);
   };
+
+  // Handle amenities for desarrollo resources
+  useEffect(() => {
+    if (resource && resourceType === 'desarrollos') {
+      const desarrolloResource = resource as DesarrolloResource;
+      if (desarrolloResource.amenidades) {
+        const amenities = Array.isArray(desarrolloResource.amenidades) 
+          ? desarrolloResource.amenidades 
+          : [];
+        setSelectedAmenities(amenities);
+      } else {
+        setSelectedAmenities([]);
+      }
+    }
+  }, [resource, resourceType]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -67,9 +84,11 @@ const AdminResourceDialog = ({
               if (typeof data.amenidades === 'string') {
                 data.amenidades = JSON.parse(data.amenidades);
               }
+              setSelectedAmenities(Array.isArray(data.amenidades) ? data.amenidades : []);
             } catch (e) {
               console.error('Error parsing amenidades:', e);
               data.amenidades = [];
+              setSelectedAmenities([]);
             }
           }
           
@@ -87,6 +106,7 @@ const AdminResourceDialog = ({
               amenidades: [],
               moneda: 'MXN'
             });
+            setSelectedAmenities([]);
           } else if (resourceType === 'prototipos' && desarrolloId) {
             setResource({
               desarrollo_id: desarrolloId,
@@ -140,13 +160,44 @@ const AdminResourceDialog = ({
       if (resourceId) {
         // Actualizar recurso existente
         if (resourceType === 'desarrollos') {
+          const desarrolloData = formData as DesarrolloResource;
           // Asegurar que amenidades es un string JSON para guardar
-          const dataToSave = { ...formData };
-          if (dataToSave.amenidades && Array.isArray(dataToSave.amenidades)) {
-            dataToSave.amenidades = JSON.stringify(dataToSave.amenidades);
+          const dataToSave = { ...desarrolloData };
+          
+          // Convert amenidades to a JSON string if needed
+          if (selectedAmenities.length > 0) {
+            dataToSave.amenidades = selectedAmenities as any;
           }
           
-          response = await supabase.from('desarrollos').update(dataToSave).eq('id', resourceId);
+          const amenidadesJson = JSON.stringify(selectedAmenities) as Json;
+          
+          response = await supabase
+            .from('desarrollos')
+            .update({
+              nombre: dataToSave.nombre,
+              ubicacion: dataToSave.ubicacion,
+              total_unidades: dataToSave.total_unidades,
+              unidades_disponibles: dataToSave.unidades_disponibles,
+              avance_porcentaje: dataToSave.avance_porcentaje,
+              fecha_inicio: dataToSave.fecha_inicio,
+              fecha_entrega: dataToSave.fecha_entrega,
+              descripcion: dataToSave.descripcion,
+              imagen_url: dataToSave.imagen_url,
+              moneda: dataToSave.moneda,
+              comision_operador: dataToSave.comision_operador,
+              mantenimiento_valor: dataToSave.mantenimiento_valor,
+              es_mantenimiento_porcentaje: dataToSave.es_mantenimiento_porcentaje,
+              gastos_fijos: dataToSave.gastos_fijos,
+              es_gastos_fijos_porcentaje: dataToSave.es_gastos_fijos_porcentaje,
+              gastos_variables: dataToSave.gastos_variables,
+              es_gastos_variables_porcentaje: dataToSave.es_gastos_variables_porcentaje,
+              impuestos: dataToSave.impuestos,
+              es_impuestos_porcentaje: dataToSave.es_impuestos_porcentaje,
+              adr_base: dataToSave.adr_base,
+              ocupacion_anual: dataToSave.ocupacion_anual,
+              amenidades: amenidadesJson
+            })
+            .eq('id', resourceId);
         } else if (resourceType === 'prototipos') {
           response = await supabase.from('prototipos').update(formData).eq('id', resourceId);
         } else if (resourceType === 'leads') {
@@ -157,13 +208,38 @@ const AdminResourceDialog = ({
       } else {
         // Crear nuevo recurso
         if (resourceType === 'desarrollos') {
+          const desarrolloData = formData as DesarrolloResource;
           // Asegurar que amenidades es un string JSON para guardar
-          const dataToSave = { ...formData };
-          if (dataToSave.amenidades && Array.isArray(dataToSave.amenidades)) {
-            dataToSave.amenidades = JSON.stringify(dataToSave.amenidades);
-          }
+          const dataToSave = { ...desarrolloData };
           
-          response = await supabase.from('desarrollos').insert(dataToSave);
+          const amenidadesJson = JSON.stringify(selectedAmenities) as Json;
+          
+          response = await supabase
+            .from('desarrollos')
+            .insert({
+              nombre: dataToSave.nombre,
+              ubicacion: dataToSave.ubicacion,
+              total_unidades: dataToSave.total_unidades,
+              unidades_disponibles: dataToSave.unidades_disponibles,
+              avance_porcentaje: dataToSave.avance_porcentaje,
+              fecha_inicio: dataToSave.fecha_inicio,
+              fecha_entrega: dataToSave.fecha_entrega,
+              descripcion: dataToSave.descripcion,
+              imagen_url: dataToSave.imagen_url,
+              moneda: dataToSave.moneda,
+              comision_operador: dataToSave.comision_operador,
+              mantenimiento_valor: dataToSave.mantenimiento_valor,
+              es_mantenimiento_porcentaje: dataToSave.es_mantenimiento_porcentaje,
+              gastos_fijos: dataToSave.gastos_fijos,
+              es_gastos_fijos_porcentaje: dataToSave.es_gastos_fijos_porcentaje,
+              gastos_variables: dataToSave.gastos_variables,
+              es_gastos_variables_porcentaje: dataToSave.es_gastos_variables_porcentaje,
+              impuestos: dataToSave.impuestos,
+              es_impuestos_porcentaje: dataToSave.es_impuestos_porcentaje,
+              adr_base: dataToSave.adr_base,
+              ocupacion_anual: dataToSave.ocupacion_anual,
+              amenidades: amenidadesJson
+            });
         } else if (resourceType === 'prototipos') {
           response = await supabase.from('prototipos').insert(formData);
         } else if (resourceType === 'leads') {
@@ -173,7 +249,7 @@ const AdminResourceDialog = ({
         }
       }
       
-      if (response.error) throw response.error;
+      if (response?.error) throw response.error;
       
       toast({
         title: 'Éxito',
@@ -184,7 +260,7 @@ const AdminResourceDialog = ({
       if (onSuccess) onSuccess();
       
       handleOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al guardar el recurso:', error);
       toast({
         title: 'Error',
@@ -193,6 +269,15 @@ const AdminResourceDialog = ({
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleAmenitiesChange = (amenities: string[]) => {
+    setSelectedAmenities(amenities);
+    
+    if (resource && resourceType === 'desarrollos') {
+      const updatedResource = { ...resource as DesarrolloResource, amenidades: amenities };
+      setResource(updatedResource);
     }
   };
 
@@ -230,14 +315,35 @@ const AdminResourceDialog = ({
             <>
               {resourceType === 'desarrollos' ? (
                 <DesarrolloForm
-                  resource={resource}
-                  setResource={setResource}
+                  resource={resource as DesarrolloResource}
+                  setResource={(value) => setResource(value as FormValues)}
                   resourceId={resourceId}
+                  selectedAmenities={selectedAmenities}
+                  onAmenitiesChange={handleAmenitiesChange}
                 />
               ) : (
                 <GenericForm
+                  fields={[]}
                   resource={resource}
-                  setResource={setResource}
+                  handleChange={(e) => {
+                    if (!resource) return;
+                    
+                    const { name, value, type } = e.target;
+                    
+                    if (type === 'number') {
+                      setResource({ ...resource, [name]: value === '' ? '' : Number(value) });
+                    } else {
+                      setResource({ ...resource, [name]: value });
+                    }
+                  }}
+                  handleSelectChange={(name, value) => {
+                    if (!resource) return;
+                    setResource({ ...resource, [name]: value });
+                  }}
+                  handleSwitchChange={(name, checked) => {
+                    if (!resource) return;
+                    setResource({ ...resource, [name]: checked });
+                  }}
                   resourceType={resourceType}
                   resourceId={resourceId}
                   desarrolloId={desarrolloId}
