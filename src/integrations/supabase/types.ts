@@ -129,6 +129,41 @@ export type Database = {
           },
         ]
       }
+      desarrollo_imagenes: {
+        Row: {
+          created_at: string | null
+          desarrollo_id: string
+          es_principal: boolean | null
+          id: string
+          orden: number | null
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          desarrollo_id: string
+          es_principal?: boolean | null
+          id?: string
+          orden?: number | null
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          desarrollo_id?: string
+          es_principal?: boolean | null
+          id?: string
+          orden?: number | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "desarrollo_imagenes_desarrollo_id_fkey"
+            columns: ["desarrollo_id"]
+            isOneToOne: false
+            referencedRelation: "desarrollos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       desarrollos: {
         Row: {
           adr_base: number | null

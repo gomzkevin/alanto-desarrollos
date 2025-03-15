@@ -1,13 +1,16 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { ChevronLeft, Home, MapPin, Clock, CalendarClock } from 'lucide-react';
+import { ChevronLeft, Home, MapPin, Clock, CalendarClock, ImageIcon } from 'lucide-react';
 import PrototipoCard from '@/components/dashboard/PrototipoCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import usePrototipos from '@/hooks/usePrototipos';
 import { Tables } from '@/integrations/supabase/types';
 import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
+import DesarrolloImageCarousel from '@/components/dashboard/DesarrolloImageCarousel';
+import { useUserRole } from '@/hooks';
 
 type Desarrollo = Tables<"desarrollos">;
 
@@ -41,6 +44,7 @@ const getDesarrolloStatus = (desarrollo: Desarrollo) => {
 const DesarrolloDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isAdmin } = useUserRole();
   
   const { 
     data: desarrollo, 
@@ -118,11 +122,22 @@ const DesarrolloDetailPage = () => {
                 </div>
               </div>
               
+              {/* Image Carousel Section */}
+              <div className="mt-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-xl font-semibold flex items-center">
+                    <ImageIcon className="h-5 w-5 mr-2 text-indigo-600" />
+                    Imágenes del desarrollo
+                  </h2>
+                </div>
+                <DesarrolloImageCarousel desarrolloId={id as string} editable={isAdmin} />
+              </div>
+              
               {desarrollo.descripcion && (
-                <p className="text-slate-700">{desarrollo.descripcion}</p>
+                <p className="text-slate-700 mt-4">{desarrollo.descripcion}</p>
               )}
               
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg mt-6">
                 <div className="space-y-1">
                   <div className="flex items-center text-slate-500 text-sm">
                     <Home className="h-4 w-4 mr-1" />
