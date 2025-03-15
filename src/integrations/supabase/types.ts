@@ -248,6 +248,7 @@ export type Database = {
           nombre: string
           notas: string | null
           origen: string | null
+          subestado: string | null
           telefono: string | null
           ultimo_contacto: string | null
         }
@@ -261,6 +262,7 @@ export type Database = {
           nombre: string
           notas?: string | null
           origen?: string | null
+          subestado?: string | null
           telefono?: string | null
           ultimo_contacto?: string | null
         }
@@ -274,6 +276,7 @@ export type Database = {
           nombre?: string
           notas?: string | null
           origen?: string | null
+          subestado?: string | null
           telefono?: string | null
           ultimo_contacto?: string | null
         }
