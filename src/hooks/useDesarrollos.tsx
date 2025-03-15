@@ -1,10 +1,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Tables } from '@/integrations/supabase/types';
+import { Tables, Json } from '@/integrations/supabase/types';
 
 export type Desarrollo = Tables<"desarrollos"> & {
-  amenidades?: string[] | string;
+  amenidades?: string[] | null;
 };
 
 // Define extended type with prototipos relation
@@ -43,10 +43,26 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
         throw new Error(error.message);
       }
       
+      // Process desarrollos to handle JSON amenidades
+      const processedDesarrollos = desarrollos.map(desarrollo => {
+        // Parse amenidades from JSON to string array if it exists
+        const processedDesarrollo: ExtendedDesarrollo = {
+          ...desarrollo,
+          amenidades: desarrollo.amenidades 
+            ? (Array.isArray(desarrollo.amenidades) 
+                ? desarrollo.amenidades 
+                : typeof desarrollo.amenidades === 'string' 
+                  ? JSON.parse(desarrollo.amenidades)
+                  : desarrollo.amenidades as string[])
+            : null
+        };
+        return processedDesarrollo;
+      });
+      
       // If relations are requested, fetch them for each desarrollo
-      if (withPrototipos && desarrollos && desarrollos.length > 0) {
+      if (withPrototipos && processedDesarrollos && processedDesarrollos.length > 0) {
         const extendedDesarrollos: ExtendedDesarrollo[] = await Promise.all(
-          desarrollos.map(async (desarrollo) => {
+          processedDesarrollos.map(async (desarrollo) => {
             const { data: prototipos, error: prototiposError } = await supabase
               .from('prototipos')
               .select('*')
@@ -63,8 +79,8 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
         return extendedDesarrollos;
       }
       
-      console.log('Desarrollos fetched:', desarrollos);
-      return desarrollos as ExtendedDesarrollo[];
+      console.log('Desarrollos fetched:', processedDesarrollos);
+      return processedDesarrollos;
     } catch (error) {
       console.error('Error in fetchDesarrollos:', error);
       throw error;

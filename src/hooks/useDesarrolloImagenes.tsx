@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
+import { Json } from '@/integrations/supabase/types';
 
 export type DesarrolloImagen = {
   id: string;
@@ -34,7 +35,7 @@ interface Desarrollo {
   es_impuestos_porcentaje?: boolean;
   adr_base?: number;
   ocupacion_anual?: number;
-  amenidades?: string[] | string;
+  amenidades?: string[] | null;
 }
 
 export const useDesarrolloImagenes = (desarrolloId?: string) => {
@@ -262,12 +263,10 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
       
       console.log('Updating amenities to:', amenities);
       
-      const amenitiesJson = JSON.stringify(amenities);
-      
       const { data, error } = await supabase
         .from('desarrollos')
         .update({ 
-          amenidades: amenitiesJson
+          amenidades: amenities
         })
         .eq('id', desarrolloId)
         .select()
