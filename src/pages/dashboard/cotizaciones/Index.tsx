@@ -16,7 +16,7 @@ import useCotizaciones from '@/hooks/useCotizaciones';
 import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
-import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { ExtendedCotizacion } from '@/hooks/useCotizaciones';
 import { ExportPDFButton } from '@/components/dashboard/ExportPDFButton';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';

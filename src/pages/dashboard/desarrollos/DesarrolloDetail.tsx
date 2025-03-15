@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -81,7 +80,6 @@ const DesarrolloDetailPage = () => {
   const isLoading = isLoadingDesarrollo || isLoadingPrototipos;
   const hasError = errorDesarrollo || errorPrototipos;
   
-  // Parse amenidades if they exist
   const parseAmenidades = (amenidades: string[] | string | undefined): string[] => {
     if (!amenidades) return [];
     
@@ -141,7 +139,6 @@ const DesarrolloDetailPage = () => {
                 </div>
               </div>
               
-              {/* Image Carousel Section */}
               <div className="mt-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-xl font-semibold flex items-center">
@@ -156,7 +153,6 @@ const DesarrolloDetailPage = () => {
                 <p className="text-slate-700 mt-4">{desarrollo.descripcion}</p>
               )}
               
-              {/* Amenidades section */}
               {desarrollo.amenidades && parseAmenidades(desarrollo.amenidades).length > 0 && (
                 <div className="mt-6">
                   <h2 className="text-xl font-semibold flex items-center mb-4">

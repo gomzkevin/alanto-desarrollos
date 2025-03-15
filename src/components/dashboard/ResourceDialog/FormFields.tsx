@@ -30,10 +30,23 @@ interface FormFieldProps {
   resourceType: string;
 }
 
-// Add fields to FormFieldsProps
-interface FormFieldsProps extends FormFieldProps {
+// Define FormFieldsProps separate from FormFieldProps with fields array
+interface FormFieldsProps {
   fields: FieldDefinition[];
+  resource: FormValues | null;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  handleSelectChange: (name: string, value: string) => void;
+  handleSwitchChange: (name: string, checked: boolean) => void;
+  handleDateChange: (date: Date | undefined) => void;
+  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleAmenitiesChange: (amenities: string[]) => void;
+  selectedDate?: Date;
+  uploading: boolean;
+  selectedAmenities: string[];
   tabName?: string;
+  desarrolloId?: string;
+  resourceId?: string;
+  resourceType: string;
 }
 
 export const FormField = ({
