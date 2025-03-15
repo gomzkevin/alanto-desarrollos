@@ -219,7 +219,7 @@ export const FormField = ({
     
     case 'number':
       // Para campos numéricos, usamos formatCurrency para valores monetarios
-      const isMonetaryField = ['precio', 'adr_base', 'monto_anticipo', 'monto_finiquito'].includes(field.name);
+      const isMonetaryField = ['precio', 'adr_base', 'monto_anticipo', 'monto_finiquito', 'gastos_fijos'].includes(field.name);
       return (
         <div key={field.name} className="space-y-3">
           <Label htmlFor={field.name}>{field.label}</Label>
@@ -231,6 +231,7 @@ export const FormField = ({
             formatCurrency={isMonetaryField}
             value={resource ? (resource as any)[field.name] ?? '' : ''}
             onChange={handleChange}
+            placeholder={field.label}
           />
         </div>
       );
@@ -246,6 +247,7 @@ export const FormField = ({
             name={field.name}
             value={resource ? (resource as any)[field.name] || '' : ''}
             onChange={handleChange}
+            placeholder={field.label}
           />
         </div>
       );

@@ -35,10 +35,6 @@ export default function DesarrolloForm({
 }: DesarrolloFormProps) {
   const [activeTab, setActiveTab] = useState("general");
   
-  const getTabFields = (tabName: string) => {
-    return fields.filter(field => field.tab === tabName);
-  };
-  
   return (
     <Tabs defaultValue="general" value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="grid grid-cols-4 mb-4">
