@@ -1,12 +1,11 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart3 } from 'lucide-react'; // Changed from LineChart to BarChart3
-import { BarChart } from '@/components/ui/chart'; // Import BarChart instead of LineChart
+import { BarChart3 } from 'lucide-react';
+import { BarChart } from '@/components/ui/chart';
 import { Calculator } from '@/components/Calculator';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
@@ -31,17 +30,17 @@ export const ProyeccionesPage = () => {
   });
   const [chartData, setChartData] = useState<any[]>([]);
   const [summaryData, setSummaryData] = useState({
-    propertyValue: 3500000, // Initial property value
-    airbnbProfit: 5655683,  // Total profit from Airbnb
-    altReturn: 677006,      // Total from alternative investment
-    avgROI: 56.8           // Average ROI
+    propertyValue: 3500000,
+    airbnbProfit: 5655683,
+    altReturn: 677006,
+    avgROI: 56.8
   });
   const [activeTab, setActiveTab] = useState('grafica');
   const [shouldCalculate, setShouldCalculate] = useState(false);
 
   const handleDesarrolloChange = (value: string) => {
     setSelectedDesarrolloId(value);
-    setSelectedPrototipoId('global'); // Reset prototipo selection when desarrollo changes
+    setSelectedPrototipoId('global');
   };
 
   const handlePrototipoChange = (value: string) => {
@@ -67,9 +66,9 @@ export const ProyeccionesPage = () => {
       const sumROI = enhancedData.reduce((acc, item) => acc + parseFloat(item.yearlyROI), 0);
       
       setSummaryData({
-        propertyValue: enhancedData[0].initialPropertyValue || 3500000, // Get initial property value
-        airbnbProfit: lastYear.airbnbProfit - enhancedData[0].initialPropertyValue, // Total profit (excluding initial investment)
-        altReturn: lastYear.alternativeInvestment - enhancedData[0].initialPropertyValue, // Total return (excluding initial investment)
+        propertyValue: enhancedData[0].initialPropertyValue || 3500000,
+        airbnbProfit: lastYear.airbnbProfit - enhancedData[0].initialPropertyValue,
+        altReturn: lastYear.alternativeInvestment - enhancedData[0].initialPropertyValue,
         avgROI: sumROI / enhancedData.length
       });
     }
@@ -204,7 +203,7 @@ export const ProyeccionesPage = () => {
                         yAxisWidth={60}
                         showAnimation={true}
                         showTooltip={true}
-                        className="h-[400px]"
+                        className="h-[400px] text-xs"
                       />
                     </div>
                   ) : (

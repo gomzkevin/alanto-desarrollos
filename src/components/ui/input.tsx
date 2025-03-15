@@ -10,15 +10,19 @@ interface InputProps extends Omit<React.ComponentProps<"input">, "onChange"> {
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, onChange, formatCurrency = false, ...props }, ref) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (type === 'number' && formatCurrency) {
+      if (formatCurrency) {
         // For currency formatting, we process the input differently
-        const value = e.target.value;
+        let value = e.target.value;
+        
         // Remove all non-numeric characters
-        const numericValue = value.replace(/[^0-9]/g, '');
+        value = value.replace(/[^0-9]/g, '');
+        
+        // Convert to number and handle empty input
+        const numericValue = value === '' ? 0 : Number(value);
         
         if (onChange) {
           // Pass the numeric value to the consumer
-          onChange(Number(numericValue));
+          onChange(numericValue);
         }
       } else if (onChange) {
         // For normal inputs, pass the event value directly
@@ -28,8 +32,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     // Format display value for currency
     const formatValue = () => {
-      if (type === 'number' && formatCurrency && props.value !== undefined) {
+      if (formatCurrency && props.value !== undefined) {
+        if (props.value === '') return '';
+        
         return new Intl.NumberFormat('es-MX', {
+          style: 'currency',
+          currency: 'MXN',
           maximumFractionDigits: 0
         }).format(Number(props.value));
       }

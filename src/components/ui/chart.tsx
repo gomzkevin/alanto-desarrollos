@@ -62,7 +62,7 @@ export const LineChart = (props) => {
       enableLegendSlider={false}
       showGridLines={true}
       showAnimation={true}
-      className={`${props.className || ''} bg-white`}
+      className={`${props.className || ''} bg-white text-xs`}
       colors={chartColors}
       // Ensure line thickness is visible
       lineThickness={8}
@@ -95,12 +95,12 @@ export const BarChart = (props) => {
     const categories = props.categories || [];
     const colorMap = {
       "Renta vacacional": "#9b87f5", // Airbnb purple color
-      "Bonos US": "#7E69AB"           // Alternative investment color
+      "Bonos US": "#4ade80"          // Soft green color for alternative investment
     };
     
     // If no categories provided or custom colors are provided, use defaults
     if (categories.length === 0 || props.colors) {
-      return props.colors || ["#9b87f5", "#7E69AB"];
+      return props.colors || ["#9b87f5", "#4ade80"];
     }
     
     // Map each category to its color
@@ -116,7 +116,7 @@ export const BarChart = (props) => {
       {...props}
       showGridLines={true}
       showAnimation={true}
-      className={`${props.className || ''} bg-white`}
+      className={`${props.className || ''} bg-white text-xs`}
       colors={chartColors}
       showXAxis={true}
       showYAxis={true}
@@ -130,6 +130,7 @@ export const BarChart = (props) => {
       autoMinValue={true}
       minValue={0}
       customTooltip={props.customTooltip}
+      fontSize={12} // Adding explicit font size control
     />
   );
 };
