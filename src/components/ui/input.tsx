@@ -24,6 +24,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           // Pass the numeric value to the consumer
           onChange(numericValue);
         }
+      } else if (type === 'number') {
+        // For number inputs, convert string to number
+        const value = e.target.value;
+        if (onChange) {
+          // Pass numeric value or empty string
+          onChange(value === '' ? '' : Number(value));
+        }
       } else if (onChange) {
         // For normal inputs, pass the event value directly
         onChange(e.target.value);
