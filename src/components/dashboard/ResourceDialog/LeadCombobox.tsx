@@ -69,6 +69,8 @@ export function LeadCombobox({ value, onChange }: LeadComboboxProps) {
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
+          type="button" // Explicitly set type to prevent form submission
+          onClick={() => setOpen(!open)}
         >
           {displayName || "Seleccionar comprador..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

@@ -96,12 +96,12 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
   };
   
   const handleCotizacion = (unidadId: string) => {
-    // Navegamos a la página de cotización con el ID de la unidad
+    // Use navigate with appropriate parameters, prevent default behavior
     navigate(`/dashboard/cotizaciones/nueva?unidad=${unidadId}`);
   };
   
   const handleProyeccion = (unidadId: string) => {
-    // Navegamos a la página de proyección con el ID de la unidad
+    // Navigate to projection page with unit ID
     navigate(`/dashboard/proyecciones?unidad=${unidadId}`);
   };
   
@@ -157,6 +157,7 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
                         setSelectedUnidad(unidad.id);
                         setOpenEditDialog(true);
                       }}
+                      type="button"
                     >
                       <Pencil className="h-4 w-4" />
                       <span className="sr-only">Editar</span>
@@ -167,7 +168,8 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
                         variant="outline"
                         size="sm"
                         onClick={() => handleCotizacion(unidad.id)}
-                        className="flex items-center gap-1" // Aseguramos que los elementos estén alineados
+                        className="flex items-center gap-1"
+                        type="button"
                       >
                         <FileText className="h-4 w-4" />
                         <span className="sr-only">Cotizar</span>
@@ -178,6 +180,7 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
                       variant="outline"
                       size="sm"
                       onClick={() => handleProyeccion(unidad.id)}
+                      type="button"
                     >
                       <BarChart3 className="h-4 w-4" />
                       <span className="sr-only">Proyección</span>
@@ -191,6 +194,7 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
                         setSelectedUnidad(unidad.id);
                         setOpenDeleteDialog(true);
                       }}
+                      type="button"
                     >
                       <Trash2 className="h-4 w-4" />
                       <span className="sr-only">Eliminar</span>

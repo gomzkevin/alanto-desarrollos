@@ -104,7 +104,7 @@ export default function NuevaCotizacionPage() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+          <Button variant="outline" size="sm" onClick={() => navigate(-1)} type="button">
             <ChevronLeft className="mr-1 h-4 w-4" />
             Volver
           </Button>
@@ -127,6 +127,7 @@ export default function NuevaCotizacionPage() {
               <Button 
                 className="mt-4" 
                 onClick={() => setOpenCotizacionDialog(true)}
+                type="button"
               >
                 Crear cotización manualmente
               </Button>
@@ -173,16 +174,18 @@ export default function NuevaCotizacionPage() {
       </div>
 
       {/* Diálogo para crear cotización */}
-      <AdminResourceDialog
-        resourceType="cotizaciones"
-        open={openCotizacionDialog}
-        onClose={handleClose}
-        onSuccess={handleSuccess}
-        defaultValues={{
-          prototipo_id: unidad?.prototipo_id || '',
-          desarrollo_id: prototipo?.desarrollo_id || '',
-        }}
-      />
+      {openCotizacionDialog && (
+        <AdminResourceDialog
+          resourceType="cotizaciones"
+          open={openCotizacionDialog}
+          onClose={handleClose}
+          onSuccess={handleSuccess}
+          defaultValues={{
+            prototipo_id: unidad?.prototipo_id || '',
+            desarrollo_id: prototipo?.desarrollo_id || '',
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 }
