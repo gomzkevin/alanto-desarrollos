@@ -9,9 +9,12 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, formatCurrency = false, inputMode, onBlur, ...props }, ref) => {
+    const [internalValue, setInternalValue] = React.useState<string>("");
+    const [isFocused, setIsFocused] = React.useState(false);
+
     // Para el formateo de moneda
     const displayValue = React.useMemo(() => {
-      if (formatCurrency && props.value !== undefined && props.value !== '') {
+      if (formatCurrency && props.value !== undefined && props.value !== '' && !isFocused) {
         return new Intl.NumberFormat('es-MX', {
           style: 'currency',
           currency: 'MXN',
@@ -19,7 +22,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         }).format(Number(props.value));
       }
       return props.value;
-    }, [formatCurrency, props.value]);
+    }, [formatCurrency, props.value, isFocused]);
 
     // Función para verificar si el elemento está actualmente enfocado
     const isRefActive = () => {
@@ -36,8 +39,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     // Manejar el evento blur para formatear como moneda solo cuando el usuario termina de escribir
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      setIsFocused(false);
+      
       if (formatCurrency && props.onChange && e.target.value) {
-        // Convertir a número solo cuando el usuario ha terminado de editar
+        // Extraer solo números al terminar de editar
         const numericValue = e.target.value.replace(/[^0-9]/g, '');
         
         // Crear un evento sintético con el valor numérico procesado
@@ -58,6 +63,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       }
     };
 
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+      setIsFocused(true);
+      if (props.onFocus) {
+        props.onFocus(e);
+      }
+    };
+
     return (
       <input
         type={type === "number" ? "text" : type}
@@ -68,24 +80,15 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         ref={ref}
         {...props}
-        value={formatCurrency && !isRefActive() ? displayValue : props.value}
+        value={formatCurrency && !isFocused ? displayValue : props.value}
         onBlur={handleBlur}
+        onFocus={handleFocus}
         onChange={(e) => {
           if (props.onChange) {
             if (formatCurrency) {
-              // Para entradas de moneda, extraer solo números
-              const numericValue = e.target.value.replace(/[^0-9]/g, '');
-              
-              // Crear un evento sintético con el valor procesado
-              const syntheticEvent = {
-                ...e,
-                target: {
-                  ...e.target,
-                  value: numericValue
-                }
-              };
-              
-              props.onChange(syntheticEvent as React.ChangeEvent<HTMLInputElement>);
+              // Permitir que el usuario escriba cualquier valor durante la edición
+              // Solo extraemos los dígitos al terminar (en onBlur)
+              props.onChange(e);
             } else {
               props.onChange(e);
             }

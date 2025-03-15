@@ -219,7 +219,7 @@ export const FormField = ({
     
     case 'number':
       // Para campos numéricos, usamos formatCurrency para valores monetarios
-      const isMonetaryField = ['precio', 'adr_base', 'monto_anticipo', 'monto_finiquito', 'gastos_fijos'].includes(field.name);
+      const isMonetaryField = ['precio', 'adr_base', 'monto_anticipo', 'monto_finiquito', 'gastos_fijos', 'comision_operador', 'mantenimiento_valor', 'gastos_variables', 'impuestos', 'ocupacion_anual'].includes(field.name);
       return (
         <div key={field.name} className="space-y-3">
           <Label htmlFor={field.name}>{field.label}</Label>
