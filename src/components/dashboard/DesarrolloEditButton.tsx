@@ -1,10 +1,9 @@
 
 import { Button } from '@/components/ui/button';
 import { EditIcon } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Tables } from '@/integrations/supabase/types';
 import { useUserRole } from '@/hooks';
-import AdminResourceDialog from './ResourceDialog';
+import { Tables } from '@/integrations/supabase/types';
+import AdminResourceDialog from './AdminResourceDialog';
 
 type Desarrollo = Tables<"desarrollos">;
 

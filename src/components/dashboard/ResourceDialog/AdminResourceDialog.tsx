@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { AdminResourceDialogProps, FormValues } from './types';
-import useResourceData from './useResourceData';
-import useResourceActions from './useResourceActions';
 import DesarrolloForm from './DesarrolloForm';
 import GenericForm from './GenericForm';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminResourceDialog = ({ 
   open, 
@@ -21,11 +22,10 @@ const AdminResourceDialog = ({
   lead_id
 }: AdminResourceDialogProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | null>(desarrolloId || null);
-  const [usarFiniquito, setUsarFiniquito] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resource, setResource] = useState<FormValues | null>(null);
+  const { toast } = useToast();
   
   const isOpen = open !== undefined ? open : dialogOpen;
 
@@ -36,102 +36,163 @@ const AdminResourceDialog = ({
     setDialogOpen(newOpen);
   };
 
-  const resourceDataDeps = {
-    resourceType,
-    resourceId,
-    desarrolloId,
-    lead_id,
-    selectedDesarrolloId,
-    selectedStatus,
-    usarFiniquito,
-    selectedAmenities,
-  };
-
-  const { 
-    resource, 
-    setResource, 
-    fields, 
-    isLoading 
-  } = useResourceData({
-    ...resourceDataDeps,
-    onStatusChange: setSelectedStatus,
-    onAmenitiesChange: setSelectedAmenities
-  });
-
-  const resourceActionsDeps = {
-    resourceType,
-    resourceId, 
-    desarrolloId,
-    selectedAmenities
-  };
-
-  const {
-    isSubmitting,
-    uploading,
-    handleImageUpload,
-    saveResource
-  } = useResourceActions({
-    ...resourceActionsDeps,
-    onClose: () => handleOpenChange(false),
-    onSave,
-    onSuccess
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
-    
-    if (resource) {
-      if (type === 'number') {
-        setResource({ ...resource, [name]: value === '' ? '' : Number(value) } as FormValues);
-      } else {
-        setResource({ ...resource, [name]: value } as FormValues);
-      }
-    }
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    if (resource) {
-      setResource({ ...resource, [name]: value } as FormValues);
+  // Cargar datos iniciales
+  useEffect(() => {
+    const fetchResource = async () => {
+      if (!isOpen) return;
       
-      if (name === 'desarrollo_id') {
-        setSelectedDesarrolloId(value);
-        if (resource) {
-          setResource({ ...resource, prototipo_id: '' } as FormValues);
+      setIsLoading(true);
+      
+      try {
+        if (resourceId) {
+          // Cargar recurso existente
+          let query;
+          
+          if (resourceType === 'desarrollos') {
+            query = supabase.from('desarrollos').select('*').eq('id', resourceId).single();
+          } else if (resourceType === 'prototipos') {
+            query = supabase.from('prototipos').select('*').eq('id', resourceId).single();
+          } else if (resourceType === 'leads') {
+            query = supabase.from('leads').select('*').eq('id', resourceId).single();
+          } else if (resourceType === 'cotizaciones') {
+            query = supabase.from('cotizaciones').select('*').eq('id', resourceId).single();
+          }
+          
+          const { data, error } = await query;
+          if (error) throw error;
+          
+          if (resourceType === 'desarrollos' && data.amenidades) {
+            // Convertir amenidades si es necesario
+            try {
+              if (typeof data.amenidades === 'string') {
+                data.amenidades = JSON.parse(data.amenidades);
+              }
+            } catch (e) {
+              console.error('Error parsing amenidades:', e);
+              data.amenidades = [];
+            }
+          }
+          
+          setResource(data);
+        } else {
+          // Crear nuevo recurso con valores por defecto
+          if (resourceType === 'desarrollos') {
+            setResource({
+              nombre: '',
+              ubicacion: '',
+              total_unidades: 0,
+              unidades_disponibles: 0,
+              avance_porcentaje: 0,
+              descripcion: '',
+              amenidades: [],
+              moneda: 'MXN'
+            });
+          } else if (resourceType === 'prototipos' && desarrolloId) {
+            setResource({
+              desarrollo_id: desarrolloId,
+              nombre: '',
+              tipo: '',
+              precio: 0,
+              total_unidades: 0,
+              unidades_disponibles: 0
+            });
+          } else if (resourceType === 'leads') {
+            setResource({
+              nombre: '',
+              email: '',
+              telefono: '',
+              estado: 'nuevo',
+              subestado: 'sin_contactar'
+            });
+          } else if (resourceType === 'cotizaciones') {
+            setResource({
+              lead_id: lead_id || '',
+              desarrollo_id: '',
+              prototipo_id: '',
+              monto_anticipo: 0,
+              numero_pagos: 0,
+              usar_finiquito: false
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error al cargar el recurso:', error);
+        toast({
+          title: 'Error',
+          description: 'No se pudo cargar la información del recurso',
+          variant: 'destructive'
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchResource();
+  }, [isOpen, resourceId, resourceType, desarrolloId, lead_id, toast]);
+
+  // Guardar recurso
+  const saveResource = async (formData: FormValues) => {
+    setIsSubmitting(true);
+    
+    try {
+      let response;
+      
+      if (resourceId) {
+        // Actualizar recurso existente
+        if (resourceType === 'desarrollos') {
+          // Asegurar que amenidades es un string JSON para guardar
+          const dataToSave = { ...formData };
+          if (dataToSave.amenidades && Array.isArray(dataToSave.amenidades)) {
+            dataToSave.amenidades = JSON.stringify(dataToSave.amenidades);
+          }
+          
+          response = await supabase.from('desarrollos').update(dataToSave).eq('id', resourceId);
+        } else if (resourceType === 'prototipos') {
+          response = await supabase.from('prototipos').update(formData).eq('id', resourceId);
+        } else if (resourceType === 'leads') {
+          response = await supabase.from('leads').update(formData).eq('id', resourceId);
+        } else if (resourceType === 'cotizaciones') {
+          response = await supabase.from('cotizaciones').update(formData).eq('id', resourceId);
+        }
+      } else {
+        // Crear nuevo recurso
+        if (resourceType === 'desarrollos') {
+          // Asegurar que amenidades es un string JSON para guardar
+          const dataToSave = { ...formData };
+          if (dataToSave.amenidades && Array.isArray(dataToSave.amenidades)) {
+            dataToSave.amenidades = JSON.stringify(dataToSave.amenidades);
+          }
+          
+          response = await supabase.from('desarrollos').insert(dataToSave);
+        } else if (resourceType === 'prototipos') {
+          response = await supabase.from('prototipos').insert(formData);
+        } else if (resourceType === 'leads') {
+          response = await supabase.from('leads').insert(formData);
+        } else if (resourceType === 'cotizaciones') {
+          response = await supabase.from('cotizaciones').insert(formData);
         }
       }
       
-      if (name === 'estado') {
-        setSelectedStatus(value);
-        setResource({ ...resource, subestado: '' } as FormValues);
-      }
-    }
-  };
-
-  const handleSwitchChange = (name: string, checked: boolean) => {
-    if (resource) {
-      console.log(`Switch ${name} changed to:`, checked);
-      setResource({ ...resource, [name]: checked } as FormValues);
+      if (response.error) throw response.error;
       
-      if (name === 'usar_finiquito') {
-        setUsarFiniquito(checked);
-      }
-    }
-  };
-
-  const handleDateChange = (date: Date | undefined) => {
-    setSelectedDate(date);
-    if (date && resource) {
-      setResource({ ...resource, ultimo_contacto: date.toISOString() } as FormValues);
-    }
-  };
-
-  const handleAmenitiesChange = (amenities: string[]) => {
-    setSelectedAmenities(amenities);
-    if (resource && resourceType === 'desarrollos') {
-      setResource({ 
-        ...resource, 
-        amenidades: amenities 
-      } as FormValues);
+      toast({
+        title: 'Éxito',
+        description: resourceId ? 'Recurso actualizado correctamente' : 'Recurso creado correctamente',
+      });
+      
+      if (onSave) onSave();
+      if (onSuccess) onSuccess();
+      
+      handleOpenChange(false);
+    } catch (error) {
+      console.error('Error al guardar el recurso:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar el recurso',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -169,35 +230,17 @@ const AdminResourceDialog = ({
             <>
               {resourceType === 'desarrollos' ? (
                 <DesarrolloForm
-                  fields={fields}
                   resource={resource}
-                  handleChange={handleChange}
-                  handleSelectChange={handleSelectChange}
-                  handleSwitchChange={handleSwitchChange}
-                  handleDateChange={handleDateChange}
-                  handleImageUpload={handleImageUpload}
-                  handleAmenitiesChange={handleAmenitiesChange}
-                  selectedDate={selectedDate}
-                  uploading={uploading}
-                  selectedAmenities={selectedAmenities}
+                  setResource={setResource}
                   resourceId={resourceId}
                 />
               ) : (
                 <GenericForm
-                  fields={fields}
                   resource={resource}
-                  handleChange={handleChange}
-                  handleSelectChange={handleSelectChange}
-                  handleSwitchChange={handleSwitchChange}
-                  handleDateChange={handleDateChange}
-                  handleImageUpload={handleImageUpload}
-                  handleAmenitiesChange={handleAmenitiesChange}
-                  selectedDate={selectedDate}
-                  uploading={uploading}
-                  selectedAmenities={selectedAmenities}
-                  desarrolloId={desarrolloId}
-                  resourceId={resourceId}
+                  setResource={setResource}
                   resourceType={resourceType}
+                  resourceId={resourceId}
+                  desarrolloId={desarrolloId}
                 />
               )}
             </>

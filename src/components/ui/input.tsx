@@ -2,102 +2,24 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  formatCurrency?: boolean;
-  inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
-}
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, formatCurrency = false, inputMode, onBlur, ...props }, ref) => {
-    const [internalValue, setInternalValue] = React.useState<string>("");
-    const [isFocused, setIsFocused] = React.useState(false);
-
-    // Para el formateo de moneda
-    const displayValue = React.useMemo(() => {
-      if (formatCurrency && props.value !== undefined && props.value !== '' && !isFocused) {
-        return new Intl.NumberFormat('es-MX', {
-          style: 'currency',
-          currency: 'MXN',
-          maximumFractionDigits: 0
-        }).format(Number(props.value));
-      }
-      return props.value;
-    }, [formatCurrency, props.value, isFocused]);
-
-    // Función para verificar si el elemento está actualmente enfocado
-    const isRefActive = () => {
-      if (!ref) return false;
-      
-      // Verificar si ref es un objeto con propiedad current
-      if (typeof ref === 'object' && ref !== null && 'current' in ref) {
-        return document.activeElement === ref.current;
-      }
-      
-      // Si ref es una función u otro tipo, no podemos determinar fácilmente si está activo
-      return false;
-    };
-
-    // Manejar el evento blur para formatear como moneda solo cuando el usuario termina de escribir
-    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      setIsFocused(false);
-      
-      if (formatCurrency && props.onChange && e.target.value) {
-        // Extraer solo números al terminar de editar
-        const numericValue = e.target.value.replace(/[^0-9]/g, '');
-        
-        // Crear un evento sintético con el valor numérico procesado
-        const syntheticEvent = {
-          ...e,
-          target: {
-            ...e.target,
-            value: numericValue
-          }
-        };
-        
-        props.onChange(syntheticEvent as React.ChangeEvent<HTMLInputElement>);
-      }
-      
-      // Llamar al onBlur original si existe
-      if (onBlur) {
-        onBlur(e);
-      }
-    };
-
-    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-      setIsFocused(true);
-      if (props.onFocus) {
-        props.onFocus(e);
-      }
-    };
-
+  ({ className, type, ...props }, ref) => {
     return (
       <input
-        type={type === "number" ? "text" : type}
-        inputMode={inputMode || (type === "number" ? "numeric" : undefined)}
+        type={type}
         className={cn(
           "flex h-11 w-full rounded-md border border-input bg-background px-4 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
           className
         )}
         ref={ref}
         {...props}
-        value={formatCurrency && !isFocused ? displayValue : props.value}
-        onBlur={handleBlur}
-        onFocus={handleFocus}
-        onChange={(e) => {
-          if (props.onChange) {
-            if (formatCurrency) {
-              // Permitir que el usuario escriba cualquier valor durante la edición
-              // Solo extraemos los dígitos al terminar (en onBlur)
-              props.onChange(e);
-            } else {
-              props.onChange(e);
-            }
-          }
-        }}
       />
     )
   }
 )
 
 Input.displayName = "Input"
+
 export { Input }
