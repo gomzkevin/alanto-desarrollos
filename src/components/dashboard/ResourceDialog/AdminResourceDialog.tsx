@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AdminResourceDialogProps, FormValues, DesarrolloResource } from './types';
+import { AdminResourceDialogProps, FormValues, DesarrolloResource, PrototipoResource, LeadResource, CotizacionResource } from './types';
 import DesarrolloForm from './DesarrolloForm';
 import GenericForm from './GenericForm';
 import { useToast } from '@/hooks/use-toast';
@@ -199,11 +199,54 @@ const AdminResourceDialog = ({
             })
             .eq('id', resourceId);
         } else if (resourceType === 'prototipos') {
-          response = await supabase.from('prototipos').update(formData).eq('id', resourceId);
+          const prototipoData = formData as PrototipoResource;
+          response = await supabase
+            .from('prototipos')
+            .update({
+              nombre: prototipoData.nombre,
+              tipo: prototipoData.tipo,
+              precio: prototipoData.precio,
+              superficie: prototipoData.superficie,
+              habitaciones: prototipoData.habitaciones,
+              baños: prototipoData.baños,
+              total_unidades: prototipoData.total_unidades,
+              unidades_disponibles: prototipoData.unidades_disponibles,
+              descripcion: prototipoData.descripcion,
+              imagen_url: prototipoData.imagen_url,
+              desarrollo_id: prototipoData.desarrollo_id,
+            })
+            .eq('id', resourceId);
         } else if (resourceType === 'leads') {
-          response = await supabase.from('leads').update(formData).eq('id', resourceId);
+          const leadData = formData as LeadResource;
+          response = await supabase
+            .from('leads')
+            .update({
+              nombre: leadData.nombre,
+              email: leadData.email,
+              telefono: leadData.telefono,
+              interes_en: leadData.interes_en,
+              origen: leadData.origen,
+              estado: leadData.estado,
+              subestado: leadData.subestado,
+              agente: leadData.agente,
+              notas: leadData.notas,
+            })
+            .eq('id', resourceId);
         } else if (resourceType === 'cotizaciones') {
-          response = await supabase.from('cotizaciones').update(formData).eq('id', resourceId);
+          const cotizacionData = formData as CotizacionResource;
+          response = await supabase
+            .from('cotizaciones')
+            .update({
+              lead_id: cotizacionData.lead_id,
+              desarrollo_id: cotizacionData.desarrollo_id,
+              prototipo_id: cotizacionData.prototipo_id,
+              monto_anticipo: cotizacionData.monto_anticipo,
+              numero_pagos: cotizacionData.numero_pagos,
+              usar_finiquito: cotizacionData.usar_finiquito,
+              monto_finiquito: cotizacionData.monto_finiquito,
+              notas: cotizacionData.notas,
+            })
+            .eq('id', resourceId);
         }
       } else {
         // Crear nuevo recurso
@@ -241,11 +284,45 @@ const AdminResourceDialog = ({
               amenidades: amenidadesJson
             });
         } else if (resourceType === 'prototipos') {
-          response = await supabase.from('prototipos').insert(formData);
+          const prototipoData = formData as PrototipoResource;
+          response = await supabase.from('prototipos').insert({
+            nombre: prototipoData.nombre,
+            tipo: prototipoData.tipo,
+            precio: prototipoData.precio,
+            superficie: prototipoData.superficie,
+            habitaciones: prototipoData.habitaciones,
+            baños: prototipoData.baños,
+            total_unidades: prototipoData.total_unidades,
+            unidades_disponibles: prototipoData.unidades_disponibles,
+            descripcion: prototipoData.descripcion,
+            imagen_url: prototipoData.imagen_url,
+            desarrollo_id: prototipoData.desarrollo_id,
+          });
         } else if (resourceType === 'leads') {
-          response = await supabase.from('leads').insert(formData);
+          const leadData = formData as LeadResource;
+          response = await supabase.from('leads').insert({
+            nombre: leadData.nombre,
+            email: leadData.email,
+            telefono: leadData.telefono,
+            interes_en: leadData.interes_en,
+            origen: leadData.origen,
+            estado: leadData.estado,
+            subestado: leadData.subestado,
+            agente: leadData.agente,
+            notas: leadData.notas,
+          });
         } else if (resourceType === 'cotizaciones') {
-          response = await supabase.from('cotizaciones').insert(formData);
+          const cotizacionData = formData as CotizacionResource;
+          response = await supabase.from('cotizaciones').insert({
+            lead_id: cotizacionData.lead_id,
+            desarrollo_id: cotizacionData.desarrollo_id,
+            prototipo_id: cotizacionData.prototipo_id,
+            monto_anticipo: cotizacionData.monto_anticipo,
+            numero_pagos: cotizacionData.numero_pagos,
+            usar_finiquito: cotizacionData.usar_finiquito,
+            monto_finiquito: cotizacionData.monto_finiquito,
+            notas: cotizacionData.notas,
+          });
         }
       }
       

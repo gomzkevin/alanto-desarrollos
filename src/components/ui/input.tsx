@@ -1,7 +1,7 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency as formatCurrencyUtil } from "@/lib/utils"
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   formatCurrency?: boolean;
@@ -10,7 +10,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, formatCurrency, value, ...props }, ref) => {
     const displayValue = formatCurrency && typeof value === 'number' 
-      ? formatCurrency(value)
+      ? formatCurrencyUtil(value)
       : value;
 
     return (
