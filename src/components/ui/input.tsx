@@ -10,38 +10,43 @@ interface InputProps extends Omit<React.ComponentProps<"input">, "onChange"> {
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, onChange, formatCurrency = false, ...props }, ref) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      
       if (formatCurrency) {
         // For currency formatting, we process the input differently
-        let value = e.target.value;
-        
         // Remove all non-numeric characters
-        value = value.replace(/[^0-9]/g, '');
+        const cleanValue = value.replace(/[^0-9]/g, '');
         
         // Convert to number and handle empty input
-        const numericValue = value === '' ? 0 : Number(value);
+        const numericValue = cleanValue === '' ? 0 : Number(cleanValue);
         
         if (onChange) {
           // Pass the numeric value to the consumer
           onChange(numericValue);
         }
       } else if (type === 'number') {
-        // For number inputs, simply pass the numeric value
-        const value = e.target.value;
-        
+        // For number inputs
         if (onChange) {
           if (value === '') {
+            // Handle empty input case
             onChange('');
           } else {
-            // Safely convert to number
-            const numValue = parseFloat(value);
-            // Check if it's a valid number
-            onChange(isNaN(numValue) ? '' : numValue);
+            // Try to parse as number, but don't modify the input value
+            // to allow typing decimal points, etc.
+            try {
+              // Only convert completed numbers
+              const numValue = value === '-' ? value : Number(value);
+              onChange(isNaN(numValue) ? value : numValue);
+            } catch (e) {
+              // If parsing fails, just pass the raw value
+              onChange(value);
+            }
           }
         }
       } else {
-        // For regular text inputs, pass the event value directly
+        // For regular text inputs, pass the raw value directly
         if (onChange) {
-          onChange(e.target.value);
+          onChange(value);
         }
       }
     };
