@@ -2,45 +2,23 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   formatCurrency?: boolean;
-  onChange?: React.ChangeEventHandler<HTMLInputElement>;
-  value?: string | number | readonly string[];
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, formatCurrency = false, onChange, value, ...props }, ref) => {
-    // For currency formatting - handle display value
+  ({ className, type, formatCurrency = false, ...props }, ref) => {
+    // For currency formatting
     const displayValue = React.useMemo(() => {
-      if (formatCurrency && value !== undefined && value !== '') {
+      if (formatCurrency && props.value !== undefined && props.value !== '') {
         return new Intl.NumberFormat('es-MX', {
           style: 'currency',
           currency: 'MXN',
           maximumFractionDigits: 0
-        }).format(Number(value));
+        }).format(Number(props.value));
       }
-      return value;
-    }, [formatCurrency, value]);
-
-    // Create a custom onChange handler for currency formatting
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (onChange) {
-        if (formatCurrency) {
-          // For currency inputs, extract only numbers
-          const numericValue = e.target.value.replace(/[^0-9]/g, '');
-          // Create a synthetic event with the processed value
-          const syntheticEvent = Object.create(e);
-          Object.defineProperty(syntheticEvent, 'target', {
-            writable: true,
-            value: { ...e.target, value: numericValue }
-          });
-          onChange(syntheticEvent);
-        } else {
-          // For normal inputs, pass the event as is
-          onChange(e);
-        }
-      }
-    };
+      return props.value;
+    }, [formatCurrency, props.value]);
 
     return (
       <input
@@ -51,8 +29,24 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         ref={ref}
         {...props}
-        value={formatCurrency ? displayValue : value}
-        onChange={handleInputChange}
+        value={formatCurrency ? displayValue : props.value}
+        onChange={(e) => {
+          if (props.onChange) {
+            if (formatCurrency) {
+              // For currency inputs, extract only numbers
+              const numericValue = e.target.value.replace(/[^0-9]/g, '');
+              // Create a synthetic event with the processed value
+              const syntheticEvent = Object.create(e);
+              Object.defineProperty(syntheticEvent, 'target', {
+                writable: true,
+                value: { ...e.target, value: numericValue }
+              });
+              props.onChange(syntheticEvent);
+            } else {
+              props.onChange(e);
+            }
+          }
+        }}
       />
     )
   }
