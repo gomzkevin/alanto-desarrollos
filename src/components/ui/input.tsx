@@ -2,23 +2,47 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> {
   formatCurrency?: boolean;
+  value?: string | number | readonly string[];
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, formatCurrency = false, ...props }, ref) => {
-    // For currency formatting only - handle display value
+  ({ className, type, formatCurrency = false, value, onChange, ...props }, ref) => {
+    // Para formateo de moneda - manejar valor de visualización
     const displayValue = React.useMemo(() => {
-      if (formatCurrency && props.value !== undefined && props.value !== '') {
+      if (formatCurrency && value !== undefined && value !== '') {
         return new Intl.NumberFormat('es-MX', {
           style: 'currency',
           currency: 'MXN',
           maximumFractionDigits: 0
-        }).format(Number(props.value));
+        }).format(Number(value));
       }
-      return props.value;
-    }, [formatCurrency, props.value]);
+      return value;
+    }, [formatCurrency, value]);
+
+    // Manejador personalizado de cambios
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (onChange) {
+        if (formatCurrency) {
+          // Para entradas con formato de moneda, extraer solo números
+          const numericValue = e.target.value.replace(/[^0-9]/g, '');
+          // Crear un evento sintético con el valor procesado
+          const syntheticEvent = {
+            ...e,
+            target: {
+              ...e.target,
+              value: numericValue
+            }
+          } as React.ChangeEvent<HTMLInputElement>;
+          onChange(syntheticEvent);
+        } else {
+          // Para entradas normales, pasar el evento tal cual
+          onChange(e);
+        }
+      }
+    };
 
     return (
       <input
@@ -28,12 +52,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className
         )}
         ref={ref}
-        value={formatCurrency ? displayValue : props.value}
+        value={formatCurrency ? displayValue : value}
+        onChange={handleChange}
         {...props}
       />
     )
   }
 )
-Input.displayName = "Input"
 
+Input.displayName = "Input"
 export { Input }
