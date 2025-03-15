@@ -15,6 +15,8 @@ const AdminResourceDialog = ({
   resourceId, 
   onSave,
   buttonText,
+  buttonIcon,
+  buttonVariant = 'default',
   onSuccess,
   desarrolloId,
   lead_id
@@ -129,7 +131,8 @@ const AdminResourceDialog = ({
   const renderTriggerButton = () => {
     if (open === undefined) {
       return (
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setDialogOpen(true)} variant={buttonVariant as any}>
+          {buttonIcon}
           {buttonText || 'Nuevo recurso'}
         </Button>
       );

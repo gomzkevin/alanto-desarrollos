@@ -8,6 +8,8 @@ export interface AdminResourceDialogProps {
   resourceId?: string;
   onSave?: () => void;
   buttonText?: string;
+  buttonIcon?: React.ReactNode;
+  buttonVariant?: string;
   onSuccess?: () => void;
   desarrolloId?: string;
   lead_id?: string;

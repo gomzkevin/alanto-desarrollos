@@ -1,11 +1,8 @@
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EditIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tables } from '@/integrations/supabase/types';
-import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks';
 import AdminResourceDialog from './ResourceDialog';
 
