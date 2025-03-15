@@ -31,7 +31,7 @@ const getBadgeVariant = (estado: string) => {
     case 'seguimiento':
       return 'outline';
     case 'convertido':
-      return 'success';
+      return 'secondary'; // Changed from 'success' to 'secondary' since 'success' is not a valid variant
     case 'perdido':
       return 'destructive';
     default:
