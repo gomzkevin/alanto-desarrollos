@@ -11,6 +11,7 @@ import { useMemo } from 'react';
 import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
+import { LeadCombobox } from './LeadCombobox';
 
 interface GenericFormProps {
   fields: FieldDefinition[];
@@ -21,14 +22,15 @@ interface GenericFormProps {
   resourceType: string;
   resourceId?: string;
   desarrolloId?: string;
-  prototipo_id?: string;  // Added missing property
-  lead_id?: string;       // Also added this for consistency
+  prototipo_id?: string;
+  lead_id?: string;
   handleDateChange?: (date: Date | undefined) => void;
   handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleAmenitiesChange?: (amenities: string[]) => void;
   selectedDate?: Date;
   uploading?: boolean;
   selectedAmenities?: string[];
+  handleLeadSelect?: (leadId: string, leadName: string) => void;
 }
 
 export default function GenericForm({
@@ -47,7 +49,8 @@ export default function GenericForm({
   desarrolloId,
   resourceId,
   prototipo_id,
-  lead_id
+  lead_id,
+  handleLeadSelect
 }: GenericFormProps) {
   const { leads = [] } = useLeads({});
   const { desarrollos = [] } = useDesarrollos({});
@@ -142,21 +145,16 @@ export default function GenericForm({
             )}
             
             {field.type === 'select-lead' && (
-              <Select
+              <LeadCombobox 
                 value={(resource as any)[field.name] || ''}
-                onValueChange={(value) => handleSelectChange(field.name, value)}
-              >
-                <SelectTrigger id={field.name}>
-                  <SelectValue placeholder={`Seleccione un cliente`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {leads.map((lead) => (
-                    <SelectItem key={lead.id} value={lead.id}>
-                      {lead.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(leadId, leadName) => {
+                  if (handleLeadSelect) {
+                    handleLeadSelect(leadId, leadName);
+                  } else {
+                    handleSelectChange(field.name, leadId);
+                  }
+                }}
+              />
             )}
             
             {field.type === 'select-desarrollo' && (

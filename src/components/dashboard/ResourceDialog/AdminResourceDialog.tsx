@@ -1,43 +1,30 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AdminResourceDialogProps, FormValues, DesarrolloResource, PrototipoResource, LeadResource, CotizacionResource, UnidadResource, FieldDefinition } from './types';
-import DesarrolloForm from './DesarrolloForm';
+import { X, PlusCircle } from 'lucide-react';
 import GenericForm from './GenericForm';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  AdminResourceDialogProps, 
+  FieldDefinition, 
+  FormValues, 
+  ResourceType,
+  DesarrolloResource,
+  UnidadResource
+} from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
-import usePrototipos from '@/hooks/usePrototipos';
-import useLeads from '@/hooks/useLeads';
 
-const TIPO_PROTOTIPO_OPTIONS = [
-  { value: 'departamento', label: 'Departamento' },
-  { value: 'loft', label: 'Loft' },
-  { value: 'villa', label: 'Villa' },
-  { value: 'penthouse', label: 'Penthouse' },
-  { value: 'casa', label: 'Casa' },
-  { value: 'terreno', label: 'Terreno' },
-  { value: 'local', label: 'Local Comercial' },
-  { value: 'oficina', label: 'Oficina' }
-];
-
-const ESTADO_UNIDAD_OPTIONS = [
-  { value: 'disponible', label: 'Disponible' },
-  { value: 'apartado', label: 'Apartado' },
-  { value: 'en_proceso', label: 'En proceso de venta' },
-  { value: 'en_pagos', label: 'En plan de pagos' },
-  { value: 'vendido', label: 'Vendido' }
-];
-
-const AdminResourceDialog = ({ 
-  open, 
-  onClose, 
-  resourceType, 
-  resourceId, 
+const AdminResourceDialog = ({
+  open,
+  onClose,
+  resourceType,
+  resourceId,
   onSave,
-  buttonText,
+  buttonText = 'Editar',
   buttonIcon,
-  buttonVariant = 'default',
+  buttonVariant = 'outline',
   onSuccess,
   desarrolloId,
   lead_id,
@@ -48,14 +35,13 @@ const AdminResourceDialog = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resource, setResource] = useState<FormValues | null>(null);
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [fields, setFields] = useState<FieldDefinition[]>([]);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const { toast } = useToast();
-  const { prototipos } = usePrototipos({});
-  const { leads } = useLeads({});
   
+  // Control de estado del diálogo
   const isOpen = open !== undefined ? open : dialogOpen;
-
+  
   const handleOpenChange = (newOpen: boolean) => {
     if (onClose && !newOpen) {
       onClose();
@@ -66,18 +52,58 @@ const AdminResourceDialog = ({
   useEffect(() => {
     if (resourceType === 'prototipos') {
       setFields([
-        { name: 'nombre', label: 'Nombre', type: 'text', tab: 'General' },
-        { name: 'tipo', label: 'Tipo', type: 'select', options: TIPO_PROTOTIPO_OPTIONS, tab: 'General' },
-        { name: 'descripcion', label: 'Descripción', type: 'textarea', tab: 'General' },
-        { name: 'precio', label: 'Precio', type: 'number', tab: 'General' },
-        { name: 'superficie', label: 'Superficie (m²)', type: 'number', tab: 'Características' },
-        { name: 'habitaciones', label: 'Habitaciones', type: 'number', tab: 'Características' },
-        { name: 'baños', label: 'Baños', type: 'number', tab: 'Características' },
-        { name: 'estacionamientos', label: 'Cajones de estacionamiento', type: 'number', tab: 'Características' },
-        { name: 'total_unidades', label: 'Total unidades', type: 'number', tab: 'Inventario' },
-        { name: 'unidades_disponibles', label: 'Unidades disponibles', type: 'number', tab: 'Inventario' },
-        { name: 'imagen_url', label: 'URL de imagen', type: 'text', tab: 'Media' },
-        { name: 'desarrollo_id', label: 'Desarrollo', type: 'select-desarrollo', tab: 'General' },
+        { name: 'nombre', label: 'Nombre', type: 'text' },
+        { name: 'tipo', label: 'Tipo', type: 'select', options: [
+          { value: 'apartamento', label: 'Apartamento' },
+          { value: 'casa', label: 'Casa' },
+          { value: 'villa', label: 'Villa' },
+          { value: 'lote', label: 'Lote' },
+          { value: 'local', label: 'Local comercial' },
+        ]},
+        { name: 'precio', label: 'Precio', type: 'number' },
+        { name: 'superficie', label: 'Superficie (m²)', type: 'number' },
+        { name: 'habitaciones', label: 'Habitaciones', type: 'number' },
+        { name: 'baños', label: 'Baños', type: 'number' },
+        { name: 'estacionamientos', label: 'Estacionamientos', type: 'number' },
+        { name: 'total_unidades', label: 'Total de unidades', type: 'number' },
+        { name: 'descripcion', label: 'Descripción', type: 'textarea' },
+      ]);
+    } else if (resourceType === 'unidades') {
+      setFields([
+        { name: 'numero', label: 'Número', type: 'text' },
+        { name: 'nivel', label: 'Nivel/Piso', type: 'text' },
+        { name: 'estado', label: 'Estado', type: 'select', options: [
+          { value: 'disponible', label: 'Disponible' },
+          { value: 'apartado', label: 'Apartado' },
+          { value: 'en_proceso', label: 'En proceso de venta' },
+          { value: 'en_pagos', label: 'En pagos' },
+          { value: 'vendido', label: 'Vendido' },
+        ]},
+        { name: 'precio_venta', label: 'Precio de venta', type: 'number' },
+        { name: 'comprador_id', label: 'Comprador', type: 'select-lead' },
+      ]);
+    } else if (resourceType === 'leads') {
+      setFields([
+        { name: 'nombre', label: 'Nombre', type: 'text' },
+        { name: 'email', label: 'Email', type: 'text' },
+        { name: 'telefono', label: 'Teléfono', type: 'text' },
+        { name: 'interes_en', label: 'Interés en', type: 'text' },
+        { name: 'origen', label: 'Origen', type: 'select', options: [
+          { value: 'web', label: 'Sitio Web' },
+          { value: 'referido', label: 'Referido' },
+          { value: 'redes_sociales', label: 'Redes Sociales' },
+          { value: 'evento', label: 'Evento' },
+          { value: 'otro', label: 'Otro' },
+        ]},
+        { name: 'estado', label: 'Estado', type: 'select', options: [
+          { value: 'nuevo', label: 'Nuevo' },
+          { value: 'en_contacto', label: 'En contacto' },
+          { value: 'calificado', label: 'Calificado' },
+          { value: 'en_negociacion', label: 'En negociación' },
+          { value: 'ganado', label: 'Ganado' },
+          { value: 'perdido', label: 'Perdido' },
+        ]},
+        { name: 'notas', label: 'Notas', type: 'textarea' },
       ]);
     } else if (resourceType === 'cotizaciones') {
       setFields([
@@ -86,29 +112,8 @@ const AdminResourceDialog = ({
         { name: 'prototipo_id', label: 'Prototipo', type: 'select-prototipo' },
         { name: 'monto_anticipo', label: 'Monto de anticipo', type: 'number' },
         { name: 'numero_pagos', label: 'Número de pagos', type: 'number' },
-        { name: 'usar_finiquito', label: 'Incluir finiquito', type: 'switch' },
+        { name: 'usar_finiquito', label: 'Usar finiquito', type: 'switch' },
         { name: 'monto_finiquito', label: 'Monto de finiquito', type: 'number' },
-        { name: 'notas', label: 'Notas', type: 'textarea' },
-      ]);
-    } else if (resourceType === 'unidades') {
-      setFields([
-        { name: 'numero', label: 'Número/Identificador', type: 'text' },
-        { name: 'nivel', label: 'Nivel/Piso', type: 'text' },
-        { name: 'estado', label: 'Estado', type: 'select', options: ESTADO_UNIDAD_OPTIONS },
-        { name: 'precio_venta', label: 'Precio de venta', type: 'number' },
-        { name: 'comprador_id', label: 'Comprador', type: 'select-lead' },
-        { name: 'comprador_nombre', label: 'Nombre del comprador', type: 'text' },
-      ]);
-    } else if (resourceType === 'leads') {
-      setFields([
-        { name: 'nombre', label: 'Nombre', type: 'text' },
-        { name: 'email', label: 'Email', type: 'text' },
-        { name: 'telefono', label: 'Teléfono', type: 'text' },
-        { name: 'origen', label: 'Origen', type: 'text' },
-        { name: 'interes_en', label: 'Interesado en', type: 'text' },
-        { name: 'estado', label: 'Estado', type: 'text' },
-        { name: 'subestado', label: 'Subestado', type: 'text' },
-        { name: 'agente', label: 'Agente asignado', type: 'text' },
         { name: 'notas', label: 'Notas', type: 'textarea' },
       ]);
     }
@@ -118,12 +123,16 @@ const AdminResourceDialog = ({
     if (resource && resourceType === 'desarrollos') {
       const desarrolloResource = resource as DesarrolloResource;
       if (desarrolloResource.amenidades) {
-        const amenities = Array.isArray(desarrolloResource.amenidades) 
-          ? desarrolloResource.amenidades 
-          : [];
-        setSelectedAmenities(amenities);
-      } else {
-        setSelectedAmenities([]);
+        try {
+          if (typeof desarrolloResource.amenidades === 'string') {
+            const parsedAmenities = JSON.parse(desarrolloResource.amenidades as string);
+            setSelectedAmenities(parsedAmenities);
+          } else {
+            setSelectedAmenities(desarrolloResource.amenidades as unknown as string[]);
+          }
+        } catch (error) {
+          console.error('Error parsing amenidades:', error);
+        }
       }
     }
   }, [resource, resourceType]);
@@ -139,18 +148,19 @@ const AdminResourceDialog = ({
           let query;
           
           if (resourceType === 'desarrollos') {
-            query = supabase.from('desarrollos').select('*').eq('id', resourceId).single();
+            query = supabase.from('desarrollos');
           } else if (resourceType === 'prototipos') {
-            query = supabase.from('prototipos').select('*').eq('id', resourceId).single();
+            query = supabase.from('prototipos');
           } else if (resourceType === 'leads') {
-            query = supabase.from('leads').select('*').eq('id', resourceId).single();
+            query = supabase.from('leads');
           } else if (resourceType === 'cotizaciones') {
-            query = supabase.from('cotizaciones').select('*').eq('id', resourceId).single();
+            query = supabase.from('cotizaciones');
           } else if (resourceType === 'unidades') {
-            query = supabase.from('unidades').select('*').eq('id', resourceId).single();
+            query = supabase.from('unidades');
           }
           
-          const { data, error } = await query;
+          const { data, error } = await query.select('*').eq('id', resourceId).single();
+          
           if (error) throw error;
           
           if (resourceType === 'desarrollos' && data.amenidades) {
@@ -158,11 +168,9 @@ const AdminResourceDialog = ({
               if (typeof data.amenidades === 'string') {
                 data.amenidades = JSON.parse(data.amenidades);
               }
-              setSelectedAmenities(Array.isArray(data.amenidades) ? data.amenidades : []);
-            } catch (e) {
-              console.error('Error parsing amenidades:', e);
+            } catch (error) {
+              console.error('Error parsing amenidades:', error);
               data.amenidades = [];
-              setSelectedAmenities([]);
             }
           }
           
@@ -176,29 +184,39 @@ const AdminResourceDialog = ({
               unidades_disponibles: 0,
               avance_porcentaje: 0,
               descripcion: '',
-              amenidades: [],
-              moneda: 'MXN'
+              moneda: 'MXN',
+              comision_operador: 15,
+              mantenimiento_valor: 5,
+              es_mantenimiento_porcentaje: true,
+              gastos_fijos: 0,
+              es_gastos_fijos_porcentaje: false,
+              gastos_variables: 12,
+              es_gastos_variables_porcentaje: true,
+              impuestos: 35,
+              es_impuestos_porcentaje: true,
+              adr_base: 0,
+              ocupacion_anual: 70
             });
-            setSelectedAmenities([]);
           } else if (resourceType === 'prototipos') {
             setResource({
               nombre: '',
-              tipo: '',
+              desarrollo_id: desarrolloId || '',
+              tipo: 'apartamento',
               precio: 0,
-              total_unidades: 0,
-              unidades_disponibles: 0,
               superficie: 0,
               habitaciones: 0,
               baños: 0,
               estacionamientos: 0,
-              descripcion: '',
-              desarrollo_id: desarrolloId || '',
+              total_unidades: 0,
+              unidades_disponibles: 0
             });
           } else if (resourceType === 'leads') {
             setResource({
               nombre: '',
               email: '',
               telefono: '',
+              interes_en: '',
+              origen: 'web',
               estado: 'nuevo',
               subestado: 'sin_contactar'
             });
@@ -221,12 +239,12 @@ const AdminResourceDialog = ({
             });
           }
         }
-      } catch (error) {
-        console.error('Error al cargar el recurso:', error);
+      } catch (error: any) {
+        console.error(`Error fetching ${resourceType}:`, error);
         toast({
           title: 'Error',
-          description: 'No se pudo cargar la información del recurso',
-          variant: 'destructive'
+          description: `No se pudo cargar el recurso: ${error.message}`,
+          variant: 'destructive',
         });
       } finally {
         setIsLoading(false);
@@ -251,98 +269,35 @@ const AdminResourceDialog = ({
             dataToSave.amenidades = selectedAmenities as any;
           }
           
-          const amenidadesJson = JSON.stringify(selectedAmenities) as Json;
-          
           response = await supabase
             .from('desarrollos')
-            .update({
-              nombre: dataToSave.nombre,
-              ubicacion: dataToSave.ubicacion,
-              total_unidades: dataToSave.total_unidades,
-              unidades_disponibles: dataToSave.unidades_disponibles,
-              avance_porcentaje: dataToSave.avance_porcentaje,
-              fecha_inicio: dataToSave.fecha_inicio,
-              fecha_entrega: dataToSave.fecha_entrega,
-              descripcion: dataToSave.descripcion,
-              imagen_url: dataToSave.imagen_url,
-              moneda: dataToSave.moneda,
-              comision_operador: dataToSave.comision_operador,
-              mantenimiento_valor: dataToSave.mantenimiento_valor,
-              es_mantenimiento_porcentaje: dataToSave.es_mantenimiento_porcentaje,
-              gastos_fijos: dataToSave.gastos_fijos,
-              es_gastos_fijos_porcentaje: dataToSave.es_gastos_fijos_porcentaje,
-              gastos_variables: dataToSave.gastos_variables,
-              es_gastos_variables_porcentaje: dataToSave.es_gastos_variables_porcentaje,
-              impuestos: dataToSave.impuestos,
-              es_impuestos_porcentaje: dataToSave.es_impuestos_porcentaje,
-              adr_base: dataToSave.adr_base,
-              ocupacion_anual: dataToSave.ocupacion_anual,
-              amenidades: amenidadesJson
-            })
-            .eq('id', resourceId);
+            .update(dataToSave)
+            .eq('id', resourceId)
+            .select();
         } else if (resourceType === 'prototipos') {
-          const prototipoData = formData as PrototipoResource;
           response = await supabase
             .from('prototipos')
-            .update({
-              nombre: prototipoData.nombre,
-              tipo: prototipoData.tipo,
-              precio: prototipoData.precio,
-              superficie: prototipoData.superficie,
-              habitaciones: prototipoData.habitaciones,
-              baños: prototipoData.baños,
-              estacionamientos: prototipoData.estacionamientos,
-              total_unidades: prototipoData.total_unidades,
-              unidades_disponibles: prototipoData.unidades_disponibles,
-              descripcion: prototipoData.descripcion,
-              imagen_url: prototipoData.imagen_url,
-              desarrollo_id: prototipoData.desarrollo_id,
-            })
-            .eq('id', resourceId);
+            .update(formData)
+            .eq('id', resourceId)
+            .select();
         } else if (resourceType === 'leads') {
-          const leadData = formData as LeadResource;
           response = await supabase
             .from('leads')
-            .update({
-              nombre: leadData.nombre,
-              email: leadData.email,
-              telefono: leadData.telefono,
-              interes_en: leadData.interes_en,
-              origen: leadData.origen,
-              estado: leadData.estado,
-              subestado: leadData.subestado,
-              agente: leadData.agente,
-              notas: leadData.notas,
-            })
-            .eq('id', resourceId);
+            .update(formData)
+            .eq('id', resourceId)
+            .select();
         } else if (resourceType === 'cotizaciones') {
-          const cotizacionData = formData as CotizacionResource;
           response = await supabase
             .from('cotizaciones')
-            .update({
-              lead_id: cotizacionData.lead_id,
-              desarrollo_id: cotizacionData.desarrollo_id,
-              prototipo_id: cotizacionData.prototipo_id,
-              monto_anticipo: cotizacionData.monto_anticipo,
-              numero_pagos: cotizacionData.numero_pagos,
-              usar_finiquito: cotizacionData.usar_finiquito,
-              monto_finiquito: cotizacionData.monto_finiquito,
-              notas: cotizacionData.notas,
-            })
-            .eq('id', resourceId);
+            .update(formData)
+            .eq('id', resourceId)
+            .select();
         } else if (resourceType === 'unidades') {
-          const unidadData = formData as UnidadResource;
           response = await supabase
             .from('unidades')
-            .update({
-              numero: unidadData.numero,
-              nivel: unidadData.nivel,
-              estado: unidadData.estado,
-              comprador_id: unidadData.comprador_id,
-              comprador_nombre: unidadData.comprador_nombre,
-              precio_venta: unidadData.precio_venta
-            })
-            .eq('id', resourceId);
+            .update(formData)
+            .eq('id', resourceId)
+            .select();
         }
       } else {
         if (resourceType === 'desarrollos') {
@@ -350,205 +305,208 @@ const AdminResourceDialog = ({
           const dataToSave = { ...desarrolloData };
           
           const amenidadesJson = JSON.stringify(selectedAmenities) as Json;
+          dataToSave.amenidades = selectedAmenities.length > 0 ? amenidadesJson : null;
           
           response = await supabase
             .from('desarrollos')
-            .insert({
-              nombre: dataToSave.nombre,
-              ubicacion: dataToSave.ubicacion,
-              total_unidades: dataToSave.total_unidades,
-              unidades_disponibles: dataToSave.unidades_disponibles,
-              avance_porcentaje: dataToSave.avance_porcentaje,
-              fecha_inicio: dataToSave.fecha_inicio,
-              fecha_entrega: dataToSave.fecha_entrega,
-              descripcion: dataToSave.descripcion,
-              imagen_url: dataToSave.imagen_url,
-              moneda: dataToSave.moneda,
-              comision_operador: dataToSave.comision_operador,
-              mantenimiento_valor: dataToSave.mantenimiento_valor,
-              es_mantenimiento_porcentaje: dataToSave.es_mantenimiento_porcentaje,
-              gastos_fijos: dataToSave.gastos_fijos,
-              es_gastos_fijos_porcentaje: dataToSave.es_gastos_fijos_porcentaje,
-              gastos_variables: dataToSave.gastos_variables,
-              es_gastos_variables_porcentaje: dataToSave.es_gastos_variables_porcentaje,
-              impuestos: dataToSave.impuestos,
-              es_impuestos_porcentaje: dataToSave.es_impuestos_porcentaje,
-              adr_base: dataToSave.adr_base,
-              ocupacion_anual: dataToSave.ocupacion_anual,
-              amenidades: amenidadesJson
-            });
+            .insert(dataToSave)
+            .select();
         } else if (resourceType === 'prototipos') {
-          const prototipoData = formData as PrototipoResource;
-          response = await supabase.from('prototipos').insert({
-            nombre: prototipoData.nombre,
-            tipo: prototipoData.tipo,
-            precio: prototipoData.precio,
-            superficie: prototipoData.superficie,
-            habitaciones: prototipoData.habitaciones,
-            baños: prototipoData.baños,
-            estacionamientos: prototipoData.estacionamientos,
-            total_unidades: prototipoData.total_unidades,
-            unidades_disponibles: prototipoData.unidades_disponibles,
-            descripcion: prototipoData.descripcion,
-            imagen_url: prototipoData.imagen_url,
-            desarrollo_id: prototipoData.desarrollo_id,
-          });
+          response = await supabase
+            .from('prototipos')
+            .insert({
+              ...formData,
+              // Si se crea un nuevo prototipo, las unidades disponibles son iguales al total
+              unidades_disponibles: (formData as any).total_unidades || 0
+            })
+            .select();
         } else if (resourceType === 'leads') {
-          const leadData = formData as LeadResource;
-          response = await supabase.from('leads').insert({
-            nombre: leadData.nombre,
-            email: leadData.email,
-            telefono: leadData.telefono,
-            interes_en: leadData.interes_en,
-            origen: leadData.origen,
-            estado: leadData.estado,
-            subestado: leadData.subestado,
-            agente: leadData.agente,
-            notas: leadData.notas,
-          });
+          response = await supabase
+            .from('leads')
+            .insert(formData)
+            .select();
         } else if (resourceType === 'cotizaciones') {
-          const cotizacionData = formData as CotizacionResource;
-          response = await supabase.from('cotizaciones').insert({
-            lead_id: cotizacionData.lead_id,
-            desarrollo_id: cotizacionData.desarrollo_id,
-            prototipo_id: cotizacionData.prototipo_id,
-            monto_anticipo: cotizacionData.monto_anticipo,
-            numero_pagos: cotizacionData.numero_pagos,
-            usar_finiquito: cotizacionData.usar_finiquito,
-            monto_finiquito: cotizacionData.monto_finiquito,
-            notas: cotizacionData.notas,
-          });
+          response = await supabase
+            .from('cotizaciones')
+            .insert(formData)
+            .select();
         } else if (resourceType === 'unidades') {
-          const unidadData = formData as UnidadResource;
-          response = await supabase.from('unidades').insert({
-            prototipo_id: unidadData.prototipo_id || prototipo_id,
-            numero: unidadData.numero,
-            nivel: unidadData.nivel,
-            estado: unidadData.estado,
-            comprador_id: unidadData.comprador_id,
-            comprador_nombre: unidadData.comprador_nombre,
-            precio_venta: unidadData.precio_venta
-          });
+          response = await supabase
+            .from('unidades')
+            .insert(formData)
+            .select();
         }
       }
       
-      if (response?.error) throw response.error;
+      if (response?.error) {
+        throw response.error;
+      }
       
       toast({
         title: 'Éxito',
-        description: resourceId ? 'Recurso actualizado correctamente' : 'Recurso creado correctamente',
+        description: `${resourceType} ${resourceId ? 'actualizado' : 'creado'} correctamente`,
       });
       
-      if (onSave) onSave();
-      if (onSuccess) onSuccess();
+      if (onSave) {
+        onSave();
+      }
+      
+      if (onSuccess) {
+        onSuccess();
+      }
       
       handleOpenChange(false);
     } catch (error: any) {
-      console.error('Error al guardar el recurso:', error);
+      console.error(`Error saving ${resourceType}:`, error);
       toast({
         title: 'Error',
-        description: 'No se pudo guardar el recurso',
-        variant: 'destructive'
+        description: `No se pudo guardar: ${error.message}`,
+        variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (!resource) return;
+    
+    const { name, value, type } = e.target;
+    
+    let updatedValue: any = value;
+    
+    if (type === 'number') {
+      updatedValue = value === '' ? '' : Number(value);
+    }
+    
+    setResource({
+      ...resource,
+      [name]: updatedValue
+    });
+  };
+  
+  const handleSelectChange = (name: string, value: string) => {
+    if (!resource) return;
+    
+    setResource({
+      ...resource,
+      [name]: value
+    });
+  };
+  
+  const handleSwitchChange = (name: string, checked: boolean) => {
+    if (!resource) return;
+    
+    setResource({
+      ...resource,
+      [name]: checked
+    });
+  };
+  
+  const handleLeadSelect = (leadId: string, leadName: string) => {
+    if (!resource) return;
+    
+    // Para unidades, guardar tanto el ID como el nombre del comprador
+    if (resourceType === 'unidades') {
+      setResource({
+        ...resource,
+        comprador_id: leadId,
+        comprador_nombre: leadName
+      } as UnidadResource);
+    } else {
+      // Para otros recursos, solo guardar el ID
+      setResource({
+        ...resource,
+        lead_id: leadId
+      });
+    }
+  };
+  
   const handleAmenitiesChange = (amenities: string[]) => {
     setSelectedAmenities(amenities);
-    
-    if (resource && resourceType === 'desarrollos') {
-      const updatedResource = { ...resource as DesarrolloResource, amenidades: amenities };
-      setResource(updatedResource);
-    }
   };
-
-  const renderTriggerButton = () => {
-    if (open === undefined) {
-      return (
-        <Button onClick={() => setDialogOpen(true)} variant={buttonVariant as any}>
-          {buttonIcon}
-          {buttonText || 'Nuevo recurso'}
-        </Button>
-      );
-    }
-    return null;
-  };
-
+  
   return (
     <>
-      {renderTriggerButton()}
+      {/* Botón para abrir el diálogo si no se proporciona 'open' */}
+      {open === undefined && (
+        <Button
+          variant={buttonVariant as any}
+          size="sm"
+          onClick={() => handleOpenChange(true)}
+        >
+          {buttonIcon || <PlusCircle className="h-4 w-4 mr-2" />}
+          {buttonText}
+        </Button>
+      )}
+      
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
-              {resourceId ? `Editar ${resourceType}` : `Crear nuevo ${resourceType}`}
+            <DialogTitle>
+              {resourceId ? `Editar ${resourceType}` : `Nuevo ${resourceType}`}
             </DialogTitle>
             <DialogDescription>
-              {resourceId ? 'Modifica los campos del recurso.' : 'Ingresa los datos del nuevo recurso.'}
+              {resourceId 
+                ? `Actualiza la información de este ${resourceType}` 
+                : `Completa el formulario para crear un nuevo ${resourceType}`}
             </DialogDescription>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2"
+              onClick={() => handleOpenChange(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </DialogHeader>
-
+          
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+              <div className="animate-spin h-8 w-8 border-2 border-primary rounded-full border-t-transparent"></div>
             </div>
           ) : (
             <>
-              {resourceType === 'desarrollos' ? (
-                <DesarrolloForm
-                  resource={resource as DesarrolloResource}
-                  setResource={(value) => setResource(value as FormValues)}
-                  resourceId={resourceId}
-                  selectedAmenities={selectedAmenities}
-                  onAmenitiesChange={handleAmenitiesChange}
-                />
-              ) : (
-                <GenericForm
-                  fields={fields}
-                  resource={resource}
-                  handleChange={(e) => {
-                    if (!resource) return;
-                    
-                    const { name, value, type } = e.target;
-                    
-                    if (type === 'number') {
-                      setResource({ ...resource, [name]: value === '' ? '' : Number(value) });
-                    } else {
-                      setResource({ ...resource, [name]: value });
-                    }
-                  }}
-                  handleSelectChange={(name, value) => {
-                    if (!resource) return;
-                    setResource({ ...resource, [name]: value });
-                  }}
-                  handleSwitchChange={(name, checked) => {
-                    if (!resource) return;
-                    setResource({ ...resource, [name]: checked });
-                  }}
-                  resourceType={resourceType}
-                  resourceId={resourceId}
-                  desarrolloId={desarrolloId}
-                  prototipo_id={prototipo_id}
-                />
-              )}
+              <GenericForm
+                fields={fields}
+                resource={resource}
+                handleChange={handleChange}
+                handleSelectChange={handleSelectChange}
+                handleSwitchChange={handleSwitchChange}
+                resourceType={resourceType}
+                resourceId={resourceId}
+                handleAmenitiesChange={handleAmenitiesChange}
+                selectedAmenities={selectedAmenities}
+                desarrolloId={desarrolloId}
+                prototipo_id={prototipo_id}
+                lead_id={lead_id}
+                handleLeadSelect={handleLeadSelect}
+              />
+              
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => handleOpenChange(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => resource && saveResource(resource)}
+                  disabled={isSubmitting || !resource}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 mr-2 border-2 border-white rounded-full border-t-transparent"></div>
+                      Guardando...
+                    </>
+                  ) : (
+                    'Guardar'
+                  )}
+                </Button>
+              </DialogFooter>
             </>
           )}
-
-          <DialogFooter className="mt-6 flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              type="submit" 
-              onClick={() => resource && saveResource(resource)} 
-              disabled={isSubmitting || !resource}
-              className="bg-primary hover:bg-primary/90"
-            >
-              {isSubmitting ? 'Guardando...' : 'Guardar'}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
