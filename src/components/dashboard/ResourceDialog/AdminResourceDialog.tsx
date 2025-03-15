@@ -91,11 +91,16 @@ const AdminResourceDialog = ({
     
     if (resource) {
       // Use type assertion to update properties that might not exist on all resource types
+      const resourceAny = resource as any;
+      
+      // Important: Preserve the lead_id if it exists
       const updatedResource = {
         ...resource,
         desarrollo_id: desarrolloId,
-        // Reset prototipo_id when desarrollo changes
-        prototipo_id: ''
+        // Only reset prototipo_id when desarrollo changes
+        prototipo_id: '',
+        // Preserve lead_id if it exists
+        lead_id: resourceAny.lead_id || ''
       };
       console.log('Updating resource with new desarrollo_id:', updatedResource);
       setResource(updatedResource);
