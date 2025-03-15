@@ -261,7 +261,9 @@ export function ClientSearch({
       const target = event.target as Node;
       if (open && !event.defaultPrevented && inputRef.current && !inputRef.current.contains(target)) {
         // Solo cerrar si el clic no fue en un botón dentro del dropdown
-        if (!target.closest('button')) {
+        // Fix: Use Element type assertion to access closest method
+        const targetElement = event.target as Element;
+        if (!targetElement.closest('button')) {
           setOpen(false);
         }
       }
