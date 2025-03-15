@@ -216,8 +216,27 @@ export const FormField = ({
           />
         </div>
       );
+    
+    case 'number':
+      // Para campos numéricos, usamos formatCurrency para valores monetarios
+      const isMonetaryField = ['precio', 'adr_base', 'monto_anticipo', 'monto_finiquito'].includes(field.name);
+      return (
+        <div key={field.name} className="space-y-3">
+          <Label htmlFor={field.name}>{field.label}</Label>
+          <Input
+            type="text"
+            inputMode="numeric"
+            id={field.name}
+            name={field.name}
+            formatCurrency={isMonetaryField}
+            value={resource ? (resource as any)[field.name] ?? '' : ''}
+            onChange={handleChange}
+          />
+        </div>
+      );
       
     default:
+      // Para campos de texto (y otros tipos no específicos)
       return (
         <div key={field.name} className="space-y-3">
           <Label htmlFor={field.name}>{field.label}</Label>

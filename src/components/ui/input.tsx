@@ -4,10 +4,11 @@ import { cn } from "@/lib/utils"
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   formatCurrency?: boolean;
+  inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, formatCurrency = false, ...props }, ref) => {
+  ({ className, type, formatCurrency = false, inputMode, ...props }, ref) => {
     // Para el formateo de moneda
     const displayValue = React.useMemo(() => {
       if (formatCurrency && props.value !== undefined && props.value !== '') {
@@ -23,6 +24,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <input
         type={formatCurrency ? "text" : type}
+        inputMode={inputMode || (type === "number" ? "numeric" : undefined)}
         className={cn(
           "flex h-11 w-full rounded-md border border-input bg-background px-4 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
           className
