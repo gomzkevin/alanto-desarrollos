@@ -21,6 +21,19 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       return props.value;
     }, [formatCurrency, props.value]);
 
+    // Función para verificar si el elemento está actualmente enfocado
+    const isRefActive = () => {
+      if (!ref) return false;
+      
+      // Verificar si ref es un objeto con propiedad current
+      if (typeof ref === 'object' && ref !== null && 'current' in ref) {
+        return document.activeElement === ref.current;
+      }
+      
+      // Si ref es una función u otro tipo, no podemos determinar fácilmente si está activo
+      return false;
+    };
+
     // Manejar el evento blur para formatear como moneda solo cuando el usuario termina de escribir
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       if (formatCurrency && props.onChange && e.target.value) {
@@ -55,7 +68,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         ref={ref}
         {...props}
-        value={formatCurrency && document.activeElement !== ref?.current ? displayValue : props.value}
+        value={formatCurrency && !isRefActive() ? displayValue : props.value}
         onBlur={handleBlur}
         onChange={(e) => {
           if (props.onChange) {
