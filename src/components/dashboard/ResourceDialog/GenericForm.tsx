@@ -219,7 +219,7 @@ export default function GenericForm({
                       </SelectItem>
                     ))
                   ) : (
-                    <SelectItem value="" disabled>
+                    <SelectItem key="no-prototipos" value="no-prototipos" disabled>
                       {selectedDesarrolloId 
                         ? "No hay prototipos disponibles para este desarrollo" 
                         : "Seleccione un desarrollo primero"}

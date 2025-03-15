@@ -13,12 +13,16 @@ interface LeadComboboxProps {
 }
 
 export function LeadCombobox({ value, onChange }: LeadComboboxProps) {
+  // State for controlling the popover
   const [open, setOpen] = useState(false);
+  // State for search input
   const [searchQuery, setSearchQuery] = useState('');
+  // Fetch leads data
   const { leads, isLoading } = useLeads({});
+  // State for display name
   const [displayName, setDisplayName] = useState('');
 
-  // Update displayName when value changes or leads load
+  // Update display name when selected value or leads data changes
   useEffect(() => {
     if (value && leads.length > 0) {
       const selectedLead = leads.find(lead => lead.id === value);
@@ -30,7 +34,7 @@ export function LeadCombobox({ value, onChange }: LeadComboboxProps) {
     }
   }, [value, leads]);
 
-  // Simple string normalization for searching - remove accents, lowercase
+  // Normalize text for searching (remove accents, lowercase)
   const normalizeText = (text: string | null | undefined): string => {
     if (!text) return '';
     return text.toLowerCase()
@@ -44,11 +48,9 @@ export function LeadCombobox({ value, onChange }: LeadComboboxProps) {
     
     const query = normalizeText(searchQuery);
     
-    const nameMatch = normalizeText(lead.nombre).includes(query);
-    const emailMatch = normalizeText(lead.email).includes(query);
-    const phoneMatch = normalizeText(lead.telefono).includes(query);
-    
-    return nameMatch || emailMatch || phoneMatch;
+    return normalizeText(lead.nombre).includes(query) || 
+           normalizeText(lead.email || '').includes(query) || 
+           normalizeText(lead.telefono || '').includes(query);
   });
 
   // Handle selection of a lead
@@ -69,8 +71,7 @@ export function LeadCombobox({ value, onChange }: LeadComboboxProps) {
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
-          type="button" // Explicitly set type to prevent form submission
-          onClick={() => setOpen(!open)}
+          type="button"
         >
           {displayName || "Seleccionar comprador..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

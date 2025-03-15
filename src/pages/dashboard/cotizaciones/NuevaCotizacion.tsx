@@ -104,7 +104,12 @@ export default function NuevaCotizacionPage() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <Button variant="outline" size="sm" onClick={() => navigate(-1)} type="button">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate(-1)} 
+            type="button"
+          >
             <ChevronLeft className="mr-1 h-4 w-4" />
             Volver
           </Button>

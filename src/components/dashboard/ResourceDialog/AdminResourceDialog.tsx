@@ -80,6 +80,7 @@ const AdminResourceDialog = ({
           variant={buttonVariant as any}
           size="sm"
           onClick={() => handleOpenChange(true)}
+          type="button"
         >
           {buttonIcon || <PlusCircle className="h-4 w-4 mr-2" />}
           {buttonText}
