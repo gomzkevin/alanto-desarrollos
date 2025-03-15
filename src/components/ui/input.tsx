@@ -2,41 +2,15 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-interface InputProps extends Omit<React.ComponentProps<"input">, "onChange"> {
-  onChange?: (value: any) => void;
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   formatCurrency?: boolean;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, onChange, formatCurrency = false, ...props }, ref) => {
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      
-      if (formatCurrency) {
-        // For currency formatting, we process the input differently
-        // Remove all non-numeric characters
-        const cleanValue = value.replace(/[^0-9]/g, '');
-        
-        // Convert to number and handle empty input
-        const numericValue = cleanValue === '' ? 0 : Number(cleanValue);
-        
-        if (onChange) {
-          // Pass the numeric value to the consumer
-          onChange(numericValue);
-        }
-      } else {
-        // For all other inputs (including number), pass the raw value
-        if (onChange) {
-          onChange(value);
-        }
-      }
-    };
-
-    // Format display value for currency
-    const formatValue = () => {
-      if (formatCurrency && props.value !== undefined) {
-        if (props.value === '') return '';
-        
+  ({ className, type, formatCurrency = false, ...props }, ref) => {
+    // For currency formatting only - handle display value
+    const displayValue = React.useMemo(() => {
+      if (formatCurrency && props.value !== undefined && props.value !== '') {
         return new Intl.NumberFormat('es-MX', {
           style: 'currency',
           currency: 'MXN',
@@ -44,7 +18,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         }).format(Number(props.value));
       }
       return props.value;
-    };
+    }, [formatCurrency, props.value]);
 
     return (
       <input
@@ -54,8 +28,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className
         )}
         ref={ref}
-        value={formatValue()}
-        onChange={handleChange}
+        value={formatCurrency ? displayValue : props.value}
         {...props}
       />
     )

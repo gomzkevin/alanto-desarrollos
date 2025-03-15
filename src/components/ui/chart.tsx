@@ -35,10 +35,15 @@ export const LineChart = (props) => {
   console.log('LineChart index:', props.index);
   console.log('LineChart colors:', props.colors);
   
+  // Use the provided colors directly
+  const chartColors = props.colors || ["#9b87f5", "#4ade80"];
+  
   return (
     <TremorLineChart 
-      {...props}
-      colors={props.colors || ["#9b87f5", "#4ade80"]} // Ensure colors are always provided
+      data={props.data}
+      index={props.index}
+      categories={props.categories}
+      colors={chartColors}
       className={`${props.className || ''} bg-white text-xs`}
       showLegend={props.showLegend !== false}
       showTooltip={props.showTooltip !== false}
@@ -57,6 +62,7 @@ export const LineChart = (props) => {
       areaOpacity={0.2}
       autoMinValue={true}
       fontSize={10}
+      valueFormatter={props.valueFormatter}
     />
   );
 };
@@ -68,10 +74,15 @@ export const BarChart = (props) => {
   console.log('BarChart index:', props.index);
   console.log('BarChart colors:', props.colors);
   
+  // Use the provided colors directly
+  const chartColors = props.colors || ["#9b87f5", "#4ade80"];
+  
   return (
     <TremorBarChart 
-      {...props}
-      colors={props.colors || ["#9b87f5", "#4ade80"]} // Ensure colors are always provided
+      data={props.data}
+      index={props.index}
+      categories={props.categories}
+      colors={chartColors}
       className={`${props.className || ''} bg-white text-xs`}
       showLegend={props.showLegend !== false}
       showTooltip={props.showTooltip !== false}
@@ -85,6 +96,7 @@ export const BarChart = (props) => {
       autoMinValue={true}
       minValue={0}
       fontSize={10}
+      valueFormatter={props.valueFormatter}
     />
   );
 };

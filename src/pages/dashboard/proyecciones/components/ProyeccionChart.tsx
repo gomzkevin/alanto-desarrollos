@@ -12,6 +12,7 @@ export const ProyeccionChart = ({ chartData }: ProyeccionChartProps) => {
     if (chartData.length > 0) {
       console.log("ProyeccionChart - Sample data point:", chartData[0]);
       console.log("ProyeccionChart - Categories being used:", ["Renta vacacional", "Bonos US"]);
+      console.log("ProyeccionChart - Colors being used:", ["#9b87f5", "#4ade80"]);
     }
   }, [chartData]);
 
