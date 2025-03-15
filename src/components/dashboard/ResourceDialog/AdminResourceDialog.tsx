@@ -2,12 +2,33 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AdminResourceDialogProps, FormValues, DesarrolloResource, PrototipoResource, LeadResource, CotizacionResource } from './types';
+import { AdminResourceDialogProps, FormValues, DesarrolloResource, PrototipoResource, LeadResource, CotizacionResource, UnidadResource, FieldDefinition } from './types';
 import DesarrolloForm from './DesarrolloForm';
 import GenericForm from './GenericForm';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
+import usePrototipos from '@/hooks/usePrototipos';
+import useLeads from '@/hooks/useLeads';
+
+const TIPO_PROTOTIPO_OPTIONS = [
+  { value: 'departamento', label: 'Departamento' },
+  { value: 'loft', label: 'Loft' },
+  { value: 'villa', label: 'Villa' },
+  { value: 'penthouse', label: 'Penthouse' },
+  { value: 'casa', label: 'Casa' },
+  { value: 'terreno', label: 'Terreno' },
+  { value: 'local', label: 'Local Comercial' },
+  { value: 'oficina', label: 'Oficina' }
+];
+
+const ESTADO_UNIDAD_OPTIONS = [
+  { value: 'disponible', label: 'Disponible' },
+  { value: 'apartado', label: 'Apartado' },
+  { value: 'en_proceso', label: 'En proceso de venta' },
+  { value: 'en_pagos', label: 'En plan de pagos' },
+  { value: 'vendido', label: 'Vendido' }
+];
 
 const AdminResourceDialog = ({ 
   open, 
@@ -20,14 +41,18 @@ const AdminResourceDialog = ({
   buttonVariant = 'default',
   onSuccess,
   desarrolloId,
-  lead_id
+  lead_id,
+  prototipo_id
 }: AdminResourceDialogProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resource, setResource] = useState<FormValues | null>(null);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [fields, setFields] = useState<FieldDefinition[]>([]);
   const { toast } = useToast();
+  const { prototipos } = usePrototipos({});
+  const { leads } = useLeads({});
   
   const isOpen = open !== undefined ? open : dialogOpen;
 
@@ -37,6 +62,58 @@ const AdminResourceDialog = ({
     }
     setDialogOpen(newOpen);
   };
+
+  // Configurar campos dinámicamente según el tipo de recurso
+  useEffect(() => {
+    if (resourceType === 'prototipos') {
+      setFields([
+        { name: 'nombre', label: 'Nombre', type: 'text', tab: 'General' },
+        { name: 'tipo', label: 'Tipo', type: 'select', options: TIPO_PROTOTIPO_OPTIONS, tab: 'General' },
+        { name: 'descripcion', label: 'Descripción', type: 'textarea', tab: 'General' },
+        { name: 'precio', label: 'Precio', type: 'number', tab: 'General' },
+        { name: 'superficie', label: 'Superficie (m²)', type: 'number', tab: 'Características' },
+        { name: 'habitaciones', label: 'Habitaciones', type: 'number', tab: 'Características' },
+        { name: 'baños', label: 'Baños', type: 'number', tab: 'Características' },
+        { name: 'estacionamientos', label: 'Cajones de estacionamiento', type: 'number', tab: 'Características' },
+        { name: 'total_unidades', label: 'Total unidades', type: 'number', tab: 'Inventario' },
+        { name: 'unidades_disponibles', label: 'Unidades disponibles', type: 'number', tab: 'Inventario' },
+        { name: 'imagen_url', label: 'URL de imagen', type: 'text', tab: 'Media' },
+        { name: 'desarrollo_id', label: 'Desarrollo', type: 'select-desarrollo', tab: 'General' },
+      ]);
+    } else if (resourceType === 'cotizaciones') {
+      setFields([
+        { name: 'lead_id', label: 'Cliente', type: 'select-lead' },
+        { name: 'desarrollo_id', label: 'Desarrollo', type: 'select-desarrollo' },
+        { name: 'prototipo_id', label: 'Prototipo', type: 'select-prototipo' },
+        { name: 'monto_anticipo', label: 'Monto de anticipo', type: 'number' },
+        { name: 'numero_pagos', label: 'Número de pagos', type: 'number' },
+        { name: 'usar_finiquito', label: 'Incluir finiquito', type: 'switch' },
+        { name: 'monto_finiquito', label: 'Monto de finiquito', type: 'number' },
+        { name: 'notas', label: 'Notas', type: 'textarea' },
+      ]);
+    } else if (resourceType === 'unidades') {
+      setFields([
+        { name: 'numero', label: 'Número/Identificador', type: 'text' },
+        { name: 'nivel', label: 'Nivel/Piso', type: 'text' },
+        { name: 'estado', label: 'Estado', type: 'select', options: ESTADO_UNIDAD_OPTIONS },
+        { name: 'precio_venta', label: 'Precio de venta', type: 'number' },
+        { name: 'comprador_id', label: 'Comprador', type: 'select-lead' },
+        { name: 'comprador_nombre', label: 'Nombre del comprador', type: 'text' },
+      ]);
+    } else if (resourceType === 'leads') {
+      setFields([
+        { name: 'nombre', label: 'Nombre', type: 'text' },
+        { name: 'email', label: 'Email', type: 'text' },
+        { name: 'telefono', label: 'Teléfono', type: 'text' },
+        { name: 'origen', label: 'Origen', type: 'text' },
+        { name: 'interes_en', label: 'Interesado en', type: 'text' },
+        { name: 'estado', label: 'Estado', type: 'text' },
+        { name: 'subestado', label: 'Subestado', type: 'text' },
+        { name: 'agente', label: 'Agente asignado', type: 'text' },
+        { name: 'notas', label: 'Notas', type: 'textarea' },
+      ]);
+    }
+  }, [resourceType]);
 
   // Handle amenities for desarrollo resources
   useEffect(() => {
@@ -73,6 +150,8 @@ const AdminResourceDialog = ({
             query = supabase.from('leads').select('*').eq('id', resourceId).single();
           } else if (resourceType === 'cotizaciones') {
             query = supabase.from('cotizaciones').select('*').eq('id', resourceId).single();
+          } else if (resourceType === 'unidades') {
+            query = supabase.from('unidades').select('*').eq('id', resourceId).single();
           }
           
           const { data, error } = await query;
@@ -107,14 +186,19 @@ const AdminResourceDialog = ({
               moneda: 'MXN'
             });
             setSelectedAmenities([]);
-          } else if (resourceType === 'prototipos' && desarrolloId) {
+          } else if (resourceType === 'prototipos') {
             setResource({
-              desarrollo_id: desarrolloId,
               nombre: '',
               tipo: '',
               precio: 0,
               total_unidades: 0,
-              unidades_disponibles: 0
+              unidades_disponibles: 0,
+              superficie: 0,
+              habitaciones: 0,
+              baños: 0,
+              estacionamientos: 0,
+              descripcion: '',
+              desarrollo_id: desarrolloId || '',
             });
           } else if (resourceType === 'leads') {
             setResource({
@@ -127,11 +211,17 @@ const AdminResourceDialog = ({
           } else if (resourceType === 'cotizaciones') {
             setResource({
               lead_id: lead_id || '',
-              desarrollo_id: '',
-              prototipo_id: '',
+              desarrollo_id: desarrolloId || '',
+              prototipo_id: prototipo_id || '',
               monto_anticipo: 0,
               numero_pagos: 0,
               usar_finiquito: false
+            });
+          } else if (resourceType === 'unidades') {
+            setResource({
+              prototipo_id: prototipo_id || '',
+              numero: '',
+              estado: 'disponible'
             });
           }
         }
@@ -148,7 +238,7 @@ const AdminResourceDialog = ({
     };
     
     fetchResource();
-  }, [isOpen, resourceId, resourceType, desarrolloId, lead_id, toast]);
+  }, [isOpen, resourceId, resourceType, desarrolloId, lead_id, prototipo_id, toast]);
 
   // Guardar recurso
   const saveResource = async (formData: FormValues) => {
@@ -161,7 +251,6 @@ const AdminResourceDialog = ({
         // Actualizar recurso existente
         if (resourceType === 'desarrollos') {
           const desarrolloData = formData as DesarrolloResource;
-          // Asegurar que amenidades es un string JSON para guardar
           const dataToSave = { ...desarrolloData };
           
           // Convert amenidades to a JSON string if needed
@@ -209,6 +298,7 @@ const AdminResourceDialog = ({
               superficie: prototipoData.superficie,
               habitaciones: prototipoData.habitaciones,
               baños: prototipoData.baños,
+              estacionamientos: prototipoData.estacionamientos,
               total_unidades: prototipoData.total_unidades,
               unidades_disponibles: prototipoData.unidades_disponibles,
               descripcion: prototipoData.descripcion,
@@ -245,6 +335,19 @@ const AdminResourceDialog = ({
               usar_finiquito: cotizacionData.usar_finiquito,
               monto_finiquito: cotizacionData.monto_finiquito,
               notas: cotizacionData.notas,
+            })
+            .eq('id', resourceId);
+        } else if (resourceType === 'unidades') {
+          const unidadData = formData as UnidadResource;
+          response = await supabase
+            .from('unidades')
+            .update({
+              numero: unidadData.numero,
+              nivel: unidadData.nivel,
+              estado: unidadData.estado,
+              comprador_id: unidadData.comprador_id,
+              comprador_nombre: unidadData.comprador_nombre,
+              precio_venta: unidadData.precio_venta
             })
             .eq('id', resourceId);
         }
@@ -292,6 +395,7 @@ const AdminResourceDialog = ({
             superficie: prototipoData.superficie,
             habitaciones: prototipoData.habitaciones,
             baños: prototipoData.baños,
+            estacionamientos: prototipoData.estacionamientos,
             total_unidades: prototipoData.total_unidades,
             unidades_disponibles: prototipoData.unidades_disponibles,
             descripcion: prototipoData.descripcion,
@@ -322,6 +426,17 @@ const AdminResourceDialog = ({
             usar_finiquito: cotizacionData.usar_finiquito,
             monto_finiquito: cotizacionData.monto_finiquito,
             notas: cotizacionData.notas,
+          });
+        } else if (resourceType === 'unidades') {
+          const unidadData = formData as UnidadResource;
+          response = await supabase.from('unidades').insert({
+            prototipo_id: unidadData.prototipo_id || prototipo_id,
+            numero: unidadData.numero,
+            nivel: unidadData.nivel,
+            estado: unidadData.estado,
+            comprador_id: unidadData.comprador_id,
+            comprador_nombre: unidadData.comprador_nombre,
+            precio_venta: unidadData.precio_venta
           });
         }
       }
@@ -400,7 +515,7 @@ const AdminResourceDialog = ({
                 />
               ) : (
                 <GenericForm
-                  fields={[]}
+                  fields={fields}
                   resource={resource}
                   handleChange={(e) => {
                     if (!resource) return;
@@ -424,6 +539,7 @@ const AdminResourceDialog = ({
                   resourceType={resourceType}
                   resourceId={resourceId}
                   desarrolloId={desarrolloId}
+                  prototipo_id={prototipo_id}
                 />
               )}
             </>

@@ -376,6 +376,7 @@ export type Database = {
           caracteristicas: Json | null
           desarrollo_id: string
           descripcion: string | null
+          estacionamientos: number | null
           habitaciones: number | null
           id: string
           imagen_url: string | null
@@ -391,6 +392,7 @@ export type Database = {
           caracteristicas?: Json | null
           desarrollo_id: string
           descripcion?: string | null
+          estacionamientos?: number | null
           habitaciones?: number | null
           id?: string
           imagen_url?: string | null
@@ -406,6 +408,7 @@ export type Database = {
           caracteristicas?: Json | null
           desarrollo_id?: string
           descripcion?: string | null
+          estacionamientos?: number | null
           habitaciones?: number | null
           id?: string
           imagen_url?: string | null
@@ -422,6 +425,60 @@ export type Database = {
             columns: ["desarrollo_id"]
             isOneToOne: false
             referencedRelation: "desarrollos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unidades: {
+        Row: {
+          comprador_id: string | null
+          comprador_nombre: string | null
+          created_at: string
+          estado: string
+          fecha_venta: string | null
+          id: string
+          nivel: string | null
+          numero: string
+          precio_venta: number | null
+          prototipo_id: string
+        }
+        Insert: {
+          comprador_id?: string | null
+          comprador_nombre?: string | null
+          created_at?: string
+          estado?: string
+          fecha_venta?: string | null
+          id?: string
+          nivel?: string | null
+          numero: string
+          precio_venta?: number | null
+          prototipo_id: string
+        }
+        Update: {
+          comprador_id?: string | null
+          comprador_nombre?: string | null
+          created_at?: string
+          estado?: string
+          fecha_venta?: string | null
+          id?: string
+          nivel?: string | null
+          numero?: string
+          precio_venta?: number | null
+          prototipo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unidades_comprador_id_fkey"
+            columns: ["comprador_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unidades_prototipo_id_fkey"
+            columns: ["prototipo_id"]
+            isOneToOne: false
+            referencedRelation: "prototipos"
             referencedColumns: ["id"]
           },
         ]

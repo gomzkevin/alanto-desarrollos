@@ -1,5 +1,5 @@
 
-export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones';
+export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones' | 'unidades';
 
 export interface AdminResourceDialogProps {
   open?: boolean;
@@ -13,6 +13,7 @@ export interface AdminResourceDialogProps {
   onSuccess?: () => void;
   desarrolloId?: string;
   lead_id?: string;
+  prototipo_id?: string;
 }
 
 export interface DesarrolloResource {
@@ -49,6 +50,7 @@ export interface PrototipoResource {
   superficie?: number;
   habitaciones?: number;
   baños?: number;
+  estacionamientos?: number;
   total_unidades: number;
   unidades_disponibles: number;
   unidades_vendidas?: number;
@@ -56,6 +58,19 @@ export interface PrototipoResource {
   desarrollo_id: string;
   descripcion?: string;
   imagen_url?: string;
+  caracteristicas?: object | string;
+}
+
+export interface UnidadResource {
+  id?: string;
+  prototipo_id: string;
+  nivel?: string;
+  numero: string;
+  estado: string;
+  comprador_id?: string;
+  comprador_nombre?: string;
+  precio_venta?: number;
+  fecha_venta?: string;
 }
 
 export interface LeadResource {
@@ -86,7 +101,7 @@ export interface CotizacionResource {
   created_at?: string;
 }
 
-export type FormValues = DesarrolloResource | PrototipoResource | LeadResource | CotizacionResource;
+export type FormValues = DesarrolloResource | PrototipoResource | LeadResource | CotizacionResource | UnidadResource;
 
 export interface FieldDefinition {
   name: string;

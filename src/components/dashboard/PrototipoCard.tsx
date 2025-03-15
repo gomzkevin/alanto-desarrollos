@@ -6,6 +6,7 @@ import { formatCurrency } from '@/lib/utils';
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Button } from "@/components/ui/button";
 import { Building2, Home, Ruler, Bed, Bath, MapPin, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 type Prototipo = Tables<"prototipos">;
 
@@ -16,10 +17,13 @@ interface PrototipoCardProps {
 
 const PrototipoCard: React.FC<PrototipoCardProps> = ({ prototipo, onViewDetails }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
   
   const handleCardClick = () => {
     if (onViewDetails) {
       onViewDetails(prototipo.id);
+    } else {
+      navigate(`/dashboard/prototipos/${prototipo.id}`);
     }
   };
 

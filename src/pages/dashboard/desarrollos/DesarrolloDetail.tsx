@@ -79,6 +79,10 @@ const DesarrolloDetailPage = () => {
     refetchPrototipos();
   };
   
+  const handlePrototipoClick = (prototipoId: string) => {
+    navigate(`/dashboard/prototipos/${prototipoId}`);
+  };
+  
   const isLoading = isLoadingDesarrollo || isLoadingPrototipos;
   const hasError = errorDesarrollo || errorPrototipos;
   
@@ -259,7 +263,11 @@ const DesarrolloDetailPage = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {prototipos.map((prototipo) => (
-                    <PrototipoCard key={prototipo.id} prototipo={prototipo} />
+                    <PrototipoCard 
+                      key={prototipo.id} 
+                      prototipo={prototipo}
+                      onViewDetails={handlePrototipoClick}
+                    />
                   ))}
                 </div>
               )}
