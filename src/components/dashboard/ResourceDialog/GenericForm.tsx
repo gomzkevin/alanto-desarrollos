@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { FieldDefinition } from './types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
@@ -55,6 +55,26 @@ export default function GenericForm({
   const { leads = [] } = useLeads({});
   const { desarrollos = [] } = useDesarrollos({});
   const { prototipos = [] } = usePrototipos({});
+  
+  // Obtener el desarrollo_id actualmente seleccionado en el formulario
+  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>(
+    desarrolloId || (resource && (resource as any).desarrollo_id) || ''
+  );
+
+  // Actualizar selectedDesarrolloId cuando cambie el valor en el recurso
+  useEffect(() => {
+    if (resource && (resource as any).desarrollo_id) {
+      setSelectedDesarrolloId((resource as any).desarrollo_id);
+    } else if (desarrolloId) {
+      setSelectedDesarrolloId(desarrolloId);
+    }
+  }, [resource, desarrolloId]);
+
+  // Filtrar prototipos basados en el desarrollo seleccionado
+  const filteredPrototipos = useMemo(() => {
+    if (!selectedDesarrolloId) return prototipos;
+    return prototipos.filter(p => p.desarrollo_id === selectedDesarrolloId);
+  }, [prototipos, selectedDesarrolloId]);
   
   const tabs = useMemo(() => {
     const uniqueTabs = new Set<string>();
@@ -160,7 +180,15 @@ export default function GenericForm({
             {field.type === 'select-desarrollo' && (
               <Select
                 value={(resource as any)[field.name] || ''}
-                onValueChange={(value) => handleSelectChange(field.name, value)}
+                onValueChange={(value) => {
+                  handleSelectChange(field.name, value);
+                  setSelectedDesarrolloId(value);
+                  
+                  // Limpiar el prototipo seleccionado cuando cambia el desarrollo
+                  if (field.name === 'desarrollo_id' && resourceType === 'cotizaciones') {
+                    handleSelectChange('prototipo_id', '');
+                  }
+                }}
               >
                 <SelectTrigger id={field.name}>
                   <SelectValue placeholder={`Seleccione un desarrollo`} />
@@ -184,13 +212,19 @@ export default function GenericForm({
                   <SelectValue placeholder={`Seleccione un prototipo`} />
                 </SelectTrigger>
                 <SelectContent>
-                  {prototipos
-                    .filter(p => !desarrolloId || p.desarrollo_id === desarrolloId)
-                    .map((prototipo) => (
+                  {filteredPrototipos.length > 0 ? (
+                    filteredPrototipos.map((prototipo) => (
                       <SelectItem key={prototipo.id} value={prototipo.id}>
                         {prototipo.nombre}
                       </SelectItem>
-                    ))}
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>
+                      {selectedDesarrolloId 
+                        ? "No hay prototipos disponibles para este desarrollo" 
+                        : "Seleccione un desarrollo primero"}
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             )}

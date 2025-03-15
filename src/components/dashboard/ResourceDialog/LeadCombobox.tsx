@@ -28,7 +28,7 @@ export function LeadCombobox({ value, onChange }: LeadComboboxProps) {
     }
   }, [value, leads]);
 
-  // Filtrar leads basados en el término de búsqueda
+  // Filtrar leads basados en el término de búsqueda, sin importar mayúsculas/minúsculas
   const filteredLeads = leads.filter(lead => 
     lead.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (lead.email && lead.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -40,8 +40,8 @@ export function LeadCombobox({ value, onChange }: LeadComboboxProps) {
     if (selectedLead) {
       onChange(leadId, selectedLead.nombre);
       setSelectedLeadName(selectedLead.nombre);
+      setOpen(false);
     }
-    setOpen(false);
   };
 
   return (
@@ -63,6 +63,7 @@ export function LeadCombobox({ value, onChange }: LeadComboboxProps) {
             placeholder="Buscar por nombre, email o teléfono..." 
             value={searchQuery}
             onValueChange={setSearchQuery}
+            className="h-9"
           />
           <CommandList>
             <CommandEmpty>No se encontraron compradores.</CommandEmpty>
@@ -71,6 +72,7 @@ export function LeadCombobox({ value, onChange }: LeadComboboxProps) {
                 key={lead.id}
                 value={lead.id}
                 onSelect={() => handleSelect(lead.id)}
+                className="cursor-pointer"
               >
                 <Check
                   className={cn(
