@@ -10,7 +10,7 @@ import { ResourceType } from '../types';
 interface DialogHeaderProps {
   resourceType: ResourceType;
   resourceId?: string;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 export function DialogHeader({ resourceType, resourceId, onClose }: DialogHeaderProps) {

@@ -39,16 +39,19 @@ export function ClientSearch({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [selectedLead, setSelectedLead] = useState<any>(null);
   const { leads, isLoading } = useLeads({});
 
   // Actualizar el nombre mostrado cuando cambia el valor o se cargan los leads
   useEffect(() => {
     if (value && leads.length > 0 && isExistingClient) {
-      const selectedLead = leads.find(lead => lead.id === value);
-      if (selectedLead) {
-        setDisplayName(selectedLead.nombre || '');
+      const lead = leads.find(lead => lead.id === value);
+      if (lead) {
+        setSelectedLead(lead);
+        setDisplayName(lead.nombre || '');
       }
     } else {
+      setSelectedLead(null);
       setDisplayName('');
     }
   }, [value, leads, isExistingClient]);
@@ -76,6 +79,7 @@ export function ClientSearch({
 
   // Manejar la selección de un lead
   const handleSelectLead = (lead: any) => {
+    setSelectedLead(lead);
     onSelect(lead.id, lead.nombre || '');
     setSearch('');
     setOpen(false);
@@ -83,10 +87,10 @@ export function ClientSearch({
 
   // Limpiar la selección
   const handleClear = () => {
+    setSelectedLead(null);
     onSelect('', '');
     setSearch('');
     setDisplayName('');
-    setOpen(false);
   };
 
   const renderExistingClientSearch = () => (
@@ -95,14 +99,21 @@ export function ClientSearch({
         <PopoverTrigger asChild>
           <div className="flex w-full relative rounded-md border border-input overflow-hidden focus-within:ring-1 focus-within:ring-ring">
             <div className="flex-1 relative">
-              {displayName ? (
+              {selectedLead ? (
                 <Button 
                   variant="ghost" 
                   className="w-full justify-start h-10 px-3 text-left font-normal"
                   onClick={() => setOpen(true)}
                   type="button"
                 >
-                  {displayName}
+                  <div className="text-left w-full truncate">
+                    <div className="font-medium">{selectedLead.nombre}</div>
+                    {selectedLead.email && (
+                      <div className="text-xs text-muted-foreground">
+                        {selectedLead.email}
+                      </div>
+                    )}
+                  </div>
                 </Button>
               ) : (
                 <Input
@@ -116,12 +127,15 @@ export function ClientSearch({
             </div>
             
             <div className="flex items-center pr-2">
-              {displayName ? (
+              {selectedLead ? (
                 <Button 
                   type="button" 
                   variant="ghost" 
                   size="icon" 
-                  onClick={handleClear}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClear();
+                  }}
                   className="h-8 w-8"
                 >
                   <X className="h-4 w-4" />
@@ -146,6 +160,7 @@ export function ClientSearch({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full"
+                  autoFocus
                 />
               </div>
               
@@ -160,10 +175,13 @@ export function ClientSearch({
                         className="w-full justify-start px-3 py-2 text-left h-auto"
                         onClick={() => handleSelectLead(lead)}
                       >
-                        <div className="truncate flex flex-col items-start">
+                        <div className="truncate flex flex-col items-start w-full">
                           <span className="font-medium">{lead.nombre}</span>
                           {lead.email && (
                             <span className="text-xs text-muted-foreground">{lead.email}</span>
+                          )}
+                          {lead.telefono && (
+                            <span className="text-xs text-muted-foreground">Teléfono: {lead.telefono}</span>
                           )}
                         </div>
                       </Button>

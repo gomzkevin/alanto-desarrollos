@@ -70,7 +70,6 @@ export function ResourceDialogContent({
       <DialogHeader 
         resourceType={resourceType} 
         resourceId={resourceId}
-        onClose={onClose}
       />
       
       {isLoading ? (

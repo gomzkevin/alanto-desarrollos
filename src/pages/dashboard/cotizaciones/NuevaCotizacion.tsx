@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
