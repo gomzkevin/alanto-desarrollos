@@ -130,7 +130,7 @@ export const BarChart = (props) => {
       autoMinValue={true}
       minValue={0}
       customTooltip={props.customTooltip}
-      fontSize={12} // Adding explicit font size control
+      fontSize={10} // Reducing font size by 25% (from 12 to 10)
     />
   );
 };

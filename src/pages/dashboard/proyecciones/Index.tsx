@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -195,7 +196,7 @@ export const ProyeccionesPage = () => {
                         data={chartData}
                         index="year_label"
                         categories={["Renta vacacional", "Bonos US"]}
-                        colors={["#9b87f5", "#7E69AB"]}
+                        colors={["#9b87f5", "#4ade80"]}
                         valueFormatter={(value) => formatCurrencyShort(value)}
                         showLegend={true}
                         showXAxis={true}
