@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -130,8 +129,7 @@ const DesarrolloDetailPage = () => {
                     Imágenes del desarrollo
                   </h2>
                 </div>
-                {/* Fix: Pass the result of isAdmin as a boolean, not the function itself */}
-                <DesarrolloImageCarousel desarrolloId={id as string} editable={isAdmin} />
+                <DesarrolloImageCarousel desarrolloId={id as string} editable={isAdmin()} />
               </div>
               
               {desarrollo.descripcion && (
