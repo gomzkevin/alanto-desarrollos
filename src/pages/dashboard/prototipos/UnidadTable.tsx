@@ -167,6 +167,7 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
                         variant="outline"
                         size="sm"
                         onClick={() => handleCotizacion(unidad.id)}
+                        className="flex items-center gap-1" // Aseguramos que los elementos estén alineados
                       >
                         <FileText className="h-4 w-4" />
                         <span className="sr-only">Cotizar</span>
