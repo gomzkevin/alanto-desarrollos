@@ -50,8 +50,14 @@ export const LineChart = (props) => {
     return newItem;
   });
   
-  // Use provided colors or default mapping
-  const chartColors = props.colors || ["#9b87f5", "#4ade80"];
+  // Use explicitly provided colors for the categories - force them directly
+  const categoryColors = {
+    "Renta vacacional": "#9b87f5",
+    "Bonos US": "#4ade80"
+  };
+  
+  // Map colors to categories explicitly
+  const chartColors = props.categories?.map(category => categoryColors[category] || "#000") || ["#9b87f5", "#4ade80"];
   
   console.log('LineChart will use colors:', chartColors);
   console.log('LineChart validated data sample:', JSON.stringify(validatedData?.slice(0, 2) || [], null, 2));
@@ -60,12 +66,14 @@ export const LineChart = (props) => {
     <TremorLineChart 
       {...props}
       data={validatedData}
+      categories={props.categories}
+      colors={chartColors}
+      index={props.index}
       connectNulls={true}
       enableLegendSlider={false}
       showGridLines={true}
       showAnimation={true}
       className={`${props.className || ''} bg-white text-xs`}
-      colors={chartColors}
       lineThickness={props.lineThickness || 3}
       showXAxis={true}
       showYAxis={true}
@@ -73,14 +81,12 @@ export const LineChart = (props) => {
       enableLegend={true}
       showLegend={props.showLegend !== false}
       showTooltip={props.showTooltip !== false}
-      showGradient={true}
+      showGradient={props.showGradient !== false}
       valueFormatter={props.valueFormatter}
       yAxisWidth={props.yAxisWidth || 60}
-      curveType={props.curveType || "natural"}
+      curveType="linear"
       autoMinValue={true}
-      minValue={0}
       showPoints={props.showPoints !== false}
-      customTooltip={props.customTooltip}
       areaOpacity={0.2}
       fontSize={10}
     />
@@ -109,8 +115,14 @@ export const BarChart = (props) => {
     return newItem;
   });
   
-  // Use provided colors or default mapping
-  const chartColors = props.colors || ["#9b87f5", "#4ade80"];
+  // Use explicitly provided colors for the categories
+  const categoryColors = {
+    "Renta vacacional": "#9b87f5",
+    "Bonos US": "#4ade80"
+  };
+  
+  // Map colors to categories explicitly
+  const chartColors = props.categories?.map(category => categoryColors[category] || "#000") || ["#9b87f5", "#4ade80"];
   
   console.log('BarChart will use colors:', chartColors);
   console.log('BarChart validated data sample:', JSON.stringify(validatedData?.slice(0, 2) || [], null, 2));
@@ -119,10 +131,12 @@ export const BarChart = (props) => {
     <TremorBarChart 
       {...props}
       data={validatedData}
+      categories={props.categories}
+      colors={chartColors}
+      index={props.index}
       showGridLines={true}
       showAnimation={true}
       className={`${props.className || ''} bg-white text-xs`}
-      colors={chartColors}
       showXAxis={true}
       showYAxis={true}
       animationDuration={1000}
@@ -134,7 +148,6 @@ export const BarChart = (props) => {
       yAxisWidth={props.yAxisWidth || 60}
       autoMinValue={true}
       minValue={0}
-      customTooltip={props.customTooltip}
       fontSize={10}
     />
   );

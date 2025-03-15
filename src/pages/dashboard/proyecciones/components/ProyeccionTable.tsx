@@ -24,10 +24,16 @@ export const ProyeccionTable = ({ chartData }: ProyeccionTableProps) => {
             chartData.map((item) => (
               <TableRow key={item.year} className="border-b border-slate-100 hover:bg-slate-50">
                 <TableCell>{item.year_label || `Año ${item.year}`}</TableCell>
-                <TableCell>{formatCurrency(item["Renta vacacional"] || item.airbnbProfit)}</TableCell>
-                <TableCell>{formatCurrency(item["Bonos US"] || item.alternativeInvestment)}</TableCell>
-                <TableCell>{formatCurrency(item.difference)}</TableCell>
-                <TableCell>{item.yearlyROI}%</TableCell>
+                <TableCell className="financial-number">
+                  {formatCurrency(item["Renta vacacional"] || item.airbnbProfit)}
+                </TableCell>
+                <TableCell className="financial-number">
+                  {formatCurrency(item["Bonos US"] || item.alternativeInvestment)}
+                </TableCell>
+                <TableCell className="financial-number">
+                  {formatCurrency(item.difference)}
+                </TableCell>
+                <TableCell className="financial-number">{item.yearlyROI}%</TableCell>
               </TableRow>
             ))
           ) : (

@@ -13,12 +13,12 @@ const useChartData = (rawData: any[]) => {
       return;
     }
 
-    // Procesamos los datos para asegurar que tienen las propiedades correctas
+    // Procesamos los datos para asegurar que tienen las propiedades correctas y son valores numéricos
     const enhancedData = rawData.map(item => ({
       ...item,
       "year_label": `Año ${item.year}`,
-      "Renta vacacional": Number(item.airbnbProfit),
-      "Bonos US": Number(item.alternativeInvestment)
+      "Renta vacacional": Number(item.airbnbProfit || 0),
+      "Bonos US": Number(item.alternativeInvestment || 0)
     }));
     
     console.log("useChartData - Enhanced data:", JSON.stringify(enhancedData.slice(0, 2), null, 2));
