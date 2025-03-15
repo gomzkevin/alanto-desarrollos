@@ -1,12 +1,11 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart2 as LucideBarChart } from 'lucide-react'; // Changed icon to match new chart type
-import { BarChart } from '@/components/ui/chart'; // Import BarChart instead of LineChart
+import { LineChart as LucideLineChart } from 'lucide-react'; // Rename to avoid confusion
+import { LineChart } from '@/components/ui/chart'; // Import from our chart components
 import { Calculator } from '@/components/Calculator';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
@@ -171,7 +170,7 @@ export const ProyeccionesPage = () => {
             <CardHeader>
               <CardTitle>Resultados de la proyección</CardTitle>
               <CardDescription>
-                Comparativa de rendimientos a lo largo del tiempo
+                Compar  ativa de rendimientos a lo largo del tiempo
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
@@ -191,11 +190,11 @@ export const ProyeccionesPage = () => {
                 <TabsContent value="grafica" className="p-6">
                   {chartData.length > 0 ? (
                     <div className="h-[400px] w-full">
-                      <BarChart 
+                      <LineChart 
                         data={chartData}
                         index="year"
                         categories={["Renta vacacional", "Bonos US"]}
-                        colors={["indigo", "teal"]}
+                        colors={["indigo-600", "teal-600"]}
                         valueFormatter={(value) => formatCurrencyShort(value)}
                         showLegend={true}
                         showXAxis={true}
@@ -229,7 +228,7 @@ export const ProyeccionesPage = () => {
                         {chartData.length > 0 ? (
                           chartData.map((item) => (
                             <TableRow key={item.year} className="border-b border-slate-100 hover:bg-slate-50">
-                              <TableCell>Año {item.year}</TableCell>
+                              <TableCell>{item.year}</TableCell>
                               <TableCell>{formatCurrency(item.airbnbProfit)}</TableCell>
                               <TableCell>{formatCurrency(item.alternativeInvestment)}</TableCell>
                               <TableCell>{formatCurrency(item.difference)}</TableCell>
