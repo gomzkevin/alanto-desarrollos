@@ -25,22 +25,24 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           onChange(numericValue);
         }
       } else if (type === 'number') {
-        // For number inputs, ensure we're passing the value as a number
+        // For number inputs, simply pass the numeric value
         const value = e.target.value;
         
-        // Only try to convert to number if there's actually a value
         if (onChange) {
           if (value === '') {
             onChange('');
           } else {
-            // Remove any 'e' prefix if it exists (a common issue)
-            const cleanValue = value.startsWith('e') ? value.substring(1) : value;
-            onChange(cleanValue === '' ? '' : Number(cleanValue));
+            // Safely convert to number
+            const numValue = parseFloat(value);
+            // Check if it's a valid number
+            onChange(isNaN(numValue) ? '' : numValue);
           }
         }
-      } else if (onChange) {
-        // For normal inputs, pass the event value directly
-        onChange(e.target.value);
+      } else {
+        // For regular text inputs, pass the event value directly
+        if (onChange) {
+          onChange(e.target.value);
+        }
       }
     };
 
