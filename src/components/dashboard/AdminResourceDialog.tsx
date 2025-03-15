@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,18 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AmenitiesSelector } from './AmenitiesSelector';
 
 export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones';
+
+interface AdminResourceDialogProps {
+  open?: boolean;
+  onClose?: () => void;
+  resourceType: ResourceType;
+  resourceId?: string;
+  onSave?: () => void;
+  buttonText?: string;
+  onSuccess?: () => void;
+  desarrolloId?: string;
+  lead_id?: string;
+}
 
 interface DesarrolloResource {
   id?: string;

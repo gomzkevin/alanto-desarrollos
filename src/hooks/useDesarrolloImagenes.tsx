@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
@@ -262,7 +263,9 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
       
       const { data, error } = await supabase
         .from('desarrollos')
-        .update({ amenidades: amenities })
+        .update({ 
+          amenidades: amenities 
+        } as any) // Use type assertion to bypass TypeScript checking for this property
         .eq('id', desarrolloId)
         .select()
         .single();
