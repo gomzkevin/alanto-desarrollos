@@ -261,11 +261,13 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
     mutationFn: async (amenities: string[]) => {
       if (!desarrolloId) throw new Error('Desarrollo ID is required');
       
+      console.log('Updating amenities to:', amenities);
+      
       const { data, error } = await supabase
         .from('desarrollos')
         .update({ 
           amenidades: amenities 
-        } as any) // Use type assertion to bypass TypeScript checking for this property
+        })
         .eq('id', desarrolloId)
         .select()
         .single();

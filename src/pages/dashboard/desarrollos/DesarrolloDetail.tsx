@@ -1,7 +1,8 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { ChevronLeft, Home, MapPin, Clock, CalendarClock, ImageIcon } from 'lucide-react';
+import { ChevronLeft, Home, MapPin, Clock, CalendarClock, ImageIcon, Package } from 'lucide-react';
 import PrototipoCard from '@/components/dashboard/PrototipoCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,8 +11,11 @@ import { Tables } from '@/integrations/supabase/types';
 import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 import DesarrolloImageCarousel from '@/components/dashboard/DesarrolloImageCarousel';
 import { useUserRole } from '@/hooks';
+import { Badge } from '@/components/ui/badge';
 
-type Desarrollo = Tables<"desarrollos">;
+type Desarrollo = Tables<"desarrollos"> & {
+  amenidades?: string[] | string;
+};
 
 const fetchDesarrolloById = async (id: string) => {
   console.log('Fetching desarrollo with ID:', id);
@@ -76,6 +80,22 @@ const DesarrolloDetailPage = () => {
   
   const isLoading = isLoadingDesarrollo || isLoadingPrototipos;
   const hasError = errorDesarrollo || errorPrototipos;
+  
+  // Parse amenidades if they exist
+  const parseAmenidades = (amenidades: string[] | string | undefined): string[] => {
+    if (!amenidades) return [];
+    
+    if (Array.isArray(amenidades)) {
+      return amenidades;
+    }
+    
+    try {
+      return typeof amenidades === 'string' ? JSON.parse(amenidades) : [];
+    } catch (e) {
+      console.error('Error parsing amenidades:', e);
+      return [];
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -134,6 +154,23 @@ const DesarrolloDetailPage = () => {
               
               {desarrollo.descripcion && (
                 <p className="text-slate-700 mt-4">{desarrollo.descripcion}</p>
+              )}
+              
+              {/* Amenidades section */}
+              {desarrollo.amenidades && parseAmenidades(desarrollo.amenidades).length > 0 && (
+                <div className="mt-6">
+                  <h2 className="text-xl font-semibold flex items-center mb-4">
+                    <Package className="h-5 w-5 mr-2 text-indigo-600" />
+                    Amenidades
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    {parseAmenidades(desarrollo.amenidades).map((amenidad, index) => (
+                      <Badge key={index} className="bg-indigo-100 text-indigo-800 hover:bg-indigo-200">
+                        {amenidad}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
               )}
               
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg mt-6">

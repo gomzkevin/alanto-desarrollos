@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -61,7 +60,7 @@ interface DesarrolloResource {
   es_impuestos_porcentaje?: boolean;
   adr_base?: number;
   ocupacion_anual?: number;
-  amenidades?: string[];
+  amenidades?: string[] | string;
 }
 
 interface PrototipoResource {
@@ -541,6 +540,8 @@ const AdminResourceDialog = ({
         if (desarrolloData.amenidades === undefined) {
           desarrolloData.amenidades = selectedAmenities;
         }
+        
+        console.log('Saving desarrollo with amenities:', selectedAmenities);
         
         if (!resourceId) {
           result = await supabase
