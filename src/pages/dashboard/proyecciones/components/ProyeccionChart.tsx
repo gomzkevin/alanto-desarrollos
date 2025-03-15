@@ -1,4 +1,5 @@
 
+import { useEffect } from 'react';
 import { LineChart } from '@/components/ui/chart';
 import { formatCurrencyShort } from '@/lib/utils';
 
@@ -7,6 +8,13 @@ interface ProyeccionChartProps {
 }
 
 export const ProyeccionChart = ({ chartData }: ProyeccionChartProps) => {
+  useEffect(() => {
+    if (chartData.length > 0) {
+      console.log("ProyeccionChart - Sample data point:", chartData[0]);
+      console.log("ProyeccionChart - Categories being used:", ["Renta vacacional", "Bonos US"]);
+    }
+  }, [chartData]);
+
   if (chartData.length === 0) {
     return (
       <div className="flex items-center justify-center h-[400px] text-slate-500">
@@ -30,6 +38,9 @@ export const ProyeccionChart = ({ chartData }: ProyeccionChartProps) => {
         showAnimation={true}
         showTooltip={true}
         showGradient={true}
+        lineThickness={3}
+        showPoints={true}
+        curveType="linear"
         className="h-[400px] text-xs"
       />
     </div>

@@ -4,11 +4,12 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ProyeccionFilters } from './components/ProyeccionFilters';
 import { ProyeccionCalculator } from './components/ProyeccionCalculator';
 import { ProyeccionResults } from './components/ProyeccionResults';
+import { useChartData } from '@/hooks';
 
 export const ProyeccionesPage = () => {
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('global');
   const [selectedPrototipoId, setSelectedPrototipoId] = useState<string>('global');
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [rawChartData, setRawChartData] = useState<any[]>([]);
   const [summaryData, setSummaryData] = useState({
     propertyValue: 3500000,
     airbnbProfit: 5655683,
@@ -17,6 +18,9 @@ export const ProyeccionesPage = () => {
   });
   const [activeTab, setActiveTab] = useState('grafica');
   const [shouldCalculate, setShouldCalculate] = useState(false);
+  
+  // Usamos el hook para procesar los datos
+  const chartData = useChartData(rawChartData);
 
   const handleDesarrolloChange = (value: string) => {
     setSelectedDesarrolloId(value);
@@ -28,28 +32,18 @@ export const ProyeccionesPage = () => {
   };
 
   const handleChartDataUpdate = (data: any[]) => {
-    console.log("Raw chart data received:", JSON.stringify(data, null, 2));
+    console.log("Raw chart data received:", JSON.stringify(data.slice(0, 2), null, 2));
+    setRawChartData(data);
     
-    const enhancedData = data.map(item => ({
-      ...item,
-      "year_label": `Año ${item.year}`,
-      "Renta vacacional": item.airbnbProfit,
-      "Bonos US": item.alternativeInvestment
-    }));
-    
-    console.log("Enhanced chart data:", JSON.stringify(enhancedData, null, 2));
-    
-    setChartData(enhancedData);
-    
-    if (enhancedData.length > 0) {
-      const lastYear = enhancedData[enhancedData.length - 1];
-      const sumROI = enhancedData.reduce((acc, item) => acc + parseFloat(item.yearlyROI), 0);
+    if (data.length > 0) {
+      const lastYear = data[data.length - 1];
+      const sumROI = data.reduce((acc, item) => acc + parseFloat(item.yearlyROI), 0);
       
       setSummaryData({
-        propertyValue: enhancedData[0].initialPropertyValue || 3500000,
-        airbnbProfit: lastYear.airbnbProfit - enhancedData[0].initialPropertyValue,
-        altReturn: lastYear.alternativeInvestment - enhancedData[0].initialPropertyValue,
-        avgROI: sumROI / enhancedData.length
+        propertyValue: data[0].initialPropertyValue || 3500000,
+        airbnbProfit: lastYear.airbnbProfit - data[0].initialPropertyValue,
+        altReturn: lastYear.alternativeInvestment - data[0].initialPropertyValue,
+        avgROI: sumROI / data.length
       });
     }
   };
@@ -59,10 +53,10 @@ export const ProyeccionesPage = () => {
   };
 
   useEffect(() => {
-    if (shouldCalculate && chartData.length > 0) {
+    if (shouldCalculate && rawChartData.length > 0) {
       setShouldCalculate(false);
     }
-  }, [chartData, shouldCalculate]);
+  }, [rawChartData, shouldCalculate]);
 
   const getFileName = () => {
     return `Proyeccion_${selectedDesarrolloId !== "global" ? selectedDesarrolloId : 'Global'}_${selectedPrototipoId !== "global" ? selectedPrototipoId : 'Todos'}`;
