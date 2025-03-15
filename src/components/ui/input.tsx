@@ -2,27 +2,29 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
   formatCurrency?: boolean;
+  onChange?: React.ChangeEventHandler<HTMLInputElement>;
+  value?: string | number | readonly string[];
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, formatCurrency = false, ...props }, ref) => {
+  ({ className, type, formatCurrency = false, onChange, value, ...props }, ref) => {
     // For currency formatting - handle display value
     const displayValue = React.useMemo(() => {
-      if (formatCurrency && props.value !== undefined && props.value !== '') {
+      if (formatCurrency && value !== undefined && value !== '') {
         return new Intl.NumberFormat('es-MX', {
           style: 'currency',
           currency: 'MXN',
           maximumFractionDigits: 0
-        }).format(Number(props.value));
+        }).format(Number(value));
       }
-      return props.value;
-    }, [formatCurrency, props.value]);
+      return value;
+    }, [formatCurrency, value]);
 
     // Create a custom onChange handler for currency formatting
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (props.onChange) {
+      if (onChange) {
         if (formatCurrency) {
           // For currency inputs, extract only numbers
           const numericValue = e.target.value.replace(/[^0-9]/g, '');
@@ -32,10 +34,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             writable: true,
             value: { ...e.target, value: numericValue }
           });
-          props.onChange(syntheticEvent);
+          onChange(syntheticEvent);
         } else {
           // For normal inputs, pass the event as is
-          props.onChange(e);
+          onChange(e);
         }
       }
     };
@@ -49,8 +51,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         ref={ref}
         {...props}
-        value={formatCurrency ? displayValue : props.value}
-        onChange={formatCurrency ? handleInputChange : props.onChange}
+        value={formatCurrency ? displayValue : value}
+        onChange={handleInputChange}
       />
     )
   }
