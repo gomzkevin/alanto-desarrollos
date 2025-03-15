@@ -1,10 +1,12 @@
 
-import React from 'react';
 import { DialogContent } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { FormValues, ResourceType } from '../types';
+import { FieldDefinition } from '../types';
 import GenericForm from '../GenericForm';
 import { DialogHeader } from './DialogHeader';
 import { DialogFooter } from './DialogFooter';
-import { FieldDefinition, FormValues, ResourceType } from '../types';
+import { Loader2 } from 'lucide-react';
 
 interface ResourceDialogContentProps {
   isOpen: boolean;
@@ -15,12 +17,12 @@ interface ResourceDialogContentProps {
   isSubmitting: boolean;
   resource: FormValues | null;
   fields: FieldDefinition[];
-  selectedAmenities: string[];
+  selectedAmenities?: string[];
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleSelectChange: (name: string, value: string) => void;
   handleSwitchChange: (name: string, checked: boolean) => void;
-  handleLeadSelect: (leadId: string, leadName: string) => void;
-  handleAmenitiesChange: (amenities: string[]) => void;
+  handleLeadSelect?: (leadId: string, leadName: string) => void;
+  handleAmenitiesChange?: (amenities: string[]) => void;
   saveResource: () => void;
   desarrolloId?: string;
   prototipo_id?: string;
@@ -35,6 +37,7 @@ interface ResourceDialogContentProps {
     telefono: string;
   };
   onNewClientDataChange?: (field: string, value: string) => void;
+  onDesarrolloSelect?: (desarrolloId: string) => void;
 }
 
 export function ResourceDialogContent({
@@ -58,56 +61,82 @@ export function ResourceDialogContent({
   lead_id,
   handleImageUpload,
   uploading,
-  isExistingClient = true,
+  isExistingClient,
   onExistingClientChange,
   newClientData,
-  onNewClientDataChange
+  onNewClientDataChange,
+  onDesarrolloSelect
 }: ResourceDialogContentProps) {
-  if (!isOpen) return null;
+
+  const getResourceTypeName = () => {
+    switch (resourceType) {
+      case 'desarrollos':
+        return 'Desarrollo';
+      case 'prototipos':
+        return 'Prototipo';
+      case 'leads':
+        return 'Lead';
+      case 'cotizaciones':
+        return 'Cotización';
+      case 'unidades':
+        return 'Unidad';
+      default:
+        return 'Recurso';
+    }
+  };
 
   return (
-    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-      <DialogHeader 
-        resourceType={resourceType} 
-        resourceId={resourceId}
+    <DialogContent className="sm:max-w-[600px]">
+      <DialogHeader
+        title={`${resourceId ? 'Editar' : 'Nuevo'} ${getResourceTypeName()}`}
+        description={`${resourceId ? 'Editar la información del' : 'Crear un nuevo'} ${getResourceTypeName().toLowerCase()}`}
       />
       
       {isLoading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin h-8 w-8 border-2 border-primary rounded-full border-t-transparent"></div>
+        <div className="py-6 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
         </div>
       ) : (
-        <>
-          <GenericForm
-            fields={fields}
-            resource={resource}
-            handleChange={handleChange}
-            handleSelectChange={handleSelectChange}
-            handleSwitchChange={handleSwitchChange}
-            resourceType={resourceType}
-            resourceId={resourceId}
-            handleAmenitiesChange={handleAmenitiesChange}
-            selectedAmenities={selectedAmenities}
-            desarrolloId={desarrolloId}
-            prototipo_id={prototipo_id}
-            lead_id={lead_id}
-            handleLeadSelect={handleLeadSelect}
-            handleImageUpload={handleImageUpload}
-            uploading={uploading}
-            isExistingClient={isExistingClient}
-            onExistingClientChange={onExistingClientChange}
-            newClientData={newClientData}
-            onNewClientDataChange={onNewClientDataChange}
-          />
-          
-          <DialogFooter
-            onClose={onClose}
-            onSave={saveResource}
-            isSubmitting={isSubmitting}
-            disabled={!resource}
-          />
-        </>
+        <GenericForm
+          fields={fields}
+          resource={resource}
+          handleChange={handleChange}
+          handleSelectChange={handleSelectChange}
+          handleSwitchChange={handleSwitchChange}
+          resourceType={resourceType}
+          handleAmenitiesChange={handleAmenitiesChange}
+          selectedAmenities={selectedAmenities}
+          resourceId={resourceId}
+          desarrolloId={desarrolloId}
+          prototipo_id={prototipo_id}
+          lead_id={lead_id}
+          handleLeadSelect={handleLeadSelect}
+          handleImageUpload={handleImageUpload}
+          uploading={uploading}
+          isExistingClient={isExistingClient}
+          onExistingClientChange={onExistingClientChange}
+          newClientData={newClientData}
+          onNewClientDataChange={onNewClientDataChange}
+          onDesarrolloSelect={onDesarrolloSelect}
+        />
       )}
+
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>Cancelar</Button>
+        <Button 
+          onClick={saveResource} 
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Guardando...
+            </>
+          ) : (
+            'Guardar'
+          )}
+        </Button>
+      </DialogFooter>
     </DialogContent>
   );
 }

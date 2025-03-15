@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ const AdminResourceDialog = ({
     email: '',
     telefono: ''
   });
+  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>(desarrolloId || '');
   
   const isOpen = open !== undefined ? open : dialogOpen;
   
@@ -60,13 +62,38 @@ const AdminResourceDialog = ({
   } = useResourceForm({
     resourceType,
     resourceId,
-    desarrolloId,
+    desarrolloId: selectedDesarrolloId || desarrolloId,
     lead_id,
     prototipo_id,
     defaultValues,
     onSuccess,
     onSave
   });
+
+  // Update selectedDesarrolloId when resource changes
+  useEffect(() => {
+    if (resource && resourceType === 'cotizaciones') {
+      const cotizacionData = resource as any;
+      if (cotizacionData.desarrollo_id) {
+        setSelectedDesarrolloId(cotizacionData.desarrollo_id);
+      }
+    }
+  }, [resource, resourceType]);
+
+  // Custom function to handle desarrollo selection
+  const handleDesarrolloSelect = (desarrolloId: string) => {
+    setSelectedDesarrolloId(desarrolloId);
+    if (resource) {
+      // Update resource with new desarrollo_id
+      const updatedResource = {
+        ...resource,
+        desarrollo_id: desarrolloId,
+        // Reset prototipo_id when desarrollo changes
+        prototipo_id: ''
+      };
+      setResource(updatedResource);
+    }
+  };
 
   const handleSave = async () => {
     if (resource) {
@@ -258,7 +285,7 @@ const AdminResourceDialog = ({
           handleLeadSelect={handleLeadSelect}
           handleAmenitiesChange={handleAmenitiesChange}
           saveResource={handleSave}
-          desarrolloId={desarrolloId}
+          desarrolloId={selectedDesarrolloId || desarrolloId}
           prototipo_id={prototipo_id}
           lead_id={lead_id}
           handleImageUpload={handleImageUpload}
@@ -267,6 +294,7 @@ const AdminResourceDialog = ({
           onExistingClientChange={setIsExistingClient}
           newClientData={newClientData}
           onNewClientDataChange={handleNewClientDataChange}
+          onDesarrolloSelect={handleDesarrolloSelect}
         />
       </Dialog>
     </>
