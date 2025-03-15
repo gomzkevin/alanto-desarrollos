@@ -11,6 +11,9 @@ import {
   FormValues, 
   ResourceType,
   DesarrolloResource,
+  PrototipoResource,
+  LeadResource,
+  CotizacionResource,
   UnidadResource
 } from './types';
 import { supabase } from '@/integrations/supabase/client';
@@ -127,8 +130,8 @@ const AdminResourceDialog = ({
           if (typeof desarrolloResource.amenidades === 'string') {
             const parsedAmenities = JSON.parse(desarrolloResource.amenidades as string);
             setSelectedAmenities(parsedAmenities);
-          } else {
-            setSelectedAmenities(desarrolloResource.amenidades as unknown as string[]);
+          } else if (Array.isArray(desarrolloResource.amenidades)) {
+            setSelectedAmenities(desarrolloResource.amenidades as string[]);
           }
         } catch (error) {
           console.error('Error parsing amenidades:', error);
@@ -266,7 +269,7 @@ const AdminResourceDialog = ({
           const dataToSave = { ...desarrolloData };
           
           if (selectedAmenities.length > 0) {
-            dataToSave.amenidades = selectedAmenities as any;
+            dataToSave.amenidades = selectedAmenities as unknown as Json;
           }
           
           response = await supabase
@@ -275,27 +278,31 @@ const AdminResourceDialog = ({
             .eq('id', resourceId)
             .select();
         } else if (resourceType === 'prototipos') {
+          const prototipoData = formData as PrototipoResource;
           response = await supabase
             .from('prototipos')
-            .update(formData)
+            .update(prototipoData)
             .eq('id', resourceId)
             .select();
         } else if (resourceType === 'leads') {
+          const leadData = formData as LeadResource;
           response = await supabase
             .from('leads')
-            .update(formData)
+            .update(leadData)
             .eq('id', resourceId)
             .select();
         } else if (resourceType === 'cotizaciones') {
+          const cotizacionData = formData as CotizacionResource;
           response = await supabase
             .from('cotizaciones')
-            .update(formData)
+            .update(cotizacionData)
             .eq('id', resourceId)
             .select();
         } else if (resourceType === 'unidades') {
+          const unidadData = formData as UnidadResource;
           response = await supabase
             .from('unidades')
-            .update(formData)
+            .update(unidadData)
             .eq('id', resourceId)
             .select();
         }
@@ -304,7 +311,7 @@ const AdminResourceDialog = ({
           const desarrolloData = formData as DesarrolloResource;
           const dataToSave = { ...desarrolloData };
           
-          const amenidadesJson = JSON.stringify(selectedAmenities) as Json;
+          const amenidadesJson = JSON.stringify(selectedAmenities) as unknown as Json;
           dataToSave.amenidades = selectedAmenities.length > 0 ? amenidadesJson : null;
           
           response = await supabase
@@ -312,28 +319,32 @@ const AdminResourceDialog = ({
             .insert(dataToSave)
             .select();
         } else if (resourceType === 'prototipos') {
+          const prototipoData = formData as PrototipoResource;
           response = await supabase
             .from('prototipos')
             .insert({
-              ...formData,
+              ...prototipoData,
               // Si se crea un nuevo prototipo, las unidades disponibles son iguales al total
-              unidades_disponibles: (formData as any).total_unidades || 0
+              unidades_disponibles: prototipoData.total_unidades || 0
             })
             .select();
         } else if (resourceType === 'leads') {
+          const leadData = formData as LeadResource;
           response = await supabase
             .from('leads')
-            .insert(formData)
+            .insert(leadData)
             .select();
         } else if (resourceType === 'cotizaciones') {
+          const cotizacionData = formData as CotizacionResource;
           response = await supabase
             .from('cotizaciones')
-            .insert(formData)
+            .insert(cotizacionData)
             .select();
         } else if (resourceType === 'unidades') {
+          const unidadData = formData as UnidadResource;
           response = await supabase
             .from('unidades')
-            .insert(formData)
+            .insert(unidadData)
             .select();
         }
       }

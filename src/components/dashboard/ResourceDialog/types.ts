@@ -1,3 +1,6 @@
+
+import { Json } from '@/integrations/supabase/types';
+
 export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones' | 'unidades';
 
 export interface AdminResourceDialogProps {
@@ -39,7 +42,7 @@ export interface DesarrolloResource {
   es_impuestos_porcentaje?: boolean;
   adr_base?: number;
   ocupacion_anual?: number;
-  amenidades?: string[] | string;
+  amenidades?: string[] | Json;
 }
 
 export interface PrototipoResource {
@@ -58,7 +61,7 @@ export interface PrototipoResource {
   desarrollo_id: string;
   descripcion?: string;
   imagen_url?: string;
-  caracteristicas?: object | string;
+  caracteristicas?: Json;
 }
 
 export interface UnidadResource {
