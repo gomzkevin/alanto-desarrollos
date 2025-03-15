@@ -167,6 +167,7 @@ export type Database = {
       desarrollos: {
         Row: {
           adr_base: number | null
+          amenidades: Json | null
           avance_porcentaje: number | null
           comision_operador: number | null
           descripcion: string | null
@@ -191,6 +192,7 @@ export type Database = {
         }
         Insert: {
           adr_base?: number | null
+          amenidades?: Json | null
           avance_porcentaje?: number | null
           comision_operador?: number | null
           descripcion?: string | null
@@ -215,6 +217,7 @@ export type Database = {
         }
         Update: {
           adr_base?: number | null
+          amenidades?: Json | null
           avance_porcentaje?: number | null
           comision_operador?: number | null
           descripcion?: string | null

@@ -586,6 +586,7 @@ const AdminResourceDialog = ({
               es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje,
               adr_base: desarrolloData.adr_base,
               ocupacion_anual: desarrolloData.ocupacion_anual,
+              amenidades: amenidadesJson,
             });
         } else {
           result = await supabase
@@ -612,6 +613,7 @@ const AdminResourceDialog = ({
               es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje,
               adr_base: desarrolloData.adr_base,
               ocupacion_anual: desarrolloData.ocupacion_anual,
+              amenidades: amenidadesJson,
             })
             .eq('id', resourceId);
         }

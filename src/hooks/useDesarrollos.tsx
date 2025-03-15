@@ -3,7 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
-export type Desarrollo = Tables<"desarrollos">;
+export type Desarrollo = Tables<"desarrollos"> & {
+  amenidades?: string[] | string;
+};
 
 // Define extended type with prototipos relation
 export type ExtendedDesarrollo = Desarrollo & {
