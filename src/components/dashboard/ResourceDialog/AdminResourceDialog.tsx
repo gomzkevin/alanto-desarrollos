@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -35,7 +34,6 @@ const AdminResourceDialog = ({
     telefono: ''
   });
   
-  // Control de estado del diálogo
   const isOpen = open !== undefined ? open : dialogOpen;
   
   const handleOpenChange = (newOpen: boolean) => {
@@ -45,10 +43,8 @@ const AdminResourceDialog = ({
     setDialogOpen(newOpen);
   };
 
-  // Get form fields based on resource type
   const fields = useResourceFields(resourceType);
 
-  // Use resource form hook
   const {
     isLoading,
     isSubmitting,
@@ -72,13 +68,59 @@ const AdminResourceDialog = ({
     onSave
   });
 
-  // Handler for save button
   const handleSave = async () => {
     if (resource) {
-      // Si no es un cliente existente y estamos creando una cotización, crear el lead primero
+      if (resourceType === 'cotizaciones') {
+        const cotizacionData = resource as any;
+        
+        if (!isExistingClient && !resourceId) {
+          if (!newClientData.nombre) {
+            toast({
+              title: 'Error',
+              description: 'El nombre del cliente es obligatorio',
+              variant: 'destructive',
+            });
+            return;
+          }
+        } else if (isExistingClient && !cotizacionData.lead_id) {
+          toast({
+            title: 'Error',
+            description: 'Debe seleccionar un cliente',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        if (!cotizacionData.desarrollo_id) {
+          toast({
+            title: 'Error',
+            description: 'Debe seleccionar un desarrollo',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        if (!cotizacionData.prototipo_id) {
+          toast({
+            title: 'Error',
+            description: 'Debe seleccionar un prototipo',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+      
       if (!isExistingClient && resourceType === 'cotizaciones' && !resourceId) {
         try {
-          // Crear nuevo lead
+          if (!newClientData.nombre) {
+            toast({
+              title: 'Error',
+              description: 'El nombre del cliente es obligatorio',
+              variant: 'destructive',
+            });
+            return;
+          }
+          
           const { data: newLead, error: leadError } = await supabase
             .from('leads')
             .insert({
@@ -93,14 +135,7 @@ const AdminResourceDialog = ({
           
           if (leadError) throw leadError;
           
-          // Actualizar el resource con el ID del nuevo lead
           if (newLead) {
-            setResource({
-              ...resource,
-              lead_id: newLead.id
-            });
-            
-            // Guardar la cotización con el nuevo lead
             const updatedResource = {
               ...resource,
               lead_id: newLead.id
@@ -121,7 +156,6 @@ const AdminResourceDialog = ({
           });
         }
       } else {
-        // Flujo normal para clientes existentes o recursos que no son cotizaciones
         saveResource(resource).then(success => {
           if (success) {
             handleOpenChange(false);
@@ -130,15 +164,12 @@ const AdminResourceDialog = ({
       }
     }
   };
-  
-  // Reset client type when dialog opens/closes
+
   useEffect(() => {
     if (isOpen) {
-      // Si hay un lead_id proporcionado o en el recurso, establecer como cliente existente
       const hasLeadId = lead_id || (resource && (resource as any).lead_id);
       setIsExistingClient(!!hasLeadId);
     } else {
-      // Resetear al cerrar
       setNewClientData({
         nombre: '',
         email: '',
@@ -147,7 +178,6 @@ const AdminResourceDialog = ({
     }
   }, [isOpen, lead_id, resource]);
 
-  // Handler for image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
@@ -190,17 +220,15 @@ const AdminResourceDialog = ({
     }
   };
 
-  // Handler for change in new client data
   const handleNewClientDataChange = (field: string, value: string) => {
     setNewClientData(prev => ({
       ...prev,
       [field]: value
     }));
   };
-  
+
   return (
     <>
-      {/* Botón para abrir el diálogo si no se proporciona 'open' */}
       {open === undefined && (
         <Button
           variant={buttonVariant as any}

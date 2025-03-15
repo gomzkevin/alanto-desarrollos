@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { FormValues, ResourceType } from '../types';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,7 +31,6 @@ export function useResourceForm({
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Fetch resource data
   useEffect(() => {
     const fetchResource = async () => {
       setIsLoading(true);
@@ -70,7 +68,6 @@ export function useResourceForm({
           
           setResource(data);
         } else {
-          // Set default values based on resource type
           if (resourceType === 'desarrollos') {
             setResource({
               nombre: '',
@@ -149,7 +146,6 @@ export function useResourceForm({
     fetchResource();
   }, [resourceId, resourceType, desarrolloId, lead_id, prototipo_id, defaultValues, toast]);
 
-  // Set amenities for desarrollos
   useEffect(() => {
     if (resource && resourceType === 'desarrollos') {
       const desarrolloResource = resource as any;
@@ -168,7 +164,6 @@ export function useResourceForm({
     }
   }, [resource, resourceType]);
 
-  // Form change handlers
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!resource) return;
     
@@ -207,7 +202,6 @@ export function useResourceForm({
   const handleLeadSelect = (leadId: string, leadName: string) => {
     if (!resource) return;
     
-    // Para unidades, guardar tanto el ID como el nombre del comprador
     if (resourceType === 'unidades') {
       setResource({
         ...resource,
@@ -215,7 +209,6 @@ export function useResourceForm({
         comprador_nombre: leadName
       } as any);
     } else {
-      // Para otros recursos, solo guardar el ID
       setResource({
         ...resource,
         lead_id: leadId
@@ -227,15 +220,38 @@ export function useResourceForm({
     setSelectedAmenities(amenities);
   };
 
-  // Save resource
   const saveResource = async (formData: FormValues) => {
     setIsSubmitting(true);
     
     try {
       let response;
       
+      if (resourceType === 'cotizaciones') {
+        const cotizacionData = formData as any;
+        
+        if (!cotizacionData.lead_id) {
+          throw new Error('Debe seleccionar un cliente');
+        }
+        
+        if (!cotizacionData.desarrollo_id) {
+          throw new Error('Debe seleccionar un desarrollo');
+        }
+        
+        if (!cotizacionData.prototipo_id) {
+          throw new Error('Debe seleccionar un prototipo');
+        }
+        
+        if (cotizacionData.lead_id && cotizacionData.desarrollo_id && cotizacionData.prototipo_id) {
+          response = await supabase
+            .from('cotizaciones')
+            .insert(cotizacionData)
+            .select();
+        } else {
+          throw new Error('Todos los campos obligatorios deben tener un valor válido');
+        }
+      }
+      
       if (resourceId) {
-        // Update existing resource
         if (resourceType === 'desarrollos') {
           const desarrolloData = formData as any;
           const dataToSave = { ...desarrolloData };
@@ -279,7 +295,6 @@ export function useResourceForm({
             .select();
         }
       } else {
-        // Create new resource
         if (resourceType === 'desarrollos') {
           const desarrolloData = formData as any;
           const dataToSave = { ...desarrolloData };
@@ -297,7 +312,6 @@ export function useResourceForm({
             .from('prototipos')
             .insert({
               ...prototipoData,
-              // Si se crea un nuevo prototipo, las unidades disponibles son iguales al total
               unidades_disponibles: prototipoData.total_unidades || 0
             })
             .select();
