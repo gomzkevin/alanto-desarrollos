@@ -4,8 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart3 } from 'lucide-react';
-import { BarChart } from '@/components/ui/chart';
+import { LineChart } from '@/components/ui/chart';
 import { Calculator } from '@/components/Calculator';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
@@ -191,7 +190,7 @@ export const ProyeccionesPage = () => {
                 <TabsContent value="grafica" className="p-6">
                   {chartData.length > 0 ? (
                     <div className="h-[400px] w-full">
-                      <BarChart 
+                      <LineChart 
                         data={chartData}
                         index="year_label"
                         categories={["Renta vacacional", "Bonos US"]}
@@ -203,6 +202,7 @@ export const ProyeccionesPage = () => {
                         yAxisWidth={60}
                         showAnimation={true}
                         showTooltip={true}
+                        showGradient={true}
                         className="h-[400px] text-xs"
                       />
                     </div>

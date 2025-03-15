@@ -38,13 +38,13 @@ export const LineChart = (props) => {
   const getColorMapping = () => {
     const categories = props.categories || [];
     const colorMap = {
-      "Renta vacacional": "indigo",
-      "Bonos US": "teal"
+      "Renta vacacional": "#9b87f5", // Indigo/morado para Airbnb
+      "Bonos US": "#4ade80"          // Verde para inversión alternativa
     };
     
     // If no categories provided or custom colors are provided, use defaults
     if (categories.length === 0 || props.colors) {
-      return props.colors || ["indigo", "teal"];
+      return props.colors || ["#9b87f5", "#4ade80"];
     }
     
     // Map each category to its color
@@ -65,21 +65,23 @@ export const LineChart = (props) => {
       className={`${props.className || ''} bg-white text-xs`}
       colors={chartColors}
       // Ensure line thickness is visible
-      lineThickness={8}
+      lineThickness={2}
       showXAxis={true}
       showYAxis={true}
       animationDuration={1000}
       enableLegend={true}
       showLegend={props.showLegend !== false}
       showTooltip={props.showTooltip !== false}
-      showGradient={false}
+      showGradient={true}
       valueFormatter={props.valueFormatter}
       yAxisWidth={props.yAxisWidth || 60}
-      curveType="linear"
+      curveType="natural"
       autoMinValue={true}
       minValue={0}
       showPoints={true}
       customTooltip={props.customTooltip}
+      areaOpacity={0.2}
+      fontSize={10}
     />
   );
 };
@@ -94,8 +96,8 @@ export const BarChart = (props) => {
   const getColorMapping = () => {
     const categories = props.categories || [];
     const colorMap = {
-      "Renta vacacional": "#9b87f5", // Airbnb purple color
-      "Bonos US": "#4ade80"          // Soft green color for alternative investment
+      "Renta vacacional": "#9b87f5", // Indigo/morado para Airbnb
+      "Bonos US": "#4ade80"          // Verde para inversión alternativa
     };
     
     // If no categories provided or custom colors are provided, use defaults
