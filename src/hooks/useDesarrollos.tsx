@@ -46,16 +46,45 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       // Process desarrollos to handle JSON amenidades
       const processedDesarrollos = desarrollos.map(desarrollo => {
         // Parse amenidades from JSON to string array if it exists
+        let amenidades: string[] | null = null;
+        
+        // Check if amenidades exists and handle different possible formats
+        if (desarrollo.amenidades) {
+          if (Array.isArray(desarrollo.amenidades)) {
+            // If it's already an array, convert all items to strings
+            amenidades = desarrollo.amenidades.map(item => String(item));
+          } else if (typeof desarrollo.amenidades === 'string') {
+            // If it's a JSON string, parse it
+            try {
+              const parsed = JSON.parse(desarrollo.amenidades);
+              if (Array.isArray(parsed)) {
+                amenidades = parsed.map(item => String(item));
+              }
+            } catch (e) {
+              // If parsing fails, use the string as a single item array
+              amenidades = [desarrollo.amenidades];
+            }
+          } else {
+            // Handle object case by converting to array of strings
+            const jsonObj = desarrollo.amenidades as Json;
+            
+            // For objects we'll extract their values as strings, if they have an id property
+            if (typeof jsonObj === 'object' && jsonObj !== null) {
+              if (Array.isArray(jsonObj)) {
+                amenidades = jsonObj.map(item => String(item));
+              } else {
+                // Just use the keys if it's a regular object
+                amenidades = Object.values(jsonObj).map(val => String(val));
+              }
+            }
+          }
+        }
+        
         const processedDesarrollo: ExtendedDesarrollo = {
           ...desarrollo,
-          amenidades: desarrollo.amenidades 
-            ? (Array.isArray(desarrollo.amenidades) 
-                ? desarrollo.amenidades 
-                : typeof desarrollo.amenidades === 'string' 
-                  ? JSON.parse(desarrollo.amenidades)
-                  : desarrollo.amenidades as string[])
-            : null
+          amenidades
         };
+        
         return processedDesarrollo;
       });
       
