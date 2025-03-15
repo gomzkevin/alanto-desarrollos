@@ -293,7 +293,8 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
             <Input 
               type="number" 
               value={nightlyRate} 
-              onChange={(e) => setNightlyRate(parseInt(e.target.value) || 0)}
+              formatCurrency={true}
+              onChange={(value) => setNightlyRate(value)}
               className="border border-slate-300"
             />
           </div>
