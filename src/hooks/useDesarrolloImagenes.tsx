@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './use-toast';
@@ -12,11 +11,36 @@ export type DesarrolloImagen = {
   created_at: string;
 };
 
+interface Desarrollo {
+  id: string;
+  nombre: string;
+  ubicacion: string;
+  total_unidades: number;
+  unidades_disponibles: number;
+  avance_porcentaje?: number;
+  fecha_inicio?: string;
+  fecha_entrega?: string;
+  descripcion?: string;
+  imagen_url?: string;
+  moneda?: string;
+  comision_operador?: number;
+  mantenimiento_valor?: number;
+  es_mantenimiento_porcentaje?: boolean;
+  gastos_fijos?: number;
+  es_gastos_fijos_porcentaje?: boolean;
+  gastos_variables?: number;
+  es_gastos_variables_porcentaje?: boolean;
+  impuestos?: number;
+  es_impuestos_porcentaje?: boolean;
+  adr_base?: number;
+  ocupacion_anual?: number;
+  amenidades?: string[] | string;
+}
+
 export const useDesarrolloImagenes = (desarrolloId?: string) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
-  // Function to fetch images for a specific desarrollo
   const fetchImages = async (): Promise<DesarrolloImagen[]> => {
     if (!desarrolloId) return [];
     
@@ -34,21 +58,18 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
     return data as DesarrolloImagen[];
   };
   
-  // Query to fetch the images
   const imagesQuery = useQuery({
     queryKey: ['desarrollo-imagenes', desarrolloId],
     queryFn: fetchImages,
     enabled: !!desarrolloId,
   });
   
-  // Upload image mutation
   const uploadImageMutation = useMutation({
     mutationFn: async (file: File) => {
       if (!desarrolloId) throw new Error('Desarrollo ID is required');
       
       const fileName = `${desarrolloId}/${Date.now()}-${file.name}`;
       
-      // 1. Upload to storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('desarrollo-images')
         .upload(fileName, file);
@@ -58,14 +79,12 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
         throw uploadError;
       }
       
-      // 2. Get public URL
       const { data: publicUrlData } = supabase.storage
         .from('desarrollo-images')
         .getPublicUrl(fileName);
       
       const url = publicUrlData.publicUrl;
       
-      // 3. Save to database
       const { data: imageData, error: imageError } = await supabase
         .from('desarrollo_imagenes')
         .insert([{
@@ -89,7 +108,6 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
         title: "Imagen subida",
         description: "La imagen se ha guardado correctamente.",
       });
-      // Invalidate query to refetch images
       queryClient.invalidateQueries({ queryKey: ['desarrollo-imagenes', desarrolloId] });
     },
     onError: (error) => {
@@ -101,10 +119,8 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
     }
   });
   
-  // Delete image mutation
   const deleteImageMutation = useMutation({
     mutationFn: async (imageId: string) => {
-      // Get the image to get the URL
       const { data: image, error: getError } = await supabase
         .from('desarrollo_imagenes')
         .select('url')
@@ -116,12 +132,10 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
         throw getError;
       }
       
-      // Extract the path from the URL
       const url = image.url;
       const pathParts = url.split('/');
       const path = `${desarrolloId}/${pathParts[pathParts.length - 1]}`;
       
-      // 1. Delete from the database
       const { error: deleteError } = await supabase
         .from('desarrollo_imagenes')
         .delete()
@@ -132,7 +146,6 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
         throw deleteError;
       }
       
-      // 2. Delete from storage
       try {
         const { error: storageError } = await supabase.storage
           .from('desarrollo-images')
@@ -140,11 +153,9 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
           
         if (storageError) {
           console.error('Error deleting image from storage:', storageError);
-          // Don't throw here, as we already deleted from the database
         }
       } catch (e) {
         console.error('Error trying to delete from storage:', e);
-        // Continue even if storage delete fails
       }
       
       return { id: imageId };
@@ -154,7 +165,6 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
         title: "Imagen eliminada",
         description: "La imagen se ha eliminado correctamente.",
       });
-      // Invalidate query to refetch images
       queryClient.invalidateQueries({ queryKey: ['desarrollo-imagenes', desarrolloId] });
     },
     onError: (error) => {
@@ -166,12 +176,10 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
     }
   });
   
-  // Set main image mutation
   const setMainImageMutation = useMutation({
     mutationFn: async (imageId: string) => {
       if (!desarrolloId) throw new Error('Desarrollo ID is required');
       
-      // 1. Unset all existing main images
       const { error: unsetError } = await supabase
         .from('desarrollo_imagenes')
         .update({ es_principal: false })
@@ -182,7 +190,6 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
         throw unsetError;
       }
       
-      // 2. Set the new main image
       const { data, error } = await supabase
         .from('desarrollo_imagenes')
         .update({ es_principal: true })
@@ -202,7 +209,6 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
         title: "Imagen principal actualizada",
         description: "Se ha establecido la imagen principal.",
       });
-      // Invalidate query to refetch images
       queryClient.invalidateQueries({ queryKey: ['desarrollo-imagenes', desarrolloId] });
     },
     onError: (error) => {
@@ -214,12 +220,10 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
     }
   });
   
-  // Reorder images mutation
   const reorderImagesMutation = useMutation({
     mutationFn: async (imageIds: string[]) => {
       if (!desarrolloId) throw new Error('Desarrollo ID is required');
       
-      // Update each image with its new order
       const updates = imageIds.map((id, index) => ({
         id,
         orden: index + 1
@@ -241,12 +245,45 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
         title: "Orden actualizado",
         description: "Se ha actualizado el orden de las imágenes.",
       });
-      // Invalidate query to refetch images
       queryClient.invalidateQueries({ queryKey: ['desarrollo-imagenes', desarrolloId] });
     },
     onError: (error) => {
       toast({
         title: "Error al reordenar imágenes",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  const updateAmenitiesMutation = useMutation({
+    mutationFn: async (amenities: string[]) => {
+      if (!desarrolloId) throw new Error('Desarrollo ID is required');
+      
+      const { data, error } = await supabase
+        .from('desarrollos')
+        .update({ amenidades: amenities })
+        .eq('id', desarrolloId)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error updating amenities:', error);
+        throw error;
+      }
+      
+      return data as Desarrollo;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Amenidades actualizadas",
+        description: "Las amenidades se han actualizado correctamente.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al actualizar amenidades",
         description: error.message,
         variant: "destructive",
       });
@@ -262,6 +299,7 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
     deleteImage: deleteImageMutation.mutate,
     setMainImage: setMainImageMutation.mutate,
     reorderImages: reorderImagesMutation.mutate,
+    updateAmenities: updateAmenitiesMutation.mutate,
     isUploading: uploadImageMutation.isPending,
     isDeleting: deleteImageMutation.isPending,
   };

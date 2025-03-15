@@ -16,23 +16,14 @@ import usePrototipos from '@/hooks/usePrototipos';
 import useDesarrolloImagenes from '@/hooks/useDesarrolloImagenes';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { CalendarIcon, Upload } from 'lucide-react';
+import { CalendarIcon, Check, Upload, X } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { AmenitiesSelector } from './AmenitiesSelector';
 
 export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones';
-
-export interface AdminResourceDialogProps {
-  open?: boolean;
-  onClose?: () => void;
-  resourceType: ResourceType;
-  resourceId?: string;
-  onSave?: () => void;
-  buttonText?: string;
-  onSuccess?: () => void;
-  desarrolloId?: string;
-  lead_id?: string;
-}
 
 interface DesarrolloResource {
   id?: string;
@@ -57,6 +48,7 @@ interface DesarrolloResource {
   es_impuestos_porcentaje?: boolean;
   adr_base?: number;
   ocupacion_anual?: number;
+  amenidades?: string[];
 }
 
 interface PrototipoResource {
@@ -137,6 +129,8 @@ const AdminResourceDialog = ({
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [uploading, setUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState("general");
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   
   const { leads, statusOptions, getSubstatusOptions, originOptions } = useLeads();
   const { desarrollos } = useDesarrollos();
@@ -200,6 +194,18 @@ const AdminResourceDialog = ({
         } else {
           setResource(data as FormValues);
           
+          if (resourceType === 'desarrollos' && data.amenidades) {
+            try {
+              const parsedAmenities = typeof data.amenidades === 'string' 
+                ? JSON.parse(data.amenidades) 
+                : data.amenidades || [];
+              setSelectedAmenities(parsedAmenities);
+            } catch (e) {
+              console.error('Error parsing amenities:', e);
+              setSelectedAmenities([]);
+            }
+          }
+          
           if (resourceType === 'leads') {
             if (data.estado) {
               setSelectedStatus(data.estado);
@@ -234,7 +240,8 @@ const AdminResourceDialog = ({
             nombre: '',
             ubicacion: '',
             total_unidades: 0,
-            unidades_disponibles: 0
+            unidades_disponibles: 0,
+            amenidades: []
           } as DesarrolloResource);
         } else if (resourceType === 'leads') {
           setResource({
@@ -262,15 +269,31 @@ const AdminResourceDialog = ({
       switch (resourceType) {
         case 'desarrollos':
           fieldDefinitions = [
-            { name: 'nombre', label: 'Nombre', type: 'text' },
-            { name: 'ubicacion', label: 'Ubicación', type: 'text' },
-            { name: 'total_unidades', label: 'Total Unidades', type: 'number' },
-            { name: 'unidades_disponibles', label: 'Unidades Disponibles', type: 'number' },
-            { name: 'avance_porcentaje', label: 'Avance (%)', type: 'number' },
-            { name: 'fecha_inicio', label: 'Fecha Inicio', type: 'date' },
-            { name: 'fecha_entrega', label: 'Fecha Entrega', type: 'date' },
-            { name: 'descripcion', label: 'Descripción', type: 'textarea' },
-            { name: 'imagen_url', label: 'Imagen URL', type: 'text' },
+            { name: 'nombre', label: 'Nombre', type: 'text', tab: 'general' },
+            { name: 'ubicacion', label: 'Ubicación', type: 'text', tab: 'general' },
+            { name: 'total_unidades', label: 'Total Unidades', type: 'number', tab: 'general' },
+            { name: 'unidades_disponibles', label: 'Unidades Disponibles', type: 'number', tab: 'general' },
+            { name: 'avance_porcentaje', label: 'Avance (%)', type: 'number', tab: 'general' },
+            { name: 'fecha_inicio', label: 'Fecha Inicio', type: 'date', tab: 'general' },
+            { name: 'fecha_entrega', label: 'Fecha Entrega', type: 'date', tab: 'general' },
+            { name: 'descripcion', label: 'Descripción', type: 'textarea', tab: 'general' },
+            { name: 'imagen_url', label: 'Imagen', type: 'upload', tab: 'media' },
+            { name: 'amenidades', label: 'Amenidades', type: 'amenities', tab: 'amenidades' },
+            { name: 'moneda', label: 'Moneda', type: 'select', options: [
+              { value: 'MXN', label: 'Peso Mexicano (MXN)' },
+              { value: 'USD', label: 'Dólar Estadounidense (USD)' }
+            ], tab: 'financiero' },
+            { name: 'comision_operador', label: 'Comisión Operador (%)', type: 'number', tab: 'financiero' },
+            { name: 'mantenimiento_valor', label: 'Mantenimiento', type: 'number', tab: 'financiero' },
+            { name: 'es_mantenimiento_porcentaje', label: 'Mantenimiento es porcentaje', type: 'switch', tab: 'financiero' },
+            { name: 'gastos_fijos', label: 'Gastos Fijos', type: 'number', tab: 'financiero' },
+            { name: 'es_gastos_fijos_porcentaje', label: 'Gastos Fijos es porcentaje', type: 'switch', tab: 'financiero' },
+            { name: 'gastos_variables', label: 'Gastos Variables (%)', type: 'number', tab: 'financiero' },
+            { name: 'es_gastos_variables_porcentaje', label: 'Gastos Variables es porcentaje', type: 'switch', tab: 'financiero' },
+            { name: 'impuestos', label: 'Impuestos (%)', type: 'number', tab: 'financiero' },
+            { name: 'es_impuestos_porcentaje', label: 'Impuestos es porcentaje', type: 'switch', tab: 'financiero' },
+            { name: 'adr_base', label: 'ADR Base', type: 'number', tab: 'financiero' },
+            { name: 'ocupacion_anual', label: 'Ocupación Anual (%)', type: 'number', tab: 'financiero' },
           ];
           break;
         case 'prototipos':
@@ -367,6 +390,16 @@ const AdminResourceDialog = ({
     setSelectedDate(date);
     if (date && resource) {
       setResource({ ...resource, ultimo_contacto: date.toISOString() } as FormValues);
+    }
+  };
+
+  const handleAmenitiesChange = (amenities: string[]) => {
+    setSelectedAmenities(amenities);
+    if (resource && resourceType === 'desarrollos') {
+      setResource({ 
+        ...resource, 
+        amenidades: amenities 
+      } as FormValues);
     }
   };
 
@@ -491,6 +524,11 @@ const AdminResourceDialog = ({
         }
       } else if (resourceType === 'desarrollos') {
         const desarrolloData = dataToSave as DesarrolloResource;
+        
+        if (desarrolloData.amenidades === undefined) {
+          desarrolloData.amenidades = selectedAmenities;
+        }
+        
         if (!resourceId) {
           result = await supabase
             .from('desarrollos')
@@ -515,7 +553,8 @@ const AdminResourceDialog = ({
               impuestos: desarrolloData.impuestos,
               es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje,
               adr_base: desarrolloData.adr_base,
-              ocupacion_anual: desarrolloData.ocupacion_anual
+              ocupacion_anual: desarrolloData.ocupacion_anual,
+              amenidades: selectedAmenities
             });
         } else {
           result = await supabase
@@ -541,7 +580,8 @@ const AdminResourceDialog = ({
               impuestos: desarrolloData.impuestos,
               es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje,
               adr_base: desarrolloData.adr_base,
-              ocupacion_anual: desarrolloData.ocupacion_anual
+              ocupacion_anual: desarrolloData.ocupacion_anual,
+              amenidades: selectedAmenities
             })
             .eq('id', resourceId);
         }
@@ -659,67 +699,72 @@ const AdminResourceDialog = ({
     return null;
   };
 
-  const renderFormField = (field: any) => {
+  const renderField = (field: any) => {
     if (resourceType === 'prototipos' && field.name === 'desarrollo_id' && desarrolloId) {
       return null;
     }
     
+    if (field.type === 'amenities') {
+      return (
+        <div key={field.name} className="space-y-3">
+          <Label>{field.label}</Label>
+          <AmenitiesSelector 
+            selectedAmenities={selectedAmenities} 
+            onChange={handleAmenitiesChange} 
+          />
+        </div>
+      );
+    }
+    
     if (field.name === 'imagen_url' && resourceType === 'desarrollos') {
       return (
-        <div key={field.name} className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor={field.name} className="text-right">
-            {field.label}
-          </Label>
-          <div className="col-span-3">
-            {resourceId ? (
-              <p className="text-sm text-gray-500 mb-2">
-                Las imágenes del desarrollo se gestionan directamente desde la vista de detalle del desarrollo.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2 items-center">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    id={`${field.name}-upload`}
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                  <Label
-                    htmlFor={`${field.name}-upload`}
-                    className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Subir imagen
-                  </Label>
-                  {uploading && <span className="text-sm text-gray-500">Subiendo...</span>}
-                </div>
-                
-                {resource && (resource as any)[field.name] && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500 mb-1">Vista previa:</p>
+        <div key={field.name} className="space-y-3">
+          <Label>{field.label}</Label>
+          {resourceId ? (
+            <p className="text-sm text-gray-500 mb-2">
+              Las imágenes del desarrollo se gestionan directamente desde la vista de detalle del desarrollo.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2 items-center">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  id={`${field.name}-upload`}
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <Label
+                  htmlFor={`${field.name}-upload`}
+                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  Subir imagen
+                </Label>
+                {uploading && <span className="text-sm text-gray-500">Subiendo...</span>}
+              </div>
+              
+              {resource && (resource as any)[field.name] && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500 mb-1">Vista previa:</p>
+                  <div className="relative w-full max-w-xs">
                     <img 
                       src={(resource as any)[field.name]} 
-                      alt="Preview" 
-                      className="max-h-32 rounded-md object-cover" 
+                      alt="Vista previa" 
+                      className="w-full h-48 rounded-md object-cover" 
                     />
+                    <button
+                      type="button"
+                      onClick={() => setResource({ ...resource, [field.name]: '' } as FormValues)}
+                      className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md hover:bg-gray-100 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
-                )}
-                
-                <p className="text-sm text-gray-500 mt-1">
-                  O introduce manualmente la URL de la imagen:
-                </p>
-                <Input
-                  type="text"
-                  id={field.name}
-                  name={field.name}
-                  value={resource ? (resource as any)[field.name] || '' : ''}
-                  onChange={handleChange}
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                />
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       );
     }
@@ -727,132 +772,153 @@ const AdminResourceDialog = ({
     switch (field.type) {
       case 'select':
         return (
-          <div key={field.name} className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor={field.name} className="text-right">
-              {field.label}
-            </Label>
-            <div className="col-span-3">
-              <Select 
-                value={resource ? (resource as any)[field.name] || '' : ''}
-                onValueChange={(value) => handleSelectChange(field.name, value)}
-              >
-                <SelectTrigger id={field.name} className="bg-white">
-                  <SelectValue placeholder={`Seleccionar ${field.label}`} />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  {field.options.map((option: { value: string, label: string }) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div key={field.name} className="space-y-3">
+            <Label htmlFor={field.name}>{field.label}</Label>
+            <Select 
+              value={resource ? (resource as any)[field.name] || '' : ''}
+              onValueChange={(value) => handleSelectChange(field.name, value)}
+            >
+              <SelectTrigger id={field.name} className="bg-white">
+                <SelectValue placeholder={`Seleccionar ${field.label}`} />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                {field.options.map((option: { value: string, label: string }) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         );
       case 'switch':
         return (
-          <div key={field.name} className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor={field.name} className="text-right">
-              {field.label}
-            </Label>
-            <div className="col-span-3 flex items-center">
-              <Switch
-                id={field.name}
-                checked={resource ? (resource as any)[field.name] || false : false}
-                onCheckedChange={(checked) => handleSwitchChange(field.name, checked)}
-              />
-            </div>
+          <div key={field.name} className="flex items-center justify-between space-y-0 space-x-2">
+            <Label htmlFor={field.name}>{field.label}</Label>
+            <Switch
+              id={field.name}
+              checked={resource ? (resource as any)[field.name] || false : false}
+              onCheckedChange={(checked) => handleSwitchChange(field.name, checked)}
+            />
           </div>
         );
       case 'date':
         return (
-          <div key={field.name} className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor={field.name} className="text-right">
-              {field.label}
-            </Label>
-            <div className="col-span-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn("w-full justify-start text-left", !selectedDate && "text-muted-foreground")}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "PPP") : "Seleccionar fecha"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-white" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={handleDateChange}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+          <div key={field.name} className="space-y-3">
+            <Label htmlFor={field.name}>{field.label}</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn("w-full justify-start text-left", !selectedDate && "text-muted-foreground")}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedDate ? format(selectedDate, "PPP") : "Seleccionar fecha"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-white" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleDateChange}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         );
       case 'textarea':
         return (
-          <div key={field.name} className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor={field.name} className="text-right">
-              {field.label}
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id={field.name}
-                name={field.name}
-                value={resource ? (resource as any)[field.name] || '' : ''}
-                onChange={handleChange}
-                className="col-span-3"
-              />
-            </div>
+          <div key={field.name} className="space-y-3">
+            <Label htmlFor={field.name}>{field.label}</Label>
+            <textarea
+              id={field.name}
+              name={field.name}
+              value={resource ? (resource as any)[field.name] || '' : ''}
+              onChange={handleChange}
+              className="w-full min-h-[100px] p-3 border border-input rounded-md"
+            />
           </div>
         );
       default:
         return (
-          <div key={field.name} className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor={field.name} className="text-right">
-              {field.label}
-            </Label>
-            <div className="col-span-3">
-              <Input
-                type={field.type}
-                id={field.name}
-                name={field.name}
-                value={resource ? (resource as any)[field.name] || '' : ''}
-                onChange={handleChange}
-                className="col-span-3"
-              />
-            </div>
+          <div key={field.name} className="space-y-3">
+            <Label htmlFor={field.name}>{field.label}</Label>
+            <Input
+              type={field.type}
+              id={field.name}
+              name={field.name}
+              value={resource ? (resource as any)[field.name] || '' : ''}
+              onChange={handleChange}
+            />
           </div>
         );
     }
+  };
+
+  const getTabFields = (tabName: string) => {
+    return fields.filter(field => field.tab === tabName);
   };
 
   return (
     <>
       {renderTriggerButton()}
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{resourceId ? `Editar ${resourceType}` : `Crear nuevo ${resourceType}`}</DialogTitle>
+            <DialogTitle className="text-xl font-bold">
+              {resourceId ? `Editar ${resourceType}` : `Crear nuevo ${resourceType}`}
+            </DialogTitle>
             <DialogDescription>
               {resourceId ? 'Modifica los campos del recurso.' : 'Ingresa los datos del nuevo recurso.'}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
-            {fields.filter(field => !(resourceType === 'prototipos' && field.name === 'desarrollo_id' && desarrolloId)).map(field => renderFormField(field))}
-          </div>
+          {resourceType === 'desarrollos' ? (
+            <Tabs defaultValue="general" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid grid-cols-4 mb-4">
+                <TabsTrigger value="general" className="text-center">General</TabsTrigger>
+                <TabsTrigger value="amenidades" className="text-center">Amenidades</TabsTrigger>
+                <TabsTrigger value="media" className="text-center">Media</TabsTrigger>
+                <TabsTrigger value="financiero" className="text-center">Financiero</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="general" className="space-y-4 pt-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {getTabFields('general').map(field => renderField(field))}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="amenidades" className="space-y-4 pt-2">
+                {getTabFields('amenidades').map(field => renderField(field))}
+              </TabsContent>
+              
+              <TabsContent value="media" className="space-y-4 pt-2">
+                {getTabFields('media').map(field => renderField(field))}
+              </TabsContent>
+              
+              <TabsContent value="financiero" className="space-y-4 pt-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {getTabFields('financiero').map(field => renderField(field))}
+                </div>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="grid gap-4 py-4">
+              {fields.filter(field => !(resourceType === 'prototipos' && field.name === 'desarrollo_id' && desarrolloId)).map(field => renderField(field))}
+            </div>
+          )}
 
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
+          <DialogFooter className="mt-6 flex gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" onClick={() => resource && saveResource(resource)} disabled={isSubmitting || !resource}>
+            <Button 
+              type="submit" 
+              onClick={() => resource && saveResource(resource)} 
+              disabled={isSubmitting || !resource}
+              className="bg-primary hover:bg-primary/90"
+            >
               {isSubmitting ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>
