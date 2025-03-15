@@ -1,60 +1,16 @@
 
-import React from 'react';
-import { 
-  DialogHeader as UIDialogHeader, 
-  DialogTitle, 
-  DialogDescription 
-} from '@/components/ui/dialog';
-import { ResourceType } from '../types';
+import { DialogHeader as UIDialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
-interface DialogHeaderProps {
-  resourceType: ResourceType;
-  resourceId?: string;
-  onClose?: () => void;
+export interface DialogHeaderProps {
+  title: string;
+  description: string;
 }
 
-export function DialogHeader({ resourceType, resourceId, onClose }: DialogHeaderProps) {
-  const getResourceTitle = () => {
-    // Convertir resourceType a singular y en español
-    let resourceLabel = '';
-    
-    switch (resourceType) {
-      case 'desarrollos':
-        resourceLabel = 'desarrollo';
-        break;
-      case 'prototipos':
-        resourceLabel = 'prototipo';
-        break;
-      case 'leads':
-        resourceLabel = 'lead';
-        break;
-      case 'cotizaciones':
-        resourceLabel = 'cotización';
-        break;
-      case 'unidades':
-        resourceLabel = 'unidad';
-        break;
-    }
-    
-    return resourceLabel;
-  };
-  
-  const resourceLabel = getResourceTitle();
-  
+export function DialogHeader({ title, description }: DialogHeaderProps) {
   return (
     <UIDialogHeader>
-      <DialogTitle>
-        {resourceType === 'cotizaciones' 
-          ? 'Nueva Cotización' 
-          : resourceId ? `Editar ${resourceLabel}` : `Nuevo ${resourceLabel}`}
-      </DialogTitle>
-      <DialogDescription>
-        {resourceType === 'cotizaciones'
-          ? 'Ingresa los datos para la nueva cotización'
-          : resourceId 
-            ? `Actualiza la información de este ${resourceLabel}` 
-            : `Completa el formulario para crear un nuevo ${resourceLabel}`}
-      </DialogDescription>
+      <DialogTitle>{title}</DialogTitle>
+      <DialogDescription>{description}</DialogDescription>
     </UIDialogHeader>
   );
 }

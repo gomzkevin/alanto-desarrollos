@@ -1,12 +1,11 @@
 
 import { DialogContent } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { FormValues, ResourceType } from '../types';
 import { FieldDefinition } from '../types';
 import GenericForm from '../GenericForm';
 import { DialogHeader } from './DialogHeader';
 import { DialogFooter } from './DialogFooter';
-import { Loader2 } from 'lucide-react';
 
 interface ResourceDialogContentProps {
   isOpen: boolean;
@@ -121,22 +120,11 @@ export function ResourceDialogContent({
         />
       )}
 
-      <DialogFooter>
-        <Button variant="outline" onClick={onClose}>Cancelar</Button>
-        <Button 
-          onClick={saveResource} 
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Guardando...
-            </>
-          ) : (
-            'Guardar'
-          )}
-        </Button>
-      </DialogFooter>
+      <DialogFooter
+        onClose={onClose}
+        onSave={saveResource}
+        isSubmitting={isSubmitting}
+      />
     </DialogContent>
   );
 }

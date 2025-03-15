@@ -72,17 +72,20 @@ const AdminResourceDialog = ({
 
   // Update selectedDesarrolloId when resource changes
   useEffect(() => {
-    if (resource && resourceType === 'cotizaciones') {
-      const cotizacionData = resource as any;
-      if (cotizacionData.desarrollo_id) {
-        setSelectedDesarrolloId(cotizacionData.desarrollo_id);
-      }
+    if (resource && resource.desarrollo_id) {
+      console.log('Setting selectedDesarrolloId from resource:', resource.desarrollo_id);
+      setSelectedDesarrolloId(resource.desarrollo_id as string);
+    } else if (desarrolloId) {
+      console.log('Setting selectedDesarrolloId from props:', desarrolloId);
+      setSelectedDesarrolloId(desarrolloId);
     }
-  }, [resource, resourceType]);
+  }, [resource, desarrolloId]);
 
   // Custom function to handle desarrollo selection
   const handleDesarrolloSelect = (desarrolloId: string) => {
+    console.log('handleDesarrolloSelect called with:', desarrolloId);
     setSelectedDesarrolloId(desarrolloId);
+    
     if (resource) {
       // Update resource with new desarrollo_id
       const updatedResource = {
@@ -91,6 +94,7 @@ const AdminResourceDialog = ({
         // Reset prototipo_id when desarrollo changes
         prototipo_id: ''
       };
+      console.log('Updating resource with new desarrollo_id:', updatedResource);
       setResource(updatedResource);
     }
   };
@@ -98,8 +102,9 @@ const AdminResourceDialog = ({
   const handleSave = async () => {
     if (resource) {
       if (resourceType === 'cotizaciones') {
-        const cotizacionData = resource as any;
+        const cotizacionData = resource;
         
+        // Validate required fields
         if (!isExistingClient && !resourceId) {
           if (!newClientData.nombre) {
             toast({
@@ -137,6 +142,7 @@ const AdminResourceDialog = ({
         }
       }
       
+      // Handle new client creation for cotizaciones
       if (!isExistingClient && resourceType === 'cotizaciones' && !resourceId) {
         try {
           if (!newClientData.nombre) {
@@ -183,6 +189,7 @@ const AdminResourceDialog = ({
           });
         }
       } else {
+        // For existing clients or other resource types
         saveResource(resource).then(success => {
           if (success) {
             handleOpenChange(false);

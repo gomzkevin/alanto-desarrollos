@@ -1,4 +1,3 @@
-
 import { FormValues } from './types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,10 +21,6 @@ interface GenericFormProps {
   handleSelectChange: (name: string, value: string) => void;
   handleSwitchChange: (name: string, checked: boolean) => void;
   resourceType: string;
-  resourceId?: string;
-  desarrolloId?: string;
-  prototipo_id?: string;
-  lead_id?: string;
   handleDateChange?: (date: Date | undefined) => void;
   handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleAmenitiesChange?: (amenities: string[]) => void;
@@ -81,19 +76,21 @@ export default function GenericForm({
     desarrolloId: selectedDesarrolloId
   });
 
-  // Actualizar selectedDesarrolloId cuando cambie el valor en el recurso
+  // Actualizar selectedDesarrolloId cuando cambie el valor en el recurso o props
   useEffect(() => {
     if (resource && (resource as any).desarrollo_id) {
+      console.log("GenericForm - Setting desarrollo from resource:", (resource as any).desarrollo_id);
       setSelectedDesarrolloId((resource as any).desarrollo_id);
     } else if (desarrolloId) {
+      console.log("GenericForm - Setting desarrollo from props:", desarrolloId);
       setSelectedDesarrolloId(desarrolloId);
     }
   }, [resource, desarrolloId]);
 
   // Log when desarrollo or prototipos change to debug
   useEffect(() => {
-    console.log("Selected desarrollo ID:", selectedDesarrolloId);
-    console.log("Available prototipos:", prototipos);
+    console.log("GenericForm - Selected desarrollo ID:", selectedDesarrolloId);
+    console.log("GenericForm - Available prototipos:", prototipos);
   }, [selectedDesarrolloId, prototipos]);
   
   const tabs = useMemo(() => {
@@ -115,18 +112,21 @@ export default function GenericForm({
 
   // Custom handler for desarrollo changes
   const handleDesarrolloChange = (value: string) => {
-    console.log("Changing desarrollo to:", value);
+    console.log("GenericForm - Changing desarrollo to:", value);
     setSelectedDesarrolloId(value);
     
     // Call parent handler if available
     if (onDesarrolloSelect) {
+      console.log("GenericForm - Calling parent onDesarrolloSelect");
       onDesarrolloSelect(value);
     } else {
       // Fall back to standard handler
+      console.log("GenericForm - Using standard handleSelectChange");
       handleSelectChange('desarrollo_id', value);
       
       // Reset prototipo when desarrollo changes
       if (resourceType === 'cotizaciones') {
+        console.log("GenericForm - Resetting prototipo_id");
         handleSelectChange('prototipo_id', '');
       }
     }

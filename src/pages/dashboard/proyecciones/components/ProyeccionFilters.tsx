@@ -1,6 +1,7 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDesarrollos, usePrototipos } from '@/hooks';
+import { useEffect } from 'react';
 
 interface ProyeccionFiltersProps {
   selectedDesarrolloId: string;
@@ -19,6 +20,20 @@ export const ProyeccionFilters = ({
   const { prototipos = [], isLoading: prototiposLoading } = usePrototipos({ 
     desarrolloId: selectedDesarrolloId !== 'global' ? selectedDesarrolloId : null
   });
+
+  // Reset prototipo selection when desarrollo changes
+  useEffect(() => {
+    // Only reset if a prototipo is selected and it's not global
+    if (selectedPrototipoId !== 'global' && selectedDesarrolloId !== 'global') {
+      // Check if the selected prototipo exists in the current desarrollo
+      const prototipoExists = prototipos.some(p => p.id === selectedPrototipoId);
+      
+      if (!prototipoExists) {
+        // Reset to global if the prototipo doesn't exist in the current desarrollo
+        onPrototipoChange('global');
+      }
+    }
+  }, [selectedDesarrolloId, prototipos, selectedPrototipoId, onPrototipoChange]);
 
   return (
     <div className="space-y-2 flex flex-col sm:items-end">
