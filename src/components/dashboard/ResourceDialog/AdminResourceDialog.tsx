@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -28,6 +28,12 @@ const AdminResourceDialog = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [isExistingClient, setIsExistingClient] = useState(true);
+  const [newClientData, setNewClientData] = useState({
+    nombre: '',
+    email: '',
+    telefono: ''
+  });
   
   // Control de estado del diálogo
   const isOpen = open !== undefined ? open : dialogOpen;
@@ -67,15 +73,79 @@ const AdminResourceDialog = ({
   });
 
   // Handler for save button
-  const handleSave = () => {
+  const handleSave = async () => {
     if (resource) {
-      saveResource(resource).then(success => {
-        if (success) {
-          handleOpenChange(false);
+      // Si no es un cliente existente y estamos creando una cotización, crear el lead primero
+      if (!isExistingClient && resourceType === 'cotizaciones' && !resourceId) {
+        try {
+          // Crear nuevo lead
+          const { data: newLead, error: leadError } = await supabase
+            .from('leads')
+            .insert({
+              nombre: newClientData.nombre,
+              email: newClientData.email,
+              telefono: newClientData.telefono,
+              estado: 'nuevo',
+              subestado: 'sin_contactar'
+            })
+            .select('id, nombre')
+            .single();
+          
+          if (leadError) throw leadError;
+          
+          // Actualizar el resource con el ID del nuevo lead
+          if (newLead) {
+            setResource({
+              ...resource,
+              lead_id: newLead.id
+            });
+            
+            // Guardar la cotización con el nuevo lead
+            const updatedResource = {
+              ...resource,
+              lead_id: newLead.id
+            };
+            
+            saveResource(updatedResource).then(success => {
+              if (success) {
+                handleOpenChange(false);
+              }
+            });
+          }
+        } catch (error: any) {
+          console.error('Error creando nuevo lead:', error);
+          toast({
+            title: 'Error',
+            description: `No se pudo crear el nuevo cliente: ${error.message}`,
+            variant: 'destructive',
+          });
         }
-      });
+      } else {
+        // Flujo normal para clientes existentes o recursos que no son cotizaciones
+        saveResource(resource).then(success => {
+          if (success) {
+            handleOpenChange(false);
+          }
+        });
+      }
     }
   };
+  
+  // Reset client type when dialog opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      // Si hay un lead_id proporcionado o en el recurso, establecer como cliente existente
+      const hasLeadId = lead_id || (resource && (resource as any).lead_id);
+      setIsExistingClient(!!hasLeadId);
+    } else {
+      // Resetear al cerrar
+      setNewClientData({
+        nombre: '',
+        email: '',
+        telefono: ''
+      });
+    }
+  }, [isOpen, lead_id, resource]);
 
   // Handler for image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,6 +189,14 @@ const AdminResourceDialog = ({
       setUploading(false);
     }
   };
+
+  // Handler for change in new client data
+  const handleNewClientDataChange = (field: string, value: string) => {
+    setNewClientData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
   
   return (
     <>
@@ -157,6 +235,10 @@ const AdminResourceDialog = ({
           lead_id={lead_id}
           handleImageUpload={handleImageUpload}
           uploading={uploading}
+          isExistingClient={isExistingClient}
+          onExistingClientChange={setIsExistingClient}
+          newClientData={newClientData}
+          onNewClientDataChange={handleNewClientDataChange}
         />
       </Dialog>
     </>

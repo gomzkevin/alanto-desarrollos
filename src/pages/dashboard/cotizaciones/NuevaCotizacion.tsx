@@ -79,8 +79,8 @@ export default function NuevaCotizacionPage() {
 
   const handleClose = () => {
     setOpenCotizacionDialog(false);
-    // Redirigir de vuelta al detalle del prototipo
-    if (prototipo?.id) {
+    // Redirigir de vuelta al detalle del prototipo o a la lista de cotizaciones
+    if (unidadId && prototipo?.id) {
       navigate(`/dashboard/prototipos/${prototipo.id}`);
     } else {
       navigate('/dashboard/cotizaciones');
@@ -127,14 +127,14 @@ export default function NuevaCotizacionPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-500">
-                Para crear una cotización, seleccione una unidad desde el detalle del prototipo.
+                Para crear una cotización, seleccione una unidad desde el detalle del prototipo o cree una cotización directamente.
               </p>
               <Button 
                 className="mt-4" 
                 onClick={() => setOpenCotizacionDialog(true)}
                 type="button"
               >
-                Crear cotización manualmente
+                Crear cotización
               </Button>
             </CardContent>
           </Card>
@@ -179,18 +179,16 @@ export default function NuevaCotizacionPage() {
       </div>
 
       {/* Diálogo para crear cotización */}
-      {openCotizacionDialog && (
-        <AdminResourceDialog
-          resourceType="cotizaciones"
-          open={openCotizacionDialog}
-          onClose={handleClose}
-          onSuccess={handleSuccess}
-          defaultValues={{
-            prototipo_id: unidad?.prototipo_id || '',
-            desarrollo_id: prototipo?.desarrollo_id || '',
-          }}
-        />
-      )}
+      <AdminResourceDialog
+        resourceType="cotizaciones"
+        open={openCotizacionDialog}
+        onClose={handleClose}
+        onSuccess={handleSuccess}
+        defaultValues={{
+          prototipo_id: unidad?.prototipo_id || '',
+          desarrollo_id: prototipo?.desarrollo_id || '',
+        }}
+      />
     </DashboardLayout>
   );
 }

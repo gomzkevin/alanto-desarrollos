@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, X } from 'lucide-react';
+import { Search, X, User } from 'lucide-react';
 import useLeads from '@/hooks/useLeads';
 import { 
   Popover,
@@ -10,14 +10,32 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface ClientSearchProps {
   value: string;
   onSelect: (leadId: string, leadName: string) => void;
   placeholder?: string;
+  isExistingClient: boolean;
+  onExistingClientChange: (isExisting: boolean) => void;
+  onNewClientDataChange?: (field: string, value: string) => void;
+  newClientData?: {
+    nombre: string;
+    email: string;
+    telefono: string;
+  };
 }
 
-export function ClientSearch({ value, onSelect, placeholder = "Buscar cliente..." }: ClientSearchProps) {
+export function ClientSearch({ 
+  value, 
+  onSelect, 
+  placeholder = "Buscar cliente...",
+  isExistingClient,
+  onExistingClientChange,
+  onNewClientDataChange,
+  newClientData
+}: ClientSearchProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -25,7 +43,7 @@ export function ClientSearch({ value, onSelect, placeholder = "Buscar cliente...
 
   // Actualizar el nombre mostrado cuando cambia el valor o se cargan los leads
   useEffect(() => {
-    if (value && leads.length > 0) {
+    if (value && leads.length > 0 && isExistingClient) {
       const selectedLead = leads.find(lead => lead.id === value);
       if (selectedLead) {
         setDisplayName(selectedLead.nombre || '');
@@ -33,7 +51,7 @@ export function ClientSearch({ value, onSelect, placeholder = "Buscar cliente...
     } else {
       setDisplayName('');
     }
-  }, [value, leads]);
+  }, [value, leads, isExistingClient]);
 
   // Normalizar texto para búsqueda insensible a acentos
   const normalizeText = (text: string | null | undefined): string => {
@@ -71,8 +89,8 @@ export function ClientSearch({ value, onSelect, placeholder = "Buscar cliente...
     setOpen(false);
   };
 
-  return (
-    <div className="relative">
+  const renderExistingClientSearch = () => (
+    <div className="relative w-full">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <div className="flex w-full relative rounded-md border border-input overflow-hidden focus-within:ring-1 focus-within:ring-ring">
@@ -161,6 +179,60 @@ export function ClientSearch({ value, onSelect, placeholder = "Buscar cliente...
           )}
         </PopoverContent>
       </Popover>
+    </div>
+  );
+
+  const renderNewClientForm = () => (
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="nombre">Nombre del cliente</Label>
+        <Input
+          id="nombre"
+          placeholder="Nombre completo"
+          value={newClientData?.nombre || ''}
+          onChange={(e) => onNewClientDataChange && onNewClientDataChange('nombre', e.target.value)}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            placeholder="correo@ejemplo.com"
+            value={newClientData?.email || ''}
+            onChange={(e) => onNewClientDataChange && onNewClientDataChange('email', e.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="telefono">Teléfono</Label>
+          <Input
+            id="telefono"
+            placeholder="+52 55 1234 5678"
+            value={newClientData?.telefono || ''}
+            onChange={(e) => onNewClientDataChange && onNewClientDataChange('telefono', e.target.value)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Label htmlFor="existingClient">Cliente existente</Label>
+        <Switch
+          id="existingClient"
+          checked={isExistingClient}
+          onCheckedChange={onExistingClientChange}
+        />
+      </div>
+      
+      {isExistingClient ? (
+        <div>
+          <Label>Buscar cliente</Label>
+          {renderExistingClientSearch()}
+        </div>
+      ) : renderNewClientForm()}
     </div>
   );
 }

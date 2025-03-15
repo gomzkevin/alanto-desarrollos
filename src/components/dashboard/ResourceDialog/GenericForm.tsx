@@ -33,6 +33,14 @@ interface GenericFormProps {
   uploading?: boolean;
   selectedAmenities?: string[];
   handleLeadSelect?: (leadId: string, leadName: string) => void;
+  isExistingClient?: boolean;
+  onExistingClientChange?: (isExisting: boolean) => void;
+  newClientData?: {
+    nombre: string;
+    email: string;
+    telefono: string;
+  };
+  onNewClientDataChange?: (field: string, value: string) => void;
 }
 
 export default function GenericForm({
@@ -52,7 +60,11 @@ export default function GenericForm({
   resourceId,
   prototipo_id,
   lead_id,
-  handleLeadSelect
+  handleLeadSelect,
+  isExistingClient = true,
+  onExistingClientChange,
+  newClientData,
+  onNewClientDataChange
 }: GenericFormProps) {
   const { leads = [] } = useLeads({});
   const { desarrollos = [] } = useDesarrollos({});
@@ -102,181 +114,212 @@ export default function GenericForm({
     
     return (
       <div className="grid gap-4 py-4">
-        {fieldsToRender.map((field) => (
-          <div key={field.name} className="space-y-2">
-            <Label htmlFor={field.name}>{field.label}</Label>
-            
-            {field.type === 'text' && (
-              <Input
-                id={field.name}
-                name={field.name}
-                value={(resource as any)[field.name] || ''}
-                onChange={handleChange}
-                placeholder={`Ingrese ${field.label.toLowerCase()}`}
-              />
-            )}
-            
-            {field.type === 'number' && (
-              <Input
-                id={field.name}
-                name={field.name}
-                type="number"
-                value={(resource as any)[field.name] || ''}
-                onChange={handleChange}
-                placeholder="0"
-              />
-            )}
-            
-            {field.type === 'textarea' && (
-              <Textarea
-                id={field.name}
-                name={field.name}
-                value={(resource as any)[field.name] || ''}
-                onChange={handleChange}
-                placeholder={`Ingrese ${field.label.toLowerCase()}`}
-                className="min-h-[120px]"
-              />
-            )}
-            
-            {field.type === 'select' && field.options && (
-              <Select
-                value={(resource as any)[field.name] || ''}
-                onValueChange={(value) => handleSelectChange(field.name, value)}
-              >
-                <SelectTrigger id={field.name}>
-                  <SelectValue placeholder={`Seleccione ${field.label.toLowerCase()}`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {field.options.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            
-            {field.type === 'switch' && (
-              <div className="flex items-center justify-between">
-                <Switch
+        {/* Mostrar la búsqueda de cliente para cotizaciones y ocultar el campo select-lead */}
+        {resourceType === 'cotizaciones' && !tabName && (
+          <ClientSearch
+            value={(resource as any).lead_id || ''}
+            onSelect={(leadId, leadName) => {
+              if (handleLeadSelect) {
+                handleLeadSelect(leadId, leadName);
+              } else {
+                handleSelectChange('lead_id', leadId);
+              }
+            }}
+            isExistingClient={isExistingClient || false}
+            onExistingClientChange={(value) => {
+              if (onExistingClientChange) {
+                onExistingClientChange(value);
+              }
+            }}
+            newClientData={newClientData}
+            onNewClientDataChange={onNewClientDataChange}
+          />
+        )}
+        
+        {fieldsToRender.map((field) => {
+          // Ocultar el campo select-lead si estamos en cotizaciones (lo reemplazamos por ClientSearch)
+          if (resourceType === 'cotizaciones' && field.type === 'select-lead') {
+            return null;
+          }
+          
+          return (
+            <div key={field.name} className="space-y-2">
+              <Label htmlFor={field.name}>{field.label}</Label>
+              
+              {field.type === 'text' && (
+                <Input
                   id={field.name}
-                  checked={Boolean((resource as any)[field.name])}
-                  onCheckedChange={(checked) => handleSwitchChange(field.name, checked)}
+                  name={field.name}
+                  value={(resource as any)[field.name] || ''}
+                  onChange={handleChange}
+                  placeholder={`Ingrese ${field.label.toLowerCase()}`}
                 />
-              </div>
-            )}
-            
-            {field.type === 'image' && (
-              <div className="space-y-4">
-                {(resource as any)[field.name] && (
-                  <div className="relative w-full aspect-video rounded-md overflow-hidden bg-slate-100">
-                    <img 
-                      src={(resource as any)[field.name]} 
-                      alt="Imagen" 
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                )}
-                
-                <div className="flex items-center gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.accept = 'image/*';
-                      input.onchange = (e) => {
-                        if (handleImageUpload) {
-                          handleImageUpload(e as any);
-                        }
-                      };
-                      input.click();
-                    }}
-                    disabled={uploading}
-                  >
-                    {uploading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Subiendo...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Subir imagen
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {field.type === 'select-lead' && (
-              <ClientSearch 
-                value={(resource as any)[field.name] || ''}
-                onSelect={(leadId, leadName) => {
-                  if (handleLeadSelect) {
-                    handleLeadSelect(leadId, leadName);
-                  } else {
-                    handleSelectChange(field.name, leadId);
-                  }
-                }}
-              />
-            )}
-            
-            {field.type === 'select-desarrollo' && (
-              <Select
-                value={(resource as any)[field.name] || ''}
-                onValueChange={(value) => {
-                  handleSelectChange(field.name, value);
-                  setSelectedDesarrolloId(value);
-                  
-                  // Limpiar el prototipo seleccionado cuando cambia el desarrollo
-                  if (field.name === 'desarrollo_id' && resourceType === 'cotizaciones') {
-                    handleSelectChange('prototipo_id', '');
-                  }
-                }}
-              >
-                <SelectTrigger id={field.name}>
-                  <SelectValue placeholder={`Seleccione un desarrollo`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {desarrollos.map((desarrollo) => (
-                    <SelectItem key={desarrollo.id} value={desarrollo.id}>
-                      {desarrollo.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            
-            {field.type === 'select-prototipo' && (
-              <Select
-                value={(resource as any)[field.name] || ''}
-                onValueChange={(value) => handleSelectChange(field.name, value)}
-              >
-                <SelectTrigger id={field.name}>
-                  <SelectValue placeholder={`Seleccione un prototipo`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredPrototipos.length > 0 ? (
-                    filteredPrototipos.map((prototipo) => (
-                      <SelectItem key={prototipo.id} value={prototipo.id}>
-                        {prototipo.nombre}
+              )}
+              
+              {field.type === 'number' && (
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type="number"
+                  value={(resource as any)[field.name] || ''}
+                  onChange={handleChange}
+                  placeholder="0"
+                />
+              )}
+              
+              {field.type === 'textarea' && (
+                <Textarea
+                  id={field.name}
+                  name={field.name}
+                  value={(resource as any)[field.name] || ''}
+                  onChange={handleChange}
+                  placeholder={`Ingrese ${field.label.toLowerCase()}`}
+                  className="min-h-[120px]"
+                />
+              )}
+              
+              {field.type === 'select' && field.options && (
+                <Select
+                  value={(resource as any)[field.name] || ''}
+                  onValueChange={(value) => handleSelectChange(field.name, value)}
+                >
+                  <SelectTrigger id={field.name}>
+                    <SelectValue placeholder={`Seleccione ${field.label.toLowerCase()}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {field.options.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
                       </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem key="no-prototipos" value="no-prototipos" disabled>
-                      {selectedDesarrolloId 
-                        ? "No hay prototipos disponibles para este desarrollo" 
-                        : "Seleccione un desarrollo primero"}
-                    </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {field.type === 'switch' && (
+                <div className="flex items-center justify-between">
+                  <Switch
+                    id={field.name}
+                    checked={Boolean((resource as any)[field.name])}
+                    onCheckedChange={(checked) => handleSwitchChange(field.name, checked)}
+                  />
+                </div>
+              )}
+              
+              {field.type === 'image' && (
+                <div className="space-y-4">
+                  {(resource as any)[field.name] && (
+                    <div className="relative w-full aspect-video rounded-md overflow-hidden bg-slate-100">
+                      <img 
+                        src={(resource as any)[field.name]} 
+                        alt="Imagen" 
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
                   )}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-        ))}
+                  
+                  <div className="flex items-center gap-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e) => {
+                          if (handleImageUpload) {
+                            handleImageUpload(e as any);
+                          }
+                        };
+                        input.click();
+                      }}
+                      disabled={uploading}
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Subiendo...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Subir imagen
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {field.type === 'select-lead' && resourceType !== 'cotizaciones' && (
+                <ClientSearch 
+                  value={(resource as any)[field.name] || ''}
+                  onSelect={(leadId, leadName) => {
+                    if (handleLeadSelect) {
+                      handleLeadSelect(leadId, leadName);
+                    } else {
+                      handleSelectChange(field.name, leadId);
+                    }
+                  }}
+                  isExistingClient={true}
+                  onExistingClientChange={() => {}}
+                />
+              )}
+              
+              {field.type === 'select-desarrollo' && (
+                <Select
+                  value={(resource as any)[field.name] || ''}
+                  onValueChange={(value) => {
+                    handleSelectChange(field.name, value);
+                    setSelectedDesarrolloId(value);
+                    
+                    // Limpiar el prototipo seleccionado cuando cambia el desarrollo
+                    if (field.name === 'desarrollo_id' && resourceType === 'cotizaciones') {
+                      handleSelectChange('prototipo_id', '');
+                    }
+                  }}
+                >
+                  <SelectTrigger id={field.name}>
+                    <SelectValue placeholder={`Seleccione un desarrollo`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {desarrollos.map((desarrollo) => (
+                      <SelectItem key={desarrollo.id} value={desarrollo.id}>
+                        {desarrollo.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {field.type === 'select-prototipo' && (
+                <Select
+                  value={(resource as any)[field.name] || ''}
+                  onValueChange={(value) => handleSelectChange(field.name, value)}
+                >
+                  <SelectTrigger id={field.name}>
+                    <SelectValue placeholder={`Seleccione un prototipo`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredPrototipos.length > 0 ? (
+                      filteredPrototipos.map((prototipo) => (
+                        <SelectItem key={prototipo.id} value={prototipo.id}>
+                          {prototipo.nombre}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem key="no-prototipos" value="no-prototipos" disabled>
+                        {selectedDesarrolloId 
+                          ? "No hay prototipos disponibles para este desarrollo" 
+                          : "Seleccione un desarrollo primero"}
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };

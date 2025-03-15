@@ -44,12 +44,16 @@ export function DialogHeader({ resourceType, resourceId, onClose }: DialogHeader
   return (
     <UIDialogHeader>
       <DialogTitle>
-        {resourceId ? `Editar ${resourceLabel}` : `Nuevo ${resourceLabel}`}
+        {resourceType === 'cotizaciones' 
+          ? 'Nueva Cotización' 
+          : resourceId ? `Editar ${resourceLabel}` : `Nuevo ${resourceLabel}`}
       </DialogTitle>
       <DialogDescription>
-        {resourceId 
-          ? `Actualiza la información de este ${resourceLabel}` 
-          : `Completa el formulario para crear un nuevo ${resourceLabel}`}
+        {resourceType === 'cotizaciones'
+          ? 'Ingresa los datos para la nueva cotización'
+          : resourceId 
+            ? `Actualiza la información de este ${resourceLabel}` 
+            : `Completa el formulario para crear un nuevo ${resourceLabel}`}
       </DialogDescription>
     </UIDialogHeader>
   );

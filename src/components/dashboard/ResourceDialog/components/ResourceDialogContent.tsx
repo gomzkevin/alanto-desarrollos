@@ -27,6 +27,14 @@ interface ResourceDialogContentProps {
   lead_id?: string;
   handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   uploading?: boolean;
+  isExistingClient?: boolean;
+  onExistingClientChange?: (isExisting: boolean) => void;
+  newClientData?: {
+    nombre: string;
+    email: string;
+    telefono: string;
+  };
+  onNewClientDataChange?: (field: string, value: string) => void;
 }
 
 export function ResourceDialogContent({
@@ -49,7 +57,11 @@ export function ResourceDialogContent({
   prototipo_id,
   lead_id,
   handleImageUpload,
-  uploading
+  uploading,
+  isExistingClient = true,
+  onExistingClientChange,
+  newClientData,
+  onNewClientDataChange
 }: ResourceDialogContentProps) {
   if (!isOpen) return null;
 
@@ -83,6 +95,10 @@ export function ResourceDialogContent({
             handleLeadSelect={handleLeadSelect}
             handleImageUpload={handleImageUpload}
             uploading={uploading}
+            isExistingClient={isExistingClient}
+            onExistingClientChange={onExistingClientChange}
+            newClientData={newClientData}
+            onNewClientDataChange={onNewClientDataChange}
           />
           
           <DialogFooter
