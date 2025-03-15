@@ -72,44 +72,58 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
       
       const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
       
-      // Upload to storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('desarrollo-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-      
-      if (uploadError) {
-        console.error('Error uploading file:', uploadError);
-        throw uploadError;
+      try {
+        console.log('Uploading file to bucket: desarrollo-images');
+        
+        // Upload to storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('desarrollo-images')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (uploadError) {
+          console.error('Error uploading file:', uploadError);
+          throw uploadError;
+        }
+        
+        console.log('File uploaded successfully:', uploadData);
+        
+        // Get the public URL
+        const { data: publicUrlData } = supabase.storage
+          .from('desarrollo-images')
+          .getPublicUrl(fileName);
+        
+        const url = publicUrlData.publicUrl;
+        console.log('Got public URL:', url);
+        
+        // Save to database
+        const nextOrder = (imagesQuery.data?.length || 0) + 1;
+        console.log('Adding image to database with order:', nextOrder);
+        
+        const { data: imageData, error: imageError } = await supabase
+          .from('desarrollo_imagenes')
+          .insert([{
+            desarrollo_id: desarrolloId,
+            url,
+            es_principal: false,
+            orden: nextOrder,
+          }])
+          .select()
+          .single();
+        
+        if (imageError) {
+          console.error('Error saving image data:', imageError);
+          throw imageError;
+        }
+        
+        console.log('Image data saved successfully:', imageData);
+        return imageData;
+      } catch (error) {
+        console.error('Error in uploadImageMutation:', error);
+        throw error;
       }
-      
-      // Get the public URL
-      const { data: publicUrlData } = supabase.storage
-        .from('desarrollo-images')
-        .getPublicUrl(fileName);
-      
-      const url = publicUrlData.publicUrl;
-      
-      // Save to database
-      const { data: imageData, error: imageError } = await supabase
-        .from('desarrollo_imagenes')
-        .insert([{
-          desarrollo_id: desarrolloId,
-          url,
-          es_principal: false,
-          orden: (imagesQuery.data?.length || 0) + 1,
-        }])
-        .select()
-        .single();
-      
-      if (imageError) {
-        console.error('Error saving image data:', imageError);
-        throw imageError;
-      }
-      
-      return imageData;
     },
     onSuccess: () => {
       toast({
@@ -119,6 +133,7 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
       queryClient.invalidateQueries({ queryKey: ['desarrollo-imagenes', desarrolloId] });
     },
     onError: (error) => {
+      console.error('Upload image error:', error);
       toast({
         title: "Error al subir imagen",
         description: error.message,

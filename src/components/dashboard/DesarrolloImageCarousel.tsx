@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useDesarrolloImagenes } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { Plus, Trash2, StarIcon, UploadIcon, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Star, Upload, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 
@@ -43,6 +43,7 @@ const DesarrolloImageCarousel = ({ desarrolloId, editable = false }: DesarrolloI
       return;
     }
     
+    console.log('Uploading image file:', file.name);
     uploadImage(file);
     
     // Reset the input value so the same file can be uploaded again if needed
@@ -133,7 +134,7 @@ const DesarrolloImageCarousel = ({ desarrolloId, editable = false }: DesarrolloI
                         size="sm" 
                         onClick={() => handleSetMain(image.id)}
                       >
-                        <StarIcon className="h-4 w-4" />
+                        <Star className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
@@ -158,7 +159,7 @@ const DesarrolloImageCarousel = ({ desarrolloId, editable = false }: DesarrolloI
             {isUploading ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <UploadIcon className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 mr-2" />
             )}
             Subir imagen
             <input
