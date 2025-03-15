@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,11 @@ import { useForm } from 'react-hook-form';
 import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones';
 
@@ -129,6 +135,7 @@ const AdminResourceDialog = ({
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | null>(desarrolloId || null);
   const [usarFiniquito, setUsarFiniquito] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   
   const { leads, statusOptions, getSubstatusOptions, originOptions } = useLeads();
   const { desarrollos } = useDesarrollos();
@@ -188,8 +195,14 @@ const AdminResourceDialog = ({
         } else {
           setResource(data as FormValues);
           
-          if (resourceType === 'leads' && data.estado) {
-            setSelectedStatus(data.estado);
+          if (resourceType === 'leads') {
+            if (data.estado) {
+              setSelectedStatus(data.estado);
+            }
+            
+            if (data.ultimo_contacto) {
+              setSelectedDate(new Date(data.ultimo_contacto));
+            }
           }
           
           if (resourceType === 'cotizaciones') {
@@ -225,6 +238,7 @@ const AdminResourceDialog = ({
             subestado: 'sin_contactar'
           } as LeadResource);
           setSelectedStatus('nuevo');
+          setSelectedDate(new Date());
         } else if (resourceType === 'cotizaciones') {
           setResource({
             lead_id: lead_id || '',
@@ -279,6 +293,7 @@ const AdminResourceDialog = ({
             { name: 'subestado', label: 'Subestado', type: 'select', options: selectedStatus ? getSubstatusOptions(selectedStatus) : [] },
             { name: 'origen', label: 'Origen', type: 'select', options: originOptions },
             { name: 'interes_en', label: 'Interés en', type: 'text' },
+            { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' },
             { name: 'notas', label: 'Notas', type: 'textarea' },
           ];
           break;
@@ -340,6 +355,13 @@ const AdminResourceDialog = ({
       if (name === 'usar_finiquito') {
         setUsarFiniquito(checked);
       }
+    }
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date && resource) {
+      setResource({ ...resource, ultimo_contacto: date.toISOString() } as FormValues);
     }
   };
 
@@ -459,6 +481,12 @@ const AdminResourceDialog = ({
         }
       } else if (resourceType === 'leads') {
         const leadData = dataToSave as LeadResource;
+        
+        // Ensure the ultimo_contacto is set properly
+        if (selectedDate && !leadData.ultimo_contacto) {
+          leadData.ultimo_contacto = selectedDate.toISOString();
+        }
+        
         if (!resourceId) {
           result = await supabase
             .from('leads')
@@ -471,7 +499,8 @@ const AdminResourceDialog = ({
               estado: leadData.estado,
               subestado: leadData.subestado,
               agente: leadData.agente,
-              notas: leadData.notas
+              notas: leadData.notas,
+              ultimo_contacto: leadData.ultimo_contacto
             });
         } else {
           result = await supabase
@@ -486,7 +515,7 @@ const AdminResourceDialog = ({
               subestado: leadData.subestado,
               agente: leadData.agente,
               notas: leadData.notas,
-              ultimo_contacto: new Date().toISOString()
+              ultimo_contacto: leadData.ultimo_contacto
             })
             .eq('id', resourceId);
         }
@@ -608,6 +637,35 @@ const AdminResourceDialog = ({
                 checked={resource ? (resource as any)[field.name] || false : false}
                 onCheckedChange={(checked) => handleSwitchChange(field.name, checked)}
               />
+            </div>
+          </div>
+        );
+      case 'date':
+        return (
+          <div key={field.name} className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor={field.name} className="text-right">
+              {field.label}
+            </Label>
+            <div className="col-span-3">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left", !selectedDate && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP") : "Seleccionar fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-white" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         );
