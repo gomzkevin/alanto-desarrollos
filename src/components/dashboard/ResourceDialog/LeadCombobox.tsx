@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { CommandInput, CommandItem, CommandList, CommandEmpty, Command } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Check, ChevronsUpDown, User } from 'lucide-react';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useLeads from '@/hooks/useLeads';
 
@@ -18,9 +18,9 @@ export function LeadCombobox({ value, onChange }: LeadComboboxProps) {
   const { leads = [] } = useLeads({});
   const [selectedLeadName, setSelectedLeadName] = useState('');
 
-  // Encontrar el nombre del lead seleccionado inicialmente
+  // Actualizar el nombre del lead seleccionado cuando cambia el valor o se cargan los leads
   useEffect(() => {
-    if (value) {
+    if (value && leads.length > 0) {
       const selectedLead = leads.find(lead => lead.id === value);
       if (selectedLead) {
         setSelectedLeadName(selectedLead.nombre);
@@ -28,20 +28,25 @@ export function LeadCombobox({ value, onChange }: LeadComboboxProps) {
     }
   }, [value, leads]);
 
-  // Filtrar leads basados en el término de búsqueda, sin importar mayúsculas/minúsculas
-  const filteredLeads = leads.filter(lead => 
-    lead.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (lead.email && lead.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (lead.telefono && lead.telefono.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Filtrar leads basados en el término de búsqueda
+  const filteredLeads = leads.filter(lead => {
+    const searchLower = searchQuery.toLowerCase();
+    const nombreMatches = lead.nombre?.toLowerCase().includes(searchLower);
+    const emailMatches = lead.email?.toLowerCase().includes(searchLower);
+    const telefonoMatches = lead.telefono?.toLowerCase().includes(searchLower);
+    
+    return nombreMatches || emailMatches || telefonoMatches;
+  });
 
-  const handleSelect = (leadId: string) => {
-    const selectedLead = leads.find(lead => lead.id === leadId);
+  const handleSelect = (currentValue: string) => {
+    // Encontrar el lead seleccionado
+    const selectedLead = leads.find(lead => lead.id === currentValue);
     if (selectedLead) {
-      onChange(leadId, selectedLead.nombre);
+      // Llamar al callback con el ID y nombre del lead
+      onChange(currentValue, selectedLead.nombre);
       setSelectedLeadName(selectedLead.nombre);
-      setOpen(false);
     }
+    setOpen(false);
   };
 
   return (
@@ -52,6 +57,7 @@ export function LeadCombobox({ value, onChange }: LeadComboboxProps) {
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
+          onClick={() => setOpen(!open)}
         >
           {selectedLeadName || "Seleccionar comprador..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -72,19 +78,24 @@ export function LeadCombobox({ value, onChange }: LeadComboboxProps) {
                 key={lead.id}
                 value={lead.id}
                 onSelect={() => handleSelect(lead.id)}
-                className="cursor-pointer"
+                className="cursor-pointer flex flex-col items-start"
               >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    value === lead.id ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                <div className="flex flex-col">
-                  <span>{lead.nombre}</span>
-                  {lead.email && (
-                    <span className="text-xs text-muted-foreground">{lead.email}</span>
-                  )}
+                <div className="flex items-center w-full">
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === lead.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-medium">{lead.nombre}</span>
+                    {lead.email && (
+                      <span className="text-xs text-muted-foreground">{lead.email}</span>
+                    )}
+                    {lead.telefono && !lead.email && (
+                      <span className="text-xs text-muted-foreground">{lead.telefono}</span>
+                    )}
+                  </div>
                 </div>
               </CommandItem>
             ))}
