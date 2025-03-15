@@ -130,6 +130,7 @@ const DesarrolloDetailPage = () => {
                     Imágenes del desarrollo
                   </h2>
                 </div>
+                {/* Fix: Pass isAdmin directly as a boolean, not as a function */}
                 <DesarrolloImageCarousel desarrolloId={id as string} editable={isAdmin} />
               </div>
               
