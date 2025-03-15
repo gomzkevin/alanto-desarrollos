@@ -1,4 +1,3 @@
-
 export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones' | 'unidades';
 
 export interface AdminResourceDialogProps {
@@ -14,6 +13,7 @@ export interface AdminResourceDialogProps {
   desarrolloId?: string;
   lead_id?: string;
   prototipo_id?: string;
+  defaultValues?: Record<string, any>;
 }
 
 export interface DesarrolloResource {

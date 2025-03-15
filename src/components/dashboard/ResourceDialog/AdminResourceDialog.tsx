@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -42,7 +41,8 @@ const AdminResourceDialog = ({
   onSuccess,
   desarrolloId,
   lead_id,
-  prototipo_id
+  prototipo_id,
+  defaultValues
 }: AdminResourceDialogProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,7 +63,6 @@ const AdminResourceDialog = ({
     setDialogOpen(newOpen);
   };
 
-  // Configurar campos dinámicamente según el tipo de recurso
   useEffect(() => {
     if (resourceType === 'prototipos') {
       setFields([
@@ -115,7 +114,6 @@ const AdminResourceDialog = ({
     }
   }, [resourceType]);
 
-  // Handle amenities for desarrollo resources
   useEffect(() => {
     if (resource && resourceType === 'desarrollos') {
       const desarrolloResource = resource as DesarrolloResource;
@@ -130,7 +128,6 @@ const AdminResourceDialog = ({
     }
   }, [resource, resourceType]);
 
-  // Cargar datos iniciales
   useEffect(() => {
     const fetchResource = async () => {
       if (!isOpen) return;
@@ -139,7 +136,6 @@ const AdminResourceDialog = ({
       
       try {
         if (resourceId) {
-          // Cargar recurso existente
           let query;
           
           if (resourceType === 'desarrollos') {
@@ -158,7 +154,6 @@ const AdminResourceDialog = ({
           if (error) throw error;
           
           if (resourceType === 'desarrollos' && data.amenidades) {
-            // Convertir amenidades si es necesario
             try {
               if (typeof data.amenidades === 'string') {
                 data.amenidades = JSON.parse(data.amenidades);
@@ -173,7 +168,6 @@ const AdminResourceDialog = ({
           
           setResource(data);
         } else {
-          // Crear nuevo recurso con valores por defecto
           if (resourceType === 'desarrollos') {
             setResource({
               nombre: '',
@@ -209,14 +203,16 @@ const AdminResourceDialog = ({
               subestado: 'sin_contactar'
             });
           } else if (resourceType === 'cotizaciones') {
-            setResource({
+            const initialValues = {
               lead_id: lead_id || '',
               desarrollo_id: desarrolloId || '',
               prototipo_id: prototipo_id || '',
               monto_anticipo: 0,
               numero_pagos: 0,
-              usar_finiquito: false
-            });
+              usar_finiquito: false,
+              ...(defaultValues || {})
+            };
+            setResource(initialValues);
           } else if (resourceType === 'unidades') {
             setResource({
               prototipo_id: prototipo_id || '',
@@ -238,9 +234,8 @@ const AdminResourceDialog = ({
     };
     
     fetchResource();
-  }, [isOpen, resourceId, resourceType, desarrolloId, lead_id, prototipo_id, toast]);
+  }, [isOpen, resourceId, resourceType, desarrolloId, lead_id, prototipo_id, defaultValues, toast]);
 
-  // Guardar recurso
   const saveResource = async (formData: FormValues) => {
     setIsSubmitting(true);
     
@@ -248,12 +243,10 @@ const AdminResourceDialog = ({
       let response;
       
       if (resourceId) {
-        // Actualizar recurso existente
         if (resourceType === 'desarrollos') {
           const desarrolloData = formData as DesarrolloResource;
           const dataToSave = { ...desarrolloData };
           
-          // Convert amenidades to a JSON string if needed
           if (selectedAmenities.length > 0) {
             dataToSave.amenidades = selectedAmenities as any;
           }
@@ -352,10 +345,8 @@ const AdminResourceDialog = ({
             .eq('id', resourceId);
         }
       } else {
-        // Crear nuevo recurso
         if (resourceType === 'desarrollos') {
           const desarrolloData = formData as DesarrolloResource;
-          // Asegurar que amenidades es un string JSON para guardar
           const dataToSave = { ...desarrolloData };
           
           const amenidadesJson = JSON.stringify(selectedAmenities) as Json;
