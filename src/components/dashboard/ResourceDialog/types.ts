@@ -43,6 +43,9 @@ export interface DesarrolloResource {
   adr_base?: number;
   ocupacion_anual?: number;
   amenidades?: string[] | Json;
+  desarrollo_id?: string; // Added for type safety
+  lead_id?: string; // Added for type safety
+  prototipo_id?: string; // Added for type safety
 }
 
 export interface PrototipoResource {
@@ -62,6 +65,8 @@ export interface PrototipoResource {
   descripcion?: string;
   imagen_url?: string;
   caracteristicas?: Json;
+  lead_id?: string; // Added for type safety
+  prototipo_id?: string; // Added for type safety
 }
 
 export interface UnidadResource {
@@ -74,6 +79,8 @@ export interface UnidadResource {
   comprador_nombre?: string;
   precio_venta?: number;
   fecha_venta?: string;
+  desarrollo_id?: string; // Added for type safety
+  lead_id?: string; // Added for type safety
 }
 
 export interface LeadResource {
@@ -89,6 +96,9 @@ export interface LeadResource {
   notas?: string;
   fecha_creacion?: string;
   ultimo_contacto?: string;
+  desarrollo_id?: string; // Added for type safety
+  prototipo_id?: string; // Added for type safety
+  lead_id?: string; // Added for type safety
 }
 
 export interface CotizacionResource {

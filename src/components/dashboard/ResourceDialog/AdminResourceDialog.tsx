@@ -72,9 +72,12 @@ const AdminResourceDialog = ({
 
   // Update selectedDesarrolloId when resource changes
   useEffect(() => {
-    if (resource && resource.desarrollo_id) {
-      console.log('Setting selectedDesarrolloId from resource:', resource.desarrollo_id);
-      setSelectedDesarrolloId(resource.desarrollo_id as string);
+    // Use type assertion to access properties that might not exist on all resource types
+    const resourceAny = resource as any;
+    
+    if (resource && resourceAny.desarrollo_id) {
+      console.log('Setting selectedDesarrolloId from resource:', resourceAny.desarrollo_id);
+      setSelectedDesarrolloId(resourceAny.desarrollo_id);
     } else if (desarrolloId) {
       console.log('Setting selectedDesarrolloId from props:', desarrolloId);
       setSelectedDesarrolloId(desarrolloId);
@@ -87,7 +90,7 @@ const AdminResourceDialog = ({
     setSelectedDesarrolloId(desarrolloId);
     
     if (resource) {
-      // Update resource with new desarrollo_id
+      // Use type assertion to update properties that might not exist on all resource types
       const updatedResource = {
         ...resource,
         desarrollo_id: desarrolloId,
@@ -101,8 +104,11 @@ const AdminResourceDialog = ({
 
   const handleSave = async () => {
     if (resource) {
+      // Use type assertion for validation
+      const resourceAny = resource as any;
+      
       if (resourceType === 'cotizaciones') {
-        const cotizacionData = resource;
+        const cotizacionData = resourceAny;
         
         // Validate required fields
         if (!isExistingClient && !resourceId) {
@@ -201,7 +207,9 @@ const AdminResourceDialog = ({
 
   useEffect(() => {
     if (isOpen) {
-      const hasLeadId = lead_id || (resource && (resource as any).lead_id);
+      // Use type assertion to check for lead_id
+      const resourceAny = resource as any;
+      const hasLeadId = lead_id || (resource && resourceAny.lead_id);
       setIsExistingClient(!!hasLeadId);
     } else {
       setNewClientData({

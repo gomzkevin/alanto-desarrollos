@@ -1,3 +1,4 @@
+
 import { FormValues } from './types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +38,11 @@ interface GenericFormProps {
   };
   onNewClientDataChange?: (field: string, value: string) => void;
   onDesarrolloSelect?: (desarrolloId: string) => void;
+  // Add missing properties
+  desarrolloId?: string;
+  resourceId?: string;
+  prototipo_id?: string;
+  lead_id?: string;
 }
 
 export default function GenericForm({
