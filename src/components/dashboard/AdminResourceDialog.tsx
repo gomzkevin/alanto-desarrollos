@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -14,9 +13,10 @@ import { useForm } from 'react-hook-form';
 import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
+import useDesarrolloImagenes from '@/hooks/useDesarrolloImagenes';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Upload } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
@@ -136,12 +136,17 @@ const AdminResourceDialog = ({
   const [usarFiniquito, setUsarFiniquito] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [uploading, setUploading] = useState(false);
   
   const { leads, statusOptions, getSubstatusOptions, originOptions } = useLeads();
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos({ 
     desarrolloId: selectedDesarrolloId 
   });
+  
+  const { uploadImage, isUploading } = useDesarrolloImagenes(
+    resourceType === 'desarrollos' && resourceId ? resourceId : undefined
+  );
 
   const isOpen = open !== undefined ? open : dialogOpen;
 
@@ -365,6 +370,67 @@ const AdminResourceDialog = ({
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    setUploading(true);
+    
+    if (resourceType === 'desarrollos' && resourceId) {
+      try {
+        await uploadImage(file);
+        toast({
+          title: 'Imagen subida',
+          description: 'La imagen ha sido subida exitosamente',
+        });
+      } catch (error: any) {
+        toast({
+          title: 'Error',
+          description: `Error al subir la imagen: ${error.message}`,
+          variant: 'destructive',
+        });
+      } finally {
+        setUploading(false);
+      }
+    } else {
+      try {
+        const fileName = `${Date.now()}-${file.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('desarrollo-images')
+          .upload(fileName, file);
+        
+        if (uploadError) {
+          console.error('Error uploading file:', uploadError);
+          throw uploadError;
+        }
+        
+        const { data: publicUrlData } = supabase.storage
+          .from('desarrollo-images')
+          .getPublicUrl(fileName);
+        
+        const url = publicUrlData.publicUrl;
+        
+        if (resource) {
+          setResource({ ...resource, imagen_url: url } as FormValues);
+        }
+        
+        toast({
+          title: 'Imagen subida',
+          description: 'La imagen ha sido subida exitosamente',
+        });
+      } catch (error: any) {
+        toast({
+          title: 'Error',
+          description: `Error al subir la imagen: ${error.message}`,
+          variant: 'destructive',
+        });
+      } finally {
+        setUploading(false);
+      }
+    }
+  };
+
   const saveResource = async (values: FormValues) => {
     setIsSubmitting(true);
     
@@ -482,7 +548,6 @@ const AdminResourceDialog = ({
       } else if (resourceType === 'leads') {
         const leadData = dataToSave as LeadResource;
         
-        // Ensure the ultimo_contacto is set properly
         if (selectedDate && !leadData.ultimo_contacto) {
           leadData.ultimo_contacto = selectedDate.toISOString();
         }
@@ -597,6 +662,66 @@ const AdminResourceDialog = ({
   const renderFormField = (field: any) => {
     if (resourceType === 'prototipos' && field.name === 'desarrollo_id' && desarrolloId) {
       return null;
+    }
+    
+    if (field.name === 'imagen_url' && resourceType === 'desarrollos') {
+      return (
+        <div key={field.name} className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor={field.name} className="text-right">
+            {field.label}
+          </Label>
+          <div className="col-span-3">
+            {resourceId ? (
+              <p className="text-sm text-gray-500 mb-2">
+                Las imágenes del desarrollo se gestionan directamente desde la vista de detalle del desarrollo.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    id={`${field.name}-upload`}
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  <Label
+                    htmlFor={`${field.name}-upload`}
+                    className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Subir imagen
+                  </Label>
+                  {uploading && <span className="text-sm text-gray-500">Subiendo...</span>}
+                </div>
+                
+                {resource && (resource as any)[field.name] && (
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500 mb-1">Vista previa:</p>
+                    <img 
+                      src={(resource as any)[field.name]} 
+                      alt="Preview" 
+                      className="max-h-32 rounded-md object-cover" 
+                    />
+                  </div>
+                )}
+                
+                <p className="text-sm text-gray-500 mt-1">
+                  O introduce manualmente la URL de la imagen:
+                </p>
+                <Input
+                  type="text"
+                  id={field.name}
+                  name={field.name}
+                  value={resource ? (resource as any)[field.name] || '' : ''}
+                  onChange={handleChange}
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      );
     }
     
     switch (field.type) {

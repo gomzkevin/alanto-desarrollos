@@ -214,6 +214,45 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
     }
   });
   
+  // Reorder images mutation
+  const reorderImagesMutation = useMutation({
+    mutationFn: async (imageIds: string[]) => {
+      if (!desarrolloId) throw new Error('Desarrollo ID is required');
+      
+      // Update each image with its new order
+      const updates = imageIds.map((id, index) => ({
+        id,
+        orden: index + 1
+      }));
+      
+      const promises = updates.map(update => 
+        supabase
+          .from('desarrollo_imagenes')
+          .update({ orden: update.orden })
+          .eq('id', update.id)
+      );
+      
+      await Promise.all(promises);
+      
+      return { success: true };
+    },
+    onSuccess: () => {
+      toast({
+        title: "Orden actualizado",
+        description: "Se ha actualizado el orden de las imágenes.",
+      });
+      // Invalidate query to refetch images
+      queryClient.invalidateQueries({ queryKey: ['desarrollo-imagenes', desarrolloId] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al reordenar imágenes",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
   return {
     images: imagesQuery.data || [],
     isLoading: imagesQuery.isLoading,
@@ -222,6 +261,7 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
     uploadImage: uploadImageMutation.mutate,
     deleteImage: deleteImageMutation.mutate,
     setMainImage: setMainImageMutation.mutate,
+    reorderImages: reorderImagesMutation.mutate,
     isUploading: uploadImageMutation.isPending,
     isDeleting: deleteImageMutation.isPending,
   };
