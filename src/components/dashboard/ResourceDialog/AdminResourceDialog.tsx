@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -37,12 +36,7 @@ const AdminResourceDialog = ({
     setDialogOpen(newOpen);
   };
 
-  const { 
-    resource, 
-    setResource, 
-    fields, 
-    isLoading 
-  } = useResourceData({
+  const resourceDataDeps = {
     resourceType,
     resourceId,
     desarrolloId,
@@ -51,9 +45,25 @@ const AdminResourceDialog = ({
     selectedStatus,
     usarFiniquito,
     selectedAmenities,
+  };
+
+  const { 
+    resource, 
+    setResource, 
+    fields, 
+    isLoading 
+  } = useResourceData({
+    ...resourceDataDeps,
     onStatusChange: setSelectedStatus,
     onAmenitiesChange: setSelectedAmenities
   });
+
+  const resourceActionsDeps = {
+    resourceType,
+    resourceId, 
+    desarrolloId,
+    selectedAmenities
+  };
 
   const {
     isSubmitting,
@@ -61,13 +71,10 @@ const AdminResourceDialog = ({
     handleImageUpload,
     saveResource
   } = useResourceActions({
-    resourceType,
-    resourceId,
-    desarrolloId,
+    ...resourceActionsDeps,
     onClose: () => handleOpenChange(false),
     onSave,
-    onSuccess,
-    selectedAmenities
+    onSuccess
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
