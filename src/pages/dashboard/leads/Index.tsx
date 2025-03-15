@@ -1,20 +1,18 @@
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 import useLeads from '@/hooks/useLeads';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ExportPDFButton } from '@/components/dashboard/ExportPDFButton';
-import { Loader2, Mail, Phone, Calendar, Tag, Plus, Edit, Eye } from 'lucide-react';
+import { Loader2, Mail, Phone, Calendar, Tag, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const LeadsPage = () => {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const { leads, isLoading, refetch } = useLeads();
+  const { leads, isLoading, refetch, getStatusLabel, getSubstatusLabel, getOriginLabel } = useLeads();
   
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
@@ -39,26 +37,15 @@ const LeadsPage = () => {
     switch(status) {
       case 'nuevo':
         return 'bg-blue-100 text-blue-800';
-      case 'contactado':
+      case 'seguimiento':
         return 'bg-yellow-100 text-yellow-800';
-      case 'interesado':
-        return 'bg-purple-100 text-purple-800';
-      case 'calificado':
-        return 'bg-green-100 text-green-800';
-      case 'negociacion':
-        return 'bg-amber-100 text-amber-800';
       case 'convertido':
-        return 'bg-emerald-100 text-emerald-800';
+        return 'bg-green-100 text-green-800';
       case 'perdido':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
-  };
-  
-  const capitalizeFirstLetter = (text: string | null) => {
-    if (!text) return '';
-    return text.charAt(0).toUpperCase() + text.slice(1);
   };
   
   return (
@@ -98,6 +85,7 @@ const LeadsPage = () => {
                       <TableHead>Nombre</TableHead>
                       <TableHead>Contacto</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead>Subestado</TableHead>
                       <TableHead>Interés</TableHead>
                       <TableHead>Origen</TableHead>
                       <TableHead>Último contacto</TableHead>
@@ -126,15 +114,24 @@ const LeadsPage = () => {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`${getStatusStyle(lead.estado)}`}>
-                            {capitalizeFirstLetter(lead.estado || 'Nuevo')}
+                            {getStatusLabel(lead.estado)}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {lead.estado && lead.subestado ? (
+                            <span className="text-sm text-gray-600">
+                              {getSubstatusLabel(lead.estado, lead.subestado)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">No definido</span>
+                          )}
                         </TableCell>
                         <TableCell>{lead.interes_en || '-'}</TableCell>
                         <TableCell>
                           {lead.origen && (
                             <div className="flex items-center">
                               <Tag className="mr-1 h-3 w-3 text-slate-400" />
-                              {lead.origen}
+                              {getOriginLabel(lead.origen)}
                             </div>
                           )}
                         </TableCell>

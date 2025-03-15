@@ -28,7 +28,6 @@ export interface AdminResourceDialogProps {
   lead_id?: string;
 }
 
-// Define interfaces for each resource type
 interface DesarrolloResource {
   id?: string;
   nombre: string;
@@ -79,6 +78,7 @@ interface LeadResource {
   interes_en?: string;
   origen?: string;
   estado?: string;
+  subestado?: string;
   agente?: string;
   notas?: string;
   fecha_creacion?: string;
@@ -98,7 +98,6 @@ interface CotizacionResource {
   created_at?: string;
 }
 
-// Union type for all resource types
 type FormValues = DesarrolloResource | PrototipoResource | LeadResource | CotizacionResource;
 
 const TIPOS_PROPIEDADES = [
@@ -129,8 +128,9 @@ const AdminResourceDialog = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | null>(desarrolloId || null);
   const [usarFiniquito, setUsarFiniquito] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   
-  const { leads } = useLeads();
+  const { leads, statusOptions, getSubstatusOptions, originOptions } = useLeads();
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos({ 
     desarrolloId: selectedDesarrolloId 
@@ -187,6 +187,11 @@ const AdminResourceDialog = ({
           });
         } else {
           setResource(data as FormValues);
+          
+          if (resourceType === 'leads' && data.estado) {
+            setSelectedStatus(data.estado);
+          }
+          
           if (resourceType === 'cotizaciones') {
             setSelectedDesarrolloId(data.desarrollo_id);
             setUsarFiniquito(data.usar_finiquito || false);
@@ -215,8 +220,11 @@ const AdminResourceDialog = ({
           } as DesarrolloResource);
         } else if (resourceType === 'leads') {
           setResource({
-            nombre: ''
+            nombre: '',
+            estado: 'nuevo',
+            subestado: 'sin_contactar'
           } as LeadResource);
+          setSelectedStatus('nuevo');
         } else if (resourceType === 'cotizaciones') {
           setResource({
             lead_id: lead_id || '',
@@ -267,8 +275,9 @@ const AdminResourceDialog = ({
             { name: 'email', label: 'Email', type: 'email' },
             { name: 'telefono', label: 'Teléfono', type: 'text' },
             { name: 'agente', label: 'Agente', type: 'text' },
-            { name: 'estado', label: 'Estado', type: 'text' },
-            { name: 'origen', label: 'Origen', type: 'text' },
+            { name: 'estado', label: 'Estado', type: 'select', options: statusOptions },
+            { name: 'subestado', label: 'Subestado', type: 'select', options: selectedStatus ? getSubstatusOptions(selectedStatus) : [] },
+            { name: 'origen', label: 'Origen', type: 'select', options: originOptions },
             { name: 'interes_en', label: 'Interés en', type: 'text' },
             { name: 'notas', label: 'Notas', type: 'textarea' },
           ];
@@ -297,7 +306,7 @@ const AdminResourceDialog = ({
       fetchResource();
       defineFields();
     }
-  }, [isOpen, resourceId, resourceType, toast, leads, desarrollos, prototipos, usarFiniquito, desarrolloId, selectedDesarrolloId, lead_id]);
+  }, [isOpen, resourceId, resourceType, toast, leads, desarrollos, prototipos, usarFiniquito, desarrolloId, selectedDesarrolloId, lead_id, statusOptions, getSubstatusOptions, originOptions, selectedStatus]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -315,6 +324,11 @@ const AdminResourceDialog = ({
         if (resource) {
           setResource({ ...resource, prototipo_id: '' } as FormValues);
         }
+      }
+      
+      if (name === 'estado') {
+        setSelectedStatus(value);
+        setResource({ ...resource, subestado: '' } as FormValues);
       }
     }
   };
@@ -455,6 +469,7 @@ const AdminResourceDialog = ({
               interes_en: leadData.interes_en,
               origen: leadData.origen,
               estado: leadData.estado,
+              subestado: leadData.subestado,
               agente: leadData.agente,
               notas: leadData.notas
             });
@@ -468,8 +483,10 @@ const AdminResourceDialog = ({
               interes_en: leadData.interes_en,
               origen: leadData.origen,
               estado: leadData.estado,
+              subestado: leadData.subestado,
               agente: leadData.agente,
-              notas: leadData.notas
+              notas: leadData.notas,
+              ultimo_contacto: new Date().toISOString()
             })
             .eq('id', resourceId);
         }
@@ -565,10 +582,10 @@ const AdminResourceDialog = ({
                 value={resource ? (resource as any)[field.name] || '' : ''}
                 onValueChange={(value) => handleSelectChange(field.name, value)}
               >
-                <SelectTrigger id={field.name}>
+                <SelectTrigger id={field.name} className="bg-white">
                   <SelectValue placeholder={`Seleccionar ${field.label}`} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {field.options.map((option: { value: string, label: string }) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
@@ -663,4 +680,3 @@ const AdminResourceDialog = ({
 };
 
 export default AdminResourceDialog;
-

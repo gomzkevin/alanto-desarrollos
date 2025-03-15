@@ -5,15 +5,41 @@ import { Tables } from '@/integrations/supabase/types';
 
 export type Lead = Tables<"leads">;
 
+// Status principal options
 export const LEAD_STATUS_OPTIONS = [
   { value: 'nuevo', label: 'Nuevo' },
-  { value: 'contactado', label: 'Contactado' },
-  { value: 'interesado', label: 'Interesado' },
-  { value: 'calificado', label: 'Calificado' },
-  { value: 'negociacion', label: 'En negociación' },
+  { value: 'seguimiento', label: 'Seguimiento' },
   { value: 'convertido', label: 'Convertido' },
   { value: 'perdido', label: 'Perdido' }
 ];
+
+// Substatus options based on main status
+export const LEAD_SUBSTATUS_OPTIONS = {
+  nuevo: [
+    { value: 'sin_contactar', label: 'Sin contactar' },
+    { value: 'contacto_inicial', label: 'Contacto inicial' },
+    { value: 'solicito_info', label: 'Solicitó información' }
+  ],
+  seguimiento: [
+    { value: 'cotizacion_enviada', label: 'Cotización enviada' },
+    { value: 'negociacion', label: 'En negociación' },
+    { value: 'decidiendo', label: 'Decidiendo' },
+    { value: 'requiere_visita', label: 'Requiere visita' }
+  ],
+  convertido: [
+    { value: 'anticipo', label: 'Anticipo' },
+    { value: 'venta', label: 'Venta' },
+    { value: 'plan_pagos', label: 'Plan de pagos' },
+    { value: 'finiquito', label: 'Finiquito' }
+  ],
+  perdido: [
+    { value: 'sin_respuesta', label: 'Sin respuesta' },
+    { value: 'cambio_opinion', label: 'Cambió de opinión' },
+    { value: 'precio_alto', label: 'Precio alto' },
+    { value: 'otro_desarrollo', label: 'Eligió otro desarrollo' },
+    { value: 'otro', label: 'Otro motivo' }
+  ]
+};
 
 export const LEAD_ORIGIN_OPTIONS = [
   { value: 'sitio_web', label: 'Sitio web' },
@@ -22,6 +48,9 @@ export const LEAD_ORIGIN_OPTIONS = [
   { value: 'llamada', label: 'Llamada' },
   { value: 'redes_sociales', label: 'Redes sociales' },
   { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'portal_inmobiliario', label: 'Portal inmobiliario' },
+  { value: 'visita_fisica', label: 'Visita física' },
+  { value: 'campaña_email', label: 'Campaña de email' },
   { value: 'otro', label: 'Otro' }
 ];
 
@@ -86,13 +115,44 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
     queryFn: fetchLeads
   });
 
+  // Function to get substatus options based on a status
+  const getSubstatusOptions = (status: string) => {
+    return LEAD_SUBSTATUS_OPTIONS[status as keyof typeof LEAD_SUBSTATUS_OPTIONS] || [];
+  };
+
+  // Function to find label for a given status value
+  const getStatusLabel = (value: string | null) => {
+    if (!value) return '';
+    const option = LEAD_STATUS_OPTIONS.find(opt => opt.value === value);
+    return option ? option.label : value;
+  };
+
+  // Function to find label for a given substatus value
+  const getSubstatusLabel = (status: string | null, substatus: string | null) => {
+    if (!status || !substatus) return '';
+    const options = getSubstatusOptions(status);
+    const option = options.find(opt => opt.value === substatus);
+    return option ? option.label : substatus;
+  };
+
+  // Function to find label for a given origin value
+  const getOriginLabel = (value: string | null) => {
+    if (!value) return '';
+    const option = LEAD_ORIGIN_OPTIONS.find(opt => opt.value === value);
+    return option ? option.label : value;
+  };
+
   return {
     leads: queryResult.data || [],
     isLoading: queryResult.isLoading,
     error: queryResult.error,
     refetch: queryResult.refetch,
     statusOptions: LEAD_STATUS_OPTIONS,
-    originOptions: LEAD_ORIGIN_OPTIONS
+    getSubstatusOptions,
+    originOptions: LEAD_ORIGIN_OPTIONS,
+    getStatusLabel,
+    getSubstatusLabel,
+    getOriginLabel
   };
 };
 
