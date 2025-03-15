@@ -25,6 +25,8 @@ interface ResourceDialogContentProps {
   desarrolloId?: string;
   prototipo_id?: string;
   lead_id?: string;
+  handleImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  uploading?: boolean;
 }
 
 export function ResourceDialogContent({
@@ -45,7 +47,9 @@ export function ResourceDialogContent({
   saveResource,
   desarrolloId,
   prototipo_id,
-  lead_id
+  lead_id,
+  handleImageUpload,
+  uploading
 }: ResourceDialogContentProps) {
   if (!isOpen) return null;
 
@@ -77,6 +81,8 @@ export function ResourceDialogContent({
             prototipo_id={prototipo_id}
             lead_id={lead_id}
             handleLeadSelect={handleLeadSelect}
+            handleImageUpload={handleImageUpload}
+            uploading={uploading}
           />
           
           <DialogFooter

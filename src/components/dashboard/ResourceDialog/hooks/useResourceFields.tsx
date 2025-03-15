@@ -23,6 +23,17 @@ export function useResourceFields(resourceType: ResourceType) {
         { name: 'estacionamientos', label: 'Estacionamientos', type: 'number' },
         { name: 'total_unidades', label: 'Total de unidades', type: 'number' },
         { name: 'descripcion', label: 'Descripción', type: 'textarea' },
+        { name: 'imagen_url', label: 'Imagen principal', type: 'image' },
+        { name: 'caracteristicas', label: 'Características adicionales', type: 'textarea', 
+          tab: 'Características' },
+        { name: 'disponibilidad', label: 'Disponibilidad', type: 'text', 
+          tab: 'Características' },
+        { name: 'fecha_entrega', label: 'Fecha estimada de entrega', type: 'text', 
+          tab: 'Características' },
+        { name: 'materiales', label: 'Materiales de construcción', type: 'textarea', 
+          tab: 'Características' },
+        { name: 'ubicacion_interna', label: 'Ubicación dentro del desarrollo', type: 'text', 
+          tab: 'Características' },
       ]);
     } else if (resourceType === 'unidades') {
       setFields([

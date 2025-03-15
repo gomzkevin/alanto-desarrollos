@@ -7,6 +7,8 @@ import { AdminResourceDialogProps } from './types';
 import { useResourceForm } from './hooks/useResourceForm';
 import { useResourceFields } from './hooks/useResourceFields';
 import { ResourceDialogContent } from './components/ResourceDialogContent';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminResourceDialog = ({
   open,
@@ -24,6 +26,8 @@ const AdminResourceDialog = ({
   defaultValues
 }: AdminResourceDialogProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
   
   // Control de estado del diálogo
   const isOpen = open !== undefined ? open : dialogOpen;
@@ -49,7 +53,8 @@ const AdminResourceDialog = ({
     handleSwitchChange,
     handleLeadSelect,
     handleAmenitiesChange,
-    saveResource
+    saveResource,
+    setResource
   } = useResourceForm({
     resourceType,
     resourceId,
@@ -69,6 +74,49 @@ const AdminResourceDialog = ({
           handleOpenChange(false);
         }
       });
+    }
+  };
+
+  // Handler for image upload
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    setUploading(true);
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${resourceType}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    
+    try {
+      const { data, error } = await supabase.storage
+        .from('desarrollo-images')
+        .upload(fileName, file);
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('desarrollo-images')
+        .getPublicUrl(fileName);
+      
+      if (resource) {
+        setResource({
+          ...resource,
+          imagen_url: urlData.publicUrl
+        });
+      }
+      
+      toast({
+        title: 'Imagen subida',
+        description: 'La imagen ha sido subida correctamente',
+      });
+    } catch (error: any) {
+      console.error('Error subiendo imagen:', error);
+      toast({
+        title: 'Error',
+        description: `No se pudo subir la imagen: ${error.message}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
     }
   };
   
@@ -107,6 +155,8 @@ const AdminResourceDialog = ({
           desarrolloId={desarrolloId}
           prototipo_id={prototipo_id}
           lead_id={lead_id}
+          handleImageUpload={handleImageUpload}
+          uploading={uploading}
         />
       </Dialog>
     </>

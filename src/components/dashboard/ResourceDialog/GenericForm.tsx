@@ -11,7 +11,9 @@ import { useMemo, useState, useEffect } from 'react';
 import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
-import { LeadCombobox } from './LeadCombobox';
+import { ClientSearch } from './components/ClientSearch';
+import { Button } from '@/components/ui/button';
+import { Upload, Loader2 } from 'lucide-react';
 
 interface GenericFormProps {
   fields: FieldDefinition[];
@@ -96,7 +98,7 @@ export default function GenericForm({
   const renderFormFields = (tabName?: string) => {
     const fieldsToRender = hasTabs 
       ? fields.filter(field => field.tab === tabName)
-      : fields;
+      : fields.filter(field => !field.tab);
     
     return (
       <div className="grid gap-4 py-4">
@@ -164,10 +166,55 @@ export default function GenericForm({
               </div>
             )}
             
+            {field.type === 'image' && (
+              <div className="space-y-4">
+                {(resource as any)[field.name] && (
+                  <div className="relative w-full aspect-video rounded-md overflow-hidden bg-slate-100">
+                    <img 
+                      src={(resource as any)[field.name]} 
+                      alt="Imagen" 
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = 'image/*';
+                      input.onchange = (e) => {
+                        if (handleImageUpload) {
+                          handleImageUpload(e as any);
+                        }
+                      };
+                      input.click();
+                    }}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Subiendo...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Subir imagen
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+            
             {field.type === 'select-lead' && (
-              <LeadCombobox 
+              <ClientSearch 
                 value={(resource as any)[field.name] || ''}
-                onChange={(leadId, leadName) => {
+                onSelect={(leadId, leadName) => {
                   if (handleLeadSelect) {
                     handleLeadSelect(leadId, leadName);
                   } else {
@@ -236,12 +283,17 @@ export default function GenericForm({
   
   if (hasTabs) {
     return (
-      <Tabs defaultValue={tabs[0]}>
+      <Tabs defaultValue="Principal">
         <TabsList className="mb-4">
+          <TabsTrigger value="Principal">Principal</TabsTrigger>
           {tabs.map(tab => (
             <TabsTrigger key={tab} value={tab}>{tab}</TabsTrigger>
           ))}
         </TabsList>
+        
+        <TabsContent value="Principal">
+          {renderFormFields()}
+        </TabsContent>
         
         {tabs.map(tab => (
           <TabsContent key={tab} value={tab}>

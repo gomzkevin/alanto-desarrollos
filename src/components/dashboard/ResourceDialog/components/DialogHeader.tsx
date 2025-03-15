@@ -5,8 +5,6 @@ import {
   DialogTitle, 
   DialogDescription 
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
 import { ResourceType } from '../types';
 
 interface DialogHeaderProps {
@@ -53,14 +51,6 @@ export function DialogHeader({ resourceType, resourceId, onClose }: DialogHeader
           ? `Actualiza la información de este ${resourceLabel}` 
           : `Completa el formulario para crear un nuevo ${resourceLabel}`}
       </DialogDescription>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute top-2 right-2"
-        onClick={onClose}
-      >
-        <X className="h-4 w-4" />
-      </Button>
     </UIDialogHeader>
   );
 }
