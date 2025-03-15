@@ -9,7 +9,40 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Create client with retries on network errors
+export const supabase = createClient<Database>(
+  SUPABASE_URL, 
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+    global: {
+      fetch: async (url, options) => {
+        // Maximum number of retries
+        const MAX_RETRIES = 3;
+        let retries = 0;
+        let lastError;
+
+        while (retries < MAX_RETRIES) {
+          try {
+            return await fetch(url, options);
+          } catch (error) {
+            lastError = error;
+            retries++;
+            console.log(`Fetch attempt ${retries} failed, retrying...`, error);
+            // Wait a bit before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, retries)));
+          }
+        }
+
+        console.error('Maximum retries reached. Last error:', lastError);
+        throw lastError;
+      }
+    }
+  }
+);
 
 // Fetch financial configuration based on desarrollo_id
 // If desarrollo_id is null, it will fetch the global configuration (id=1)

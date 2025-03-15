@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
+import { useToast } from '@/hooks/use-toast';
 
 export type Lead = Tables<"leads">;
 
@@ -63,6 +64,7 @@ type FetchLeadsOptions = {
 
 export const useLeads = (options: FetchLeadsOptions = {}) => {
   const { estado, agente, limit, search } = options;
+  const { toast } = useToast();
   
   // Function to fetch leads
   const fetchLeads = async () => {
@@ -98,6 +100,11 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
       
       if (error) {
         console.error('Error fetching leads:', error);
+        toast({
+          title: 'Error',
+          description: `Error al cargar los prospectos: ${error.message}`,
+          variant: 'destructive',
+        });
         throw new Error(error.message);
       }
       
@@ -105,6 +112,44 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
       return data as Lead[];
     } catch (error) {
       console.error('Error in fetchLeads:', error);
+      toast({
+        title: 'Error de conexión',
+        description: 'No se pudieron cargar los prospectos. Intente nuevamente.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  // Function to update lead
+  const updateLead = async (id: string, updatedData: Partial<Lead>) => {
+    try {
+      console.log('Updating lead with data:', updatedData);
+      
+      const { data, error } = await supabase
+        .from('leads')
+        .update(updatedData)
+        .eq('id', id)
+        .select();
+      
+      if (error) {
+        console.error('Error updating lead:', error);
+        toast({
+          title: 'Error',
+          description: `No se pudo actualizar el prospecto: ${error.message}`,
+          variant: 'destructive',
+        });
+        throw new Error(error.message);
+      }
+      
+      toast({
+        title: 'Prospecto actualizado',
+        description: 'El prospecto se ha actualizado correctamente',
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error in updateLead:', error);
       throw error;
     }
   };
@@ -112,7 +157,9 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
   // Use React Query to fetch and cache the data
   const queryResult = useQuery({
     queryKey: ['leads', estado, agente, limit, search],
-    queryFn: fetchLeads
+    queryFn: fetchLeads,
+    retry: 3,
+    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
   });
 
   // Function to get substatus options based on a status
@@ -147,6 +194,7 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
     isLoading: queryResult.isLoading,
     error: queryResult.error,
     refetch: queryResult.refetch,
+    updateLead,
     statusOptions: LEAD_STATUS_OPTIONS,
     getSubstatusOptions,
     originOptions: LEAD_ORIGIN_OPTIONS,
