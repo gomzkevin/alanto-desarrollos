@@ -55,7 +55,7 @@ export const LineChart = (props) => {
       showAnimation={props.showAnimation !== false}
       showGridLines={true}
       animationDuration={1000}
-      showGradient={props.showGradient !== false}
+      // Removing showGradient as it doesn't exist in the type definitions
       areaOpacity={0.2}
       autoMinValue={true}
       valueFormatter={props.valueFormatter}

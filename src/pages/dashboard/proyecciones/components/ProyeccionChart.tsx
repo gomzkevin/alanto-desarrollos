@@ -38,7 +38,7 @@ export const ProyeccionChart = ({ chartData }: ProyeccionChartProps) => {
         yAxisWidth={60}
         showAnimation={true}
         showTooltip={true}
-        showGradient={false}
+        // Removed showGradient property as it's not supported
         curveType="linear"
         className="h-[400px] text-xs"
       />
