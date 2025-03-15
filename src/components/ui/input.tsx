@@ -24,26 +24,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           // Pass the numeric value to the consumer
           onChange(numericValue);
         }
-      } else if (type === 'number') {
-        // For number inputs
-        if (onChange) {
-          if (value === '') {
-            // Handle empty input case
-            onChange('');
-          } else {
-            // Try to parse as number, but don't modify the input value
-            // to allow typing decimal points, etc.
-            try {
-              // Just pass the raw value to allow typing
-              onChange(value);
-            } catch (e) {
-              // If parsing fails, just pass the raw value
-              onChange(value);
-            }
-          }
-        }
       } else {
-        // For regular text inputs, pass the raw value directly
+        // For all other inputs (including number), pass the raw value
         if (onChange) {
           onChange(value);
         }
