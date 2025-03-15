@@ -5,7 +5,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import DesarrolloCard from '@/components/dashboard/DesarrolloCard';
-import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import useUserRole from '@/hooks/useUserRole';
 import { Tables } from '@/integrations/supabase/types';
 
