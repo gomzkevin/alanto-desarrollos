@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -368,7 +367,6 @@ const AdminResourceDialog = ({
     const { name, value, type } = e.target as HTMLInputElement;
     
     if (resource) {
-      // For number inputs, convert the string value to a number
       if (type === 'number') {
         setResource({ ...resource, [name]: value === '' ? '' : Number(value) } as FormValues);
       } else {
@@ -561,6 +559,8 @@ const AdminResourceDialog = ({
           es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje
         });
         
+        const amenidadesJson = JSON.stringify(selectedAmenities);
+        
         if (!resourceId) {
           result = await supabase
             .from('desarrollos')
@@ -586,7 +586,6 @@ const AdminResourceDialog = ({
               es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje,
               adr_base: desarrolloData.adr_base,
               ocupacion_anual: desarrolloData.ocupacion_anual,
-              amenidades: selectedAmenities
             });
         } else {
           result = await supabase
@@ -613,9 +612,17 @@ const AdminResourceDialog = ({
               es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje,
               adr_base: desarrolloData.adr_base,
               ocupacion_anual: desarrolloData.ocupacion_anual,
-              amenidades: selectedAmenities
             })
             .eq('id', resourceId);
+        }
+        
+        if (selectedAmenities.length > 0 && resourceId) {
+          try {
+            const { updateAmenities } = useDesarrolloImagenes(resourceId);
+            updateAmenities(selectedAmenities);
+          } catch (e) {
+            console.error('Error updating amenities:', e);
+          }
         }
       } else if (resourceType === 'leads') {
         const leadData = dataToSave as LeadResource;

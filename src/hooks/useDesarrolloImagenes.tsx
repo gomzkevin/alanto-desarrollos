@@ -262,10 +262,12 @@ export const useDesarrolloImagenes = (desarrolloId?: string) => {
       
       console.log('Updating amenities to:', amenities);
       
+      const amenitiesJson = JSON.stringify(amenities);
+      
       const { data, error } = await supabase
         .from('desarrollos')
         .update({ 
-          amenidades: amenities 
+          amenidades: amenitiesJson
         })
         .eq('id', desarrolloId)
         .select()
