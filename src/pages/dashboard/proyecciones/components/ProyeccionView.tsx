@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { ProyeccionFilters } from './ProyeccionFilters';
 import { Calculator } from '@/components/Calculator';
@@ -8,7 +9,7 @@ import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
-import { ChartIcon, TableIcon, ArrowRightIcon } from 'lucide-react';
+import { BarChart2, TableIcon, ArrowRightIcon } from 'lucide-react';
 
 interface ProyeccionViewProps {
   selectedDesarrolloId: string;
@@ -131,7 +132,7 @@ export const ProyeccionView = ({
             <div className="px-6 pt-4">
               <TabsList className="grid w-full max-w-[400px] grid-cols-2 p-1 bg-emerald-50 border border-emerald-100">
                 <TabsTrigger value="grafica" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-emerald-800">
-                  <ChartIcon size={16} />
+                  <BarChart2 size={16} />
                   Gráfica
                 </TabsTrigger>
                 <TabsTrigger value="tabla" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-emerald-800">
