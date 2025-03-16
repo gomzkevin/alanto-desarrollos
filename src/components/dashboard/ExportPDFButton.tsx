@@ -56,6 +56,14 @@ export const ExportPDFButton = ({
         throw new Error(`No se encontró el elemento con ID: ${elementId}`);
       }
       
+      // Store original styles to restore later
+      const originalStyles = {
+        width: element.style.width,
+        height: element.style.height,
+        position: element.style.position,
+        overflow: element.style.overflow,
+      };
+      
       // Crear una copia del elemento para manipularlo sin afectar la visualización
       const clonedElement = element.cloneNode(true) as HTMLElement;
       
@@ -63,12 +71,38 @@ export const ExportPDFButton = ({
       clonedElement.style.backgroundColor = 'white';
       clonedElement.style.padding = '20px';
       clonedElement.style.borderRadius = '0';
-      clonedElement.style.width = '800px'; // Ancho fijo para mejor control
-      
-      // Ocultar temporalmente el clon
-      clonedElement.style.position = 'absolute';
+      clonedElement.style.width = '800px'; // Fixed width for consistent capture
+      clonedElement.style.maxWidth = '800px'; // Ensure consistent width
+      clonedElement.style.position = 'fixed';
+      clonedElement.style.top = '-9999px';
       clonedElement.style.left = '-9999px';
+      clonedElement.style.zIndex = '-1000';
+      clonedElement.style.transform = 'none';
+      
+      // Add clone to document
       document.body.appendChild(clonedElement);
+      
+      // Force any responsive tables or grids to adjust to the new fixed width
+      const tables = clonedElement.querySelectorAll('table');
+      tables.forEach(table => {
+        table.style.width = '100%';
+        table.style.tableLayout = 'fixed';
+      });
+      
+      // Force grid layouts to be single column for consistency
+      const gridElements = clonedElement.querySelectorAll('[class*="grid-cols-"], [class*="lg:grid-cols-"]');
+      gridElements.forEach(gridElement => {
+        (gridElement as HTMLElement).style.display = 'block';
+      });
+      
+      // Ensure all content is visible and not cut off
+      clonedElement.querySelectorAll('*').forEach(el => {
+        const element = el as HTMLElement;
+        element.style.overflow = 'visible';
+      });
+      
+      // Wait for the clone to render fully
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Configuración para mejorar la calidad de la captura
       const options = {
@@ -76,15 +110,20 @@ export const ExportPDFButton = ({
         useCORS: true, // Para manejar imágenes con CORS
         logging: false, // Desactivar logs
         backgroundColor: '#ffffff', // Fondo blanco
-        width: 800, // Ancho fijo para garantizar consistencia
-        height: clonedElement.scrollHeight, // Altura natural del contenido
-        windowWidth: 800, // Simular un ancho de viewport consistente
-        windowHeight: clonedElement.scrollHeight, // Simular altura basada en contenido
+        width: 800, // Fixed width to prevent responsive layout issues
+        height: clonedElement.scrollHeight, // Adjust height to content
+        windowWidth: 800, // Simulate consistent viewport width
+        windowHeight: 10000, // Large enough to capture everything
+        ignoreElements: (element: Element) => {
+          // Ignore absolute positioned elements that might be duplicated
+          return window.getComputedStyle(element).position === 'fixed';
+        }
       };
       
+      // Capture the element
       const canvas = await html2canvas(clonedElement, options);
       
-      // Eliminar el clon después de capturarlo
+      // Remove the clone after capturing
       document.body.removeChild(clonedElement);
       
       // Calcular dimensiones manteniendo proporciones para una página A4
