@@ -84,6 +84,22 @@ const AdminResourceDialog = ({
     }
   }, [resource, desarrolloId]);
 
+  // Set isExistingClient based on lead_id
+  useEffect(() => {
+    if (isOpen) {
+      // Use type assertion to check for lead_id
+      const resourceAny = resource as any;
+      const hasLeadId = lead_id || (resource && resourceAny.lead_id);
+      setIsExistingClient(!!hasLeadId);
+    } else {
+      setNewClientData({
+        nombre: '',
+        email: '',
+        telefono: ''
+      });
+    }
+  }, [isOpen, lead_id, resource]);
+
   // Custom function to handle desarrollo selection
   const handleDesarrolloSelect = (desarrolloId: string) => {
     console.log('handleDesarrolloSelect called with:', desarrolloId);
