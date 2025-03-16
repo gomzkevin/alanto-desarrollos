@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -51,6 +50,7 @@ import {
   GlassWater
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { EditCotizacionButton } from '@/components/dashboard/EditCotizacionButton';
 
 interface CotizacionDetailDialogProps {
   open: boolean;
@@ -529,14 +529,20 @@ const CotizacionDetailDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cerrar
           </Button>
-          <ExportPDFButton
-            variant="default"
-            cotizacionId={cotizacion.id}
-            buttonText="Exportar PDF"
-            resourceName="cotización"
-            elementId="cotizacion-detail-content"
-            fileName={`Cotizacion_${cotizacion.lead?.nombre || 'Cliente'}_${new Date().toLocaleDateString('es-MX').replace(/\//g, '-')}`}
-          />
+          <div className="flex items-center gap-2">
+            <EditCotizacionButton 
+              cotizacionId={cotizacion.id} 
+              onSuccess={() => onOpenChange(false)}
+            />
+            <ExportPDFButton
+              variant="default"
+              cotizacionId={cotizacion.id}
+              buttonText="Exportar PDF"
+              resourceName="cotización"
+              elementId="cotizacion-detail-content"
+              fileName={`Cotizacion_${cotizacion.lead?.nombre || 'Cliente'}_${new Date().toLocaleDateString('es-MX').replace(/\//g, '-')}`}
+            />
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

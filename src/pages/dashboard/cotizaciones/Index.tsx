@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -30,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import CotizacionDetailDialog from '@/components/dashboard/cotizaciones/CotizacionDetailDialog';
+import { EditCotizacionButton } from '@/components/dashboard/EditCotizacionButton';
 
 const formatter = new Intl.NumberFormat('es-MX', {
   style: 'currency',
@@ -70,7 +70,6 @@ const CotizacionesPage = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('');
   
-  // Initialize the form using react-hook-form
   const form = useForm<CotizacionFormValues>({
     defaultValues: {
       isExistingClient: false,
@@ -792,6 +791,13 @@ const CotizacionesPage = () => {
                             <Eye className="h-4 w-4" />
                             <span className="sr-only">Ver</span>
                           </Button>
+                          
+                          <EditCotizacionButton
+                            cotizacionId={cotizacion.id}
+                            buttonVariant="outline"
+                            buttonSize="sm"
+                            onSuccess={refetch}
+                          />
                           
                           <ExportPDFButton
                             variant="outline"
