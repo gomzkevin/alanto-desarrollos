@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 import useUserRole from '@/hooks/useUserRole';
 import { useToast } from "@/hooks/use-toast";
-import { downloadQuotationPDF } from "@/utils/quotationPDF";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import html2canvas from 'html2canvas';
@@ -18,7 +17,7 @@ type ExportPDFButtonProps = {
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
-  cotizacionId?: string; // New prop for cotización ID
+  cotizacionId?: string; // Prop for cotización ID
 };
 
 export const ExportPDFButton = ({ 
@@ -131,6 +130,48 @@ export const ExportPDFButton = ({
     }
   };
   
+  const fetchCotizacionDataAndRender = async (cotizacionId: string) => {
+    try {
+      // Fetch cotización data
+      const { data: cotizacion, error: cotizacionError } = await supabase
+        .from('cotizaciones')
+        .select(`
+          *,
+          lead:lead_id(nombre),
+          desarrollo:desarrollo_id(nombre),
+          prototipo:prototipo_id(nombre, precio)
+        `)
+        .eq('id', cotizacionId)
+        .single();
+      
+      if (cotizacionError || !cotizacion) {
+        throw new Error(cotizacionError?.message || 'No se pudo encontrar la cotización');
+      }
+      
+      // Check if there's a DOM element we can capture directly
+      if (document.getElementById('cotizacion-detail-content')) {
+        // Capture the DOM element if it exists (in detail view)
+        return await captureElementAsPDF('cotizacion-detail-content');
+      } else {
+        // If we're in the listing view without the detail render, show an error
+        toast({
+          title: "Ver detalles primero",
+          description: "Para generar un PDF, por favor abra la vista detallada de la cotización primero.",
+          variant: "destructive"
+        });
+        return false;
+      }
+    } catch (error: any) {
+      console.error('Error al procesar la cotización:', error);
+      toast({
+        title: "Error al generar PDF",
+        description: error.message || "Ocurrió un error al generar el PDF de la cotización.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+  
   const handleExport = async () => {
     setIsLoading(true);
     
@@ -142,86 +183,11 @@ export const ExportPDFButton = ({
         return;
       }
       
+      // Para cotizaciones, usar el método de captura
       if (cotizacionId) {
-        // Export cotización as PDF - si no tiene elementId, usa el método anterior
-        if (document.getElementById('cotizacion-detail-content')) {
-          // Usar captura de pantalla si el elemento existe en el DOM
-          await captureElementAsPDF('cotizacion-detail-content');
-          setIsLoading(false);
-          return;
-        }
-        
-        // Si no hay elemento para capturar, usar el método original
-        try {
-          // Fetch cotización data
-          const { data: cotizacion, error: cotizacionError } = await supabase
-            .from('cotizaciones')
-            .select(`
-              *,
-              lead:lead_id(nombre),
-              desarrollo:desarrollo_id(nombre),
-              prototipo:prototipo_id(nombre, precio)
-            `)
-            .eq('id', cotizacionId)
-            .single();
-          
-          if (cotizacionError || !cotizacion) {
-            throw new Error(cotizacionError?.message || 'No se pudo encontrar la cotización');
-          }
-          
-          // Check for required data
-          if (!cotizacion.lead || !cotizacion.desarrollo || !cotizacion.prototipo) {
-            throw new Error('Faltan datos relacionados con la cotización');
-          }
-          
-          // Extract necessary data
-          const clientName = cotizacion.lead.nombre || 'Cliente';
-          const propertyInfo = {
-            desarrollo: cotizacion.desarrollo.nombre || 'Desarrollo',
-            desarrollo_id: cotizacion.desarrollo_id || '',
-            prototipo: cotizacion.prototipo.nombre || 'Prototipo',
-            prototipo_id: cotizacion.prototipo_id || '',
-            precio: cotizacion.prototipo.precio || 0
-          };
-          
-          // Get payment start date or use current date
-          let startDate = new Date();
-          if (cotizacion.fecha_inicio_pagos) {
-            startDate = new Date(cotizacion.fecha_inicio_pagos);
-          }
-          
-          // Payment information
-          const paymentInfo = {
-            anticipoAmount: cotizacion.monto_anticipo || 0,
-            numberOfPayments: cotizacion.numero_pagos || 1,
-            startDate: startDate,
-            useFiniquito: cotizacion.usar_finiquito || false,
-            finiquitoAmount: cotizacion.monto_finiquito,
-            finiquitoDate: cotizacion.fecha_finiquito ? new Date(cotizacion.fecha_finiquito) : undefined
-          };
-          
-          // Generate and download PDF
-          await downloadQuotationPDF(
-            clientName,
-            propertyInfo,
-            paymentInfo,
-            cotizacion.notas || undefined
-          );
-          
-          toast({
-            title: "PDF generado exitosamente",
-            description: "La cotización ha sido exportada a PDF."
-          });
-        } catch (error: any) {
-          console.error('Error al generar PDF:', error);
-          toast({
-            title: "Error al generar PDF",
-            description: error.message || "Ocurrió un error al generar el PDF de la cotización.",
-            variant: "destructive"
-          });
-        }
+        await fetchCotizacionDataAndRender(cotizacionId);
       } else {
-        // For other resources or elements
+        // For other resources without implementation yet
         toast({
           title: "Función en desarrollo",
           description: `La exportación de ${elementId ? fileName || "documento" : resourceName} a PDF estará disponible próximamente.`,
