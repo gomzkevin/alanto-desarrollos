@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -18,7 +19,7 @@ import {
   Baby, 
   Lock, 
   Car, 
-  Tree, 
+  Trees, 
   Waves, 
   GlassWater, 
   Check 
@@ -74,7 +75,7 @@ const getAmenityIcon = (amenityId: string) => {
     "playground": { icon: <Baby className="h-3.5 w-3.5 mr-1" />, label: "Área infantil" },
     "security": { icon: <Lock className="h-3.5 w-3.5 mr-1" />, label: "Seguridad 24/7" },
     "parking": { icon: <ParkingSquare className="h-3.5 w-3.5 mr-1" />, label: "Estacionamiento" },
-    "garden": { icon: <Tree className="h-3.5 w-3.5 mr-1" />, label: "Jardín" },
+    "garden": { icon: <Trees className="h-3.5 w-3.5 mr-1" />, label: "Jardín" },
     "beach": { icon: <Waves className="h-3.5 w-3.5 mr-1" />, label: "Playa" },
     "restaurant": { icon: <Utensils className="h-3.5 w-3.5 mr-1" />, label: "Restaurante" },
     "bar": { icon: <GlassWater className="h-3.5 w-3.5 mr-1" />, label: "Bar" },
