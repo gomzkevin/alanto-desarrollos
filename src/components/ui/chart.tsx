@@ -5,7 +5,7 @@ import { LineChart as TremorLineChart } from "@tremor/react";
 import { BarChart as TremorBarChart } from "@tremor/react";
 import { DonutChart as TremorDonutChart } from "@tremor/react"; 
 import { 
-  AreaChart,
+  AreaChart as TremorAreaChart,
   BarList,
   Card,
   DateRangePicker,
@@ -108,14 +108,13 @@ export const BarChart = (props) => {
 
 export const PieChart = TremorDonutChart;
 
-// Export the original components directly but apply our color processing
-const originalAreaChart = AreaChart;
+// Create our custom AreaChart component properly
 export const AreaChart = (props) => {
   const processedProps = {
     ...props,
     colors: processColors(props.colors)
   };
-  return <originalAreaChart {...processedProps} />;
+  return <TremorAreaChart {...processedProps} />;
 };
 
 // Export the original components directly
