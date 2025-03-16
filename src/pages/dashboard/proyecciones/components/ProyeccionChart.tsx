@@ -11,15 +11,13 @@ export const ProyeccionChart = ({ chartData }: ProyeccionChartProps) => {
   useEffect(() => {
     if (chartData.length > 0) {
       console.log("ProyeccionChart - Sample data point:", chartData[0]);
-      console.log("ProyeccionChart - Categories being used:", ["Renta vacacional", "Bonos US"]);
-      console.log("ProyeccionChart - Colors being used:", ["#9b87f5", "#4ade80"]);
     }
   }, [chartData]);
 
   if (chartData.length === 0) {
     return (
       <div className="flex items-center justify-center h-[400px] text-slate-500">
-        Haz clic en "Crear Proyección" para generar el análisis
+        Configura los parámetros y haz clic en "Actualizar Proyección" para generar el análisis
       </div>
     );
   }
@@ -28,7 +26,7 @@ export const ProyeccionChart = ({ chartData }: ProyeccionChartProps) => {
     <div className="h-[400px] w-full">
       <LineChart 
         data={chartData}
-        index="year_label"
+        index="year"
         categories={["Renta vacacional", "Bonos US"]}
         colors={["#9b87f5", "#4ade80"]}
         valueFormatter={(value) => formatCurrencyShort(value)}
@@ -38,7 +36,6 @@ export const ProyeccionChart = ({ chartData }: ProyeccionChartProps) => {
         yAxisWidth={60}
         showAnimation={true}
         showTooltip={true}
-        // Removed showGradient property as it's not supported
         curveType="linear"
         className="h-[400px] text-xs"
       />
