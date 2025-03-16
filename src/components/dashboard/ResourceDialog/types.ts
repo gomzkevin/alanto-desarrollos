@@ -25,6 +25,8 @@ export interface DesarrolloResource {
   adr_base: number;
   ocupacion_anual: number;
   amenidades?: string[] | null;
+  fecha_inicio?: string | Date;
+  fecha_entrega?: string | Date;
 }
 
 export interface PrototipoResource {
@@ -39,6 +41,10 @@ export interface PrototipoResource {
   estacionamientos: number;
   total_unidades: number;
   unidades_disponibles: number;
+  descripcion?: string;
+  imagen_url?: string;
+  unidades_vendidas?: number;
+  unidades_con_anticipo?: number;
 }
 
 export interface LeadResource {
@@ -50,6 +56,9 @@ export interface LeadResource {
   origen: string;
   estado: string;
   subestado: string;
+  agente?: string;
+  notas?: string;
+  ultimo_contacto?: string | Date;
 }
 
 export interface CotizacionResource {
@@ -61,6 +70,8 @@ export interface CotizacionResource {
   monto_anticipo: number;
   numero_pagos: number;
   usar_finiquito: boolean;
+  monto_finiquito?: number;
+  notas?: string;
 }
 
 export interface UnidadResource {
