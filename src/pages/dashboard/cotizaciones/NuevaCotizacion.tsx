@@ -43,7 +43,6 @@ const NuevaCotizacion = () => {
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos({ desarrolloId: selectedDesarrollo?.id });
 
-  // Add a function to format dates for display
   const formatDate = (date: Date | undefined): string => {
     if (!date) return "";
     return format(date, "PPP", { locale: es });
@@ -56,7 +55,6 @@ const NuevaCotizacion = () => {
     try {
       let leadId = selectedLead?.id;
       
-      // If it's a new client, create a lead record first
       if (!isExistingClient && newLeadData.nombre) {
         const { data: createdLead, error: leadError } = await supabase
           .from('leads')
@@ -76,7 +74,6 @@ const NuevaCotizacion = () => {
         leadId = createdLead.id;
       }
       
-      // Create the cotización
       const { data: cotizacion, error: cotizacionError } = await supabase
         .from('cotizaciones')
         .insert({
@@ -88,8 +85,8 @@ const NuevaCotizacion = () => {
           usar_finiquito: useFiniquito,
           monto_finiquito: useFiniquito ? finiquitoAmount : null,
           notas: notes,
-          fecha_inicio_pagos: startDate, // Add the start date for payments
-          fecha_finiquito: useFiniquito && finiquitoDate ? finiquitoDate : null // Add finiquito date if applicable
+          fecha_inicio_pagos: startDate.toISOString(),
+          fecha_finiquito: useFiniquito && finiquitoDate ? finiquitoDate.toISOString() : null
         })
         .select();
       
@@ -102,7 +99,6 @@ const NuevaCotizacion = () => {
         description: "La cotización se ha creado correctamente."
       });
       
-      // Navigate back to the list of cotizaciones
       navigate('/dashboard/cotizaciones');
       
     } catch (error: any) {
@@ -208,7 +204,7 @@ const NuevaCotizacion = () => {
                   <Select onValueChange={(value) => {
                     const selected = desarrollos.find(desarrollo => desarrollo.id === value);
                     setSelectedDesarrollo(selected);
-                    setSelectedPrototipo(null); // Reset prototipo selection
+                    setSelectedPrototipo(null);
                   }}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecciona un desarrollo" defaultValue={selectedDesarrollo?.id} />
@@ -247,8 +243,6 @@ const NuevaCotizacion = () => {
             </CardContent>
           </Card>
 
-          {/* In the payment details section, add the date input fields
-          Replace or modify the payment details section */}
           <Card className="mt-6">
             <CardHeader>
               <CardTitle>Detalles de pago</CardTitle>
@@ -278,7 +272,6 @@ const NuevaCotizacion = () => {
                 </div>
               </div>
               
-              {/* Fecha de inicio de pagos */}
               <div className="space-y-2">
                 <Label htmlFor="startDate">Fecha de inicio de pagos</Label>
                 <Popover>
@@ -328,7 +321,6 @@ const NuevaCotizacion = () => {
                     />
                   </div>
                   
-                  {/* Fecha de finiquito */}
                   <div className="space-y-2">
                     <Label htmlFor="finiquitoDate">Fecha de finiquito</Label>
                     <Popover>
