@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { FormValues, ResourceType } from '../types';
 import { supabase } from '@/integrations/supabase/client';
@@ -220,6 +221,17 @@ export function useResourceForm({
     setSelectedAmenities(amenities);
   };
 
+  const handleDateChange = (name: string, date: Date | undefined) => {
+    if (!resource) return;
+    
+    const formattedDate = date ? date.toISOString().split('T')[0] : null; // Format as YYYY-MM-DD
+    
+    setResource({
+      ...resource,
+      [name]: formattedDate
+    });
+  };
+
   const saveResource = async (formData: FormValues) => {
     setIsSubmitting(true);
     
@@ -256,6 +268,7 @@ export function useResourceForm({
           const desarrolloData = formData as any;
           const dataToSave = { ...desarrolloData };
           
+          // Prepare amenities for saving
           if (selectedAmenities.length > 0) {
             dataToSave.amenidades = selectedAmenities as unknown as Json;
           }
@@ -299,6 +312,7 @@ export function useResourceForm({
           const desarrolloData = formData as any;
           const dataToSave = { ...desarrolloData };
           
+          // Prepare amenities for saving as JSON
           const amenidadesJson = JSON.stringify(selectedAmenities) as unknown as Json;
           dataToSave.amenidades = selectedAmenities.length > 0 ? amenidadesJson : null;
           
@@ -378,6 +392,7 @@ export function useResourceForm({
     handleLeadSelect,
     handleAmenitiesChange,
     saveResource,
-    setResource
+    setResource,
+    handleDateChange
   };
 }

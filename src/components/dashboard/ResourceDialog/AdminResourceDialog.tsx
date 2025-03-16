@@ -58,7 +58,8 @@ const AdminResourceDialog = ({
     handleLeadSelect,
     handleAmenitiesChange,
     saveResource,
-    setResource
+    setResource,
+    handleDateChange
   } = useResourceForm({
     resourceType,
     resourceId,
@@ -310,6 +311,7 @@ const AdminResourceDialog = ({
           newClientData={newClientData}
           onNewClientDataChange={handleNewClientDataChange}
           onDesarrolloSelect={handleDesarrolloSelect}
+          handleDateChange={handleDateChange}
         />
       </Dialog>
     </>
