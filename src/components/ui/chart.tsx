@@ -27,6 +27,19 @@ import {
   Tracker,
 } from "@tremor/react";
 
+// Helper function to process colors
+const processColors = (colors) => {
+  if (!colors) return undefined;
+  
+  // Map color names to their corresponding hex values if needed
+  return colors.map(color => {
+    if (color === 'teal') return '#14b8a6'; // teal-500
+    if (color === 'indigo') return '#4f46e5'; // indigo-600
+    if (color === 'emerald') return '#10b981'; // emerald-500
+    return color; // Return as is if it's already a hex value or other valid color
+  });
+};
+
 // Re-export the Tremor components with our custom names
 export const LineChart = (props) => {
   // Add detailed logging of chart data before rendering
@@ -35,8 +48,8 @@ export const LineChart = (props) => {
   console.log('LineChart index:', props.index);
   console.log('LineChart colors:', props.colors);
   
-  // Use the provided colors directly
-  const chartColors = props.colors || ["#9b87f5", "#4ade80"];
+  // Process the colors to ensure they're in the correct format
+  const chartColors = processColors(props.colors) || ["#4f46e5", "#14b8a6"];
   
   return (
     <TremorLineChart 
@@ -55,8 +68,6 @@ export const LineChart = (props) => {
       showAnimation={props.showAnimation !== false}
       showGridLines={true}
       animationDuration={1000}
-      // Removing showGradient as it doesn't exist in the type definitions
-      // Removing areaOpacity as it doesn't exist in the type definitions
       autoMinValue={true}
       valueFormatter={props.valueFormatter}
     />
@@ -70,8 +81,8 @@ export const BarChart = (props) => {
   console.log('BarChart index:', props.index);
   console.log('BarChart colors:', props.colors);
   
-  // Use the provided colors directly
-  const chartColors = props.colors || ["#9b87f5", "#4ade80"];
+  // Process the colors to ensure they're in the correct format
+  const chartColors = processColors(props.colors) || ["#4f46e5", "#14b8a6"];
   
   return (
     <TremorBarChart 
@@ -97,9 +108,18 @@ export const BarChart = (props) => {
 
 export const PieChart = TremorDonutChart;
 
+// Export the original components directly but apply our color processing
+const originalAreaChart = AreaChart;
+export const AreaChart = (props) => {
+  const processedProps = {
+    ...props,
+    colors: processColors(props.colors)
+  };
+  return <originalAreaChart {...processedProps} />;
+};
+
 // Export the original components directly
 export {
-  AreaChart,
   BarList,
   Card,
   DateRangePicker,

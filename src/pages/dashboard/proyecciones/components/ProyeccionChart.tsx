@@ -39,7 +39,7 @@ export const ProyeccionChart = ({ chartData }: ProyeccionChartProps) => {
         data={areaChartData}
         index="year"
         categories={["Renta vacacional", "Bonos US"]}
-        colors={["indigo", "teal"]}
+        colors={["indigo", "#14b8a6"]} // Usando valor hexadecimal exacto del color teal-500
         valueFormatter={(value) => formatCurrencyShort(value)}
         showLegend={true}
         showGridLines={true}
