@@ -3,10 +3,8 @@ import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 import useUserRole from '@/hooks/useUserRole';
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import html2canvas from 'html2canvas';
-import { jsPDF } from "jspdf";
+import { exportToPDF } from "@/utils/exportToPDF";
 
 type ExportPDFButtonProps = {
   resourceName?: string;
@@ -49,101 +47,34 @@ export const ExportPDFButton = ({
     return null;
   }
   
-  const captureElementAsPDF = async (elementId: string) => {
-    try {
-      const element = document.getElementById(elementId);
-      if (!element) {
-        throw new Error(`No se encontró el elemento con ID: ${elementId}`);
-      }
-      
-      // Crear una copia del elemento para manipularlo sin afectar la visualización
-      const clonedElement = element.cloneNode(true) as HTMLElement;
-      
-      // Aplicar estilos al clon para asegurar que se vea igual que en la pantalla
-      clonedElement.style.backgroundColor = 'white';
-      clonedElement.style.padding = '20px';
-      clonedElement.style.borderRadius = '0';
-      clonedElement.style.width = '800px'; // Ancho fijo para mejor control
-      
-      // Ocultar temporalmente el clon
-      clonedElement.style.position = 'absolute';
-      clonedElement.style.left = '-9999px';
-      document.body.appendChild(clonedElement);
-      
-      // Configuración para mejorar la calidad de la captura
-      const options = {
-        scale: 2, // Mayor escala para mejor calidad
-        useCORS: true, // Para manejar imágenes con CORS
-        logging: false, // Desactivar logs
-        backgroundColor: '#ffffff', // Fondo blanco
-        width: 800, // Ancho fijo para garantizar consistencia
-        height: clonedElement.scrollHeight, // Altura natural del contenido
-        windowWidth: 800, // Simular un ancho de viewport consistente
-        windowHeight: clonedElement.scrollHeight, // Simular altura basada en contenido
-      };
-      
-      const canvas = await html2canvas(clonedElement, options);
-      
-      // Eliminar el clon después de capturarlo
-      document.body.removeChild(clonedElement);
-      
-      // Calcular dimensiones manteniendo proporciones para una página A4
-      const imgWidth = 210 - 40; // Ancho A4 en mm con márgenes de 20mm por lado
-      const pageHeight = 297 - 40; // Altura A4 en mm con márgenes de 20mm arriba/abajo
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      // Crear PDF con orientación vertical
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      // Añadir la imagen al PDF con márgenes
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
-      
-      // Posiciones iniciales con márgenes
-      let position = 0;
-      let heightLeft = imgHeight;
-      
-      // Añadir primera página
-      pdf.addImage(imgData, 'JPEG', 20, 20, imgWidth, imgHeight);
-      
-      // Si el contenido es muy largo, dividir en múltiples páginas
-      heightLeft = imgHeight - pageHeight;
-      position = -(pageHeight);
-      
-      while (heightLeft > 0) {
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 20, position + 20, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-        position -= pageHeight;
-      }
-      
-      // Generar y descargar el PDF
-      const pdfName = fileName || `${resourceName.replace(/\s+/g, '_')}_${new Date().toLocaleDateString('es-MX').replace(/\//g, '-')}`;
-      pdf.save(`${pdfName}.pdf`);
-      
-      toast({
-        title: "PDF generado exitosamente",
-        description: `El ${resourceName} ha sido exportado a PDF.`
-      });
-      
-      return true;
-    } catch (error: any) {
-      console.error('Error al generar PDF:', error);
-      toast({
-        title: "Error al generar PDF",
-        description: error.message || `Ocurrió un error al generar el PDF del ${resourceName}.`,
-        variant: "destructive"
-      });
-      return false;
-    }
-  };
-  
   const handleExport = async () => {
     setIsLoading(true);
     
     try {
-      // Si se proporciona un elementId, capturar ese elemento
+      // For element export using our new utility
       if (elementId) {
-        await captureElementAsPDF(elementId);
+        const pdfName = fileName || `${resourceName.replace(/\s+/g, '_')}_${new Date().toLocaleDateString('es-MX').replace(/\//g, '-')}`;
+        
+        const success = await exportToPDF({
+          elementId,
+          fileName: pdfName,
+          margins: { top: 10, right: 10, bottom: 10, left: 10 },
+          quality: 2
+        });
+        
+        if (success) {
+          toast({
+            title: "PDF generado exitosamente",
+            description: `El ${resourceName} ha sido exportado a PDF.`
+          });
+        } else {
+          toast({
+            title: "Error al generar PDF",
+            description: `Ocurrió un error al generar el PDF del ${resourceName}.`,
+            variant: "destructive"
+          });
+        }
+        
         setIsLoading(false);
         return;
       }
@@ -152,7 +83,27 @@ export const ExportPDFButton = ({
       if (cotizacionId) {
         // Verificar que estamos en la vista de detalle
         if (document.getElementById('cotizacion-detail-content')) {
-          await captureElementAsPDF('cotizacion-detail-content');
+          const pdfName = fileName || `Cotizacion_${new Date().toLocaleDateString('es-MX').replace(/\//g, '-')}`;
+          
+          const success = await exportToPDF({
+            elementId: 'cotizacion-detail-content',
+            fileName: pdfName,
+            margins: { top: 10, right: 10, bottom: 10, left: 10 },
+            quality: 2
+          });
+          
+          if (success) {
+            toast({
+              title: "PDF generado exitosamente",
+              description: `La cotización ha sido exportada a PDF.`
+            });
+          } else {
+            toast({
+              title: "Error al generar PDF",
+              description: `Ocurrió un error al generar el PDF de la cotización.`,
+              variant: "destructive"
+            });
+          }
         } else {
           // Este caso no debería ocurrir ya que el botón no se renderiza en la vista de lista
           toast({
@@ -168,6 +119,13 @@ export const ExportPDFButton = ({
           description: `La exportación de ${elementId ? fileName || "documento" : resourceName} a PDF estará disponible próximamente.`,
         });
       }
+    } catch (error: any) {
+      console.error('Error al exportar PDF:', error);
+      toast({
+        title: "Error al generar PDF",
+        description: error.message || `Ocurrió un error al generar el PDF del ${resourceName}.`,
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
