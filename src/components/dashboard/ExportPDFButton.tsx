@@ -72,7 +72,9 @@ export const ExportPDFButton = ({
         const clientName = cotizacion.lead.nombre || 'Cliente';
         const propertyInfo = {
           desarrollo: cotizacion.desarrollo.nombre || 'Desarrollo',
+          desarrollo_id: cotizacion.desarrollo_id || '',
           prototipo: cotizacion.prototipo.nombre || 'Prototipo',
+          prototipo_id: cotizacion.prototipo_id || '',
           precio: cotizacion.prototipo.precio || 0
         };
         
@@ -93,7 +95,7 @@ export const ExportPDFButton = ({
         };
         
         // Generate and download PDF
-        downloadQuotationPDF(
+        await downloadQuotationPDF(
           clientName,
           propertyInfo,
           paymentInfo,
