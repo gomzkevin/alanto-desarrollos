@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Pencil } from 'lucide-react';
 import { AdminResourceDialogProps } from './types';
 import { useResourceForm } from './hooks/useResourceForm';
 import { useResourceFields } from './hooks/useResourceFields';
@@ -71,9 +70,7 @@ const AdminResourceDialog = ({
     onSave
   });
 
-  // Update selectedDesarrolloId when resource changes
   useEffect(() => {
-    // Use type assertion to access properties that might not exist on all resource types
     const resourceAny = resource as any;
     
     if (resource && resourceAny.desarrollo_id) {
@@ -85,17 +82,14 @@ const AdminResourceDialog = ({
     }
   }, [resource, desarrolloId]);
 
-  // Custom function to handle desarrollo selection
   const handleDesarrolloSelect = (desarrolloId: string) => {
     console.log('handleDesarrolloSelect called with:', desarrolloId);
     setSelectedDesarrolloId(desarrolloId);
     
     if (resource) {
-      // Use type assertion to update properties that might not exist on all resource types
       const updatedResource = {
         ...resource,
         desarrollo_id: desarrolloId,
-        // Reset prototipo_id when desarrollo changes
         prototipo_id: ''
       };
       console.log('Updating resource with new desarrollo_id:', updatedResource);
@@ -105,13 +99,11 @@ const AdminResourceDialog = ({
 
   const handleSave = async () => {
     if (resource) {
-      // Use type assertion for validation
       const resourceAny = resource as any;
       
       if (resourceType === 'cotizaciones') {
         const cotizacionData = resourceAny;
         
-        // Validate required fields
         if (!isExistingClient && !resourceId) {
           if (!newClientData.nombre) {
             toast({
@@ -149,7 +141,6 @@ const AdminResourceDialog = ({
         }
       }
       
-      // Handle new client creation for cotizaciones
       if (!isExistingClient && resourceType === 'cotizaciones' && !resourceId) {
         try {
           if (!newClientData.nombre) {
@@ -196,7 +187,6 @@ const AdminResourceDialog = ({
           });
         }
       } else {
-        // For existing clients or other resource types
         saveResource(resource).then(success => {
           if (success) {
             handleOpenChange(false);
@@ -208,7 +198,6 @@ const AdminResourceDialog = ({
 
   useEffect(() => {
     if (isOpen) {
-      // Use type assertion to check for lead_id
       const resourceAny = resource as any;
       const hasLeadId = lead_id || (resource && resourceAny.lead_id);
       setIsExistingClient(!!hasLeadId);
@@ -279,7 +268,7 @@ const AdminResourceDialog = ({
           onClick={() => handleOpenChange(true)}
           type="button"
         >
-          {buttonIcon || <PlusCircle className="h-4 w-4 mr-2" />}
+          {buttonIcon || (resourceId ? <Pencil className="h-4 w-4 mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />)}
           {buttonText}
         </Button>
       )}
