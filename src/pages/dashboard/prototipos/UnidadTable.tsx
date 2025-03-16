@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Tables } from '@/integrations/supabase/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -107,7 +108,23 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
       return;
     }
     
-    navigate(`/dashboard/cotizaciones/nueva?unidad=${unidadId}&prototipo=${prototipo.id}&desarrollo=${prototipo.desarrollo_id}`);
+    // Add console logs for debugging
+    console.log("Navigating to cotización with params:", {
+      unidadId,
+      prototipoId: prototipo.id,
+      desarrolloId: prototipo.desarrollo_id
+    });
+    
+    // Ensure all parameters exist before navigating
+    if (unidadId && prototipo.id && prototipo.desarrollo_id) {
+      navigate(`/dashboard/cotizaciones/nueva?unidad=${unidadId}&prototipo=${prototipo.id}&desarrollo=${prototipo.desarrollo_id}`);
+    } else {
+      toast({
+        title: "Error",
+        description: "Faltan parámetros necesarios para la cotización",
+        variant: "destructive"
+      });
+    }
   };
   
   const handleProyeccion = (unidadId: string) => {

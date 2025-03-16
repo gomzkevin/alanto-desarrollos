@@ -5,10 +5,12 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function NuevaCotizacionPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(true);
   
   // Parse URL parameters
@@ -17,10 +19,32 @@ export default function NuevaCotizacionPage() {
   const prototipoId = searchParams.get('prototipo');
   const desarrolloId = searchParams.get('desarrollo');
   
+  // Log parameters for debugging
+  useEffect(() => {
+    console.log('Cotización params:', { unidadId, prototipoId, desarrolloId });
+    
+    // Validate required parameters
+    if (desarrolloId && prototipoId) {
+      console.log('Required parameters present');
+    } else {
+      console.error('Missing required parameters');
+      if (!desarrolloId) console.error('No desarrollo_id provided');
+      if (!prototipoId) console.error('No prototipo_id provided');
+      
+      toast({
+        title: "Error en parámetros",
+        description: "Faltan parámetros necesarios para crear la cotización",
+        variant: "destructive"
+      });
+    }
+  }, [unidadId, prototipoId, desarrolloId, toast]);
+  
   // Default values based on URL parameters
-  const defaultValues = unidadId ? {
-    unidad_id: unidadId
-  } : undefined;
+  const defaultValues = {
+    ...(unidadId ? { unidad_id: unidadId } : {}),
+    ...(prototipoId ? { prototipo_id: prototipoId } : {}),
+    ...(desarrolloId ? { desarrollo_id: desarrolloId } : {})
+  };
   
   // Cuando se cierra el diálogo, regresar a la lista de cotizaciones
   const handleDialogClose = () => {
