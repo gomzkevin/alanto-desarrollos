@@ -48,10 +48,9 @@ export const EditCotizacionButton = ({
         variant={buttonVariant}
         size={buttonSize}
         onClick={() => setIsDialogOpen(true)}
-        className={`gap-1 ${className}`}
+        className={className}
       >
         <Pencil className="h-4 w-4" />
-        Editar
       </Button>
       
       {isDialogOpen && (
