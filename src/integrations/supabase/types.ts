@@ -72,6 +72,8 @@ export type Database = {
         Row: {
           created_at: string
           desarrollo_id: string
+          fecha_finiquito: string | null
+          fecha_inicio_pagos: string | null
           id: string
           lead_id: string
           monto_anticipo: number
@@ -84,6 +86,8 @@ export type Database = {
         Insert: {
           created_at?: string
           desarrollo_id: string
+          fecha_finiquito?: string | null
+          fecha_inicio_pagos?: string | null
           id?: string
           lead_id: string
           monto_anticipo: number
@@ -96,6 +100,8 @@ export type Database = {
         Update: {
           created_at?: string
           desarrollo_id?: string
+          fecha_finiquito?: string | null
+          fecha_inicio_pagos?: string | null
           id?: string
           lead_id?: string
           monto_anticipo?: number

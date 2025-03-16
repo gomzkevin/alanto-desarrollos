@@ -1,3 +1,4 @@
+
 import { FieldDefinition } from '../types';
 
 export function useResourceFields(resourceType: string): FieldDefinition[] {
@@ -107,8 +108,10 @@ export function useResourceFields(resourceType: string): FieldDefinition[] {
         { name: 'prototipo_id', label: 'Prototipo', type: 'select-prototipo' },
         { name: 'monto_anticipo', label: 'Monto de anticipo', type: 'number' },
         { name: 'numero_pagos', label: 'Número de pagos', type: 'number' },
+        { name: 'fecha_inicio_pagos', label: 'Fecha de inicio de pagos', type: 'date' },
         { name: 'usar_finiquito', label: 'Usar finiquito', type: 'switch' },
         { name: 'monto_finiquito', label: 'Monto de finiquito', type: 'number' },
+        { name: 'fecha_finiquito', label: 'Fecha de finiquito', type: 'date' },
         { name: 'notas', label: 'Notas', type: 'textarea' },
       ];
       

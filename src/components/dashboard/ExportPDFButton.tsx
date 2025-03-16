@@ -78,7 +78,6 @@ export const ExportPDFButton = ({
         
         // Get payment start date or use current date
         let startDate = new Date();
-        // Handle the case where fecha_inicio_pagos might not exist yet in the database
         if (cotizacion.fecha_inicio_pagos) {
           startDate = new Date(cotizacion.fecha_inicio_pagos);
         }
@@ -90,7 +89,6 @@ export const ExportPDFButton = ({
           startDate: startDate,
           useFiniquito: cotizacion.usar_finiquito || false,
           finiquitoAmount: cotizacion.monto_finiquito,
-          // Handle the case where fecha_finiquito might not exist yet in the database
           finiquitoDate: cotizacion.fecha_finiquito ? new Date(cotizacion.fecha_finiquito) : undefined
         };
         
