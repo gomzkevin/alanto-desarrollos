@@ -1,7 +1,7 @@
 
 import { DialogContent } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
-import { FormValues, ResourceType } from '../types';
+import { FormValues, ResourceType, DesarrolloResource } from '../types';
 import { FieldDefinition } from '../types';
 import GenericForm from '../GenericForm';
 import { DialogHeader } from './DialogHeader';
@@ -122,7 +122,11 @@ export function ResourceDialogContent({
   };
 
   const renderDesarrolloForm = () => {
-    if (!resource) return null;
+    // Only render this form for "desarrollos" resource type
+    if (!resource || resourceType !== 'desarrollos') return null;
+    
+    // Type assertion to access DesarrolloResource properties
+    const desarrolloResource = resource as DesarrolloResource;
     
     return (
       <Tabs defaultValue="Principal" value={activeTab} onValueChange={setActiveTab}>
@@ -141,7 +145,7 @@ export function ResourceDialogContent({
               <Input
                 id="nombre"
                 name="nombre"
-                value={(resource.nombre || '') as string}
+                value={desarrolloResource.nombre || ''}
                 onChange={handleChange}
                 placeholder="Nombre del desarrollo"
               />
@@ -152,7 +156,7 @@ export function ResourceDialogContent({
               <Input
                 id="ubicacion"
                 name="ubicacion"
-                value={(resource.ubicacion || '') as string}
+                value={desarrolloResource.ubicacion || ''}
                 onChange={handleChange}
                 placeholder="Ubicación del desarrollo"
               />
@@ -164,7 +168,7 @@ export function ResourceDialogContent({
                 id="total_unidades"
                 name="total_unidades"
                 type="number"
-                value={(resource.total_unidades || '') as number}
+                value={desarrolloResource.total_unidades || ''}
                 onChange={handleChange}
                 placeholder="0"
               />
@@ -176,7 +180,7 @@ export function ResourceDialogContent({
                 id="unidades_disponibles"
                 name="unidades_disponibles"
                 type="number"
-                value={(resource.unidades_disponibles || '') as number}
+                value={desarrolloResource.unidades_disponibles || ''}
                 onChange={handleChange}
                 placeholder="0"
               />
@@ -188,7 +192,7 @@ export function ResourceDialogContent({
                 id="avance_porcentaje"
                 name="avance_porcentaje"
                 type="number"
-                value={(resource.avance_porcentaje || '') as number}
+                value={desarrolloResource.avance_porcentaje || ''}
                 onChange={handleChange}
                 placeholder="0"
               />
@@ -199,7 +203,7 @@ export function ResourceDialogContent({
               <Textarea
                 id="descripcion"
                 name="descripcion"
-                value={(resource.descripcion || '') as string}
+                value={desarrolloResource.descripcion || ''}
                 onChange={handleChange}
                 placeholder="Descripción del desarrollo"
                 className="min-h-[120px]"
@@ -218,19 +222,19 @@ export function ResourceDialogContent({
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !resource.fecha_inicio && "text-muted-foreground"
+                      !desarrolloResource.fecha_inicio && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {resource.fecha_inicio ? 
-                      format(new Date(resource.fecha_inicio as string), "PP") : 
+                    {desarrolloResource.fecha_inicio ? 
+                      format(new Date(desarrolloResource.fecha_inicio), "PP") : 
                       "Seleccionar fecha"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    selected={resource.fecha_inicio ? new Date(resource.fecha_inicio as string) : undefined}
+                    selected={desarrolloResource.fecha_inicio ? new Date(desarrolloResource.fecha_inicio) : undefined}
                     onSelect={(date) => handleDateChange && handleDateChange('fecha_inicio', date)}
                     initialFocus
                   />
@@ -246,19 +250,19 @@ export function ResourceDialogContent({
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !resource.fecha_entrega && "text-muted-foreground"
+                      !desarrolloResource.fecha_entrega && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {resource.fecha_entrega ? 
-                      format(new Date(resource.fecha_entrega as string), "PP") : 
+                    {desarrolloResource.fecha_entrega ? 
+                      format(new Date(desarrolloResource.fecha_entrega), "PP") : 
                       "Seleccionar fecha"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    selected={resource.fecha_entrega ? new Date(resource.fecha_entrega as string) : undefined}
+                    selected={desarrolloResource.fecha_entrega ? new Date(desarrolloResource.fecha_entrega) : undefined}
                     onSelect={(date) => handleDateChange && handleDateChange('fecha_entrega', date)}
                     initialFocus
                   />
@@ -273,7 +277,7 @@ export function ResourceDialogContent({
             <div className="space-y-2">
               <Label htmlFor="moneda">Moneda</Label>
               <Select 
-                value={(resource.moneda || 'MXN') as string}
+                value={desarrolloResource.moneda || 'MXN'}
                 onValueChange={(value) => handleSelectChange('moneda', value)}
               >
                 <SelectTrigger id="moneda">
@@ -292,7 +296,7 @@ export function ResourceDialogContent({
                 id="comision_operador"
                 name="comision_operador"
                 type="number"
-                value={(resource.comision_operador || '') as number}
+                value={desarrolloResource.comision_operador || ''}
                 onChange={handleChange}
                 placeholder="15"
               />
@@ -304,7 +308,7 @@ export function ResourceDialogContent({
                 id="mantenimiento_valor"
                 name="mantenimiento_valor"
                 type="number"
-                value={(resource.mantenimiento_valor || '') as number}
+                value={desarrolloResource.mantenimiento_valor || ''}
                 onChange={handleChange}
                 placeholder="5"
               />
@@ -314,7 +318,7 @@ export function ResourceDialogContent({
               <Label htmlFor="es_mantenimiento_porcentaje">Mantenimiento es porcentaje</Label>
               <Switch
                 id="es_mantenimiento_porcentaje"
-                checked={Boolean(resource.es_mantenimiento_porcentaje)}
+                checked={Boolean(desarrolloResource.es_mantenimiento_porcentaje)}
                 onCheckedChange={(checked) => handleSwitchChange('es_mantenimiento_porcentaje', checked)}
               />
             </div>
@@ -325,7 +329,7 @@ export function ResourceDialogContent({
                 id="gastos_fijos"
                 name="gastos_fijos"
                 type="number"
-                value={(resource.gastos_fijos || '') as number}
+                value={desarrolloResource.gastos_fijos || ''}
                 onChange={handleChange}
                 placeholder="2500"
               />
@@ -335,7 +339,7 @@ export function ResourceDialogContent({
               <Label htmlFor="es_gastos_fijos_porcentaje">Gastos Fijos es porcentaje</Label>
               <Switch
                 id="es_gastos_fijos_porcentaje"
-                checked={Boolean(resource.es_gastos_fijos_porcentaje)}
+                checked={Boolean(desarrolloResource.es_gastos_fijos_porcentaje)}
                 onCheckedChange={(checked) => handleSwitchChange('es_gastos_fijos_porcentaje', checked)}
               />
             </div>
@@ -346,7 +350,7 @@ export function ResourceDialogContent({
                 id="gastos_variables"
                 name="gastos_variables"
                 type="number"
-                value={(resource.gastos_variables || '') as number}
+                value={desarrolloResource.gastos_variables || ''}
                 onChange={handleChange}
                 placeholder="12"
               />
@@ -356,7 +360,7 @@ export function ResourceDialogContent({
               <Label htmlFor="es_gastos_variables_porcentaje">Gastos Variables es porcentaje</Label>
               <Switch
                 id="es_gastos_variables_porcentaje"
-                checked={Boolean(resource.es_gastos_variables_porcentaje)}
+                checked={Boolean(desarrolloResource.es_gastos_variables_porcentaje)}
                 onCheckedChange={(checked) => handleSwitchChange('es_gastos_variables_porcentaje', checked)}
               />
             </div>
@@ -367,7 +371,7 @@ export function ResourceDialogContent({
                 id="impuestos"
                 name="impuestos"
                 type="number"
-                value={(resource.impuestos || '') as number}
+                value={desarrolloResource.impuestos || ''}
                 onChange={handleChange}
                 placeholder="35"
               />
@@ -377,7 +381,7 @@ export function ResourceDialogContent({
               <Label htmlFor="es_impuestos_porcentaje">Impuestos es porcentaje</Label>
               <Switch
                 id="es_impuestos_porcentaje"
-                checked={Boolean(resource.es_impuestos_porcentaje)}
+                checked={Boolean(desarrolloResource.es_impuestos_porcentaje)}
                 onCheckedChange={(checked) => handleSwitchChange('es_impuestos_porcentaje', checked)}
               />
             </div>
@@ -392,7 +396,7 @@ export function ResourceDialogContent({
                 id="adr_base"
                 name="adr_base"
                 type="number"
-                value={(resource.adr_base || '') as number}
+                value={desarrolloResource.adr_base || ''}
                 onChange={handleChange}
                 placeholder="1800"
               />
@@ -404,7 +408,7 @@ export function ResourceDialogContent({
                 id="ocupacion_anual"
                 name="ocupacion_anual"
                 type="number"
-                value={(resource.ocupacion_anual || '') as number}
+                value={desarrolloResource.ocupacion_anual || ''}
                 onChange={handleChange}
                 placeholder="70"
               />
