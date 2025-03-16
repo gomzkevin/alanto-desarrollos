@@ -13,23 +13,23 @@ export default function NuevaCotizacionPage() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(true);
   
-  // Obtener parámetros de la URL si existen
+  // Get URL parameters if they exist
   const searchParams = new URLSearchParams(location.search);
   const unidadId = searchParams.get('unidad');
   const prototipoId = searchParams.get('prototipo');
   const desarrolloId = searchParams.get('desarrollo');
   
-  // Valores predeterminados para la cotización
+  // Default values for the quotation
   const [defaultValues, setDefaultValues] = useState<Record<string, any>>({});
   
-  // Efecto para obtener información de la unidad si existe el ID
+  // Effect to get unit information if the ID exists
   useEffect(() => {
     const fetchUnidadData = async () => {
       if (!unidadId) return;
       
       try {
-        // Aquí normalmente se cargarían los datos de la unidad desde Supabase
-        // Por ahora, solo establecemos el prototipo_id si existe en la URL
+        // Here you would normally load unit data from Supabase
+        // For now, we just set the prototype_id if it exists in the URL
         if (prototipoId) {
           setDefaultValues(prev => ({
             ...prev,
@@ -44,7 +44,7 @@ export default function NuevaCotizacionPage() {
           }));
         }
       } catch (error) {
-        console.error('Error al cargar datos de la unidad:', error);
+        console.error('Error loading unit data:', error);
         toast({
           title: 'Error',
           description: 'No se pudieron cargar los datos de la unidad',
@@ -56,11 +56,11 @@ export default function NuevaCotizacionPage() {
     fetchUnidadData();
   }, [unidadId, prototipoId, desarrolloId, toast]);
   
-  // Cuando se cierra el diálogo, regresar a la lista de cotizaciones o a la página anterior
+  // When the dialog closes, return to the list of quotations or to the previous page
   const handleDialogClose = () => {
     setDialogOpen(false);
     
-    // Si venimos de una unidad, regresamos a la página de prototipos
+    // If we come from a unit, we go back to the prototypes page
     if (unidadId || prototipoId) {
       navigate(-1);
     } else {
@@ -68,7 +68,7 @@ export default function NuevaCotizacionPage() {
     }
   };
   
-  // Cuando se guarda la cotización, regresar a la lista
+  // When the quotation is saved, go back to the list
   const handleSuccess = () => {
     navigate('/dashboard/cotizaciones');
   };
@@ -90,7 +90,7 @@ export default function NuevaCotizacionPage() {
           <p className="text-slate-600">Crea una nueva cotización para un cliente</p>
         </div>
         
-        {/* Mostrar el diálogo de recurso */}
+        {/* Show the resource dialog */}
         <AdminResourceDialog
           resourceType="cotizaciones"
           open={dialogOpen}
