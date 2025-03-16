@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -68,6 +69,19 @@ const CotizacionesPage = () => {
   const [showLeadsDropdown, setShowLeadsDropdown] = useState<boolean>(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('');
+  
+  // Initialize the form using react-hook-form
+  const form = useForm<CotizacionFormValues>({
+    defaultValues: {
+      isExistingClient: false,
+      monto_anticipo: 0,
+      numero_pagos: 6,
+      usar_finiquito: false,
+      desarrollo_id: '',
+      prototipo_id: '',
+      fecha_inicio_pagos: new Date()
+    }
+  });
   
   const [selectedCotizacion, setSelectedCotizacion] = useState<ExtendedCotizacion | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState<boolean>(false);
