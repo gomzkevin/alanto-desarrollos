@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -201,6 +202,14 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
     }
   }, [propertyValue, occupancyRate, nightlyRate, years, annualGrowth, financialConfig, shouldCalculate, onDataUpdate]);
   
+  // Handler for the nightly rate input changes
+  const handleNightlyRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Strip any non-numeric characters from the input
+    const value = e.target.value.replace(/[^0-9]/g, '');
+    // Convert to number or 0 if empty
+    setNightlyRate(value === '' ? 0 : Number(value));
+  };
+  
   return (
     <div className="space-y-6" ref={calculatorRef}>
       <Form {...form}>
@@ -269,14 +278,11 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
                 Tarifa promedio por noche (MXN)
               </label>
               <Input 
-                type="number" 
-                value={nightlyRate} 
-                formatCurrency={true}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  setNightlyRate(value === '' ? 0 : Number(value));
-                }}
+                type="text" 
+                value={formatCurrency(nightlyRate)} 
+                onChange={handleNightlyRateChange}
                 className="border border-slate-300"
+                aria-label="Tarifa promedio por noche"
               />
             </div>
             
