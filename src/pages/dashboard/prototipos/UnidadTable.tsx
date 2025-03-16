@@ -114,19 +114,12 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
       desarrolloId: prototipo.desarrollo_id
     });
     
-    // Ensure all parameters exist before navigating
-    if (unidadId && prototipo.id && prototipo.desarrollo_id) {
-      // Use setTimeout to ensure the navigation happens in the next tick
-      setTimeout(() => {
-        navigate(`/dashboard/cotizaciones/nueva?unidad=${unidadId}&prototipo=${prototipo.id}&desarrollo=${prototipo.desarrollo_id}`);
-      }, 0);
-    } else {
-      toast({
-        title: "Error",
-        description: "Faltan parámetros necesarios para la cotización",
-        variant: "destructive"
-      });
-    }
+    // Construct URL with all required parameters
+    const cotizacionUrl = `/dashboard/cotizaciones/nueva?unidad=${unidadId}&prototipo=${prototipo.id}&desarrollo=${prototipo.desarrollo_id}`;
+    console.log("URL for cotización:", cotizacionUrl);
+    
+    // Navigate to the cotización page
+    navigate(cotizacionUrl);
   };
   
   const handleProyeccion = (unidadId: string) => {

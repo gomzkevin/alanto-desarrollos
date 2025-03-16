@@ -41,9 +41,9 @@ export default function NuevaCotizacionPage() {
   
   // Default values based on URL parameters
   const defaultValues = {
-    ...(unidadId ? { unidad_id: unidadId } : {}),
-    ...(prototipoId ? { prototipo_id: prototipoId } : {}),
-    ...(desarrolloId ? { desarrollo_id: desarrolloId } : {})
+    desarrollo_id: desarrolloId || '',
+    prototipo_id: prototipoId || '',
+    unidad_id: unidadId || ''
   };
   
   // Cuando se cierra el diálogo, regresar a la lista de cotizaciones
@@ -54,6 +54,10 @@ export default function NuevaCotizacionPage() {
   
   // Cuando se guarda la cotización, regresar a la lista
   const handleSuccess = () => {
+    toast({
+      title: "Cotización creada",
+      description: "La cotización ha sido creada exitosamente"
+    });
     navigate('/dashboard/cotizaciones');
   };
   
