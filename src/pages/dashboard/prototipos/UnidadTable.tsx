@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Tables } from '@/integrations/supabase/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -117,7 +116,10 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
     
     // Ensure all parameters exist before navigating
     if (unidadId && prototipo.id && prototipo.desarrollo_id) {
-      navigate(`/dashboard/cotizaciones/nueva?unidad=${unidadId}&prototipo=${prototipo.id}&desarrollo=${prototipo.desarrollo_id}`);
+      // Use setTimeout to ensure the navigation happens in the next tick
+      setTimeout(() => {
+        navigate(`/dashboard/cotizaciones/nueva?unidad=${unidadId}&prototipo=${prototipo.id}&desarrollo=${prototipo.desarrollo_id}`);
+      }, 0);
     } else {
       toast({
         title: "Error",

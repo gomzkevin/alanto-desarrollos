@@ -74,17 +74,18 @@ export default function NuevaCotizacionPage() {
           <p className="text-slate-600">Crea una nueva cotización para un cliente</p>
         </div>
         
-        {/* Mostrar el diálogo de recurso */}
-        <AdminResourceDialog
-          resourceType="cotizaciones"
-          open={dialogOpen}
-          onClose={handleDialogClose}
-          onSuccess={handleSuccess}
-          buttonText="Nueva Cotización"
-          desarrolloId={desarrolloId || undefined}
-          prototipo_id={prototipoId || undefined}
-          defaultValues={defaultValues}
-        />
+        {dialogOpen && (
+          <AdminResourceDialog
+            resourceType="cotizaciones"
+            open={dialogOpen}
+            onClose={handleDialogClose}
+            onSuccess={handleSuccess}
+            buttonText="Nueva Cotización"
+            desarrolloId={desarrolloId || undefined}
+            prototipo_id={prototipoId || undefined}
+            defaultValues={defaultValues}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
