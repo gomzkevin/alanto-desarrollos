@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FormValues, ResourceType } from '../types';
+import { FormValues, ResourceType } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Json } from '@/integrations/supabase/types';
