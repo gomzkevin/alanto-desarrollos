@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Tables } from '@/integrations/supabase/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -96,12 +95,22 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
   };
   
   const handleCotizacion = (unidadId: string) => {
-    // Use navigate with appropriate parameters, prevent default behavior
-    navigate(`/dashboard/cotizaciones/nueva?unidad=${unidadId}`);
+    const unidad = unidades.find(u => u.id === unidadId);
+    if (!unidad) return;
+    
+    if (!prototipo || !prototipo.desarrollo_id) {
+      toast({
+        title: "Error",
+        description: "No se encontró información completa del prototipo",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    navigate(`/dashboard/cotizaciones/nueva?unidad=${unidadId}&prototipo=${prototipo.id}&desarrollo=${prototipo.desarrollo_id}`);
   };
   
   const handleProyeccion = (unidadId: string) => {
-    // Navigate to projection page with unit ID
     navigate(`/dashboard/proyecciones?unidad=${unidadId}`);
   };
   
@@ -207,7 +216,6 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
         </Table>
       </div>
       
-      {/* Diálogo para editar una unidad */}
       <AdminResourceDialog 
         resourceType="unidades"
         resourceId={selectedUnidad || undefined}
@@ -219,7 +227,6 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
         onSuccess={onRefresh}
       />
       
-      {/* Diálogo para confirmar eliminación */}
       <AlertDialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

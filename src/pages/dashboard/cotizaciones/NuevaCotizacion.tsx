@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,19 @@ import { ArrowLeft } from 'lucide-react';
 
 export default function NuevaCotizacionPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [dialogOpen, setDialogOpen] = useState(true);
+  
+  // Parse URL parameters
+  const searchParams = new URLSearchParams(location.search);
+  const unidadId = searchParams.get('unidad');
+  const prototipoId = searchParams.get('prototipo');
+  const desarrolloId = searchParams.get('desarrollo');
+  
+  // Default values based on URL parameters
+  const defaultValues = unidadId ? {
+    unidad_id: unidadId
+  } : undefined;
   
   // Cuando se cierra el diálogo, regresar a la lista de cotizaciones
   const handleDialogClose = () => {
@@ -45,6 +57,9 @@ export default function NuevaCotizacionPage() {
           onClose={handleDialogClose}
           onSuccess={handleSuccess}
           buttonText="Nueva Cotización"
+          desarrolloId={desarrolloId || undefined}
+          prototipo_id={prototipoId || undefined}
+          defaultValues={defaultValues}
         />
       </div>
     </DashboardLayout>
