@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Tables } from '@/integrations/supabase/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -109,18 +108,14 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
     }
     
     // Add console logs for debugging
-    console.log("Preparing to navigate to cotización with params:", {
+    console.log("Preparando navegación a cotización con params:", {
       unidadId,
       prototipoId: prototipo.id,
       desarrolloId: prototipo.desarrollo_id
     });
     
-    // Construct URL with all required parameters
-    const cotizacionUrl = `/dashboard/cotizaciones/nueva?desarrollo=${prototipo.desarrollo_id}&prototipo=${prototipo.id}&unidad=${unidadId}`;
-    console.log("URL for cotización:", cotizacionUrl);
-    
-    // Navigate to the cotización page
-    navigate(cotizacionUrl);
+    // Navigate directly to the cotización page - simplified and more reliable approach
+    navigate(`/dashboard/cotizaciones/nueva?desarrollo=${prototipo.desarrollo_id}&prototipo=${prototipo.id}&unidad=${unidadId}`);
   };
   
   const handleProyeccion = (unidadId: string) => {

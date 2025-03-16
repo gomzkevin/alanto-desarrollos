@@ -24,9 +24,7 @@ export default function NuevaCotizacionPage() {
     console.log('Cotización params:', { unidadId, prototipoId, desarrolloId });
     
     // Validate required parameters
-    if (desarrolloId && prototipoId) {
-      console.log('Required parameters present');
-    } else {
+    if (!desarrolloId || !prototipoId) {
       console.error('Missing required parameters');
       if (!desarrolloId) console.error('No desarrollo_id provided');
       if (!prototipoId) console.error('No prototipo_id provided');
@@ -36,8 +34,13 @@ export default function NuevaCotizacionPage() {
         description: "Faltan parámetros necesarios para crear la cotización",
         variant: "destructive"
       });
+      
+      // Redirigir de vuelta a la lista de cotizaciones después de un pequeño retraso
+      setTimeout(() => {
+        navigate('/dashboard/cotizaciones');
+      }, 1500);
     }
-  }, [unidadId, prototipoId, desarrolloId, toast]);
+  }, [unidadId, prototipoId, desarrolloId, toast, navigate]);
   
   // Default values based on URL parameters
   const defaultValues = {
@@ -82,7 +85,7 @@ export default function NuevaCotizacionPage() {
           <p className="text-slate-600">Crea una nueva cotización para un cliente</p>
         </div>
         
-        {dialogOpen && desarrolloId && prototipoId && (
+        {dialogOpen && (
           <AdminResourceDialog
             resourceType="cotizaciones"
             open={dialogOpen}
