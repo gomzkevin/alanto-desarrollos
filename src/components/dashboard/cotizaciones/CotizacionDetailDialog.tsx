@@ -255,7 +255,7 @@ const CotizacionDetailDialog = ({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+        <div id="cotizacion-detail-content" className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
           {/* Cliente info */}
           <Card className="lg:col-span-1">
             <CardHeader className="bg-primary/5 pb-2">
@@ -534,6 +534,8 @@ const CotizacionDetailDialog = ({
             cotizacionId={cotizacion.id}
             buttonText="Exportar PDF"
             resourceName="cotización"
+            elementId="cotizacion-detail-content"
+            fileName={`Cotizacion_${cotizacion.lead?.nombre || 'Cliente'}_${new Date().toLocaleDateString('es-MX').replace(/\//g, '-')}`}
           />
         </DialogFooter>
       </DialogContent>
