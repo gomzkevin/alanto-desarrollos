@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -28,6 +27,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import CotizacionDetailDialog from '@/components/dashboard/cotizaciones/CotizacionDetailDialog';
 
 const formatter = new Intl.NumberFormat('es-MX', {
   style: 'currency',
@@ -39,11 +40,9 @@ const formatter = new Intl.NumberFormat('es-MX', {
 interface CotizacionFormValues {
   isExistingClient: boolean;
   leadId?: string;
-  // Campos para nuevo lead
   nombre?: string;
   email?: string;
   telefono?: string;
-  // Campos para cotización
   desarrollo_id: string;
   prototipo_id: string;
   monto_anticipo: number;
@@ -62,7 +61,6 @@ const CotizacionesPage = () => {
   const [limit, setLimit] = useState<number>(10);
   const [searchTerm, setSearchTerm] = useState<string>('');
   
-  // Estados para el diálogo de nueva cotización
   const [showCotizacionDialog, setShowCotizacionDialog] = useState<boolean>(false);
   const [isExistingClient, setIsExistingClient] = useState<boolean>(false);
   const [searchLeadTerm, setSearchLeadTerm] = useState<string>('');
@@ -71,16 +69,8 @@ const CotizacionesPage = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('');
   
-  // Form para la creación de cotización
-  const form = useForm<CotizacionFormValues>({
-    defaultValues: {
-      isExistingClient: false,
-      monto_anticipo: 0,
-      numero_pagos: 6,
-      usar_finiquito: false,
-      fecha_inicio_pagos: new Date()
-    }
-  });
+  const [selectedCotizacion, setSelectedCotizacion] = useState<ExtendedCotizacion | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState<boolean>(false);
   
   const { 
     cotizaciones = [], 
@@ -95,7 +85,6 @@ const CotizacionesPage = () => {
     desarrolloId: selectedDesarrolloId 
   });
 
-  // Filtrar leads al escribir en la búsqueda
   useEffect(() => {
     if (searchLeadTerm.trim() !== '') {
       const filtered = leads.filter(lead => 
@@ -109,7 +98,6 @@ const CotizacionesPage = () => {
     }
   }, [searchLeadTerm, leads]);
 
-  // Reset prototipo selection when desarrollo changes
   useEffect(() => {
     if (selectedDesarrolloId) {
       form.setValue('prototipo_id', '');
@@ -142,7 +130,6 @@ const CotizacionesPage = () => {
   const handleToggleExistingClient = (checked: boolean) => {
     setIsExistingClient(checked);
     form.setValue('isExistingClient', checked);
-    // Limpiar campos relacionados al cambiar
     if (checked) {
       form.setValue('nombre', undefined);
       form.setValue('email', undefined);
@@ -157,21 +144,24 @@ const CotizacionesPage = () => {
   const handleSelectDesarrollo = (id: string) => {
     setSelectedDesarrolloId(id);
     form.setValue('desarrollo_id', id);
-    // Reset prototipo cuando cambia el desarrollo
     form.setValue('prototipo_id', '');
   };
 
-  // Add missing handlers for view and delete
   const handleView = (cotizacionId: string) => {
-    // For now, just show a toast saying this feature is in development
-    toast({
-      title: "Función en desarrollo",
-      description: "La vista detallada de cotizaciones estará disponible próximamente.",
-    });
+    const cotizacion = cotizaciones.find(c => c.id === cotizacionId);
+    if (cotizacion) {
+      setSelectedCotizacion(cotizacion);
+      setShowDetailDialog(true);
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo encontrar la información de la cotización.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDelete = (cotizacionId: string) => {
-    // For now, just show a toast saying this feature is in development
     toast({
       title: "Función en desarrollo",
       description: "La eliminación de cotizaciones estará disponible próximamente.",
@@ -182,7 +172,6 @@ const CotizacionesPage = () => {
     try {
       let leadId = values.leadId;
       
-      // Si es un cliente nuevo, crear el lead primero
       if (!values.isExistingClient && values.nombre) {
         const { data: newLead, error: leadError } = await supabase
           .from('leads')
@@ -206,7 +195,6 @@ const CotizacionesPage = () => {
         leadId = newLead.id;
       }
       
-      // Verificar que tenemos un leadId
       if (!leadId) {
         toast({
           title: 'Error',
@@ -216,7 +204,6 @@ const CotizacionesPage = () => {
         return;
       }
       
-      // Crear la cotización
       const { data: cotizacion, error: cotizacionError } = await supabase
         .from('cotizaciones')
         .insert({
@@ -272,7 +259,6 @@ const CotizacionesPage = () => {
             Nueva cotización
           </Button>
           
-          {/* Diálogo para crear cotización unificado */}
           <Dialog open={showCotizacionDialog} onOpenChange={setShowCotizacionDialog}>
             <DialogContent className="sm:max-w-3xl">
               <DialogHeader>
@@ -284,7 +270,6 @@ const CotizacionesPage = () => {
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleSubmitCotizacion)} className="space-y-6">
-                  {/* Selector de tipo de cliente */}
                   <div className="flex items-center space-x-4 py-2">
                     <Label htmlFor="isExistingClient" className="flex-1">Cliente existente</Label>
                     <Switch 
@@ -294,7 +279,6 @@ const CotizacionesPage = () => {
                     />
                   </div>
                   
-                  {/* Campos según tipo de cliente */}
                   {isExistingClient ? (
                     <div className="relative">
                       <Label htmlFor="searchLead">Buscar cliente</Label>
@@ -384,7 +368,6 @@ const CotizacionesPage = () => {
                     </div>
                   )}
                   
-                  {/* Campos para la cotización */}
                   <div className="border-t pt-4 mt-4">
                     <h3 className="text-lg font-medium mb-4">Datos de la cotización</h3>
                     
@@ -487,7 +470,6 @@ const CotizacionesPage = () => {
                       />
                     </div>
                     
-                    {/* Add fecha_inicio_pagos field */}
                     <div className="mt-4">
                       <FormField
                         control={form.control}
@@ -569,7 +551,6 @@ const CotizacionesPage = () => {
                           )}
                         />
                         
-                        {/* Add fecha_finiquito field */}
                         <FormField
                           control={form.control}
                           name="fecha_finiquito"
@@ -710,7 +691,6 @@ const CotizacionesPage = () => {
           </div>
         </div>
         
-        {/* Tabla de cotizaciones */}
         {isLoading ? (
           <div className="text-center py-10">
             <p className="text-slate-500">Cargando cotizaciones...</p>
@@ -825,6 +805,12 @@ const CotizacionesPage = () => {
             </div>
           </div>
         )}
+        
+        <CotizacionDetailDialog 
+          open={showDetailDialog}
+          onOpenChange={setShowDetailDialog}
+          cotizacion={selectedCotizacion}
+        />
       </div>
     </DashboardLayout>
   );
