@@ -85,7 +85,7 @@ export function ResourceDialogContent({
   };
 
   return (
-    <DialogContent className="sm:max-w-[600px]">
+    <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
       <DialogHeader
         title={`${resourceId ? 'Editar' : 'Nuevo'} ${getResourceTypeName()}`}
         description={`${resourceId ? 'Editar la información del' : 'Crear un nuevo'} ${getResourceTypeName().toLowerCase()}`}

@@ -65,9 +65,10 @@ export default function DesarrolloForm({
   
   return (
     <Tabs defaultValue="general" value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid grid-cols-4 mb-4">
+      <TabsList className="grid grid-cols-5 mb-4">
         <TabsTrigger value="general" className="text-center">General</TabsTrigger>
         <TabsTrigger value="amenidades" className="text-center">Amenidades</TabsTrigger>
+        <TabsTrigger value="fechas" className="text-center">Fechas</TabsTrigger>
         <TabsTrigger value="media" className="text-center">Media</TabsTrigger>
         <TabsTrigger value="financiero" className="text-center">Financiero</TabsTrigger>
       </TabsList>
@@ -132,8 +133,34 @@ export default function DesarrolloForm({
             />
           </div>
           
+          <div className="space-y-3 md:col-span-2">
+            <Label htmlFor="descripcion">Descripción</Label>
+            <Textarea
+              id="descripcion"
+              name="descripcion"
+              value={(resource.descripcion || '') as string}
+              onChange={handleChange}
+              placeholder="Descripción del desarrollo"
+              className="min-h-[120px]"
+            />
+          </div>
+        </div>
+      </TabsContent>
+      
+      <TabsContent value="amenidades" className="space-y-4 pt-2">
+        <div className="space-y-3">
+          <Label>Amenidades</Label>
+          <AmenitiesSelector 
+            selectedAmenities={selectedAmenities} 
+            onChange={onAmenitiesChange} 
+          />
+        </div>
+      </TabsContent>
+      
+      <TabsContent value="fechas" className="space-y-4 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-3">
-            <Label htmlFor="fecha_inicio">Fecha Inicio</Label>
+            <Label htmlFor="fecha_inicio">Fecha de Inicio</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -162,7 +189,7 @@ export default function DesarrolloForm({
           </div>
           
           <div className="space-y-3">
-            <Label htmlFor="fecha_entrega">Fecha Entrega</Label>
+            <Label htmlFor="fecha_entrega">Fecha de Entrega</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -189,28 +216,6 @@ export default function DesarrolloForm({
               </PopoverContent>
             </Popover>
           </div>
-          
-          <div className="space-y-3 md:col-span-2">
-            <Label htmlFor="descripcion">Descripción</Label>
-            <Textarea
-              id="descripcion"
-              name="descripcion"
-              value={(resource.descripcion || '') as string}
-              onChange={handleChange}
-              placeholder="Descripción del desarrollo"
-              className="min-h-[120px]"
-            />
-          </div>
-        </div>
-      </TabsContent>
-      
-      <TabsContent value="amenidades" className="space-y-4 pt-2">
-        <div className="space-y-3">
-          <Label>Amenidades</Label>
-          <AmenitiesSelector 
-            selectedAmenities={selectedAmenities} 
-            onChange={onAmenitiesChange} 
-          />
         </div>
       </TabsContent>
       

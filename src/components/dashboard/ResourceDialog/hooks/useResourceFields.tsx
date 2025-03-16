@@ -1,4 +1,3 @@
-
 import { FieldDefinition } from '../types';
 
 export function useResourceFields(resourceType: string): FieldDefinition[] {
@@ -12,8 +11,8 @@ export function useResourceFields(resourceType: string): FieldDefinition[] {
         { name: 'total_unidades', label: 'Total de unidades', type: 'number' },
         { name: 'unidades_disponibles', label: 'Unidades disponibles', type: 'number' },
         { name: 'avance_porcentaje', label: 'Avance (%)', type: 'number' },
-        { name: 'fecha_inicio', label: 'Fecha de inicio', type: 'text', tab: 'Fechas' },
-        { name: 'fecha_entrega', label: 'Fecha de entrega', type: 'text', tab: 'Fechas' },
+        { name: 'fecha_inicio', label: 'Fecha de inicio', type: 'date', tab: 'Fechas' },
+        { name: 'fecha_entrega', label: 'Fecha de entrega', type: 'date', tab: 'Fechas' },
         { name: 'moneda', label: 'Moneda', type: 'select', options: [
           { value: 'MXN', label: 'Peso Mexicano (MXN)' },
           { value: 'USD', label: 'Dólar Estadounidense (USD)' },
@@ -29,6 +28,7 @@ export function useResourceFields(resourceType: string): FieldDefinition[] {
         { name: 'es_impuestos_porcentaje', label: 'Impuestos es porcentaje', type: 'switch', tab: 'Finanzas' },
         { name: 'adr_base', label: 'ADR Base', type: 'number', tab: 'Rendimiento' },
         { name: 'ocupacion_anual', label: 'Ocupación anual (%)', type: 'number', tab: 'Rendimiento' },
+        { name: 'amenidades', label: 'Amenidades', type: 'amenities', tab: 'Amenidades' },
       ];
       
     case 'prototipos':
