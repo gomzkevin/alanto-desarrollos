@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,6 @@ import { supabase, fetchFinancialConfig } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from "sonner";
 
-// Define an interface for the financial configuration
 interface FinancialConfig {
   comision_operador: number;
   mantenimiento_valor: number;
@@ -30,7 +28,6 @@ interface FinancialConfig {
   tasa_interes: number;
 }
 
-// Add props interface to accept a desarrollo_id and onDataUpdate callback
 interface CalculatorProps {
   desarrolloId?: string;
   prototipoId?: string;
@@ -40,8 +37,6 @@ interface CalculatorProps {
 
 export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalculate = false }: CalculatorProps) => {
   const [propertyValue, setPropertyValue] = useState(3500000);
-  const [downPaymentPercent, setDownPaymentPercent] = useState(20);  // Anticipo: 20%
-  const [downPaymentAmount, setDownPaymentAmount] = useState(700000); // 20% of 3,500,000
   const [occupancyRate, setOccupancyRate] = useState(74); // percentage
   const [nightlyRate, setNightlyRate] = useState(1800);
   const [years, setYears] = useState(10);
@@ -66,7 +61,6 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
   const form = useForm({
     defaultValues: {
       propertyValue: propertyValue,
-      downPaymentPercent: downPaymentPercent,
       occupancyRate: occupancyRate,
       nightlyRate: nightlyRate,
       annualGrowth: annualGrowth,
@@ -74,19 +68,10 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
     }
   });
 
-  // Calculate the down payment amount when propertyValue or downPaymentPercent changes
-  useEffect(() => {
-    const amount = (propertyValue * downPaymentPercent) / 100;
-    setDownPaymentAmount(amount);
-  }, [propertyValue, downPaymentPercent]);
-
-  // Fetch financial configuration from Supabase based on desarrollo_id and prototipo_id
   useEffect(() => {
     const getFinancialConfig = async () => {
       try {
-        // If we have a prototipo_id, we prioritize its configuration
         if (prototipoId && prototipoId !== 'global') {
-          // Try to get prototipo-specific configuration
           const { data: prototipoData, error: prototipoError } = await supabase
             .from('prototipos')
             .select('*, precio')
@@ -96,18 +81,15 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
           if (prototipoError) {
             console.error('Error fetching prototipo data:', prototipoError);
           } else if (prototipoData) {
-            // Set property value from prototipo price if available
             if (prototipoData.precio) {
               setPropertyValue(prototipoData.precio);
             }
           }
         }
         
-        // Proceed with fetching financial configuration (either desarrollo-specific or global)
         const configData = await fetchFinancialConfig(desarrolloId);
         
         if (configData) {
-          // Convert the Supabase data to match our financialConfig state structure
           const config: FinancialConfig = {
             comision_operador: configData.comision_operador || 15,
             mantenimiento_valor: configData.mantenimiento_valor || 5,
@@ -124,14 +106,11 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
           
           setFinancialConfig(config);
           
-          // If no prototipo is selected or no values were found, use desarrollo settings
           if ((!prototipoId || prototipoId === 'global') && configData) {
-            // Set nightly rate if available
             if (configData.adr_base) {
               setNightlyRate(configData.adr_base);
             }
             
-            // Set occupancy rate if available
             if (configData.ocupacion_anual) {
               setOccupancyRate(configData.ocupacion_anual);
             }
@@ -145,13 +124,11 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
     getFinancialConfig();
   }, [desarrolloId, prototipoId]);
   
-  // Calculate the projection data when shouldCalculate is true
   useEffect(() => {
     if (!shouldCalculate && chartData.length > 0) return;
     
     const annualRevenue = nightlyRate * 365 * (occupancyRate / 100);
     
-    // Get financial parameters
     const {
       comision_operador,
       mantenimiento_valor,
@@ -170,11 +147,9 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
     let airbnbCumulativeProfit = 0;
     
     for (let year = 1; year <= years; year++) {
-      // Calculate Airbnb investment
       const yearlyGrowthFactor = Math.pow(1 + (annualGrowth / 100), year - 1);
       const thisYearRevenue = annualRevenue * yearlyGrowthFactor;
       
-      // Calculate expenses based on configuration
       const operatorCommission = thisYearRevenue * (comision_operador / 100);
       
       const maintenanceCost = es_mantenimiento_porcentaje 
@@ -189,30 +164,23 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
         ? propertyValue * (gastos_fijos / 100) 
         : gastos_fijos;
       
-      // Calculate taxable base and taxes
       const taxableBase = thisYearRevenue - operatorCommission - maintenanceCost - variableExpenses - fixedExpenses;
       const taxAmount = es_impuestos_porcentaje 
         ? taxableBase * (impuestos / 100) 
         : impuestos;
       
-      // Calculate net profit for this year
       const thisYearNetProfit = taxableBase - taxAmount;
       airbnbCumulativeProfit += thisYearNetProfit;
       
-      // Property appreciation (estimated using plusvalia_anual)
       const propertyAppreciation = propertyValue * (Math.pow(1 + (plusvalia_anual / 100), year) - 1);
       
-      // Calculate alternative investment - using full property value instead of just down payment
       const alternativeInvestmentReturn = propertyValue * (Math.pow(1 + (tasa_interes / 100), year) - 1);
       
-      // Return on Investment (ROI) based on full property value
       const annualRoi = (thisYearNetProfit / propertyValue) * 100;
       
-      // Add initial property value to both calculations to start from the initial investment
       const airbnbTotalValue = propertyValue + airbnbCumulativeProfit + propertyAppreciation;
       const alternativeTotalValue = propertyValue + alternativeInvestmentReturn;
       
-      // Difference between Airbnb value and alternative investment
       const difference = airbnbTotalValue - alternativeTotalValue;
       
       data.push({
@@ -222,13 +190,12 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
         yearlyROI: annualRoi.toFixed(1),
         difference: difference,
         thisYearNetProfit: thisYearNetProfit,
-        initialPropertyValue: propertyValue // Store the initial property value for reference
+        initialPropertyValue: propertyValue
       });
     }
     
     setChartData(data);
     
-    // Pass the data to the parent component if the callback exists
     if (onDataUpdate) {
       onDataUpdate(data);
     }
@@ -237,102 +204,98 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
   return (
     <div className="space-y-6" ref={calculatorRef}>
       <Form {...form}>
-        <div className="space-y-5">
-          <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium text-slate-700">
-                Valor de la propiedad: {formatCurrency(propertyValue)}
-              </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-5 p-6 bg-gradient-to-br from-white to-slate-50 rounded-xl shadow-sm border border-slate-100">
+            <h3 className="font-medium text-slate-800 mb-4">Propiedad e Inversión</h3>
+            
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium text-slate-700 flex items-center">
+                  <span className="w-2 h-2 bg-indigo-600 rounded-full mr-2"></span>
+                  Valor de la propiedad: {formatCurrency(propertyValue)}
+                </label>
+              </div>
+              <Slider 
+                value={[propertyValue]} 
+                max={50000000} 
+                min={1000000} 
+                step={100000}
+                onValueChange={(value) => setPropertyValue(value[0])}
+                className="py-4"
+              />
             </div>
-            <Slider 
-              value={[propertyValue]} 
-              max={50000000} 
-              min={1000000} 
-              step={100000}
-              onValueChange={(value) => setPropertyValue(value[0])}
-              className="py-4"
-            />
+            
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium text-slate-700 flex items-center">
+                  <span className="w-2 h-2 bg-amber-600 rounded-full mr-2"></span>
+                  Años para proyección: {years}
+                </label>
+              </div>
+              <Slider 
+                value={[years]} 
+                max={20} 
+                min={1} 
+                step={1}
+                onValueChange={(value) => setYears(value[0])}
+                className="py-4"
+              />
+            </div>
           </div>
           
-          <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium text-slate-700">
-                Anticipo: {downPaymentPercent}% ({formatCurrency(downPaymentAmount)})
-              </label>
+          <div className="space-y-5 p-6 bg-gradient-to-br from-white to-slate-50 rounded-xl shadow-sm border border-slate-100">
+            <h3 className="font-medium text-slate-800 mb-4">Parámetros de Renta</h3>
+            
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium text-slate-700 flex items-center">
+                  <span className="w-2 h-2 bg-purple-600 rounded-full mr-2"></span>
+                  Porcentaje de ocupación anual: {occupancyRate}%
+                </label>
+              </div>
+              <Slider 
+                value={[occupancyRate]} 
+                max={100} 
+                min={40} 
+                step={1}
+                onValueChange={(value) => setOccupancyRate(value[0])}
+                className="py-4"
+              />
             </div>
-            <Slider 
-              value={[downPaymentPercent]} 
-              max={100} 
-              min={10} 
-              step={1}
-              onValueChange={(value) => setDownPaymentPercent(value[0])}
-              className="py-4"
-            />
-          </div>
-          
-          <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium text-slate-700">
-                Porcentaje de ocupación anual: {occupancyRate}%
+            
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center">
+                <span className="w-2 h-2 bg-purple-600 rounded-full mr-2"></span>
+                Tarifa promedio por noche (MXN)
               </label>
+              <Input 
+                type="number" 
+                value={nightlyRate} 
+                formatCurrency={true}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  setNightlyRate(value === '' ? 0 : Number(value));
+                }}
+                className="border border-slate-300"
+              />
             </div>
-            <Slider 
-              value={[occupancyRate]} 
-              max={100} 
-              min={40} 
-              step={1}
-              onValueChange={(value) => setOccupancyRate(value[0])}
-              className="py-4"
-            />
-          </div>
-          
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Tarifa promedio por noche (MXN)
-            </label>
-            <Input 
-              type="number" 
-              value={nightlyRate} 
-              formatCurrency={true}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                // Extract the numeric value from the input
-                const value = e.target.value.replace(/[^0-9]/g, '');
-                setNightlyRate(value === '' ? 0 : Number(value));
-              }}
-              className="border border-slate-300"
-            />
-          </div>
-          
-          <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium text-slate-700">
-                Crecimiento anual: {annualGrowth}%
-              </label>
+            
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium text-slate-700 flex items-center">
+                  <span className="w-2 h-2 bg-emerald-600 rounded-full mr-2"></span>
+                  Crecimiento anual: {annualGrowth}%
+                </label>
+              </div>
+              <Slider 
+                value={[annualGrowth]} 
+                max={10} 
+                min={0} 
+                step={0.5}
+                onValueChange={(value) => setAnnualGrowth(value[0])}
+                className="py-4"
+              />
             </div>
-            <Slider 
-              value={[annualGrowth]} 
-              max={10} 
-              min={0} 
-              step={0.5}
-              onValueChange={(value) => setAnnualGrowth(value[0])}
-              className="py-4"
-            />
-          </div>
-          
-          <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium text-slate-700">
-                Años para proyección: {years}
-              </label>
-            </div>
-            <Slider 
-              value={[years]} 
-              max={20} 
-              min={1} 
-              step={1}
-              onValueChange={(value) => setYears(value[0])}
-              className="py-4"
-            />
           </div>
         </div>
       </Form>
