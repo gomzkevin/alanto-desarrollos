@@ -6,7 +6,6 @@ import { FieldDefinition } from '../types';
 import GenericForm from '../GenericForm';
 import { DialogHeader } from './DialogHeader';
 import { DialogFooter } from './DialogFooter';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ResourceDialogContentProps {
   isOpen: boolean;
@@ -86,7 +85,7 @@ export function ResourceDialogContent({
   };
 
   return (
-    <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+    <DialogContent className="sm:max-w-[600px]">
       <DialogHeader
         title={`${resourceId ? 'Editar' : 'Nuevo'} ${getResourceTypeName()}`}
         description={`${resourceId ? 'Editar la información del' : 'Crear un nuevo'} ${getResourceTypeName().toLowerCase()}`}
@@ -97,32 +96,28 @@ export function ResourceDialogContent({
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
         </div>
       ) : (
-        <ScrollArea className="flex-1 overflow-auto px-1">
-          <div className="pr-4">
-            <GenericForm
-              fields={fields}
-              resource={resource}
-              handleChange={handleChange}
-              handleSelectChange={handleSelectChange}
-              handleSwitchChange={handleSwitchChange}
-              resourceType={resourceType}
-              handleAmenitiesChange={handleAmenitiesChange}
-              selectedAmenities={selectedAmenities}
-              resourceId={resourceId}
-              desarrolloId={desarrolloId}
-              prototipo_id={prototipo_id}
-              lead_id={lead_id}
-              handleLeadSelect={handleLeadSelect}
-              handleImageUpload={handleImageUpload}
-              uploading={uploading}
-              isExistingClient={isExistingClient}
-              onExistingClientChange={onExistingClientChange}
-              newClientData={newClientData}
-              onNewClientDataChange={onNewClientDataChange}
-              onDesarrolloSelect={onDesarrolloSelect}
-            />
-          </div>
-        </ScrollArea>
+        <GenericForm
+          fields={fields}
+          resource={resource}
+          handleChange={handleChange}
+          handleSelectChange={handleSelectChange}
+          handleSwitchChange={handleSwitchChange}
+          resourceType={resourceType}
+          handleAmenitiesChange={handleAmenitiesChange}
+          selectedAmenities={selectedAmenities}
+          resourceId={resourceId}
+          desarrolloId={desarrolloId}
+          prototipo_id={prototipo_id}
+          lead_id={lead_id}
+          handleLeadSelect={handleLeadSelect}
+          handleImageUpload={handleImageUpload}
+          uploading={uploading}
+          isExistingClient={isExistingClient}
+          onExistingClientChange={onExistingClientChange}
+          newClientData={newClientData}
+          onNewClientDataChange={onNewClientDataChange}
+          onDesarrolloSelect={onDesarrolloSelect}
+        />
       )}
 
       <DialogFooter

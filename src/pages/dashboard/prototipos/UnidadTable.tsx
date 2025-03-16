@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Tables } from '@/integrations/supabase/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -95,30 +96,12 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
   };
   
   const handleCotizacion = (unidadId: string) => {
-    const unidad = unidades.find(u => u.id === unidadId);
-    if (!unidad) return;
-    
-    if (!prototipo || !prototipo.desarrollo_id) {
-      toast({
-        title: "Error",
-        description: "No se encontró información completa del prototipo",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Add console logs for debugging
-    console.log("Preparando navegación a cotización con params:", {
-      unidadId,
-      prototipoId: prototipo.id,
-      desarrolloId: prototipo.desarrollo_id
-    });
-    
-    // Navigate directly to the cotización page - simplified and more reliable approach
-    navigate(`/dashboard/cotizaciones/nueva?desarrollo=${prototipo.desarrollo_id}&prototipo=${prototipo.id}&unidad=${unidadId}`);
+    // Use navigate with appropriate parameters, prevent default behavior
+    navigate(`/dashboard/cotizaciones/nueva?unidad=${unidadId}`);
   };
   
   const handleProyeccion = (unidadId: string) => {
+    // Navigate to projection page with unit ID
     navigate(`/dashboard/proyecciones?unidad=${unidadId}`);
   };
   
@@ -224,6 +207,7 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
         </Table>
       </div>
       
+      {/* Diálogo para editar una unidad */}
       <AdminResourceDialog 
         resourceType="unidades"
         resourceId={selectedUnidad || undefined}
@@ -235,6 +219,7 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
         onSuccess={onRefresh}
       />
       
+      {/* Diálogo para confirmar eliminación */}
       <AlertDialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

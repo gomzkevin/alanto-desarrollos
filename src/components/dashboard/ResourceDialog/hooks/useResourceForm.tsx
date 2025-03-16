@@ -113,25 +113,15 @@ export function useResourceForm({
               subestado: 'sin_contactar'
             });
           } else if (resourceType === 'cotizaciones') {
-            console.log('Initializing cotización form with:', { 
-              lead_id, 
-              desarrolloId, 
-              prototipo_id, 
-              defaultValues 
-            });
-            
             const initialValues = {
               lead_id: lead_id || '',
-              desarrollo_id: desarrolloId || (defaultValues?.desarrollo_id || ''),
-              prototipo_id: prototipo_id || (defaultValues?.prototipo_id || ''),
-              unidad_id: defaultValues?.unidad_id || '',
+              desarrollo_id: desarrolloId || '',
+              prototipo_id: prototipo_id || '',
               monto_anticipo: 0,
               numero_pagos: 0,
               usar_finiquito: false,
               ...(defaultValues || {})
             };
-            
-            console.log('Setting initial cotización values:', initialValues);
             setResource(initialValues);
           } else if (resourceType === 'unidades') {
             setResource({

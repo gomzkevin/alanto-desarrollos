@@ -25,7 +25,6 @@ interface ClientSearchProps {
     email: string;
     telefono: string;
   };
-  preserveSelectionKey?: string; // Add a key to help identify when to preserve selection
 }
 
 export function ClientSearch({ 
@@ -35,8 +34,7 @@ export function ClientSearch({
   isExistingClient,
   onExistingClientChange,
   onNewClientDataChange,
-  newClientData,
-  preserveSelectionKey
+  newClientData
 }: ClientSearchProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -44,7 +42,6 @@ export function ClientSearch({
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const { leads, isLoading } = useLeads({});
   const inputRef = useRef<HTMLInputElement>(null);
-  const prevPreserveKeyRef = useRef<string | undefined>(preserveSelectionKey);
 
   // Actualizar el nombre mostrado cuando cambia el valor o se cargan los leads
   useEffect(() => {
@@ -59,12 +56,6 @@ export function ClientSearch({
       setDisplayName('');
     }
   }, [value, leads, isExistingClient]);
-
-  // Track preserveSelectionKey changes to prevent clearing selection
-  useEffect(() => {
-    // Only update the previous key after component re-render
-    prevPreserveKeyRef.current = preserveSelectionKey;
-  }, [preserveSelectionKey]);
 
   // Normalizar texto para búsqueda insensible a acentos
   const normalizeText = (text: string | null | undefined): string => {
@@ -304,4 +295,3 @@ export function ClientSearch({
     </div>
   );
 }
-

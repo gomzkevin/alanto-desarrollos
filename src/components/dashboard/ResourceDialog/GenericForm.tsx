@@ -1,3 +1,4 @@
+
 import { FormValues } from './types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +38,7 @@ interface GenericFormProps {
   };
   onNewClientDataChange?: (field: string, value: string) => void;
   onDesarrolloSelect?: (desarrolloId: string) => void;
+  // Add missing properties
   desarrolloId?: string;
   resourceId?: string;
   prototipo_id?: string;
@@ -70,14 +72,17 @@ export default function GenericForm({
   const { leads = [] } = useLeads({});
   const { desarrollos = [] } = useDesarrollos({});
   
+  // Obtener el desarrollo_id actualmente seleccionado en el formulario
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>(
     desarrolloId || (resource && (resource as any).desarrollo_id) || ''
   );
   
+  // Use the selected desarrollo to fetch filtered prototipos
   const { prototipos = [] } = usePrototipos({
     desarrolloId: selectedDesarrolloId
   });
 
+  // Actualizar selectedDesarrolloId cuando cambie el valor en el recurso o props
   useEffect(() => {
     if (resource && (resource as any).desarrollo_id) {
       console.log("GenericForm - Setting desarrollo from resource:", (resource as any).desarrollo_id);
@@ -88,6 +93,7 @@ export default function GenericForm({
     }
   }, [resource, desarrolloId]);
 
+  // Log when desarrollo or prototipos change to debug
   useEffect(() => {
     console.log("GenericForm - Selected desarrollo ID:", selectedDesarrolloId);
     console.log("GenericForm - Available prototipos:", prototipos);
@@ -107,19 +113,24 @@ export default function GenericForm({
   
   if (!resource) return null;
   
+  // Determinar si debemos mostrar el formulario con pestañas o normal
   const hasTabs = tabs.length > 0;
 
+  // Custom handler for desarrollo changes
   const handleDesarrolloChange = (value: string) => {
     console.log("GenericForm - Changing desarrollo to:", value);
     setSelectedDesarrolloId(value);
     
+    // Call parent handler if available
     if (onDesarrolloSelect) {
       console.log("GenericForm - Calling parent onDesarrolloSelect");
       onDesarrolloSelect(value);
     } else {
+      // Fall back to standard handler
       console.log("GenericForm - Using standard handleSelectChange");
       handleSelectChange('desarrollo_id', value);
       
+      // Reset prototipo when desarrollo changes
       if (resourceType === 'cotizaciones') {
         console.log("GenericForm - Resetting prototipo_id");
         handleSelectChange('prototipo_id', '');
@@ -127,11 +138,6 @@ export default function GenericForm({
     }
   };
   
-  const preserveSelectionKey = useMemo(() => 
-    `desarrollo-${selectedDesarrolloId || 'none'}-${Date.now()}`, 
-    [selectedDesarrolloId]
-  );
-
   const renderFormFields = (tabName?: string) => {
     const fieldsToRender = hasTabs 
       ? fields.filter(field => field.tab === tabName)
@@ -139,6 +145,7 @@ export default function GenericForm({
     
     return (
       <div className="grid gap-4 py-4">
+        {/* Mostrar la búsqueda de cliente para cotizaciones y ocultar el campo select-lead */}
         {resourceType === 'cotizaciones' && !tabName && (
           <ClientSearch
             value={(resource as any).lead_id || ''}
@@ -157,11 +164,11 @@ export default function GenericForm({
             }}
             newClientData={newClientData}
             onNewClientDataChange={onNewClientDataChange}
-            preserveSelectionKey={preserveSelectionKey}
           />
         )}
         
         {fieldsToRender.map((field) => {
+          // Ocultar el campo select-lead si estamos en cotizaciones (lo reemplazamos por ClientSearch)
           if (resourceType === 'cotizaciones' && field.type === 'select-lead') {
             return null;
           }
