@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -34,7 +33,21 @@ import {
   Check, 
   Clock, 
   FileText,
-  Banknote
+  Banknote,
+  Bath,
+  Dumbbell,
+  Flame,
+  ParkingSquare,
+  Utensils,
+  Wifi,
+  Heart,
+  Baby,
+  Lock,
+  Car,
+  Tree,
+  Waves,
+  Coffee,
+  GlassWater
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -51,6 +64,25 @@ const formatter = new Intl.NumberFormat('es-MX', {
   maximumFractionDigits: 0,
 });
 
+const getAmenityIcon = (amenityId: string) => {
+  const amenityMap: Record<string, { icon: React.ReactNode, label: string }> = {
+    "pool": { icon: <Waves className="h-3.5 w-3.5 mr-1" />, label: "Alberca" },
+    "gym": { icon: <Dumbbell className="h-3.5 w-3.5 mr-1" />, label: "Gimnasio" },
+    "spa": { icon: <Bath className="h-3.5 w-3.5 mr-1" />, label: "Spa" },
+    "bbq": { icon: <Flame className="h-3.5 w-3.5 mr-1" />, label: "Área de BBQ" },
+    "playground": { icon: <Baby className="h-3.5 w-3.5 mr-1" />, label: "Área infantil" },
+    "security": { icon: <Lock className="h-3.5 w-3.5 mr-1" />, label: "Seguridad 24/7" },
+    "parking": { icon: <ParkingSquare className="h-3.5 w-3.5 mr-1" />, label: "Estacionamiento" },
+    "garden": { icon: <Tree className="h-3.5 w-3.5 mr-1" />, label: "Jardín" },
+    "beach": { icon: <Waves className="h-3.5 w-3.5 mr-1" />, label: "Playa" },
+    "restaurant": { icon: <Utensils className="h-3.5 w-3.5 mr-1" />, label: "Restaurante" },
+    "bar": { icon: <GlassWater className="h-3.5 w-3.5 mr-1" />, label: "Bar" },
+    "wifi": { icon: <Wifi className="h-3.5 w-3.5 mr-1" />, label: "WiFi" }
+  };
+
+  return amenityMap[amenityId] || { icon: <Check className="h-3.5 w-3.5 mr-1" />, label: amenityId };
+};
+
 const CotizacionDetailDialog = ({ 
   open, 
   onOpenChange, 
@@ -66,7 +98,6 @@ const CotizacionDetailDialog = ({
     const fetchImages = async () => {
       if (!cotizacion) return;
 
-      // Fetch desarrollo image
       if (cotizacion.desarrollo_id) {
         try {
           const { data: imageData } = await supabase
@@ -80,7 +111,6 @@ const CotizacionDetailDialog = ({
           if (imageData) {
             setDesarrolloImageUrl(imageData.url);
           } else {
-            // If no principal image, get any image
             const { data: anyImage } = await supabase
               .from('desarrollo_imagenes')
               .select('url')
@@ -97,7 +127,6 @@ const CotizacionDetailDialog = ({
         }
       }
 
-      // Fetch prototipo image
       if (cotizacion.prototipo_id) {
         try {
           const { data: prototipo } = await supabase
@@ -130,13 +159,21 @@ const CotizacionDetailDialog = ({
           return;
         }
         
-        // Handle different types of amenidades data
         if (Array.isArray(data.amenidades)) {
           setAmenidades(data.amenidades.map(item => String(item)));
         } else if (typeof data.amenidades === 'object') {
           setAmenidades(Object.values(data.amenidades).map(value => String(value)));
-        } else if (data.amenidades) {
-          setAmenidades([String(data.amenidades)]);
+        } else if (typeof data.amenidades === 'string') {
+          try {
+            const parsed = JSON.parse(data.amenidades);
+            if (Array.isArray(parsed)) {
+              setAmenidades(parsed.map(item => String(item)));
+            } else {
+              setAmenidades([String(data.amenidades)]);
+            }
+          } catch (e) {
+            setAmenidades([String(data.amenidades)]);
+          }
         } else {
           setAmenidades([]);
         }
@@ -343,11 +380,15 @@ const CotizacionDetailDialog = ({
                 <div className="mt-4">
                   <h4 className="font-semibold mb-2">Amenidades</h4>
                   <div className="flex flex-wrap gap-2">
-                    {amenidades.map((amenidad, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {amenidad}
-                      </Badge>
-                    ))}
+                    {amenidades.map((amenidadId, index) => {
+                      const { icon, label } = getAmenityIcon(amenidadId);
+                      return (
+                        <Badge key={index} variant="amenity" className="flex items-center py-1">
+                          {icon}
+                          <span>{label}</span>
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
               )}

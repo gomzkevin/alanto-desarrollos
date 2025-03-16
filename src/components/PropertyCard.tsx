@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { MapPin, Bed, Bath, Square, ChevronRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Badge } from "@/components/ui/badge";
 
 interface PropertyCardProps {
   image: string;
@@ -48,9 +49,9 @@ const PropertyCard = ({
           />
         </AspectRatio>
         <div className="absolute top-3 left-3">
-          <span className="px-3 py-1 text-xs font-medium text-white bg-indigo-600 rounded-full shadow-sm">
+          <Badge className="px-3 py-1 text-xs font-medium text-white bg-indigo-600">
             {category}
-          </span>
+          </Badge>
         </div>
       </div>
 
@@ -67,18 +68,18 @@ const PropertyCard = ({
         
         <div className="flex justify-between items-center pt-4 border-t border-slate-100">
           <div className="flex space-x-4 text-slate-700">
-            <div className="flex items-center">
-              <Bed className="h-4 w-4 mr-1 text-slate-400" />
-              <span className="text-sm">{bedrooms}</span>
-            </div>
-            <div className="flex items-center">
-              <Bath className="h-4 w-4 mr-1 text-slate-400" />
-              <span className="text-sm">{bathrooms}</span>
-            </div>
-            <div className="flex items-center">
-              <Square className="h-4 w-4 mr-1 text-slate-400" />
-              <span className="text-sm">{area} m²</span>
-            </div>
+            <Badge variant="outline" className="flex items-center border-slate-200">
+              <Bed className="h-3.5 w-3.5 mr-1 text-slate-500" />
+              <span className="text-xs">{bedrooms}</span>
+            </Badge>
+            <Badge variant="outline" className="flex items-center border-slate-200">
+              <Bath className="h-3.5 w-3.5 mr-1 text-slate-500" />
+              <span className="text-xs">{bathrooms}</span>
+            </Badge>
+            <Badge variant="outline" className="flex items-center border-slate-200">
+              <Square className="h-3.5 w-3.5 mr-1 text-slate-500" />
+              <span className="text-xs">{area} m²</span>
+            </Badge>
           </div>
         </div>
       </div>

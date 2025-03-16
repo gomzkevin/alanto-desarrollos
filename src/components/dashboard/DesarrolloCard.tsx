@@ -4,7 +4,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tables } from '@/integrations/supabase/types';
-import { Home, Tag } from 'lucide-react';
+import { 
+  Home, 
+  Bath, 
+  Dumbbell, 
+  Flame, 
+  ParkingSquare, 
+  Utensils, 
+  Wifi, 
+  Baby, 
+  Lock, 
+  Car, 
+  Tree, 
+  Waves, 
+  Coffee, 
+  GlassWater, 
+  Check 
+} from 'lucide-react';
 import { AmenitiesSelector, Amenity } from './AmenitiesSelector';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -189,7 +205,7 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
                 variant="outline" 
                 className="flex items-center gap-1 bg-slate-50"
               >
-                <span>{amenidadInfo.icon}</span>
+                {amenidadInfo.icon}
                 <span className="text-xs">{amenidadInfo.name}</span>
               </Badge>
             );
@@ -229,24 +245,23 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
 };
 
 // Función para obtener información de una amenidad por su ID
-const getAmenidadInfo = (amenidadId: string): { name: string; icon: string } => {
-  const AMENITIES: Amenity[] = [
-    { id: "pool", name: "Alberca", icon: "🏊" },
-    { id: "gym", name: "Gimnasio", icon: "💪" },
-    { id: "spa", name: "Spa", icon: "💆" },
-    { id: "bbq", name: "BBQ", icon: "🍖" },
-    { id: "playground", name: "Área infantil", icon: "🧒" },
-    { id: "security", name: "Seguridad", icon: "🔒" },
-    { id: "parking", name: "Estacionamiento", icon: "🚗" },
-    { id: "garden", name: "Jardín", icon: "🌳" },
-    { id: "beach", name: "Playa", icon: "🏖️" },
-    { id: "restaurant", name: "Restaurante", icon: "🍽️" },
-    { id: "bar", name: "Bar", icon: "🍹" },
-    { id: "wifi", name: "WiFi", icon: "📶" }
-  ];
+const getAmenidadInfo = (amenidadId: string): { name: string; icon: React.ReactNode } => {
+  const amenityMap: Record<string, { icon: React.ReactNode, name: string }> = {
+    "pool": { icon: <Waves className="h-3 w-3 mr-1" />, name: "Alberca" },
+    "gym": { icon: <Dumbbell className="h-3 w-3 mr-1" />, name: "Gimnasio" },
+    "spa": { icon: <Bath className="h-3 w-3 mr-1" />, name: "Spa" },
+    "bbq": { icon: <Flame className="h-3 w-3 mr-1" />, name: "BBQ" },
+    "playground": { icon: <Baby className="h-3 w-3 mr-1" />, name: "Área infantil" },
+    "security": { icon: <Lock className="h-3 w-3 mr-1" />, name: "Seguridad" },
+    "parking": { icon: <ParkingSquare className="h-3 w-3 mr-1" />, name: "Estacionamiento" },
+    "garden": { icon: <Tree className="h-3 w-3 mr-1" />, name: "Jardín" },
+    "beach": { icon: <Waves className="h-3 w-3 mr-1" />, name: "Playa" },
+    "restaurant": { icon: <Utensils className="h-3 w-3 mr-1" />, name: "Restaurante" },
+    "bar": { icon: <GlassWater className="h-3 w-3 mr-1" />, name: "Bar" },
+    "wifi": { icon: <Wifi className="h-3 w-3 mr-1" />, name: "WiFi" }
+  };
   
-  const amenidad = AMENITIES.find(a => a.id === amenidadId);
-  return amenidad || { name: amenidadId, icon: "✓" };
+  return amenityMap[amenidadId] || { name: amenidadId, icon: <Check className="h-3 w-3 mr-1" /> };
 };
 
 export default DesarrolloCard;

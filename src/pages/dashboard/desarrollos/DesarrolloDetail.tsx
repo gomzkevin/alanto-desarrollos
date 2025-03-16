@@ -1,8 +1,28 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { ChevronLeft, Home, MapPin, Clock, CalendarClock, ImageIcon, Package } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  Home, 
+  MapPin, 
+  Clock, 
+  CalendarClock, 
+  ImageIcon, 
+  Package,
+  Bath, 
+  Dumbbell, 
+  Flame, 
+  ParkingSquare, 
+  Utensils, 
+  Wifi, 
+  Baby, 
+  Lock, 
+  Car, 
+  Tree, 
+  Waves, 
+  GlassWater, 
+  Check 
+} from 'lucide-react';
 import PrototipoCard from '@/components/dashboard/PrototipoCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,6 +62,40 @@ const getDesarrolloStatus = (desarrollo: Desarrollo) => {
     return { label: 'En venta', color: 'bg-yellow-100 text-yellow-800' };
   } else {
     return { label: 'Vendido', color: 'bg-green-100 text-green-800' };
+  }
+};
+
+const getAmenityIcon = (amenityId: string) => {
+  const amenityMap: Record<string, { icon: React.ReactNode, label: string }> = {
+    "pool": { icon: <Waves className="h-3.5 w-3.5 mr-1" />, label: "Alberca" },
+    "gym": { icon: <Dumbbell className="h-3.5 w-3.5 mr-1" />, label: "Gimnasio" },
+    "spa": { icon: <Bath className="h-3.5 w-3.5 mr-1" />, label: "Spa" },
+    "bbq": { icon: <Flame className="h-3.5 w-3.5 mr-1" />, label: "Área de BBQ" },
+    "playground": { icon: <Baby className="h-3.5 w-3.5 mr-1" />, label: "Área infantil" },
+    "security": { icon: <Lock className="h-3.5 w-3.5 mr-1" />, label: "Seguridad 24/7" },
+    "parking": { icon: <ParkingSquare className="h-3.5 w-3.5 mr-1" />, label: "Estacionamiento" },
+    "garden": { icon: <Tree className="h-3.5 w-3.5 mr-1" />, label: "Jardín" },
+    "beach": { icon: <Waves className="h-3.5 w-3.5 mr-1" />, label: "Playa" },
+    "restaurant": { icon: <Utensils className="h-3.5 w-3.5 mr-1" />, label: "Restaurante" },
+    "bar": { icon: <GlassWater className="h-3.5 w-3.5 mr-1" />, label: "Bar" },
+    "wifi": { icon: <Wifi className="h-3.5 w-3.5 mr-1" />, label: "WiFi" }
+  };
+
+  return amenityMap[amenityId] || { icon: <Check className="h-3.5 w-3.5 mr-1" />, label: amenityId };
+};
+
+const parseAmenidades = (amenidades: string[] | string | undefined): string[] => {
+  if (!amenidades) return [];
+  
+  if (Array.isArray(amenidades)) {
+    return amenidades;
+  }
+  
+  try {
+    return typeof amenidades === 'string' ? JSON.parse(amenidades) : [];
+  } catch (e) {
+    console.error('Error parsing amenidades:', e);
+    return [];
   }
 };
 
@@ -86,21 +140,6 @@ const DesarrolloDetailPage = () => {
   const isLoading = isLoadingDesarrollo || isLoadingPrototipos;
   const hasError = errorDesarrollo || errorPrototipos;
   
-  const parseAmenidades = (amenidades: string[] | string | undefined): string[] => {
-    if (!amenidades) return [];
-    
-    if (Array.isArray(amenidades)) {
-      return amenidades;
-    }
-    
-    try {
-      return typeof amenidades === 'string' ? JSON.parse(amenidades) : [];
-    } catch (e) {
-      console.error('Error parsing amenidades:', e);
-      return [];
-    }
-  };
-
   return (
     <DashboardLayout>
       <div className="space-y-6 p-6 pb-16">
@@ -168,11 +207,15 @@ const DesarrolloDetailPage = () => {
                     Amenidades
                   </h2>
                   <div className="flex flex-wrap gap-2">
-                    {parseAmenidades(desarrollo.amenidades).map((amenidad, index) => (
-                      <Badge key={index} className="bg-indigo-100 text-indigo-800 hover:bg-indigo-200">
-                        {amenidad}
-                      </Badge>
-                    ))}
+                    {parseAmenidades(desarrollo.amenidades).map((amenidadId, index) => {
+                      const { icon, label } = getAmenityIcon(amenidadId);
+                      return (
+                        <Badge key={index} variant="amenity" className="flex items-center py-1">
+                          {icon}
+                          <span>{label}</span>
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
               )}
