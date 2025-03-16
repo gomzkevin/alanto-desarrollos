@@ -1,251 +1,393 @@
-
 import { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { FormValues, ResourceType } from '../types';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  ResourceType, 
-  FormValues, 
-  DesarrolloResource, 
-  PrototipoResource, 
-  LeadResource, 
-  CotizacionResource, 
-  FieldDefinition 
-} from './types';
-import useLeads from '@/hooks/useLeads';
-import useDesarrollos from '@/hooks/useDesarrollos';
-import usePrototipos from '@/hooks/usePrototipos';
+import { useToast } from '@/hooks/use-toast';
+import { Json } from '@/integrations/supabase/types';
 
-const TIPOS_PROPIEDADES = [
-  { value: 'apartamento', label: 'Apartamento' },
-  { value: 'casa', label: 'Casa' },
-  { value: 'villa', label: 'Villa' },
-  { value: 'terreno', label: 'Terreno' },
-  { value: 'local', label: 'Local comercial' },
-  { value: 'oficina', label: 'Oficina' },
-  { value: 'otro', label: 'Otro' },
-];
-
-export default function useResourceData({
-  resourceType,
-  resourceId,
-  desarrolloId,
-  lead_id,
-  selectedDesarrolloId,
-  selectedStatus,
-  usarFiniquito,
-  selectedAmenities,
-  onStatusChange,
-  onAmenitiesChange
-}: {
+interface UseResourceFormProps {
   resourceType: ResourceType;
   resourceId?: string;
   desarrolloId?: string;
   lead_id?: string;
-  selectedDesarrolloId: string | null;
-  selectedStatus: string | null;
-  usarFiniquito: boolean;
-  selectedAmenities: string[];
-  onStatusChange: (status: string) => void;
-  onAmenitiesChange: (amenities: string[]) => void;
-}) {
-  const { toast } = useToast();
-  const [resource, setResource] = useState<FormValues | null>(null);
-  const [fields, setFields] = useState<FieldDefinition[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  prototipo_id?: string;
+  defaultValues?: Record<string, any>;
+  onSuccess?: () => void;
+  onSave?: () => void;
+}
 
-  const { leads, statusOptions, getSubstatusOptions, originOptions } = useLeads();
-  const { desarrollos } = useDesarrollos();
-  const { prototipos } = usePrototipos({ 
-    desarrolloId: selectedDesarrolloId 
-  });
+export function useResourceForm({
+  resourceType,
+  resourceId,
+  desarrolloId,
+  lead_id,
+  prototipo_id,
+  defaultValues,
+  onSuccess,
+  onSave
+}: UseResourceFormProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resource, setResource] = useState<FormValues | null>(null);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchResource = async () => {
       setIsLoading(true);
-      if (resourceId) {
-        let query;
-        
-        if (resourceType === 'desarrollos') {
-          query = supabase
-            .from('desarrollos')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-        } else if (resourceType === 'prototipos') {
-          query = supabase
-            .from('prototipos')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-        } else if (resourceType === 'leads') {
-          query = supabase
-            .from('leads')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-        } else if (resourceType === 'cotizaciones') {
-          query = supabase
-            .from('cotizaciones')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-        }
-        
-        const { data, error } = await query;
-
-        if (error) {
-          console.error('Error fetching resource:', error);
-          toast({
-            title: 'Error',
-            description: `No se pudo cargar el recurso: ${error.message}`,
-            variant: 'destructive',
-          });
-        } else {
-          setResource(data as FormValues);
+      
+      try {
+        if (resourceId) {
+          let query;
+          
+          if (resourceType === 'desarrollos') {
+            query = supabase.from('desarrollos');
+          } else if (resourceType === 'prototipos') {
+            query = supabase.from('prototipos');
+          } else if (resourceType === 'leads') {
+            query = supabase.from('leads');
+          } else if (resourceType === 'cotizaciones') {
+            query = supabase.from('cotizaciones');
+          } else if (resourceType === 'unidades') {
+            query = supabase.from('unidades');
+          }
+          
+          const { data, error } = await query.select('*').eq('id', resourceId).single();
+          
+          if (error) throw error;
           
           if (resourceType === 'desarrollos' && data.amenidades) {
             try {
-              const parsedAmenities = typeof data.amenidades === 'string' 
-                ? JSON.parse(data.amenidades) 
-                : data.amenidades || [];
-              onAmenitiesChange(parsedAmenities);
-            } catch (e) {
-              console.error('Error parsing amenities:', e);
-              onAmenitiesChange([]);
+              if (typeof data.amenidades === 'string') {
+                data.amenidades = JSON.parse(data.amenidades);
+              }
+            } catch (error) {
+              console.error('Error parsing amenidades:', error);
+              data.amenidades = [];
             }
           }
           
-          if (resourceType === 'leads') {
-            if (data.estado) {
-              onStatusChange(data.estado);
-            }
+          setResource(data);
+        } else {
+          if (resourceType === 'desarrollos') {
+            setResource({
+              nombre: '',
+              ubicacion: '',
+              total_unidades: 0,
+              unidades_disponibles: 0,
+              avance_porcentaje: 0,
+              descripcion: '',
+              moneda: 'MXN',
+              comision_operador: 15,
+              mantenimiento_valor: 5,
+              es_mantenimiento_porcentaje: true,
+              gastos_fijos: 0,
+              es_gastos_fijos_porcentaje: false,
+              gastos_variables: 12,
+              es_gastos_variables_porcentaje: true,
+              impuestos: 35,
+              es_impuestos_porcentaje: true,
+              adr_base: 0,
+              ocupacion_anual: 70
+            });
+          } else if (resourceType === 'prototipos') {
+            setResource({
+              nombre: '',
+              desarrollo_id: desarrolloId || '',
+              tipo: 'apartamento',
+              precio: 0,
+              superficie: 0,
+              habitaciones: 0,
+              baños: 0,
+              estacionamientos: 0,
+              total_unidades: 0,
+              unidades_disponibles: 0
+            });
+          } else if (resourceType === 'leads') {
+            setResource({
+              nombre: '',
+              email: '',
+              telefono: '',
+              interes_en: '',
+              origen: 'web',
+              estado: 'nuevo',
+              subestado: 'sin_contactar'
+            });
+          } else if (resourceType === 'cotizaciones') {
+            console.log('Initializing cotización form with:', { 
+              lead_id, 
+              desarrolloId, 
+              prototipo_id, 
+              defaultValues 
+            });
+            
+            const initialValues = {
+              lead_id: lead_id || '',
+              desarrollo_id: desarrolloId || (defaultValues?.desarrollo_id || ''),
+              prototipo_id: prototipo_id || (defaultValues?.prototipo_id || ''),
+              unidad_id: defaultValues?.unidad_id || '',
+              monto_anticipo: 0,
+              numero_pagos: 0,
+              usar_finiquito: false,
+              ...(defaultValues || {})
+            };
+            
+            console.log('Setting initial cotización values:', initialValues);
+            setResource(initialValues);
+          } else if (resourceType === 'unidades') {
+            setResource({
+              prototipo_id: prototipo_id || '',
+              numero: '',
+              estado: 'disponible'
+            });
           }
         }
-      } else {
-        if (resourceType === 'prototipos' && desarrolloId) {
-          setResource({
-            desarrollo_id: desarrolloId,
-            nombre: '',
-            tipo: '',
-            precio: 0,
-            total_unidades: 0,
-            unidades_disponibles: 0,
-            unidades_vendidas: 0,
-            unidades_con_anticipo: 0
-          } as PrototipoResource);
-        } else if (resourceType === 'desarrollos') {
-          setResource({
-            nombre: '',
-            ubicacion: '',
-            total_unidades: 0,
-            unidades_disponibles: 0,
-            amenidades: []
-          } as DesarrolloResource);
-        } else if (resourceType === 'leads') {
-          setResource({
-            nombre: '',
-            estado: 'nuevo',
-            subestado: 'sin_contactar'
-          } as LeadResource);
-          onStatusChange('nuevo');
-        } else if (resourceType === 'cotizaciones') {
-          setResource({
-            lead_id: lead_id || '',
-            desarrollo_id: selectedDesarrolloId || '',
-            prototipo_id: '',
-            monto_anticipo: 0,
-            numero_pagos: 0
-          } as CotizacionResource);
+      } catch (error: any) {
+        console.error(`Error fetching ${resourceType}:`, error);
+        toast({
+          title: 'Error',
+          description: `No se pudo cargar el recurso: ${error.message}`,
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchResource();
+  }, [resourceId, resourceType, desarrolloId, lead_id, prototipo_id, defaultValues, toast]);
+
+  useEffect(() => {
+    if (resource && resourceType === 'desarrollos') {
+      const desarrolloResource = resource as any;
+      if (desarrolloResource.amenidades) {
+        try {
+          if (typeof desarrolloResource.amenidades === 'string') {
+            const parsedAmenities = JSON.parse(desarrolloResource.amenidades as string);
+            setSelectedAmenities(parsedAmenities);
+          } else if (Array.isArray(desarrolloResource.amenidades)) {
+            setSelectedAmenities(desarrolloResource.amenidades as string[]);
+          }
+        } catch (error) {
+          console.error('Error parsing amenidades:', error);
         }
       }
-      setIsLoading(false);
-    };
+    }
+  }, [resource, resourceType]);
 
-    const defineFields = () => {
-      let fieldDefinitions: FieldDefinition[] = [];
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (!resource) return;
+    
+    const { name, value, type } = e.target;
+    
+    let updatedValue: any = value;
+    
+    if (type === 'number') {
+      updatedValue = value === '' ? '' : Number(value);
+    }
+    
+    setResource({
+      ...resource,
+      [name]: updatedValue
+    });
+  };
+  
+  const handleSelectChange = (name: string, value: string) => {
+    if (!resource) return;
+    
+    setResource({
+      ...resource,
+      [name]: value
+    });
+  };
+  
+  const handleSwitchChange = (name: string, checked: boolean) => {
+    if (!resource) return;
+    
+    setResource({
+      ...resource,
+      [name]: checked
+    });
+  };
+  
+  const handleLeadSelect = (leadId: string, leadName: string) => {
+    if (!resource) return;
+    
+    if (resourceType === 'unidades') {
+      setResource({
+        ...resource,
+        comprador_id: leadId,
+        comprador_nombre: leadName
+      } as any);
+    } else {
+      setResource({
+        ...resource,
+        lead_id: leadId
+      });
+    }
+  };
+  
+  const handleAmenitiesChange = (amenities: string[]) => {
+    setSelectedAmenities(amenities);
+  };
 
-      switch (resourceType) {
-        case 'desarrollos':
-          fieldDefinitions = [
-            { name: 'nombre', label: 'Nombre', type: 'text', tab: 'general' },
-            { name: 'ubicacion', label: 'Ubicación', type: 'text', tab: 'general' },
-            { name: 'total_unidades', label: 'Total Unidades', type: 'number', tab: 'general' },
-            { name: 'unidades_disponibles', label: 'Unidades Disponibles', type: 'number', tab: 'general' },
-            { name: 'avance_porcentaje', label: 'Avance (%)', type: 'number', tab: 'general' },
-            { name: 'fecha_inicio', label: 'Fecha Inicio', type: 'date', tab: 'general' },
-            { name: 'fecha_entrega', label: 'Fecha Entrega', type: 'date', tab: 'general' },
-            { name: 'descripcion', label: 'Descripción', type: 'textarea', tab: 'general' },
-            { name: 'imagen_url', label: 'Imagen', type: 'upload', tab: 'media' },
-            { name: 'amenidades', label: 'Amenidades', type: 'amenities', tab: 'amenidades' },
-            { name: 'moneda', label: 'Moneda', type: 'select', options: [
-              { value: 'MXN', label: 'Peso Mexicano (MXN)' },
-              { value: 'USD', label: 'Dólar Estadounidense (USD)' }
-            ], tab: 'financiero' },
-            { name: 'comision_operador', label: 'Comisión Operador (%)', type: 'number', tab: 'financiero' },
-            { name: 'mantenimiento_valor', label: 'Mantenimiento', type: 'number', tab: 'financiero' },
-            { name: 'es_mantenimiento_porcentaje', label: 'Mantenimiento es porcentaje', type: 'switch', tab: 'financiero' },
-            { name: 'gastos_fijos', label: 'Gastos Fijos', type: 'number', tab: 'financiero' },
-            { name: 'es_gastos_fijos_porcentaje', label: 'Gastos Fijos es porcentaje', type: 'switch', tab: 'financiero' },
-            { name: 'gastos_variables', label: 'Gastos Variables (%)', type: 'number', tab: 'financiero' },
-            { name: 'es_gastos_variables_porcentaje', label: 'Gastos Variables es porcentaje', type: 'switch', tab: 'financiero' },
-            { name: 'impuestos', label: 'Impuestos (%)', type: 'number', tab: 'financiero' },
-            { name: 'es_impuestos_porcentaje', label: 'Impuestos es porcentaje', type: 'switch', tab: 'financiero' },
-            { name: 'adr_base', label: 'ADR Base', type: 'number', tab: 'financiero' },
-            { name: 'ocupacion_anual', label: 'Ocupación Anual (%)', type: 'number', tab: 'financiero' },
-          ];
-          break;
-        case 'prototipos':
-          fieldDefinitions = [
-            { name: 'nombre', label: 'Nombre', type: 'text' },
-            { name: 'tipo', label: 'Tipo', type: 'select', options: TIPOS_PROPIEDADES },
-            { name: 'precio', label: 'Precio', type: 'number' },
-            { name: 'superficie', label: 'Superficie (m²)', type: 'number' },
-            { name: 'habitaciones', label: 'Habitaciones', type: 'number' },
-            { name: 'baños', label: 'Baños', type: 'number' },
-            { name: 'total_unidades', label: 'Total Unidades', type: 'number' },
-            { name: 'unidades_vendidas', label: 'Unidades Vendidas', type: 'number' },
-            { name: 'unidades_con_anticipo', label: 'Unidades con Anticipo', type: 'number' },
-            { name: 'descripcion', label: 'Descripción', type: 'textarea' },
-            { name: 'imagen_url', label: 'Imagen URL', type: 'text' },
-          ];
-          break;
-        case 'leads':
-          fieldDefinitions = [
-            { name: 'nombre', label: 'Nombre', type: 'text' },
-            { name: 'email', label: 'Email', type: 'email' },
-            { name: 'telefono', label: 'Teléfono', type: 'text' },
-            { name: 'agente', label: 'Agente', type: 'text' },
-            { name: 'estado', label: 'Estado', type: 'select', options: statusOptions },
-            { name: 'subestado', label: 'Subestado', type: 'select', options: selectedStatus ? getSubstatusOptions(selectedStatus) : [] },
-            { name: 'origen', label: 'Origen', type: 'select', options: originOptions },
-            { name: 'interes_en', label: 'Interés en', type: 'text' },
-            { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' },
-            { name: 'notas', label: 'Notas', type: 'textarea' },
-          ];
-          break;
-        case 'cotizaciones':
-          fieldDefinitions = [
-            { name: 'lead_id', label: 'Lead', type: 'select', options: leads.map(lead => ({ value: lead.id, label: `${lead.nombre} ${lead.email ? `(${lead.email})` : lead.telefono ? `(${lead.telefono})` : ''}` })) },
-            { name: 'desarrollo_id', label: 'Desarrollo', type: 'select', options: desarrollos.map(desarrollo => ({ value: desarrollo.id, label: desarrollo.nombre })) },
-            { name: 'prototipo_id', label: 'Prototipo', type: 'select', options: prototipos.map(prototipo => ({ value: prototipo.id, label: prototipo.nombre })) },
-            { name: 'usar_finiquito', label: 'Liquidar con finiquito', type: 'switch' },
-            { name: 'monto_anticipo', label: 'Monto Anticipo', type: 'number' },
-            { name: 'numero_pagos', label: 'Número de Pagos', type: 'number' },
-            ...(usarFiniquito ? [{ name: 'monto_finiquito', label: 'Monto Finiquito', type: 'number' }] : []),
-            { name: 'notas', label: 'Notas', type: 'textarea' },
-          ];
-          break;
-        default:
-          fieldDefinitions = [];
-          break;
+  const saveResource = async (formData: FormValues) => {
+    setIsSubmitting(true);
+    
+    try {
+      let response;
+      
+      if (resourceType === 'cotizaciones') {
+        const cotizacionData = formData as any;
+        
+        if (!cotizacionData.lead_id) {
+          throw new Error('Debe seleccionar un cliente');
+        }
+        
+        if (!cotizacionData.desarrollo_id) {
+          throw new Error('Debe seleccionar un desarrollo');
+        }
+        
+        if (!cotizacionData.prototipo_id) {
+          throw new Error('Debe seleccionar un prototipo');
+        }
+        
+        if (cotizacionData.lead_id && cotizacionData.desarrollo_id && cotizacionData.prototipo_id) {
+          response = await supabase
+            .from('cotizaciones')
+            .insert(cotizacionData)
+            .select();
+        } else {
+          throw new Error('Todos los campos obligatorios deben tener un valor válido');
+        }
       }
+      
+      if (resourceId) {
+        if (resourceType === 'desarrollos') {
+          const desarrolloData = formData as any;
+          const dataToSave = { ...desarrolloData };
+          
+          if (selectedAmenities.length > 0) {
+            dataToSave.amenidades = selectedAmenities as unknown as Json;
+          }
+          
+          response = await supabase
+            .from('desarrollos')
+            .update(dataToSave)
+            .eq('id', resourceId)
+            .select();
+        } else if (resourceType === 'prototipos') {
+          const prototipoData = formData as any;
+          response = await supabase
+            .from('prototipos')
+            .update(prototipoData)
+            .eq('id', resourceId)
+            .select();
+        } else if (resourceType === 'leads') {
+          const leadData = formData as any;
+          response = await supabase
+            .from('leads')
+            .update(leadData)
+            .eq('id', resourceId)
+            .select();
+        } else if (resourceType === 'cotizaciones') {
+          const cotizacionData = formData as any;
+          response = await supabase
+            .from('cotizaciones')
+            .update(cotizacionData)
+            .eq('id', resourceId)
+            .select();
+        } else if (resourceType === 'unidades') {
+          const unidadData = formData as any;
+          response = await supabase
+            .from('unidades')
+            .update(unidadData)
+            .eq('id', resourceId)
+            .select();
+        }
+      } else {
+        if (resourceType === 'desarrollos') {
+          const desarrolloData = formData as any;
+          const dataToSave = { ...desarrolloData };
+          
+          const amenidadesJson = JSON.stringify(selectedAmenities) as unknown as Json;
+          dataToSave.amenidades = selectedAmenities.length > 0 ? amenidadesJson : null;
+          
+          response = await supabase
+            .from('desarrollos')
+            .insert(dataToSave)
+            .select();
+        } else if (resourceType === 'prototipos') {
+          const prototipoData = formData as any;
+          response = await supabase
+            .from('prototipos')
+            .insert({
+              ...prototipoData,
+              unidades_disponibles: prototipoData.total_unidades || 0
+            })
+            .select();
+        } else if (resourceType === 'leads') {
+          const leadData = formData as any;
+          response = await supabase
+            .from('leads')
+            .insert(leadData)
+            .select();
+        } else if (resourceType === 'cotizaciones') {
+          const cotizacionData = formData as any;
+          response = await supabase
+            .from('cotizaciones')
+            .insert(cotizacionData)
+            .select();
+        } else if (resourceType === 'unidades') {
+          const unidadData = formData as any;
+          response = await supabase
+            .from('unidades')
+            .insert(unidadData)
+            .select();
+        }
+      }
+      
+      if (response?.error) {
+        throw response.error;
+      }
+      
+      toast({
+        title: 'Éxito',
+        description: `${resourceType} ${resourceId ? 'actualizado' : 'creado'} correctamente`,
+      });
+      
+      if (onSave) {
+        onSave();
+      }
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+      
+      return true;
+    } catch (error: any) {
+      console.error(`Error saving ${resourceType}:`, error);
+      toast({
+        title: 'Error',
+        description: `No se pudo guardar: ${error.message}`,
+        variant: 'destructive',
+      });
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-      setFields(fieldDefinitions);
-    };
-
-    fetchResource();
-    defineFields();
-  }, [resourceId, resourceType, toast, leads, desarrollos, prototipos, usarFiniquito, desarrolloId, selectedDesarrolloId, lead_id, statusOptions, getSubstatusOptions, originOptions, selectedStatus, onStatusChange, onAmenitiesChange]);
-
-  return { resource, setResource, fields, isLoading };
+  return {
+    isLoading,
+    isSubmitting,
+    resource,
+    selectedAmenities,
+    handleChange,
+    handleSelectChange,
+    handleSwitchChange,
+    handleLeadSelect,
+    handleAmenitiesChange,
+    saveResource,
+    setResource
+  };
 }

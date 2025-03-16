@@ -2,6 +2,19 @@
 import { useState, useEffect } from 'react';
 import { FieldDefinition, ResourceType } from '../types';
 
+// Helper function to ensure field types match the allowed values
+const validateFieldType = (type: string): FieldDefinition['type'] => {
+  const validTypes: FieldDefinition['type'][] = [
+    'text', 'number', 'textarea', 'select', 'switch', 
+    'date', 'image', 'select-lead', 'select-desarrollo', 
+    'select-prototipo', 'email', 'upload', 'amenities'
+  ];
+  
+  return validTypes.includes(type as any) 
+    ? (type as FieldDefinition['type']) 
+    : 'text'; // Default to 'text' if invalid
+};
+
 export function useResourceFields(resourceType: ResourceType) {
   const [fields, setFields] = useState<FieldDefinition[]>([]);
 
@@ -28,7 +41,7 @@ export function useResourceFields(resourceType: ResourceType) {
           tab: 'Características' },
         { name: 'disponibilidad', label: 'Disponibilidad', type: 'text', 
           tab: 'Características' },
-        { name: 'fecha_entrega', label: 'Fecha estimada de entrega', type: 'text', 
+        { name: 'fecha_entrega', label: 'Fecha estimada de entrega', type: 'date', 
           tab: 'Características' },
         { name: 'materiales', label: 'Materiales de construcción', type: 'textarea', 
           tab: 'Características' },
@@ -52,7 +65,7 @@ export function useResourceFields(resourceType: ResourceType) {
     } else if (resourceType === 'leads') {
       setFields([
         { name: 'nombre', label: 'Nombre', type: 'text' },
-        { name: 'email', label: 'Email', type: 'text' },
+        { name: 'email', label: 'Email', type: 'email' },
         { name: 'telefono', label: 'Teléfono', type: 'text' },
         { name: 'interes_en', label: 'Interés en', type: 'text' },
         { name: 'origen', label: 'Origen', type: 'select', options: [

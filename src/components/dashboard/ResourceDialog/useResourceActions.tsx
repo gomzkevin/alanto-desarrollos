@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import useDesarrolloImagenes from '@/hooks/useDesarrolloImagenes';
 import { ResourceType, FormValues, PrototipoResource, DesarrolloResource, LeadResource, CotizacionResource } from './types';
+import { Json } from '@/integrations/supabase/types';
 
 export default function useResourceActions({
   resourceType,
@@ -29,6 +30,13 @@ export default function useResourceActions({
   const { uploadImage } = useDesarrolloImagenes(
     resourceType === 'desarrollos' && resourceId ? resourceId : undefined
   );
+
+  // Helper function to convert Date objects to ISO strings
+  const formatDateField = (value: string | Date | undefined): string | null => {
+    if (!value) return null;
+    if (value instanceof Date) return value.toISOString();
+    return value;
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -105,19 +113,20 @@ export default function useResourceActions({
         if (!resourceId) {
           result = await supabase
             .from('prototipos')
-            .insert({
+            .insert([{
               nombre: dataToModify.nombre,
               tipo: dataToModify.tipo,
               precio: dataToModify.precio,
               superficie: dataToModify.superficie,
               habitaciones: dataToModify.habitaciones,
               baños: dataToModify.baños,
+              estacionamientos: dataToModify.estacionamientos,
               total_unidades: dataToModify.total_unidades,
               unidades_disponibles: dataToModify.unidades_disponibles,
               desarrollo_id: dataToModify.desarrollo_id,
               descripcion: dataToModify.descripcion,
               imagen_url: dataToModify.imagen_url
-            });
+            }]);
         } else {
           result = await supabase
             .from('prototipos')
@@ -128,6 +137,7 @@ export default function useResourceActions({
               superficie: dataToModify.superficie,
               habitaciones: dataToModify.habitaciones,
               baños: dataToModify.baños,
+              estacionamientos: dataToModify.estacionamientos,
               total_unidades: dataToModify.total_unidades,
               unidades_disponibles: dataToModify.unidades_disponibles,
               desarrollo_id: dataToModify.desarrollo_id,
@@ -145,19 +155,19 @@ export default function useResourceActions({
         
         console.log('Saving desarrollo with amenities:', selectedAmenities);
         
-        const amenidadesJson = JSON.stringify(selectedAmenities);
+        const amenidadesJson = JSON.stringify(selectedAmenities) as unknown as Json;
         
         if (!resourceId) {
           result = await supabase
             .from('desarrollos')
-            .insert({
+            .insert([{
               nombre: desarrolloData.nombre,
               ubicacion: desarrolloData.ubicacion,
               total_unidades: desarrolloData.total_unidades,
               unidades_disponibles: desarrolloData.unidades_disponibles,
               avance_porcentaje: desarrolloData.avance_porcentaje,
-              fecha_inicio: desarrolloData.fecha_inicio,
-              fecha_entrega: desarrolloData.fecha_entrega,
+              fecha_inicio: formatDateField(desarrolloData.fecha_inicio),
+              fecha_entrega: formatDateField(desarrolloData.fecha_entrega),
               descripcion: desarrolloData.descripcion,
               imagen_url: desarrolloData.imagen_url,
               moneda: desarrolloData.moneda,
@@ -173,7 +183,7 @@ export default function useResourceActions({
               adr_base: desarrolloData.adr_base,
               ocupacion_anual: desarrolloData.ocupacion_anual,
               amenidades: amenidadesJson,
-            });
+            }]);
         } else {
           result = await supabase
             .from('desarrollos')
@@ -183,8 +193,8 @@ export default function useResourceActions({
               total_unidades: desarrolloData.total_unidades,
               unidades_disponibles: desarrolloData.unidades_disponibles,
               avance_porcentaje: desarrolloData.avance_porcentaje,
-              fecha_inicio: desarrolloData.fecha_inicio,
-              fecha_entrega: desarrolloData.fecha_entrega,
+              fecha_inicio: formatDateField(desarrolloData.fecha_inicio),
+              fecha_entrega: formatDateField(desarrolloData.fecha_entrega),
               descripcion: desarrolloData.descripcion,
               imagen_url: desarrolloData.imagen_url,
               moneda: desarrolloData.moneda,
@@ -218,7 +228,7 @@ export default function useResourceActions({
         if (!resourceId) {
           result = await supabase
             .from('leads')
-            .insert({
+            .insert([{
               nombre: leadData.nombre,
               email: leadData.email,
               telefono: leadData.telefono,
@@ -228,8 +238,8 @@ export default function useResourceActions({
               subestado: leadData.subestado,
               agente: leadData.agente,
               notas: leadData.notas,
-              ultimo_contacto: leadData.ultimo_contacto
-            });
+              ultimo_contacto: formatDateField(leadData.ultimo_contacto)
+            }]);
         } else {
           result = await supabase
             .from('leads')
@@ -243,7 +253,7 @@ export default function useResourceActions({
               subestado: leadData.subestado,
               agente: leadData.agente,
               notas: leadData.notas,
-              ultimo_contacto: leadData.ultimo_contacto
+              ultimo_contacto: formatDateField(leadData.ultimo_contacto)
             })
             .eq('id', resourceId);
         }
@@ -253,7 +263,7 @@ export default function useResourceActions({
         if (!resourceId) {
           result = await supabase
             .from('cotizaciones')
-            .insert({
+            .insert([{
               lead_id: cotizacionData.lead_id,
               desarrollo_id: cotizacionData.desarrollo_id,
               prototipo_id: cotizacionData.prototipo_id,
@@ -262,7 +272,7 @@ export default function useResourceActions({
               usar_finiquito: cotizacionData.usar_finiquito,
               monto_finiquito: cotizacionData.monto_finiquito,
               notas: cotizacionData.notas
-            });
+            }]);
         } else {
           result = await supabase
             .from('cotizaciones')
