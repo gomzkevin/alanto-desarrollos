@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
@@ -10,6 +9,8 @@ export type ExtendedCotizacion = Cotizacion & {
   lead?: Tables<"leads"> | null;
   desarrollo?: Tables<"desarrollos"> | null;
   prototipo?: Tables<"prototipos"> | null;
+  fecha_inicio_pagos?: string | null;
+  fecha_finiquito?: string | null;
 };
 
 type FetchCotizacionesOptions = {

@@ -8,17 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
-import { CalendarIcon, Plus, FileText, Search } from 'lucide-react';
+import { CalendarIcon, Plus, FileText, Search, Eye, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { enUS, es } from 'date-fns/locale';
+import { es } from 'date-fns/locale';
 import useCotizaciones from '@/hooks/useCotizaciones';
 import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { ExtendedCotizacion } from '@/hooks/useCotizaciones';
-import { ExportPDFButton } from '@/components/dashboard/ExportPDFButton';
+import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
@@ -677,18 +677,36 @@ const CotizacionesPage = () => {
                           : 'N/A'}
                       </td>
                       <td className="py-3 px-4">
-                        <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm">
-                            Ver detalles
-                          </Button>
-                          <ExportPDFButton
-                            resourceName="cotización"
-                            resourceId={cotizacion.id}
-                            size="sm"
-                            variant="ghost"
-                            buttonText="PDF"
-                          />
-                        </div>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleView(cotizacion.id)}
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span className="sr-only">Ver</span>
+                            </Button>
+                            
+                            <ExportPDFButton
+                              variant="outline"
+                              size="sm"
+                              cotizacionId={cotizacion.id}
+                              buttonText=""
+                              resourceName="cotización"
+                            />
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-500 hover:text-red-700"
+                              onClick={() => handleDelete(cotizacion.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Eliminar</span>
+                            </Button>
+                          </div>
+                        </TableCell>
                       </td>
                     </tr>
                   ))}

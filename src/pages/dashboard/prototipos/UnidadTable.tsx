@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Tables } from '@/integrations/supabase/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -29,6 +28,12 @@ import { useForm } from 'react-hook-form';
 import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
+import { Calendar as CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 type Unidad = Tables<"unidades">;
 type Prototipo = Tables<"prototipos">;
@@ -87,6 +92,9 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
   const { prototipos } = usePrototipos({ 
     desarrolloId: prototipo.desarrollo_id 
   });
+
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [finiquitoDate, setFiniquitoDate] = useState<Date | undefined>(undefined);
 
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
@@ -185,6 +193,11 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
     setSearchLeadTerm(lead.nombre);
   };
 
+  const formatDate = (date: Date | undefined): string => {
+    if (!date) return "";
+    return format(date, "PPP", { locale: es });
+  };
+
   const handleSubmitCotizacion = async (values: CotizacionFormValues) => {
     try {
       let leadId = values.leadId;
@@ -200,7 +213,7 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
           })
           .select()
           .single();
-        
+      
         if (leadError) {
           toast({
             title: 'Error',
@@ -209,10 +222,10 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
           });
           return;
         }
-        
+      
         leadId = newLead.id;
       }
-      
+    
       // Verify that we have a leadId
       if (!leadId) {
         toast({
@@ -222,7 +235,7 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
         });
         return;
       }
-      
+    
       // Create the quotation
       const { data: cotizacion, error: cotizacionError } = await supabase
         .from('cotizaciones')
@@ -234,10 +247,12 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
           numero_pagos: values.numero_pagos,
           usar_finiquito: values.usar_finiquito,
           monto_finiquito: values.monto_finiquito,
-          notas: values.notas
+          notas: values.notas,
+          fecha_inicio_pagos: startDate.toISOString(), // Add the start date
+          fecha_finiquito: values.usar_finiquito && finiquitoDate ? finiquitoDate.toISOString() : null // Add finiquito date if applicable
         })
         .select();
-      
+    
       if (cotizacionError) {
         toast({
           title: 'Error',
@@ -246,14 +261,14 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
         });
         return;
       }
-      
+    
       toast({
         title: 'Éxito',
         description: 'Cotización creada correctamente',
       });
-      
+    
       setOpenCotizacionDialog(false);
-      
+    
     } catch (error: any) {
       console.error('Error al crear cotización:', error);
       toast({
@@ -621,7 +636,36 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
                     )}
                   />
                 </div>
-                
+
+                <div className="mt-4">
+                  <FormItem>
+                    <FormLabel>Fecha de inicio de pagos</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !startDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {startDate ? formatDate(startDate) : "Seleccionar fecha"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={startDate}
+                          onSelect={(date) => date && setStartDate(date)}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </FormItem>
+                </div>
+
                 <div className="mt-4">
                   <FormField
                     control={form.control}
@@ -639,9 +683,9 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
                     )}
                   />
                 </div>
-                
+
                 {form.watch('usar_finiquito') && (
-                  <div className="mt-4">
+                  <div className="space-y-4 mt-4">
                     <FormField
                       control={form.control}
                       name="monto_finiquito"
@@ -658,6 +702,33 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
                         </FormItem>
                       )}
                     />
+                    
+                    <FormItem>
+                      <FormLabel>Fecha de finiquito</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !finiquitoDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {finiquitoDate ? formatDate(finiquitoDate) : "Seleccionar fecha"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={finiquitoDate}
+                            onSelect={(date) => date && setFiniquitoDate(date)}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </FormItem>
                   </div>
                 )}
                 
