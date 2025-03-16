@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
@@ -9,6 +10,7 @@ export type ExtendedCotizacion = Cotizacion & {
   lead?: Tables<"leads"> | null;
   desarrollo?: Tables<"desarrollos"> | null;
   prototipo?: Tables<"prototipos"> | null;
+  // Add these fields to the type (they'll be managed in-memory until we update the database)
   fecha_inicio_pagos?: string | null;
   fecha_finiquito?: string | null;
 };
@@ -65,7 +67,10 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
             ...cotizacion,
             lead: leads.find(l => l.id === cotizacion.lead_id) || null,
             desarrollo: desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null,
-            prototipo: prototipos.find(p => p.id === cotizacion.prototipo_id) || null
+            prototipo: prototipos.find(p => p.id === cotizacion.prototipo_id) || null,
+            // We'll use default values until we update the database schema
+            fecha_inicio_pagos: null,
+            fecha_finiquito: null
           };
         });
         

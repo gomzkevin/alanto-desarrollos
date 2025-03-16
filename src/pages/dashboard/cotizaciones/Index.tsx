@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -26,6 +27,7 @@ import { Lead } from '@/hooks/useLeads';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const formatter = new Intl.NumberFormat('es-MX', {
   style: 'currency',
@@ -48,6 +50,8 @@ interface CotizacionFormValues {
   numero_pagos: number;
   usar_finiquito: boolean;
   monto_finiquito?: number;
+  fecha_inicio_pagos?: Date;
+  fecha_finiquito?: Date;
   notas?: string;
 }
 
@@ -74,6 +78,7 @@ const CotizacionesPage = () => {
       monto_anticipo: 0,
       numero_pagos: 6,
       usar_finiquito: false,
+      fecha_inicio_pagos: new Date()
     }
   });
   
@@ -123,6 +128,7 @@ const CotizacionesPage = () => {
       usar_finiquito: false,
       desarrollo_id: '',
       prototipo_id: '',
+      fecha_inicio_pagos: new Date()
     });
   };
 
@@ -153,6 +159,23 @@ const CotizacionesPage = () => {
     form.setValue('desarrollo_id', id);
     // Reset prototipo cuando cambia el desarrollo
     form.setValue('prototipo_id', '');
+  };
+
+  // Add missing handlers for view and delete
+  const handleView = (cotizacionId: string) => {
+    // For now, just show a toast saying this feature is in development
+    toast({
+      title: "Función en desarrollo",
+      description: "La vista detallada de cotizaciones estará disponible próximamente.",
+    });
+  };
+
+  const handleDelete = (cotizacionId: string) => {
+    // For now, just show a toast saying this feature is in development
+    toast({
+      title: "Función en desarrollo",
+      description: "La eliminación de cotizaciones estará disponible próximamente.",
+    });
   };
 
   const handleSubmitCotizacion = async (values: CotizacionFormValues) => {
@@ -464,6 +487,51 @@ const CotizacionesPage = () => {
                       />
                     </div>
                     
+                    {/* Add fecha_inicio_pagos field */}
+                    <div className="mt-4">
+                      <FormField
+                        control={form.control}
+                        name="fecha_inicio_pagos"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Fecha de inicio de pagos</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground"
+                                    )}
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "PPP", { locale: es })
+                                    ) : (
+                                      <span>Seleccionar fecha</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  disabled={(date) =>
+                                    date < new Date(new Date().setHours(0, 0, 0, 0))
+                                  }
+                                  initialFocus
+                                  locale={es}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
                     <div className="mt-4">
                       <FormField
                         control={form.control}
@@ -483,7 +551,7 @@ const CotizacionesPage = () => {
                     </div>
                     
                     {form.watch('usar_finiquito') && (
-                      <div className="mt-4">
+                      <div className="space-y-4 mt-4">
                         <FormField
                           control={form.control}
                           name="monto_finiquito"
@@ -497,6 +565,50 @@ const CotizacionesPage = () => {
                                   onChange={(e) => field.onChange(parseFloat(e.target.value))}
                                 />
                               </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        {/* Add fecha_finiquito field */}
+                        <FormField
+                          control={form.control}
+                          name="fecha_finiquito"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Fecha de finiquito</FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant={"outline"}
+                                      className={cn(
+                                        "w-full pl-3 text-left font-normal",
+                                        !field.value && "text-muted-foreground"
+                                      )}
+                                    >
+                                      {field.value ? (
+                                        format(field.value, "PPP", { locale: es })
+                                      ) : (
+                                        <span>Seleccionar fecha</span>
+                                      )}
+                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    disabled={(date) => {
+                                      const startDate = form.watch('fecha_inicio_pagos');
+                                      return startDate && date < startDate;
+                                    }}
+                                    initialFocus
+                                    locale={es}
+                                  />
+                                </PopoverContent>
+                              </Popover>
                             </FormItem>
                           )}
                         />
@@ -626,23 +738,23 @@ const CotizacionesPage = () => {
         ) : (
           <div className="overflow-hidden rounded-md border">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px]">
-                <thead>
-                  <tr className="bg-slate-50">
-                    <th className="py-3 px-4 text-left font-medium text-slate-500">Cliente</th>
-                    <th className="py-3 px-4 text-left font-medium text-slate-500">Desarrollo</th>
-                    <th className="py-3 px-4 text-left font-medium text-slate-500">Prototipo</th>
-                    <th className="py-3 px-4 text-left font-medium text-slate-500">Valor</th>
-                    <th className="py-3 px-4 text-left font-medium text-slate-500">Anticipo</th>
-                    <th className="py-3 px-4 text-left font-medium text-slate-500">Pagos</th>
-                    <th className="py-3 px-4 text-left font-medium text-slate-500">Fecha</th>
-                    <th className="py-3 px-4 text-left font-medium text-slate-500">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="py-3 px-4 text-left font-medium text-slate-500">Cliente</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-medium text-slate-500">Desarrollo</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-medium text-slate-500">Prototipo</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-medium text-slate-500">Valor</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-medium text-slate-500">Anticipo</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-medium text-slate-500">Pagos</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-medium text-slate-500">Fecha</TableHead>
+                    <TableHead className="py-3 px-4 text-left font-medium text-slate-500">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {(cotizaciones as ExtendedCotizacion[]).map((cotizacion) => (
-                    <tr key={cotizacion.id} className="hover:bg-slate-50">
-                      <td className="py-3 px-4">
+                    <TableRow key={cotizacion.id} className="hover:bg-slate-50">
+                      <TableCell className="py-3 px-4">
                         {cotizacion.lead ? (
                           <div>
                             <p className="font-medium">{cotizacion.lead.nombre}</p>
@@ -651,23 +763,23 @@ const CotizacionesPage = () => {
                         ) : (
                           <span className="text-slate-400">ID: {cotizacion.lead_id}</span>
                         )}
-                      </td>
-                      <td className="py-3 px-4">
+                      </TableCell>
+                      <TableCell className="py-3 px-4">
                         {cotizacion.desarrollo ? cotizacion.desarrollo.nombre : cotizacion.desarrollo_id}
-                      </td>
-                      <td className="py-3 px-4">
+                      </TableCell>
+                      <TableCell className="py-3 px-4">
                         {cotizacion.prototipo ? cotizacion.prototipo.nombre : cotizacion.prototipo_id}
-                      </td>
-                      <td className="py-3 px-4 font-medium">
+                      </TableCell>
+                      <TableCell className="py-3 px-4 font-medium">
                         {cotizacion.prototipo ? (
                           formatter.format(cotizacion.prototipo.precio)
                         ) : (
                           "N/A"
                         )}
-                      </td>
-                      <td className="py-3 px-4">{formatter.format(cotizacion.monto_anticipo)}</td>
-                      <td className="py-3 px-4">{cotizacion.numero_pagos}</td>
-                      <td className="py-3 px-4">
+                      </TableCell>
+                      <TableCell className="py-3 px-4">{formatter.format(cotizacion.monto_anticipo)}</TableCell>
+                      <TableCell className="py-3 px-4">{cotizacion.numero_pagos}</TableCell>
+                      <TableCell className="py-3 px-4">
                         {cotizacion.created_at
                           ? new Date(cotizacion.created_at).toLocaleDateString('es-MX', {
                               year: 'numeric',
@@ -675,43 +787,41 @@ const CotizacionesPage = () => {
                               day: 'numeric',
                             })
                           : 'N/A'}
-                      </td>
-                      <td className="py-3 px-4">
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleView(cotizacion.id)}
-                            >
-                              <Eye className="h-4 w-4" />
-                              <span className="sr-only">Ver</span>
-                            </Button>
-                            
-                            <ExportPDFButton
-                              variant="outline"
-                              size="sm"
-                              cotizacionId={cotizacion.id}
-                              buttonText=""
-                              resourceName="cotización"
-                            />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleView(cotizacion.id)}
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">Ver</span>
+                          </Button>
+                          
+                          <ExportPDFButton
+                            variant="outline"
+                            size="sm"
+                            cotizacionId={cotizacion.id}
+                            buttonText=""
+                            resourceName="cotización"
+                          />
 
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-500 hover:text-red-700"
-                              onClick={() => handleDelete(cotizacion.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Eliminar</span>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </td>
-                    </tr>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => handleDelete(cotizacion.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Eliminar</span>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
         )}
