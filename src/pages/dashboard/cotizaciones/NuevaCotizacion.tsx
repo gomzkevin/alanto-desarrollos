@@ -19,8 +19,8 @@ export default function NuevaCotizacionPage() {
   const prototipoId = searchParams.get('prototipo');
   const desarrolloId = searchParams.get('desarrollo');
   
-  // Log parameters for debugging
   useEffect(() => {
+    console.log('NuevaCotizacionPage mounted');
     console.log('Cotización params:', { unidadId, prototipoId, desarrolloId });
     
     // Validate required parameters
@@ -43,7 +43,11 @@ export default function NuevaCotizacionPage() {
   const defaultValues = {
     desarrollo_id: desarrolloId || '',
     prototipo_id: prototipoId || '',
-    unidad_id: unidadId || ''
+    unidad_id: unidadId || '',
+    lead_id: '',
+    monto_anticipo: 0,
+    numero_pagos: 0,
+    usar_finiquito: false
   };
   
   // Cuando se cierra el diálogo, regresar a la lista de cotizaciones
@@ -78,15 +82,16 @@ export default function NuevaCotizacionPage() {
           <p className="text-slate-600">Crea una nueva cotización para un cliente</p>
         </div>
         
-        {dialogOpen && (
+        {dialogOpen && desarrolloId && prototipoId && (
           <AdminResourceDialog
             resourceType="cotizaciones"
             open={dialogOpen}
             onClose={handleDialogClose}
             onSuccess={handleSuccess}
             buttonText="Nueva Cotización"
-            desarrolloId={desarrolloId || undefined}
-            prototipo_id={prototipoId || undefined}
+            desarrolloId={desarrolloId}
+            prototipo_id={prototipoId}
+            unidad_id={unidadId}
             defaultValues={defaultValues}
           />
         )}
