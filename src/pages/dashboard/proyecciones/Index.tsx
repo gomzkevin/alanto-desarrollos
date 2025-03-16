@@ -14,7 +14,6 @@ export const ProyeccionesPage = () => {
     altReturn: 677006,
     avgROI: 56.8
   });
-  const [activeTab, setActiveTab] = useState('grafica');
   const [shouldCalculate, setShouldCalculate] = useState(false);
   
   // Usamos el hook para procesar los datos
@@ -79,8 +78,6 @@ export const ProyeccionesPage = () => {
           onDataUpdate={handleChartDataUpdate}
           shouldCalculate={shouldCalculate}
           onCreateProjection={handleCreateProjection}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
           fileName={getFileName()}
         />
       </div>

@@ -14,42 +14,38 @@ interface ProyeccionSummaryProps {
 
 export const ProyeccionSummary = ({ summaryData }: ProyeccionSummaryProps) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 pt-4 mt-4">
-      <div className="bg-indigo-50 rounded-lg overflow-hidden border border-indigo-100">
-        <div className="p-3 border-b border-indigo-100 bg-indigo-100/50">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-indigo-50 rounded-lg overflow-hidden border border-indigo-100 p-4">
+        <div className="mb-2">
           <p className="text-sm text-indigo-700 font-medium">Inversión Inicial</p>
         </div>
-        <div className="p-3">
-          <p className="text-xs text-indigo-600/70 font-medium">Valor de la propiedad</p>
-          <p className="text-lg font-bold text-indigo-900 mt-1 financial-number">{formatCurrency(summaryData.propertyValue)}</p>
-        </div>
+        <p className="text-lg font-bold text-indigo-900 financial-number">{formatCurrency(summaryData.propertyValue)}</p>
+        <p className="text-xs text-indigo-600/70 mt-1">Valor base de la propiedad</p>
       </div>
       
-      <div className="bg-purple-50 rounded-lg overflow-hidden border border-purple-100">
-        <div className="p-3 border-b border-purple-100 bg-purple-100/50">
-          <p className="text-sm text-purple-700 font-medium">Retorno Airbnb</p>
+      <div className="bg-purple-50 rounded-lg overflow-hidden border border-purple-100 p-4">
+        <div className="mb-2">
+          <p className="text-sm text-purple-700 font-medium">Renta Vacacional</p>
         </div>
-        <div className="p-3">
-          <p className="text-xs text-purple-600/70 font-medium">Ganancia total</p>
-          <p className="text-lg font-bold text-purple-900 mt-1 financial-number">{formatCurrency(summaryData.airbnbProfit)}</p>
-        </div>
+        <p className="text-lg font-bold text-purple-900 financial-number">{formatCurrency(summaryData.airbnbProfit)}</p>
+        <p className="text-xs text-purple-600/70 mt-1">Ganancia total proyectada</p>
       </div>
       
-      <div className="bg-teal-50 rounded-lg overflow-hidden border border-teal-100">
-        <div className="p-3 border-b border-teal-100 bg-teal-100/50">
-          <p className="text-sm text-teal-700 font-medium">Inversión Alternativa</p>
+      <div className="bg-emerald-50 rounded-lg overflow-hidden border border-emerald-100 p-4">
+        <div className="mb-2">
+          <p className="text-sm text-emerald-700 font-medium">Inversión Alternativa</p>
         </div>
-        <div className="p-3">
-          <p className="text-xs text-teal-600/70 font-medium">Retorno total</p>
-          <p className="text-lg font-bold text-teal-700 mt-1 financial-number">{formatCurrency(summaryData.altReturn)}</p>
-        </div>
+        <p className="text-lg font-bold text-emerald-700 financial-number">{formatCurrency(summaryData.altReturn)}</p>
+        <p className="text-xs text-emerald-600/70 mt-1">Rendimiento total en bonos</p>
       </div>
       
-      <div className="md:col-span-3 bg-amber-50 p-4 rounded-lg border border-amber-100">
-        <p className="text-sm text-amber-600 font-medium">ROI anual promedio en renta vacacional</p>
-        <p className="text-xl font-bold text-amber-700 mt-1">{summaryData.avgROI.toFixed(1)}%</p>
+      <div className="bg-amber-50 rounded-lg overflow-hidden border border-amber-100 p-4">
+        <div className="mb-2">
+          <p className="text-sm text-amber-700 font-medium">ROI Promedio Anual</p>
+        </div>
+        <p className="text-lg font-bold text-amber-800">{summaryData.avgROI.toFixed(1)}%</p>
         <p className="text-xs text-amber-600/70 mt-1">
-          El retorno de inversión promedio supera en {(summaryData.avgROI - 7).toFixed(1)}% a la inversión alternativa (7% anual)
+          +{(summaryData.avgROI - 7).toFixed(1)}% vs inversión alternativa
         </p>
       </div>
     </div>
