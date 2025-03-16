@@ -1,4 +1,3 @@
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, addDays, addMonths } from 'date-fns';
@@ -150,7 +149,20 @@ async function getDesarrolloAmenities(desarrolloId: string): Promise<string[]> {
       .single();
     
     if (error || !data || !data.amenidades) return [];
-    return data.amenidades;
+    
+    // Ensure we're returning a string array
+    if (Array.isArray(data.amenidades)) {
+      // If it's already an array, map each item to string
+      return data.amenidades.map(item => String(item));
+    } else if (typeof data.amenidades === 'object') {
+      // If it's an object, convert its values to strings
+      return Object.values(data.amenidades).map(value => String(value));
+    } else if (data.amenidades) {
+      // If it's a single value, wrap it in an array
+      return [String(data.amenidades)];
+    }
+    
+    return [];
   } catch (error) {
     console.error('Error fetching desarrollo amenities:', error);
     return [];
