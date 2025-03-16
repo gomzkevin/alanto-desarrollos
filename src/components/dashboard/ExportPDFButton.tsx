@@ -18,6 +18,7 @@ type ExportPDFButtonProps = {
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
   cotizacionId?: string; // Prop for cotización ID
+  showInListView?: boolean; // New prop to control visibility in list views
 };
 
 export const ExportPDFButton = ({ 
@@ -29,7 +30,8 @@ export const ExportPDFButton = ({
   variant = "outline",
   size = "default",
   className = "",
-  cotizacionId
+  cotizacionId,
+  showInListView = false // Default to false - only show in detail views
 }: ExportPDFButtonProps) => {
   const { toast } = useToast();
   const { role } = useUserRole();
@@ -39,6 +41,11 @@ export const ExportPDFButton = ({
   const canExportPDF = true; // Forzar a true para desarrollo
   
   if (!canExportPDF) {
+    return null;
+  }
+  
+  // If we're in a list view and showInListView is false, don't render the button
+  if (!showInListView && !elementId && cotizacionId && !document.getElementById('cotizacion-detail-content')) {
     return null;
   }
   
@@ -130,38 +137,24 @@ export const ExportPDFButton = ({
     }
   };
   
-  const checkAndCaptureElement = (elementId: string) => {
-    const element = document.getElementById(elementId);
-    if (!element) {
-      toast({
-        title: "Ver detalles primero",
-        description: "Para generar un PDF, por favor abra la vista detallada de la cotización primero.",
-        variant: "destructive"
-      });
-      return false;
-    }
-    return true;
-  };
-  
   const handleExport = async () => {
     setIsLoading(true);
     
     try {
-      // Si se proporciona un elementId, verificar que existe antes de intentar capturarlo
+      // Si se proporciona un elementId, capturar ese elemento
       if (elementId) {
-        if (checkAndCaptureElement(elementId)) {
-          await captureElementAsPDF(elementId);
-        }
+        await captureElementAsPDF(elementId);
         setIsLoading(false);
         return;
       }
       
-      // Para cotizaciones, verificar que el elemento exista antes de capturar
+      // Para cotizaciones, capturar el contenido de detalle
       if (cotizacionId) {
-        // Comprobar si existe el elemento de detalle de cotización
+        // Verificar que estamos en la vista de detalle
         if (document.getElementById('cotizacion-detail-content')) {
           await captureElementAsPDF('cotizacion-detail-content');
         } else {
+          // Este caso no debería ocurrir ya que el botón no se renderiza en la vista de lista
           toast({
             title: "Ver detalles primero",
             description: "Para generar un PDF, por favor abra la vista detallada de la cotización primero.",

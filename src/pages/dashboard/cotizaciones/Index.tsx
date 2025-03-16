@@ -799,14 +799,6 @@ const CotizacionesPage = () => {
                             onSuccess={refetch}
                           />
                           
-                          <ExportPDFButton
-                            variant="outline"
-                            size="sm"
-                            cotizacionId={cotizacion.id}
-                            buttonText=""
-                            resourceName="cotización"
-                          />
-
                           <Button
                             variant="outline"
                             size="sm"
