@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -184,6 +183,13 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
       
       const difference = airbnbTotalValue - alternativeTotalValue;
       
+      let adjustedOccupancyRate = occupancyRate;
+      if (year <= 5) {
+        adjustedOccupancyRate = occupancyRate - (5 - year) * 2;
+      }
+      
+      const adjustedNightlyRate = nightlyRate * yearlyGrowthFactor;
+      
       data.push({
         year,
         airbnbProfit: airbnbTotalValue,
@@ -191,7 +197,15 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
         yearlyROI: annualRoi.toFixed(1),
         difference: difference,
         thisYearNetProfit: thisYearNetProfit,
-        initialPropertyValue: propertyValue
+        initialPropertyValue: propertyValue,
+        occupancyRate: adjustedOccupancyRate,
+        nightlyRate: adjustedNightlyRate,
+        comisionOperador: comision_operador,
+        gastosFijos: gastos_fijos,
+        gastosVariables: gastos_variables,
+        mantenimientoValor: mantenimiento_valor,
+        esMantenimientoPorcentaje: es_mantenimiento_porcentaje,
+        impuestos: impuestos
       });
     }
     
@@ -202,11 +216,8 @@ export const Calculator = ({ desarrolloId, prototipoId, onDataUpdate, shouldCalc
     }
   }, [propertyValue, occupancyRate, nightlyRate, years, annualGrowth, financialConfig, shouldCalculate, onDataUpdate]);
   
-  // Handler for the nightly rate input changes
   const handleNightlyRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Strip any non-numeric characters from the input
     const value = e.target.value.replace(/[^0-9]/g, '');
-    // Convert to number or 0 if empty
     setNightlyRate(value === '' ? 0 : Number(value));
   };
   
