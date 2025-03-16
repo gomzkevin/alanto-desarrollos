@@ -96,8 +96,9 @@ export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: Unida
   };
   
   const handleCotizacion = (unidadId: string) => {
-    // Use navigate with appropriate parameters, prevent default behavior
-    navigate(`/dashboard/cotizaciones/nueva?unidad=${unidadId}`);
+    // Actualizado: Navegar a la página de nueva cotización con los parámetros necesarios
+    // Incluimos el ID del prototipo y desarrollo para pre-llenar el formulario
+    navigate(`/dashboard/cotizaciones/nueva?unidad=${unidadId}&prototipo=${prototipo.id}&desarrollo=${prototipo.desarrollo_id}`);
   };
   
   const handleProyeccion = (unidadId: string) => {

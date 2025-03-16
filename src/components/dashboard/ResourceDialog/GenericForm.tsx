@@ -85,19 +85,11 @@ export default function GenericForm({
   // Actualizar selectedDesarrolloId cuando cambie el valor en el recurso o props
   useEffect(() => {
     if (resource && (resource as any).desarrollo_id) {
-      console.log("GenericForm - Setting desarrollo from resource:", (resource as any).desarrollo_id);
       setSelectedDesarrolloId((resource as any).desarrollo_id);
     } else if (desarrolloId) {
-      console.log("GenericForm - Setting desarrollo from props:", desarrolloId);
       setSelectedDesarrolloId(desarrolloId);
     }
   }, [resource, desarrolloId]);
-
-  // Log when desarrollo or prototipos change to debug
-  useEffect(() => {
-    console.log("GenericForm - Selected desarrollo ID:", selectedDesarrolloId);
-    console.log("GenericForm - Available prototipos:", prototipos);
-  }, [selectedDesarrolloId, prototipos]);
   
   const tabs = useMemo(() => {
     const uniqueTabs = new Set<string>();
@@ -118,30 +110,37 @@ export default function GenericForm({
 
   // Custom handler for desarrollo changes
   const handleDesarrolloChange = (value: string) => {
-    console.log("GenericForm - Changing desarrollo to:", value);
     setSelectedDesarrolloId(value);
     
     // Call parent handler if available
     if (onDesarrolloSelect) {
-      console.log("GenericForm - Calling parent onDesarrolloSelect");
       onDesarrolloSelect(value);
     } else {
       // Fall back to standard handler
-      console.log("GenericForm - Using standard handleSelectChange");
       handleSelectChange('desarrollo_id', value);
       
       // Reset prototipo when desarrollo changes
       if (resourceType === 'cotizaciones') {
-        console.log("GenericForm - Resetting prototipo_id");
         handleSelectChange('prototipo_id', '');
       }
     }
   };
   
+  // Verificar si se está usando finiquito (solo para cotizaciones)
+  const usarFiniquito = resourceType === 'cotizaciones' && (resource as any).usar_finiquito;
+  
   const renderFormFields = (tabName?: string) => {
     const fieldsToRender = hasTabs 
       ? fields.filter(field => field.tab === tabName)
       : fields.filter(field => !field.tab);
+    
+    // Filtrar el campo de monto de finiquito si no se está usando finiquito
+    const filteredFields = fieldsToRender.filter(field => {
+      if (field.name === 'monto_finiquito' && !usarFiniquito) {
+        return false;
+      }
+      return true;
+    });
     
     return (
       <div className="grid gap-4 py-4">
@@ -167,7 +166,7 @@ export default function GenericForm({
           />
         )}
         
-        {fieldsToRender.map((field) => {
+        {filteredFields.map((field) => {
           // Ocultar el campo select-lead si estamos en cotizaciones (lo reemplazamos por ClientSearch)
           if (resourceType === 'cotizaciones' && field.type === 'select-lead') {
             return null;
