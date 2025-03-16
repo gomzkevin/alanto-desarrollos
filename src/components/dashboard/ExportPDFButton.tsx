@@ -50,42 +50,64 @@ export const ExportPDFButton = ({
         throw new Error(`No se encontró el elemento con ID: ${elementId}`);
       }
       
+      // Crear una copia del elemento para manipularlo sin afectar la visualización
+      const clonedElement = element.cloneNode(true) as HTMLElement;
+      
+      // Aplicar estilos al clon para asegurar que se vea igual que en la pantalla
+      clonedElement.style.backgroundColor = 'white';
+      clonedElement.style.padding = '20px';
+      clonedElement.style.borderRadius = '0';
+      clonedElement.style.width = '800px'; // Ancho fijo para mejor control
+      
+      // Ocultar temporalmente el clon
+      clonedElement.style.position = 'absolute';
+      clonedElement.style.left = '-9999px';
+      document.body.appendChild(clonedElement);
+      
       // Configuración para mejorar la calidad de la captura
       const options = {
         scale: 2, // Mayor escala para mejor calidad
         useCORS: true, // Para manejar imágenes con CORS
         logging: false, // Desactivar logs
-        backgroundColor: '#ffffff' // Fondo blanco
+        backgroundColor: '#ffffff', // Fondo blanco
+        width: 800, // Ancho fijo para garantizar consistencia
+        height: clonedElement.scrollHeight, // Altura natural del contenido
+        windowWidth: 800, // Simular un ancho de viewport consistente
+        windowHeight: clonedElement.scrollHeight, // Simular altura basada en contenido
       };
       
-      const canvas = await html2canvas(element, options);
+      const canvas = await html2canvas(clonedElement, options);
       
-      // Calcular dimensiones manteniendo proporciones
-      const imgWidth = 210; // Ancho A4 en mm
+      // Eliminar el clon después de capturarlo
+      document.body.removeChild(clonedElement);
+      
+      // Calcular dimensiones manteniendo proporciones para una página A4
+      const imgWidth = 210 - 40; // Ancho A4 en mm con márgenes de 20mm por lado
+      const pageHeight = 297 - 40; // Altura A4 en mm con márgenes de 20mm arriba/abajo
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // Crear PDF con orientación vertical u horizontal según necesidad
-      const orientation = imgHeight > 297 ? 'p' : 'l';
-      const pdf = new jsPDF(orientation, 'mm', 'a4');
+      // Crear PDF con orientación vertical
+      const pdf = new jsPDF('p', 'mm', 'a4');
       
-      // Añadir la imagen al PDF con máxima calidad
+      // Añadir la imagen al PDF con márgenes
       const imgData = canvas.toDataURL('image/jpeg', 1.0);
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+      
+      // Posiciones iniciales con márgenes
+      let position = 0;
+      let heightLeft = imgHeight;
+      
+      // Añadir primera página
+      pdf.addImage(imgData, 'JPEG', 20, 20, imgWidth, imgHeight);
       
       // Si el contenido es muy largo, dividir en múltiples páginas
-      if (imgHeight > 297) {
-        let heightLeft = imgHeight;
-        let position = 0;
-        
-        heightLeft -= 297;
-        position -= 297;
-        
-        while (heightLeft > 0) {
-          pdf.addPage();
-          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-          heightLeft -= 297;
-          position -= 297;
-        }
+      heightLeft = imgHeight - pageHeight;
+      position = -(pageHeight);
+      
+      while (heightLeft > 0) {
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 20, position + 20, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        position -= pageHeight;
       }
       
       // Generar y descargar el PDF
