@@ -35,8 +35,25 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
   };
 
+  // Handle custom events from global toast method
+  useEffect(() => {
+    const handleToastEvent = (event: CustomEvent) => {
+      toast(event.detail);
+    };
+
+    // Add data attribute to help identify the toast context provider in the DOM
+    const element = document.querySelector('[data-toast-context]');
+    if (element) {
+      element.addEventListener('toast', handleToastEvent as EventListener);
+      
+      return () => {
+        element.removeEventListener('toast', handleToastEvent as EventListener);
+      };
+    }
+  }, []);
+
   return (
-    <ToastContext.Provider value={{ toasts, toast, dismiss }}>
+    <ToastContext.Provider value={{ toasts, toast, dismiss }} data-toast-context="true">
       {children}
     </ToastContext.Provider>
   );
