@@ -130,62 +130,44 @@ export const ExportPDFButton = ({
     }
   };
   
-  const fetchCotizacionDataAndRender = async (cotizacionId: string) => {
-    try {
-      // Fetch cotización data
-      const { data: cotizacion, error: cotizacionError } = await supabase
-        .from('cotizaciones')
-        .select(`
-          *,
-          lead:lead_id(nombre),
-          desarrollo:desarrollo_id(nombre),
-          prototipo:prototipo_id(nombre, precio)
-        `)
-        .eq('id', cotizacionId)
-        .single();
-      
-      if (cotizacionError || !cotizacion) {
-        throw new Error(cotizacionError?.message || 'No se pudo encontrar la cotización');
-      }
-      
-      // Check if there's a DOM element we can capture directly
-      if (document.getElementById('cotizacion-detail-content')) {
-        // Capture the DOM element if it exists (in detail view)
-        return await captureElementAsPDF('cotizacion-detail-content');
-      } else {
-        // If we're in the listing view without the detail render, show an error
-        toast({
-          title: "Ver detalles primero",
-          description: "Para generar un PDF, por favor abra la vista detallada de la cotización primero.",
-          variant: "destructive"
-        });
-        return false;
-      }
-    } catch (error: any) {
-      console.error('Error al procesar la cotización:', error);
+  const checkAndCaptureElement = (elementId: string) => {
+    const element = document.getElementById(elementId);
+    if (!element) {
       toast({
-        title: "Error al generar PDF",
-        description: error.message || "Ocurrió un error al generar el PDF de la cotización.",
+        title: "Ver detalles primero",
+        description: "Para generar un PDF, por favor abra la vista detallada de la cotización primero.",
         variant: "destructive"
       });
       return false;
     }
+    return true;
   };
   
   const handleExport = async () => {
     setIsLoading(true);
     
     try {
-      // Si se proporciona un elementId, capturar ese elemento
+      // Si se proporciona un elementId, verificar que existe antes de intentar capturarlo
       if (elementId) {
-        await captureElementAsPDF(elementId);
+        if (checkAndCaptureElement(elementId)) {
+          await captureElementAsPDF(elementId);
+        }
         setIsLoading(false);
         return;
       }
       
-      // Para cotizaciones, usar el método de captura
+      // Para cotizaciones, verificar que el elemento exista antes de capturar
       if (cotizacionId) {
-        await fetchCotizacionDataAndRender(cotizacionId);
+        // Comprobar si existe el elemento de detalle de cotización
+        if (document.getElementById('cotizacion-detail-content')) {
+          await captureElementAsPDF('cotizacion-detail-content');
+        } else {
+          toast({
+            title: "Ver detalles primero",
+            description: "Para generar un PDF, por favor abra la vista detallada de la cotización primero.",
+            variant: "destructive"
+          });
+        }
       } else {
         // For other resources without implementation yet
         toast({
