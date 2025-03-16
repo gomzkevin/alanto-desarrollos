@@ -4,7 +4,7 @@ import { Tables } from '@/integrations/supabase/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, FileText, BarChart3 } from 'lucide-react';
+import { Pencil, Trash2, FileText, BarChart3, Search } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
