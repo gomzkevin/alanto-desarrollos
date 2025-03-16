@@ -34,6 +34,7 @@ const processColors = (colors) => {
   // Map color names to their corresponding hex values if needed
   return colors.map(color => {
     if (color === 'teal') return '#14b8a6'; // teal-500
+    if (color === 'skyblue') return '#0EA5E9'; // sky-500
     if (color === 'indigo') return '#4f46e5'; // indigo-600
     if (color === 'emerald') return '#10b981'; // emerald-500
     return color; // Return as is if it's already a hex value or other valid color
