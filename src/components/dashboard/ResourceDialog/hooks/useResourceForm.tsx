@@ -162,31 +162,33 @@ export const useResourceForm = ({
     console.log('Saving resource with data:', resourceToSave);
     
     try {
-      // Si hay amenidades en formato array, conviertelas a JSON
+      // Si hay amenidades en formato array, conviértelas a JSON
       if (resourceType === 'desarrollos' && selectedAmenities.length > 0) {
         resourceToSave.amenidades = selectedAmenities;
       }
       
-      let result;
+      const success = await resourceActions.saveResource(resourceToSave);
       
-      result = await resourceActions.saveResource(resourceToSave);
-      
-      toast({
-        title: 'Éxito',
-        description: `${resourceId ? 'Actualizado' : 'Creado'} correctamente`,
-      });
-      
-      // Call the onSuccess handler if provided
-      if (onSuccess) {
-        onSuccess();
+      if (success) {
+        toast({
+          title: 'Éxito',
+          description: `${resourceId ? 'Actualizado' : 'Creado'} correctamente`,
+        });
+        
+        // Call the onSuccess handler if provided
+        if (onSuccess) {
+          onSuccess();
+        }
+        
+        // Call the onSave handler if provided
+        if (onSave) {
+          onSave(resourceToSave);
+        }
+        
+        return true;
       }
       
-      // Call the onSave handler if provided
-      if (onSave) {
-        onSave(result);
-      }
-      
-      return true;
+      return false;
     } catch (error: any) {
       console.error('Error saving resource:', error);
       

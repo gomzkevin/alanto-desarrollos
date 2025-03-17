@@ -3,13 +3,12 @@ import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Pencil } from 'lucide-react';
-import { AdminResourceDialogProps } from './types';
+import { AdminResourceDialogProps, FormValues } from './types';
 import { useResourceForm } from './hooks/useResourceForm';
 import { useResourceFields } from './hooks/useResourceFields';
 import { ResourceDialogContent } from './components/ResourceDialogContent';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FormValues } from './types';
 
 const AdminResourceDialog = ({
   open,
@@ -67,7 +66,7 @@ const AdminResourceDialog = ({
     isSubmitting,
     resource,
     selectedAmenities,
-    handleChange,
+    handleChange: originalHandleChange,
     handleSelectChange,
     handleSwitchChange,
     handleLeadSelect,
@@ -86,16 +85,18 @@ const AdminResourceDialog = ({
     onSave
   });
 
-  // Modified handleChange to accept either event or form values
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | FormValues) => {
-    console.log('handleFormChange called with:', e);
+  // Handle form changes from both events and direct form values
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | FormValues
+  ) => {
+    if (!resource) return;
     
-    if (typeof e === 'object' && 'target' in e) {
+    if ('target' in e) {
       // It's an event
-      handleChange(e);
+      originalHandleChange(e);
     } else {
       // It's a form values object
-      setResource(e as FormValues);
+      setResource({ ...resource, ...e });
     }
   };
 
@@ -317,7 +318,7 @@ const AdminResourceDialog = ({
           resource={resource}
           fields={fields}
           selectedAmenities={selectedAmenities}
-          handleChange={handleFormChange}
+          handleChange={handleChange}
           handleSelectChange={handleSelectChange}
           handleSwitchChange={handleSwitchChange}
           handleLeadSelect={handleLeadSelect}

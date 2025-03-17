@@ -30,6 +30,15 @@ export default function useResourceActions({
     resourceType === 'desarrollos' && resourceId ? resourceId : undefined
   );
 
+  // Helper function to format dates for Supabase
+  const formatDate = (date: string | Date | undefined): string | null => {
+    if (!date) return null;
+    if (date instanceof Date) {
+      return date.toISOString();
+    }
+    return date;
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -105,37 +114,11 @@ export default function useResourceActions({
         if (!resourceId) {
           result = await supabase
             .from('prototipos')
-            .insert({
-              nombre: dataToModify.nombre,
-              tipo: dataToModify.tipo,
-              precio: dataToModify.precio,
-              superficie: dataToModify.superficie,
-              habitaciones: dataToModify.habitaciones,
-              baños: dataToModify.baños,
-              estacionamientos: dataToModify.estacionamientos,
-              total_unidades: dataToModify.total_unidades,
-              unidades_disponibles: dataToModify.unidades_disponibles,
-              desarrollo_id: dataToModify.desarrollo_id,
-              descripcion: dataToModify.descripcion,
-              imagen_url: dataToModify.imagen_url
-            });
+            .insert(dataToModify);
         } else {
           result = await supabase
             .from('prototipos')
-            .update({
-              nombre: dataToModify.nombre,
-              tipo: dataToModify.tipo,
-              precio: dataToModify.precio,
-              superficie: dataToModify.superficie,
-              habitaciones: dataToModify.habitaciones,
-              baños: dataToModify.baños,
-              estacionamientos: dataToModify.estacionamientos,
-              total_unidades: dataToModify.total_unidades,
-              unidades_disponibles: dataToModify.unidades_disponibles,
-              desarrollo_id: dataToModify.desarrollo_id,
-              descripcion: dataToModify.descripcion,
-              imagen_url: dataToModify.imagen_url
-            })
+            .update(dataToModify)
             .eq('id', resourceId);
         }
       } else if (resourceType === 'desarrollos') {
@@ -149,60 +132,22 @@ export default function useResourceActions({
         
         const amenidadesJson = JSON.stringify(selectedAmenities);
         
+        // Format dates for Supabase
+        const formattedData = {
+          ...desarrolloData,
+          fecha_inicio: formatDate(desarrolloData.fecha_inicio),
+          fecha_entrega: formatDate(desarrolloData.fecha_entrega),
+          amenidades: amenidadesJson
+        };
+        
         if (!resourceId) {
           result = await supabase
             .from('desarrollos')
-            .insert({
-              nombre: desarrolloData.nombre,
-              ubicacion: desarrolloData.ubicacion,
-              total_unidades: desarrolloData.total_unidades,
-              unidades_disponibles: desarrolloData.unidades_disponibles,
-              avance_porcentaje: desarrolloData.avance_porcentaje,
-              fecha_inicio: desarrolloData.fecha_inicio,
-              fecha_entrega: desarrolloData.fecha_entrega,
-              descripcion: desarrolloData.descripcion,
-              imagen_url: desarrolloData.imagen_url,
-              moneda: desarrolloData.moneda,
-              comision_operador: desarrolloData.comision_operador,
-              mantenimiento_valor: desarrolloData.mantenimiento_valor,
-              es_mantenimiento_porcentaje: desarrolloData.es_mantenimiento_porcentaje,
-              gastos_fijos: desarrolloData.gastos_fijos,
-              es_gastos_fijos_porcentaje: desarrolloData.es_gastos_fijos_porcentaje,
-              gastos_variables: desarrolloData.gastos_variables,
-              es_gastos_variables_porcentaje: desarrolloData.es_gastos_variables_porcentaje,
-              impuestos: desarrolloData.impuestos,
-              es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje,
-              adr_base: desarrolloData.adr_base,
-              ocupacion_anual: desarrolloData.ocupacion_anual,
-              amenidades: amenidadesJson,
-            });
+            .insert(formattedData);
         } else {
           result = await supabase
             .from('desarrollos')
-            .update({
-              nombre: desarrolloData.nombre,
-              ubicacion: desarrolloData.ubicacion,
-              total_unidades: desarrolloData.total_unidades,
-              unidades_disponibles: desarrolloData.unidades_disponibles,
-              avance_porcentaje: desarrolloData.avance_porcentaje,
-              fecha_inicio: desarrolloData.fecha_inicio,
-              fecha_entrega: desarrolloData.fecha_entrega,
-              descripcion: desarrolloData.descripcion,
-              imagen_url: desarrolloData.imagen_url,
-              moneda: desarrolloData.moneda,
-              comision_operador: desarrolloData.comision_operador,
-              mantenimiento_valor: desarrolloData.mantenimiento_valor,
-              es_mantenimiento_porcentaje: desarrolloData.es_mantenimiento_porcentaje,
-              gastos_fijos: desarrolloData.gastos_fijos,
-              es_gastos_fijos_porcentaje: desarrolloData.es_gastos_fijos_porcentaje,
-              gastos_variables: desarrolloData.gastos_variables,
-              es_gastos_variables_porcentaje: desarrolloData.es_gastos_variables_porcentaje,
-              impuestos: desarrolloData.impuestos,
-              es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje,
-              adr_base: desarrolloData.adr_base,
-              ocupacion_anual: desarrolloData.ocupacion_anual,
-              amenidades: amenidadesJson,
-            })
+            .update(formattedData)
             .eq('id', resourceId);
         }
         
@@ -217,67 +162,57 @@ export default function useResourceActions({
       } else if (resourceType === 'leads') {
         const leadData = dataToSave as LeadResource;
         
+        // Format dates for Supabase
+        const formattedData = {
+          ...leadData,
+          ultimo_contacto: formatDate(leadData.ultimo_contacto)
+        };
+        
         if (!resourceId) {
           result = await supabase
             .from('leads')
-            .insert({
-              nombre: leadData.nombre,
-              email: leadData.email,
-              telefono: leadData.telefono,
-              interes_en: leadData.interes_en,
-              origen: leadData.origen,
-              estado: leadData.estado,
-              subestado: leadData.subestado,
-              agente: leadData.agente,
-              notas: leadData.notas,
-              ultimo_contacto: leadData.ultimo_contacto
-            });
+            .insert(formattedData);
         } else {
           result = await supabase
             .from('leads')
-            .update({
-              nombre: leadData.nombre,
-              email: leadData.email,
-              telefono: leadData.telefono,
-              interes_en: leadData.interes_en,
-              origen: leadData.origen,
-              estado: leadData.estado,
-              subestado: leadData.subestado,
-              agente: leadData.agente,
-              notas: leadData.notas,
-              ultimo_contacto: leadData.ultimo_contacto
-            })
+            .update(formattedData)
             .eq('id', resourceId);
         }
       } else if (resourceType === 'cotizaciones') {
         const cotizacionData = dataToSave as CotizacionResource;
         
+        // Format dates for Supabase
+        const formattedData = {
+          ...cotizacionData,
+          fecha_inicio_pagos: formatDate(cotizacionData.fecha_inicio_pagos),
+          fecha_finiquito: formatDate(cotizacionData.fecha_finiquito)
+        };
+        
         if (!resourceId) {
           result = await supabase
             .from('cotizaciones')
-            .insert({
-              lead_id: cotizacionData.lead_id,
-              desarrollo_id: cotizacionData.desarrollo_id,
-              prototipo_id: cotizacionData.prototipo_id,
-              monto_anticipo: cotizacionData.monto_anticipo,
-              numero_pagos: cotizacionData.numero_pagos,
-              usar_finiquito: cotizacionData.usar_finiquito,
-              monto_finiquito: cotizacionData.monto_finiquito,
-              notas: cotizacionData.notas
-            });
+            .insert(formattedData);
         } else {
           result = await supabase
             .from('cotizaciones')
-            .update({
-              lead_id: cotizacionData.lead_id,
-              desarrollo_id: cotizacionData.desarrollo_id,
-              prototipo_id: cotizacionData.prototipo_id,
-              monto_anticipo: cotizacionData.monto_anticipo,
-              numero_pagos: cotizacionData.numero_pagos,
-              usar_finiquito: cotizacionData.usar_finiquito,
-              monto_finiquito: cotizacionData.monto_finiquito,
-              notas: cotizacionData.notas
-            })
+            .update(formattedData)
+            .eq('id', resourceId);
+        }
+      } else if (resourceType === 'unidades') {
+        // Format dates for Supabase
+        const formattedData = {
+          ...dataToSave,
+          fecha_venta: formatDate(dataToSave.fecha_venta)
+        };
+        
+        if (!resourceId) {
+          result = await supabase
+            .from('unidades')
+            .insert(formattedData);
+        } else {
+          result = await supabase
+            .from('unidades')
+            .update(formattedData)
             .eq('id', resourceId);
         }
       }

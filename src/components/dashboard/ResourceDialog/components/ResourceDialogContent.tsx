@@ -104,15 +104,10 @@ export function ResourceDialogContent({
   console.log('ResourceDialogContent - resource:', resource);
   console.log('ResourceDialogContent - fields:', fields);
 
-  // Handle the different onChange patterns
-  const handleFormChange = (values: FormValues | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (typeof values === 'object' && 'target' in values) {
-      // It's an event from direct input change
-      handleChange(values);
-    } else {
-      // It's a FormValues object from GenericForm
-      handleChange(values as FormValues);
-    }
+  // Handle form changes from GenericForm
+  const handleFormChange = (values: FormValues) => {
+    console.log('ResourceDialogContent - handleFormChange called with values:', values);
+    handleChange(values);
   };
 
   return (

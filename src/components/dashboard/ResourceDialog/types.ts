@@ -105,6 +105,17 @@ export interface CotizacionResource extends FormValues {
   notas?: string;
 }
 
+export interface UnidadResource extends FormValues {
+  prototipo_id: string;
+  numero: string;
+  estado: string;
+  nivel?: string;
+  precio_venta?: number;
+  fecha_venta?: string | Date;
+  comprador_id?: string;
+  comprador_nombre?: string;
+}
+
 export interface AdminResourceDialogProps {
   open?: boolean;
   onClose?: () => void;
