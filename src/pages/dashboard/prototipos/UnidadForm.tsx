@@ -4,7 +4,6 @@ import {
   FormField, 
   EstadoSelect, 
   DatePickerField, 
-  EntitySelect, 
   FormActions 
 } from './components/FormInputs';
 import SearchableEntitySelect from './components/SearchableEntitySelect';
@@ -88,13 +87,13 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
               emptyMessage="No se encontraron clientes con ese nombre."
             />
             
-            <EntitySelect
+            <SearchableEntitySelect
               label="Vendedor"
               value={watch('vendedor_id') || ''}
-              onChange={handleVendedorChange}
-              placeholder="Selecciona un vendedor"
+              onChange={(vendedorId, vendedorName) => handleVendedorChange(vendedorId, vendedorName)}
+              placeholder="Buscar vendedor..."
               options={filteredVendedores}
-              emptyOption={true}
+              emptyMessage="No se encontraron vendedores con ese nombre."
             />
             
             <DatePickerField
