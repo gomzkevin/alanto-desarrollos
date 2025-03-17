@@ -1,4 +1,3 @@
-
 export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones' | 'unidades';
 
 export type FieldType = 
@@ -105,11 +104,12 @@ export interface CotizacionResource extends FormValues {
   notas?: string;
 }
 
-export interface UnidadResource extends FormValues {
+export interface UnidadResource {
+  id?: string;
   prototipo_id: string;
   numero: string;
-  estado: string;
   nivel?: string;
+  estado: string;
   precio_venta?: number;
   fecha_venta?: string | Date;
   comprador_id?: string;
