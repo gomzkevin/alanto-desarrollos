@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
@@ -64,6 +65,7 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       
       const counts = {
         vendidas: data.filter(u => u.estado === 'vendido').length,
+        // Ahora incluimos tanto 'apartado' como 'en_proceso' en el contador con_anticipo
         con_anticipo: data.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso').length,
         disponibles: data.filter(u => u.estado === 'disponible').length,
         total: data.length
@@ -105,7 +107,7 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       
       if (unidadesError) throw unidadesError;
       
-      // Contamos por estado
+      // Contamos por estado, incluyendo tanto 'apartado' como 'en_proceso' en con_anticipo
       const counts = {
         vendidas: unidades.filter(u => u.estado === 'vendido').length,
         con_anticipo: unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso').length,

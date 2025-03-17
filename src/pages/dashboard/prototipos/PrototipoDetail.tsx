@@ -97,6 +97,25 @@ const PrototipoDetail = () => {
     }
   };
   
+  // Calculate unit counts for the UI display
+  const getUnitCounts = () => {
+    if (unidades.length === 0) {
+      return {
+        disponibles: 0,
+        vendidas: 0,
+        con_anticipo: 0
+      };
+    }
+    
+    return {
+      disponibles: unidades.filter(u => u.estado === 'disponible').length,
+      vendidas: unidades.filter(u => u.estado === 'vendido').length,
+      con_anticipo: unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso').length
+    };
+  };
+  
+  const unitCounts = getUnitCounts();
+  
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -234,9 +253,9 @@ const PrototipoDetail = () => {
                 </h2>
                 <p className="text-slate-600">
                   {unidades.length} de {prototipo.total_unidades} unidades registradas 
-                  ({prototipo.unidades_disponibles || 0} disponibles, 
-                  {prototipo.unidades_vendidas || 0} vendidas, 
-                  {prototipo.unidades_con_anticipo || 0} con anticipo)
+                  ({unitCounts.disponibles} disponibles, 
+                  {unitCounts.vendidas} vendidas, 
+                  {unitCounts.con_anticipo} con anticipo)
                 </p>
               </div>
               

@@ -96,6 +96,12 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
     }
   };
   
+  const handleCloseEditDialog = () => {
+    // Ensure state is reset and refresh is called
+    setUnidadToEdit(null);
+    onRefresh();
+  };
+  
   if (isLoading) {
     return (
       <div className="w-full py-10 text-center">
@@ -206,11 +212,8 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
         resourceType="unidades"
         resourceId={unidadToEdit || undefined}
         open={!!unidadToEdit}
-        onClose={() => setUnidadToEdit(null)}
-        onSuccess={() => {
-          setUnidadToEdit(null);
-          onRefresh();
-        }}
+        onClose={handleCloseEditDialog}
+        onSuccess={handleCloseEditDialog}
       />
       
       {/* Diálogo de confirmación para eliminar */}
