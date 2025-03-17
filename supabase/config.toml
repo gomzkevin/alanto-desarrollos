@@ -8,3 +8,4 @@ service_role = ""
 
 [storage.prototipo-images]
 public = true
+

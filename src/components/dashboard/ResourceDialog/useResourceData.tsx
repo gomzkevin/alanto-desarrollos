@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -174,7 +175,7 @@ export default function useResourceData({
             { name: 'fecha_inicio', label: 'Fecha Inicio', type: 'date', tab: 'general' },
             { name: 'fecha_entrega', label: 'Fecha Entrega', type: 'date', tab: 'general' },
             { name: 'descripcion', label: 'Descripción', type: 'textarea', tab: 'general' },
-            { name: 'imagen_url', label: 'Imagen', type: 'upload', tab: 'media' },
+            { name: 'imagen_url', label: 'Imagen', type: 'image-upload', tab: 'media', bucket: 'prototipo-images', folder: 'desarrollos' },
             { name: 'amenidades', label: 'Amenidades', type: 'amenities', tab: 'amenidades' },
             { name: 'moneda', label: 'Moneda', type: 'select', options: [
               { value: 'MXN', label: 'Peso Mexicano (MXN)' },
@@ -206,7 +207,7 @@ export default function useResourceData({
             { name: 'unidades_vendidas', label: 'Unidades Vendidas', type: 'number', tab: 'detalles' },
             { name: 'unidades_con_anticipo', label: 'Unidades con Anticipo', type: 'number', tab: 'detalles' },
             { name: 'descripcion', label: 'Descripción', type: 'textarea', tab: 'detalles' },
-            { name: 'imagen_url', label: 'Imagen', type: 'image-upload', tab: 'media' },
+            { name: 'imagen_url', label: 'Imagen', type: 'image-upload', tab: 'media', bucket: 'prototipo-images', folder: 'prototipos' },
           ];
           break;
         case 'leads':

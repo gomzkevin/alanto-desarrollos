@@ -1,7 +1,8 @@
-
 import { Json } from '@/integrations/supabase/types';
 
-export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones' | 'unidades';
+export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones';
+
+export type FieldType = 'text' | 'number' | 'select' | 'textarea' | 'date' | 'email' | 'switch' | 'amenities' | 'image-upload' | 'upload';
 
 export interface AdminResourceDialogProps {
   open?: boolean;
@@ -43,9 +44,9 @@ export interface DesarrolloResource {
   adr_base?: number;
   ocupacion_anual?: number;
   amenidades?: string[] | Json;
-  desarrollo_id?: string; // Added for type safety
-  lead_id?: string; // Added for type safety
-  prototipo_id?: string; // Added for type safety
+  desarrollo_id?: string;
+  lead_id?: string;
+  prototipo_id?: string;
 }
 
 export interface PrototipoResource {
@@ -65,8 +66,8 @@ export interface PrototipoResource {
   descripcion?: string;
   imagen_url?: string;
   caracteristicas?: Json;
-  lead_id?: string; // Added for type safety
-  prototipo_id?: string; // Added for type safety
+  lead_id?: string;
+  prototipo_id?: string;
 }
 
 export interface UnidadResource {
@@ -79,8 +80,8 @@ export interface UnidadResource {
   comprador_nombre?: string;
   precio_venta?: number;
   fecha_venta?: string;
-  desarrollo_id?: string; // Added for type safety
-  lead_id?: string; // Added for type safety
+  desarrollo_id?: string;
+  lead_id?: string;
 }
 
 export interface LeadResource {
@@ -96,9 +97,9 @@ export interface LeadResource {
   notas?: string;
   fecha_creacion?: string;
   ultimo_contacto?: string;
-  desarrollo_id?: string; // Added for type safety
-  prototipo_id?: string; // Added for type safety
-  lead_id?: string; // Added for type safety
+  desarrollo_id?: string;
+  prototipo_id?: string;
+  lead_id?: string;
 }
 
 export interface CotizacionResource {
@@ -119,7 +120,10 @@ export type FormValues = DesarrolloResource | PrototipoResource | LeadResource |
 export interface FieldDefinition {
   name: string;
   label: string;
-  type: string;
-  tab?: string;
+  type: FieldType;
+  defaultValue?: any;
   options?: { value: string; label: string }[];
+  tab?: string;
+  bucket?: string;
+  folder?: string;
 }
