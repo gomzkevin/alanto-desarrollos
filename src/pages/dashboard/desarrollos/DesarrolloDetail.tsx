@@ -34,6 +34,8 @@ import DesarrolloImageCarousel from '@/components/dashboard/DesarrolloImageCarou
 import DesarrolloEditButton from '@/components/dashboard/DesarrolloEditButton';
 import { useUserRole } from '@/hooks';
 import { Badge } from '@/components/ui/badge';
+import useUnidades from '@/hooks/useUnidades';
+import { Progress } from '@/components/ui/progress';
 
 type Desarrollo = Tables<"desarrollos"> & {
   amenidades?: string[] | string;
@@ -104,6 +106,7 @@ const DesarrolloDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
+  const { countDesarrolloUnidadesByStatus } = useUnidades();
   
   const { 
     data: desarrollo, 
@@ -125,6 +128,16 @@ const DesarrolloDetailPage = () => {
     desarrolloId: id,
   });
   
+  // Query for real unit counts for this desarrollo
+  const { 
+    data: unitCounts,
+    isLoading: isLoadingUnitCounts
+  } = useQuery({
+    queryKey: ['desarrollo-unit-counts', id],
+    queryFn: () => countDesarrolloUnidadesByStatus(id as string),
+    enabled: !!id,
+  });
+  
   const handleVolver = () => {
     navigate('/dashboard/desarrollos');
   };
@@ -138,8 +151,26 @@ const DesarrolloDetailPage = () => {
     navigate(`/dashboard/prototipos/${prototipoId}`);
   };
   
-  const isLoading = isLoadingDesarrollo || isLoadingPrototipos;
+  const isLoading = isLoadingDesarrollo || isLoadingPrototipos || isLoadingUnitCounts;
   const hasError = errorDesarrollo || errorPrototipos;
+  
+  // Calculate commercial progress percentage based on sold/reserved units
+  const calculateComercialProgress = () => {
+    if (!unitCounts) return 0;
+    
+    const { vendidas, con_anticipo, total } = unitCounts;
+    if (total === 0) return 0;
+    
+    return Math.round(((vendidas + con_anticipo) / total) * 100);
+  };
+  
+  // Get the display text for units and make sure available units don't exceed total
+  const getUnitCountDisplay = () => {
+    if (!unitCounts) return "0/0 disponibles";
+    
+    const { disponibles, total } = unitCounts;
+    return `${disponibles}/${total} disponibles`;
+  };
   
   return (
     <DashboardLayout>
@@ -228,7 +259,7 @@ const DesarrolloDetailPage = () => {
                     <span>Unidades</span>
                   </div>
                   <p className="font-semibold">
-                    {desarrollo.unidades_disponibles}/{desarrollo.total_unidades} disponibles
+                    {getUnitCountDisplay()}
                   </p>
                 </div>
                 
@@ -269,10 +300,10 @@ const DesarrolloDetailPage = () => {
                     <span className="h-4 w-4 mr-1 flex items-center justify-center font-bold">%</span>
                     <span>Avance</span>
                   </div>
-                  <p className="font-semibold">
-                    {desarrollo.avance_porcentaje ?? 
-                      Math.round((1 - desarrollo.unidades_disponibles / desarrollo.total_unidades) * 100)}%
-                  </p>
+                  <div>
+                    <p className="font-semibold mb-1">{calculateComercialProgress()}%</p>
+                    <Progress value={calculateComercialProgress()} className="h-2" />
+                  </div>
                 </div>
               </div>
             </div>

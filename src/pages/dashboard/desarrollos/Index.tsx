@@ -9,7 +9,6 @@ import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import useUserRole from '@/hooks/useUserRole';
 import { Tables } from '@/integrations/supabase/types';
 import useUnidades from '@/hooks/useUnidades';
-import { supabase } from '@/integrations/supabase/client';
 
 type Desarrollo = Tables<"desarrollos">;
 
@@ -67,7 +66,11 @@ const DesarrollosPage = () => {
         unidades_disponibles: Math.min(
           desarrollo.unidades_disponibles || 0,
           desarrollo.total_unidades || 0
-        )
+        ),
+        // Calculate avance_porcentaje based on sold and reserved units
+        avance_porcentaje: desarrollo.total_unidades 
+          ? Math.round(((desarrollo.total_unidades - (desarrollo.unidades_disponibles || 0)) / desarrollo.total_unidades) * 100)
+          : 0
       };
       
       return normalizedDesarrollo;
