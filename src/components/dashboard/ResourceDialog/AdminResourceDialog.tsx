@@ -9,6 +9,7 @@ import { useResourceFields } from './hooks/useResourceFields';
 import { ResourceDialogContent } from './components/ResourceDialogContent';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useDesarrolloStats } from '@/hooks';
 
 const AdminResourceDialog = ({
   open,
@@ -51,6 +52,11 @@ const AdminResourceDialog = ({
 
   const fields = useResourceFields(resourceType);
 
+  // Get desarrollo stats if editing a desarrollo
+  const { data: desarrolloStats } = useDesarrolloStats(
+    resourceType === 'desarrollos' && resourceId ? resourceId : undefined
+  );
+
   const {
     isLoading,
     isSubmitting,
@@ -84,6 +90,17 @@ const AdminResourceDialog = ({
       }
     }
   }, [resource, selectedDesarrolloId]);
+
+  // Update unidades_disponibles and avance_porcentaje when stats change
+  useEffect(() => {
+    if (resource && resourceType === 'desarrollos' && desarrolloStats) {
+      setResource({
+        ...resource,
+        unidades_disponibles: desarrolloStats.unidadesDisponibles,
+        avance_porcentaje: desarrolloStats.avanceComercial
+      });
+    }
+  }, [desarrolloStats, resource, resourceType, setResource]);
 
   const handleDesarrolloSelect = (desarrolloId: string) => {
     setSelectedDesarrolloId(desarrolloId);

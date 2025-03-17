@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DesarrolloResource } from './types';
 import { Input } from '@/components/ui/input';
@@ -10,10 +9,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, InfoIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { AmenitiesSelector } from '../AmenitiesSelector';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface DesarrolloFormProps {
   resource: DesarrolloResource | null;
@@ -37,6 +37,11 @@ export default function DesarrolloForm({
     if (!resource) return;
     
     const { name, value, type } = e.target as HTMLInputElement;
+    
+    // Skip changes for read-only fields
+    if (name === 'unidades_disponibles' || name === 'avance_porcentaje') {
+      return;
+    }
     
     if (type === 'number') {
       setResource({ ...resource, [name]: value === '' ? '' : Number(value) });
@@ -110,25 +115,51 @@ export default function DesarrolloForm({
           </div>
           
           <div className="space-y-3">
-            <Label htmlFor="unidades_disponibles">Unidades Disponibles</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="unidades_disponibles">Unidades Disponibles</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">Unidades con estatus "Disponible". Campo calculado automáticamente.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input
               id="unidades_disponibles"
               name="unidades_disponibles"
               type="number"
               value={(resource.unidades_disponibles || '') as number}
-              onChange={handleChange}
+              readOnly
+              className="bg-gray-100 cursor-not-allowed"
               placeholder="0"
             />
           </div>
           
           <div className="space-y-3">
-            <Label htmlFor="avance_porcentaje">Avance (%)</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="avance_porcentaje">Avance Comercial (%)</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">Porcentaje de unidades vendidas, apartadas o en proceso de pago. Campo calculado automáticamente.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input
               id="avance_porcentaje"
               name="avance_porcentaje"
               type="number"
               value={(resource.avance_porcentaje || '') as number}
-              onChange={handleChange}
+              readOnly
+              className="bg-gray-100 cursor-not-allowed"
               placeholder="0"
             />
           </div>

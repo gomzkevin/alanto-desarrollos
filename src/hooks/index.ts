@@ -9,3 +9,4 @@ export { default as useDesarrolloImagenes } from './useDesarrolloImagenes';
 export { useToast } from './use-toast';
 export { useIsMobile } from './use-mobile';
 export { default as useChartData } from './useChartData';
+export { default as useDesarrolloStats } from './useDesarrolloStats';

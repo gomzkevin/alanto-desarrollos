@@ -23,7 +23,7 @@ interface ResourceDialogContentProps {
   handleSwitchChange: (name: string, checked: boolean) => void;
   handleLeadSelect?: (leadId: string, leadName: string) => void;
   handleAmenitiesChange?: (amenities: string[]) => void;
-  saveResource: () => void;
+  saveResource: (values?: FormValues) => Promise<boolean> | void;
   desarrolloId?: string;
   prototipo_id?: string;
   lead_id?: string;
@@ -74,6 +74,13 @@ export function ResourceDialogContent({
   const getFormValues = () => {
     if (!resource) return {} as FormValues;
     return resource;
+  };
+
+  // Create an adapter function for the saveResource function to match expected signature
+  const handleFormSubmit = () => {
+    if (resource) {
+      return saveResource(resource);
+    }
   };
 
   const getResourceTypeName = () => {
@@ -143,7 +150,7 @@ export function ResourceDialogContent({
             onAmenitiesChange={handleAmenitiesChange}
             selectedAmenities={selectedAmenities}
             isSubmitting={isSubmitting}
-            onSubmit={saveResource}
+            onSubmit={handleFormSubmit}
             formId="resource-form"
           />
         )}
@@ -151,7 +158,7 @@ export function ResourceDialogContent({
 
       <DialogFooter
         onClose={onClose}
-        onSave={saveResource}
+        onSave={handleFormSubmit}
         isSubmitting={isSubmitting}
       />
     </DialogContent>

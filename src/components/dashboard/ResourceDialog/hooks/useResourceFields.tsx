@@ -40,13 +40,17 @@ export const useResourceFields = (
               name: 'unidades_disponibles',
               label: 'Unidades Disponibles',
               type: 'number',
-              tab: 'general'
+              tab: 'general',
+              readOnly: true, // Mark as read-only
+              description: 'Total de unidades con estatus "Disponible"'
             },
             {
               name: 'avance_porcentaje',
-              label: 'Avance (%)',
+              label: 'Avance Comercial (%)',
               type: 'number',
-              tab: 'general'
+              tab: 'general',
+              readOnly: true, // Mark as read-only
+              description: 'Porcentaje de unidades vendidas, apartadas o en proceso de pago'
             },
             {
               name: 'descripcion',
