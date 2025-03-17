@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FormValues, ResourceType } from '../types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -33,136 +33,156 @@ export function useResourceForm({
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const { toast } = useToast();
   const { countUnidadesByStatus } = useUnidades();
+  
+  // Flag to prevent multiple fetches
+  const [isResourceFetched, setIsResourceFetched] = useState(false);
 
-  useEffect(() => {
-    const fetchResource = async () => {
-      setIsLoading(true);
-      
-      try {
-        if (resourceId) {
-          let query;
-          
-          if (resourceType === 'desarrollos') {
-            query = supabase.from('desarrollos');
-          } else if (resourceType === 'prototipos') {
-            query = supabase.from('prototipos');
-          } else if (resourceType === 'leads') {
-            query = supabase.from('leads');
-          } else if (resourceType === 'cotizaciones') {
-            query = supabase.from('cotizaciones');
-          } else if (resourceType === 'unidades') {
-            query = supabase.from('unidades');
-          }
-          
-          const { data, error } = await query.select('*').eq('id', resourceId).single();
-          
-          if (error) throw error;
-          
-          if (resourceType === 'desarrollos' && data.amenidades) {
-            try {
-              if (typeof data.amenidades === 'string') {
-                data.amenidades = JSON.parse(data.amenidades);
-              }
-            } catch (error) {
-              console.error('Error parsing amenidades:', error);
-              data.amenidades = [];
+  // Memoize the fetchResource function to avoid recreating it on every render
+  const fetchResource = useCallback(async () => {
+    if (isResourceFetched) return;
+    
+    setIsLoading(true);
+    
+    try {
+      if (resourceId) {
+        let query;
+        
+        if (resourceType === 'desarrollos') {
+          query = supabase.from('desarrollos');
+        } else if (resourceType === 'prototipos') {
+          query = supabase.from('prototipos');
+        } else if (resourceType === 'leads') {
+          query = supabase.from('leads');
+        } else if (resourceType === 'cotizaciones') {
+          query = supabase.from('cotizaciones');
+        } else if (resourceType === 'unidades') {
+          query = supabase.from('unidades');
+        }
+        
+        const { data, error } = await query.select('*').eq('id', resourceId).single();
+        
+        if (error) throw error;
+        
+        if (resourceType === 'desarrollos' && data.amenidades) {
+          try {
+            if (typeof data.amenidades === 'string') {
+              data.amenidades = JSON.parse(data.amenidades);
             }
-          }
-
-          // If this is a prototipo, fetch the unit counts
-          if (resourceType === 'prototipos') {
-            try {
-              const counts = await countUnidadesByStatus(resourceId);
-              data.unidades_vendidas = counts.vendidas;
-              data.unidades_con_anticipo = counts.con_anticipo;
-              data.unidades_disponibles = counts.disponibles;
-            } catch (error) {
-              console.error('Error getting unit counts:', error);
-            }
-          }
-          
-          setResource(data);
-        } else {
-          if (resourceType === 'desarrollos') {
-            setResource({
-              nombre: '',
-              ubicacion: '',
-              total_unidades: 0,
-              unidades_disponibles: 0,
-              avance_porcentaje: 0,
-              descripcion: '',
-              moneda: 'MXN',
-              comision_operador: 15,
-              mantenimiento_valor: 5,
-              es_mantenimiento_porcentaje: true,
-              gastos_fijos: 0,
-              es_gastos_fijos_porcentaje: false,
-              gastos_variables: 12,
-              es_gastos_variables_porcentaje: true,
-              impuestos: 35,
-              es_impuestos_porcentaje: true,
-              adr_base: 0,
-              ocupacion_anual: 70
-            });
-          } else if (resourceType === 'prototipos') {
-            setResource({
-              nombre: '',
-              desarrollo_id: desarrolloId || '',
-              tipo: 'apartamento',
-              precio: 0,
-              superficie: 0,
-              habitaciones: 0,
-              baños: 0,
-              estacionamientos: 0,
-              total_unidades: 0,
-              unidades_disponibles: 0,
-              unidades_vendidas: 0,
-              unidades_con_anticipo: 0
-            });
-          } else if (resourceType === 'leads') {
-            setResource({
-              nombre: '',
-              email: '',
-              telefono: '',
-              interes_en: '',
-              origen: 'web',
-              estado: 'nuevo',
-              subestado: 'sin_contactar'
-            });
-          } else if (resourceType === 'cotizaciones') {
-            const initialValues = {
-              lead_id: lead_id || '',
-              desarrollo_id: desarrolloId || '',
-              prototipo_id: prototipo_id || '',
-              monto_anticipo: 0,
-              numero_pagos: 0,
-              usar_finiquito: false,
-              ...(defaultValues || {})
-            };
-            setResource(initialValues);
-          } else if (resourceType === 'unidades') {
-            setResource({
-              prototipo_id: prototipo_id || '',
-              numero: '',
-              estado: 'disponible'
-            });
+          } catch (error) {
+            console.error('Error parsing amenidades:', error);
+            data.amenidades = [];
           }
         }
-      } catch (error: any) {
-        console.error(`Error fetching ${resourceType}:`, error);
-        toast({
-          title: 'Error',
-          description: `No se pudo cargar el recurso: ${error.message}`,
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchResource();
-  }, [resourceId, resourceType, desarrolloId, lead_id, prototipo_id, defaultValues, toast, countUnidadesByStatus]);
 
+        // If this is a prototipo, fetch the unit counts
+        if (resourceType === 'prototipos') {
+          try {
+            const counts = await countUnidadesByStatus(resourceId);
+            data.unidades_vendidas = counts.vendidas;
+            data.unidades_con_anticipo = counts.con_anticipo;
+            data.unidades_disponibles = counts.disponibles;
+          } catch (error) {
+            console.error('Error getting unit counts:', error);
+          }
+        }
+        
+        setResource(data);
+      } else {
+        if (resourceType === 'desarrollos') {
+          setResource({
+            nombre: '',
+            ubicacion: '',
+            total_unidades: 0,
+            unidades_disponibles: 0,
+            avance_porcentaje: 0,
+            descripcion: '',
+            moneda: 'MXN',
+            comision_operador: 15,
+            mantenimiento_valor: 5,
+            es_mantenimiento_porcentaje: true,
+            gastos_fijos: 0,
+            es_gastos_fijos_porcentaje: false,
+            gastos_variables: 12,
+            es_gastos_variables_porcentaje: true,
+            impuestos: 35,
+            es_impuestos_porcentaje: true,
+            adr_base: 0,
+            ocupacion_anual: 70
+          });
+        } else if (resourceType === 'prototipos') {
+          setResource({
+            nombre: '',
+            desarrollo_id: desarrolloId || '',
+            tipo: 'apartamento',
+            precio: 0,
+            superficie: 0,
+            habitaciones: 0,
+            baños: 0,
+            estacionamientos: 0,
+            total_unidades: 0,
+            unidades_disponibles: 0,
+            unidades_vendidas: 0,
+            unidades_con_anticipo: 0
+          });
+        } else if (resourceType === 'leads') {
+          setResource({
+            nombre: '',
+            email: '',
+            telefono: '',
+            interes_en: '',
+            origen: 'web',
+            estado: 'nuevo',
+            subestado: 'sin_contactar'
+          });
+        } else if (resourceType === 'cotizaciones') {
+          const initialValues = {
+            lead_id: lead_id || '',
+            desarrollo_id: desarrolloId || '',
+            prototipo_id: prototipo_id || '',
+            monto_anticipo: 0,
+            numero_pagos: 0,
+            usar_finiquito: false,
+            ...(defaultValues || {})
+          };
+          setResource(initialValues);
+        } else if (resourceType === 'unidades') {
+          setResource({
+            prototipo_id: prototipo_id || '',
+            numero: '',
+            estado: 'disponible'
+          });
+        }
+      }
+      
+      setIsResourceFetched(true);
+    } catch (error: any) {
+      console.error(`Error fetching ${resourceType}:`, error);
+      toast({
+        title: 'Error',
+        description: `No se pudo cargar el recurso: ${error.message}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    resourceId, 
+    resourceType, 
+    desarrolloId, 
+    lead_id, 
+    prototipo_id, 
+    defaultValues, 
+    toast, 
+    countUnidadesByStatus,
+    isResourceFetched
+  ]);
+
+  // Fetch resource only once
+  useEffect(() => {
+    fetchResource();
+  }, [fetchResource]);
+
+  // Process amenities separately after resource is loaded
   useEffect(() => {
     if (resource && resourceType === 'desarrollos') {
       const desarrolloResource = resource as any;
@@ -180,6 +200,11 @@ export function useResourceForm({
       }
     }
   }, [resource, resourceType]);
+
+  // Reset the fetch flag when resourceId changes
+  useEffect(() => {
+    setIsResourceFetched(false);
+  }, [resourceId, resourceType]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!resource) return;
