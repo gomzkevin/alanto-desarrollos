@@ -24,9 +24,27 @@ const DesarrollosPage = () => {
 
   const { canCreateResource } = useUserRole();
 
+  // Function to normalize desarrollo data before display
+  const normalizeDesarrollos = (desarrollos: Desarrollo[]): Desarrollo[] => {
+    return desarrollos.map(desarrollo => {
+      // Ensure unidades_disponibles is not greater than total_unidades
+      const normalizedDesarrollo = {
+        ...desarrollo,
+        unidades_disponibles: Math.min(
+          desarrollo.unidades_disponibles || 0,
+          desarrollo.total_unidades || 0
+        )
+      };
+      
+      return normalizedDesarrollo;
+    });
+  };
+
   const handleDesarrolloClick = (id: string) => {
     navigate(`/dashboard/desarrollos/${id}`);
   };
+
+  const normalizedDesarrollos = normalizeDesarrollos(desarrollos as Desarrollo[]);
 
   return (
     <DashboardLayout>
@@ -74,7 +92,7 @@ const DesarrollosPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {(desarrollos as Desarrollo[]).map((desarrollo) => (
+            {normalizedDesarrollos.map((desarrollo) => (
               <DesarrolloCard 
                 key={desarrollo.id} 
                 desarrollo={desarrollo}

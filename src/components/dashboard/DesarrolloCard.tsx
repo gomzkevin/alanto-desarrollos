@@ -140,7 +140,6 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
     }
   };
   
-  // Calculate status based on commercial progress
   const getDesarrolloStatus = (desarrollo: Desarrollo) => {
     if (desarrollo.avance_porcentaje === 0) {
       return { label: 'Pre-venta', color: 'bg-blue-100 text-blue-800' };
@@ -149,6 +148,15 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
     } else {
       return { label: 'Vendido', color: 'bg-green-100 text-green-800' };
     }
+  };
+  
+  const getUnitCountDisplay = () => {
+    const availableUnits = Math.min(
+      desarrollo.unidades_disponibles || 0, 
+      desarrollo.total_unidades || 0
+    );
+    
+    return `${availableUnits}/${desarrollo.total_unidades || 0}`;
   };
   
   const status = getDesarrolloStatus(desarrollo);
@@ -187,7 +195,6 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
         <h3 className="text-xl font-bold mb-2">{desarrollo.nombre}</h3>
         <p className="text-slate-600 mb-3">{desarrollo.ubicacion}</p>
         
-        {/* Prototipos y Amenidades */}
         <div className="flex flex-wrap gap-1 mb-3">
           {!isLoading && (
             <Badge variant="outline" className="flex items-center gap-1">
@@ -220,7 +227,7 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
         <div className="flex justify-between items-center text-sm">
           <div>
             <p className="text-slate-500">Unidades</p>
-            <p className="font-medium">{desarrollo.unidades_disponibles}/{desarrollo.total_unidades} disponibles</p>
+            <p className="font-medium">{getUnitCountDisplay()} disponibles</p>
           </div>
           <div>
             <p className="text-slate-500">Avance</p>
@@ -243,7 +250,6 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
   );
 };
 
-// Función para obtener información de una amenidad por su ID
 const getAmenidadInfo = (amenidadId: string): { name: string; icon: React.ReactNode } => {
   const amenityMap: Record<string, { icon: React.ReactNode, name: string }> = {
     "pool": { icon: <Waves className="h-3 w-3 mr-1" />, name: "Alberca" },
