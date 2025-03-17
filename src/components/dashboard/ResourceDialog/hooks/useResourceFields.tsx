@@ -448,10 +448,12 @@ export const useResourceFields = (resourceType: ResourceType, selectedDesarrollo
             name: 'prototipo_id',
             label: 'Prototipo',
             type: 'select',
-            options: prototipos.map(prototipo => ({ 
-              value: prototipo.id, 
-              label: prototipo.nombre 
-            })),
+            options: prototipos
+              .filter(p => !selectedDesarrolloId || p.desarrollo_id === selectedDesarrolloId)
+              .map(prototipo => ({ 
+                value: prototipo.id, 
+                label: prototipo.nombre 
+              })),
             tab: 'general'
           },
           {
