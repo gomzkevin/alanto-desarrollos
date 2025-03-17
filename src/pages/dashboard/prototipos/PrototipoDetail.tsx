@@ -20,6 +20,13 @@ import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 type Prototipo = Tables<"prototipos">;
 type Desarrollo = Tables<"desarrollos">;
 
+// Define a type that includes our custom unit count properties
+type PrototipoWithUnitCounts = Prototipo & {
+  unidades_vendidas?: number;
+  unidades_con_anticipo?: number;
+  desarrollo?: Desarrollo | null;
+};
+
 const fetchPrototipoById = async (id: string) => {
   const { data, error } = await supabase
     .from('prototipos')
@@ -28,6 +35,9 @@ const fetchPrototipoById = async (id: string) => {
     .single();
   
   if (error) throw error;
+  
+  // Using our custom type for the data
+  const prototipoData = data as PrototipoWithUnitCounts;
   
   // Get the real unit counts
   const { data: unidades } = await supabase
@@ -40,9 +50,9 @@ const fetchPrototipoById = async (id: string) => {
     const conAnticipo = unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso').length;
     const disponibles = unidades.filter(u => u.estado === 'disponible').length;
     
-    data.unidades_vendidas = vendidas;
-    data.unidades_con_anticipo = conAnticipo;
-    data.unidades_disponibles = disponibles;
+    prototipoData.unidades_vendidas = vendidas;
+    prototipoData.unidades_con_anticipo = conAnticipo;
+    prototipoData.unidades_disponibles = disponibles;
     
     // Update the prototipo with accurate counts if they differ
     if (data.unidades_disponibles !== disponibles) {
@@ -57,7 +67,7 @@ const fetchPrototipoById = async (id: string) => {
     }
   }
   
-  return data as ExtendedPrototipo;
+  return prototipoData as ExtendedPrototipo;
 };
 
 const PrototipoDetail = () => {
