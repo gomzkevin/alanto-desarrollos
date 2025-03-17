@@ -15,7 +15,7 @@ import useUnitCounts from './hooks/useUnitCounts';
 
 const PrototipoDetail = () => {
   const { toast } = useToast();
-  const { id, prototipo, isLoading, error, refetch, handleBack } = usePrototipoDetail();
+  const { id, prototipo, isLoading, error, refetch, handleBack, updatePrototipoImage } = usePrototipoDetail();
   const [openAddUnidadDialog, setOpenAddUnidadDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   
@@ -115,6 +115,7 @@ const PrototipoDetail = () => {
           prototipo={prototipo} 
           onBack={handleBack} 
           onEdit={() => setOpenEditDialog(true)} 
+          updatePrototipoImage={updatePrototipoImage}
         />
         
         <div className="space-y-8">

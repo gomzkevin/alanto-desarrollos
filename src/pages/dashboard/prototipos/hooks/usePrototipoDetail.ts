@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import { Tables } from '@/integrations/supabase/types';
+import { useToast } from '@/hooks/use-toast';
 
 type Desarrollo = Tables<"desarrollos">;
 
@@ -22,6 +23,7 @@ const fetchPrototipoById = async (id: string) => {
 export const usePrototipoDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const {
     data: prototipo,
@@ -44,7 +46,17 @@ export const usePrototipoDetail = () => {
   };
   
   const updatePrototipoImage = async (imageUrl: string) => {
-    if (!id) return;
+    if (!id) {
+      console.error('No se puede actualizar la imagen: ID del prototipo no disponible');
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la imagen: ID no válido",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    console.log(`Actualizando imagen del prototipo ${id} con URL:`, imageUrl);
     
     try {
       const { error } = await supabase
@@ -52,12 +64,28 @@ export const usePrototipoDetail = () => {
         .update({ imagen_url: imageUrl })
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error al actualizar imagen del prototipo en la base de datos:', error);
+        toast({
+          title: "Error",
+          description: `No se pudo guardar la imagen: ${error.message}`,
+          variant: "destructive"
+        });
+        throw error;
+      }
       
+      console.log('Imagen de prototipo actualizada exitosamente en la base de datos');
+      
+      // Refrescar los datos después de la actualización
       await refetch();
       
+      toast({
+        title: "Éxito",
+        description: "Imagen del prototipo actualizada correctamente",
+      });
+      
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al actualizar imagen del prototipo:', error);
       return false;
     }
