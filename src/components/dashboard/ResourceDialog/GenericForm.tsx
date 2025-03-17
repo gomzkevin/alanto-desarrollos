@@ -97,15 +97,15 @@ const GenericForm = ({
     onChange({ ...values, [name]: value });
     
     // If additional handlers are provided, call them with appropriate values
-    if (onSelectChange && (field.type === 'select' || field.type === 'select-lead')) {
+    if (onSelectChange && fields.some(field => field.name === name && (field.type === 'select' || field.type === 'select-lead'))) {
       onSelectChange(name, value as string);
     }
     
-    if (onSwitchChange && field.type === 'switch') {
+    if (onSwitchChange && fields.some(field => field.name === name && field.type === 'switch')) {
       onSwitchChange(name, value as boolean);
     }
     
-    if (onDateChange && field.type === 'date') {
+    if (onDateChange && fields.some(field => field.name === name && field.type === 'date')) {
       onDateChange(name, value as Date | undefined);
     }
   };
