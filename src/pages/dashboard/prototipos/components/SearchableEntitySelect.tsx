@@ -1,6 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Input } from "@/components/ui/input";
+import React, { useState } from 'react';
 import { Label } from "@/components/ui/label";
 import { 
   Command,
