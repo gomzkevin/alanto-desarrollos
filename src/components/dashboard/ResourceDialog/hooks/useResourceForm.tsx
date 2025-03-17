@@ -1,20 +1,10 @@
 
-import { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 import useResourceData from '../useResourceData';
-import useResourceActions from '../useResourceActions';
-import { ResourceType, FormValues } from '../types';
-
-interface UseResourceFormProps {
-  resourceType: ResourceType;
-  resourceId?: string;
-  defaultValues?: FormValues;
-  desarrolloId?: string;
-  prototipo_id?: string;
-  lead_id?: string;
-  onSuccess?: () => void;
-  onSave?: (resource: FormValues) => void;
-}
+import { UseResourceFormProps, UseResourceFormReturn } from './useResourceFormTypes';
+import { useFormHandlers } from './useFormHandlers';
+import { useResourceInitialization } from './useResourceInitialization';
+import { useSaveResource } from './useSaveResource';
 
 export const useResourceForm = ({
   resourceType,
@@ -25,9 +15,7 @@ export const useResourceForm = ({
   lead_id,
   onSuccess,
   onSave,
-}: UseResourceFormProps) => {
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+}: UseResourceFormProps): UseResourceFormReturn => {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [usarFiniquito, setUsarFiniquito] = useState(false);
@@ -47,170 +35,43 @@ export const useResourceForm = ({
     onAmenitiesChange: setSelectedAmenities,
   });
 
-  // Initialize with default values if provided
-  useEffect(() => {
-    if (defaultValues && !resource) {
-      setResource(defaultValues);
-    }
-  }, [defaultValues, resource, setResource]);
+  // Inicializar el recurso con valores por defecto y IDs
+  useResourceInitialization(
+    resource, 
+    setResource, 
+    defaultValues, 
+    desarrolloId, 
+    prototipo_id, 
+    lead_id, 
+    resourceType
+  );
 
-  // Initialize resources with IDs from props
-  useEffect(() => {
-    if (resource) {
-      const resourceCopy = { ...resource };
-      
-      // Update resource with prop values if available
-      if (desarrolloId && resourceType === 'prototipos') {
-        resourceCopy.desarrollo_id = desarrolloId;
-      }
-      
-      if (prototipo_id && resourceType === 'unidades') {
-        resourceCopy.prototipo_id = prototipo_id;
-      }
-      
-      if (lead_id && resourceType === 'cotizaciones') {
-        resourceCopy.lead_id = lead_id;
-      }
-      
-      // Only update if there are changes
-      if (JSON.stringify(resourceCopy) !== JSON.stringify(resource)) {
-        setResource(resourceCopy);
-      }
-    }
-  }, [resource, desarrolloId, prototipo_id, lead_id, resourceType, setResource]);
+  // Obtener los manejadores de eventos del formulario
+  const {
+    handleChange,
+    handleSelectChange,
+    handleSwitchChange,
+    handleAmenitiesChange,
+    handleLeadSelect,
+    handleDateChange
+  } = useFormHandlers(
+    resource,
+    setResource,
+    setSelectedStatus,
+    setUsarFiniquito,
+    setSelectedAmenities
+  );
 
-  // Setup resource actions
-  const resourceActions = useResourceActions({
+  // Obtener la función para guardar el recurso
+  const { isSubmitting, saveResource } = useSaveResource(
+    resource,
     resourceType,
     resourceId,
+    selectedAmenities,
     desarrolloId,
     onSuccess,
-    selectedAmenities
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | FormValues) => {
-    if (!resource) return;
-
-    if ('target' in e) {
-      // It's an event
-      const { name, value, type } = e.target;
-      let updatedValue: any = value;
-      
-      if (type === 'number') {
-        updatedValue = value === '' ? null : Number(value);
-      }
-      
-      console.log(`Updating resource field ${name} with value:`, updatedValue);
-      setResource({ ...resource, [name]: updatedValue });
-    } else {
-      // It's a direct values object
-      console.log(`Updating resource with form values:`, e);
-      setResource({ ...resource, ...e });
-    }
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    if (!resource) return;
-    
-    if (name === 'estado' && resourceType === 'leads') {
-      setSelectedStatus(value);
-    }
-    
-    console.log(`Updating resource select field ${name} with value:`, value);
-    setResource({ ...resource, [name]: value });
-  };
-
-  const handleSwitchChange = (name: string, checked: boolean) => {
-    if (!resource) return;
-    
-    if (name === 'usar_finiquito') {
-      setUsarFiniquito(checked);
-    }
-    
-    console.log(`Updating resource switch field ${name} with value:`, checked);
-    setResource({ ...resource, [name]: checked });
-  };
-
-  const handleAmenitiesChange = (amenities: string[]) => {
-    if (!resource) return;
-    
-    setSelectedAmenities(amenities);
-    console.log(`Updating amenities with:`, amenities);
-    setResource({ ...resource, amenidades: amenities });
-  };
-
-  const handleLeadSelect = (leadId: string, leadName: string) => {
-    if (!resource) return;
-    
-    // Si estamos en unidades, también guardamos el nombre para mostrar
-    if (resourceType === 'unidades') {
-      console.log(`Selected lead for unit: ${leadId} - ${leadName}`);
-      setResource({ 
-        ...resource, 
-        comprador_id: leadId,
-        comprador_nombre: leadName
-      });
-    } else {
-      console.log(`Selected lead: ${leadId}`);
-      setResource({ ...resource, lead_id: leadId });
-    }
-  };
-
-  const handleDateChange = (name: string, date: Date | undefined) => {
-    if (!resource) return;
-    
-    console.log(`Updating resource date field ${name} with value:`, date);
-    setResource({ ...resource, [name]: date });
-  };
-
-  const saveResource = async (resourceToSave: FormValues = resource as FormValues) => {
-    if (!resourceToSave) return false;
-    
-    setIsSubmitting(true);
-    console.log('Saving resource with data:', resourceToSave);
-    
-    try {
-      // Si hay amenidades en formato array, conviértelas a JSON
-      if (resourceType === 'desarrollos' && selectedAmenities.length > 0) {
-        resourceToSave.amenidades = selectedAmenities;
-      }
-      
-      const success = await resourceActions.saveResource(resourceToSave);
-      
-      if (success) {
-        toast({
-          title: 'Éxito',
-          description: `${resourceId ? 'Actualizado' : 'Creado'} correctamente`,
-        });
-        
-        // Call the onSuccess handler if provided
-        if (onSuccess) {
-          onSuccess();
-        }
-        
-        // Call the onSave handler if provided
-        if (onSave) {
-          onSave(resourceToSave);
-        }
-        
-        return true;
-      }
-      
-      return false;
-    } catch (error: any) {
-      console.error('Error saving resource:', error);
-      
-      toast({
-        title: 'Error',
-        description: `No se pudo ${resourceId ? 'actualizar' : 'crear'} el recurso: ${error.message}`,
-        variant: 'destructive',
-      });
-      
-      return false;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    onSave
+  );
 
   return {
     isLoading,
