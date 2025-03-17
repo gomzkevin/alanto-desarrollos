@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -42,7 +41,7 @@ const DesarrollosPage = () => {
             return {
               ...desarrollo,
               unidades_disponibles: counts.disponibles,
-              total_unidades: counts.total
+              total_unidades: counts.total || 0 // Handle potentially undefined total
             };
           } catch (error) {
             console.error('Error updating real counts for desarrollo:', desarrollo.id, error);

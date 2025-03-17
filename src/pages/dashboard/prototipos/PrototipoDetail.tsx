@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -97,7 +96,6 @@ const PrototipoDetail = () => {
     }
   };
   
-  // Calculate unit counts for the UI display
   const getUnitCounts = () => {
     if (unidades.length === 0) {
       return {
@@ -284,37 +282,37 @@ const PrototipoDetail = () => {
               
               <TabsContent value="todas">
                 <UnidadTable 
+                  prototipo={prototipo}
                   unidades={unidades} 
                   isLoading={unidadesLoading} 
                   onRefresh={refetchUnidades}
-                  prototipo={prototipo}
                 />
               </TabsContent>
               
               <TabsContent value="disponibles">
                 <UnidadTable 
+                  prototipo={prototipo}
                   unidades={unidades.filter(u => u.estado === 'disponible')} 
                   isLoading={unidadesLoading} 
                   onRefresh={refetchUnidades}
-                  prototipo={prototipo}
                 />
               </TabsContent>
               
               <TabsContent value="apartadas">
                 <UnidadTable 
+                  prototipo={prototipo}
                   unidades={unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso')} 
                   isLoading={unidadesLoading} 
                   onRefresh={refetchUnidades}
-                  prototipo={prototipo}
                 />
               </TabsContent>
               
               <TabsContent value="vendidas">
                 <UnidadTable 
+                  prototipo={prototipo}
                   unidades={unidades.filter(u => u.estado === 'vendido')} 
                   isLoading={unidadesLoading} 
                   onRefresh={refetchUnidades}
-                  prototipo={prototipo}
                 />
               </TabsContent>
             </Tabs>

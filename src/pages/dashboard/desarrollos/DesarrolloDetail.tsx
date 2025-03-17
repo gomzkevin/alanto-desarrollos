@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -129,10 +128,11 @@ const DesarrolloDetailPage = () => {
     desarrolloId: id,
   });
   
-  // Use the dedicated hook for getting desarrollo stats
-  const { data: desarrolloStats, isLoading: isLoadingStats } = useDesarrolloStats(id);
+  const { 
+    data: desarrolloStats, 
+    isLoading: isLoadingStats 
+  } = useDesarrolloStats(id);
   
-  // Query for real unit counts for this desarrollo
   const { 
     data: unitCounts,
     isLoading: isLoadingUnitCounts
@@ -158,34 +158,32 @@ const DesarrolloDetailPage = () => {
   const isLoading = isLoadingDesarrollo || isLoadingPrototipos || isLoadingUnitCounts || isLoadingStats;
   const hasError = errorDesarrollo || errorPrototipos;
   
-  // Calculate commercial progress percentage based on sold/reserved units
   const calculateComercialProgress = () => {
-    // First try to use the dedicated hook data
     if (desarrolloStats) {
       return desarrolloStats.avanceComercial;
     }
     
-    // Fallback to the old calculation
     if (!unitCounts) return 0;
     
-    const { vendidas, con_anticipo, total } = unitCounts;
-    if (total === 0) return 0;
+    const totalUnits = unitCounts.total || 0;
+    const soldOrReserved = (unitCounts.vendidas || 0) + (unitCounts.con_anticipo || 0);
     
-    return Math.round(((vendidas + con_anticipo) / total) * 100);
+    if (totalUnits === 0) return 0;
+    
+    return Math.round((soldOrReserved / totalUnits) * 100);
   };
   
-  // Get the display text for units and make sure available units don't exceed total
   const getUnitCountDisplay = () => {
-    // First try to use the dedicated hook data
     if (desarrolloStats) {
       return `${desarrolloStats.unidadesDisponibles}/${desarrolloStats.totalUnidades} disponibles`;
     }
     
-    // Fallback to the old calculation
     if (!unitCounts) return "0/0 disponibles";
     
-    const { disponibles, total } = unitCounts;
-    return `${disponibles}/${total} disponibles`;
+    const availableUnits = unitCounts.disponibles || 0;
+    const totalUnits = unitCounts.total || 0;
+    
+    return `${availableUnits}/${totalUnits} disponibles`;
   };
   
   return (

@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -6,10 +5,12 @@ interface UnidadCount {
   disponibles: number;
   vendidas: number;
   con_anticipo: number;
+  total: number;
 }
 
-export const useUnidades = (prototipoId?: string) => {
+export const useUnidades = (params?: { prototipo_id?: string }) => {
   const queryClient = useQueryClient();
+  const prototipoId = params?.prototipo_id;
 
   // Function to fetch all unidades for a specific prototipo
   const fetchUnidades = async () => {
@@ -44,17 +45,18 @@ export const useUnidades = (prototipoId?: string) => {
       const counts: UnidadCount = {
         disponibles: 0,
         vendidas: 0,
-        con_anticipo: 0
+        con_anticipo: 0,
+        total: 0
       };
 
       if (data) {
+        counts.total = data.length;
         data.forEach(unidad => {
           if (unidad.estado === 'disponible') {
             counts.disponibles++;
           } else if (unidad.estado === 'vendido') {
             counts.vendidas++;
           } else if (unidad.estado === 'en_proceso' || unidad.estado === 'apartado') {
-            // Count both 'en_proceso' and 'apartado' as con_anticipo
             counts.con_anticipo++;
           }
         });
@@ -63,7 +65,7 @@ export const useUnidades = (prototipoId?: string) => {
       return counts;
     } catch (error) {
       console.error('Error counting unidades by status:', error);
-      return { disponibles: 0, vendidas: 0, con_anticipo: 0 };
+      return { disponibles: 0, vendidas: 0, con_anticipo: 0, total: 0 };
     }
   };
 
@@ -78,7 +80,7 @@ export const useUnidades = (prototipoId?: string) => {
 
       if (prototiposError) throw prototiposError;
       if (!prototipos || prototipos.length === 0) {
-        return { disponibles: 0, vendidas: 0, con_anticipo: 0 };
+        return { disponibles: 0, vendidas: 0, con_anticipo: 0, total: 0 };
       }
 
       // Get all unidades for these prototipos
@@ -93,17 +95,18 @@ export const useUnidades = (prototipoId?: string) => {
       const counts: UnidadCount = {
         disponibles: 0,
         vendidas: 0,
-        con_anticipo: 0
+        con_anticipo: 0,
+        total: 0
       };
 
       if (unidades) {
+        counts.total = unidades.length;
         unidades.forEach(unidad => {
           if (unidad.estado === 'disponible') {
             counts.disponibles++;
           } else if (unidad.estado === 'vendido') {
             counts.vendidas++;
           } else if (unidad.estado === 'en_proceso' || unidad.estado === 'apartado') {
-            // Count both 'en_proceso' and 'apartado' as con_anticipo
             counts.con_anticipo++;
           }
         });
@@ -112,7 +115,7 @@ export const useUnidades = (prototipoId?: string) => {
       return counts;
     } catch (error) {
       console.error('Error counting desarrollo unidades by status:', error);
-      return { disponibles: 0, vendidas: 0, con_anticipo: 0 };
+      return { disponibles: 0, vendidas: 0, con_anticipo: 0, total: 0 };
     }
   };
 
@@ -132,33 +135,43 @@ export const useUnidades = (prototipoId?: string) => {
   };
 
   // Create multiple unidades at once
-  const createMultipleUnidades = async (prototipoId: string, cantidad: number) => {
-    try {
-      const unidades = [];
-      for (let i = 0; i < cantidad; i++) {
-        unidades.push({
-          prototipo_id: prototipoId,
-          numero: `Unidad ${i + 1}`,
-          estado: 'disponible'
-        });
+  const createMultipleUnidades = useMutation({
+    mutationFn: async ({ prototipo_id, cantidad, prefijo }: { prototipo_id: string, cantidad: number, prefijo?: string }) => {
+      try {
+        const unidades = [];
+        for (let i = 0; i < cantidad; i++) {
+          unidades.push({
+            prototipo_id: prototipo_id,
+            numero: prefijo ? `${prefijo}${i + 1}` : `Unidad ${i + 1}`,
+            estado: 'disponible'
+          });
+        }
+
+        const { data, error } = await supabase
+          .from('unidades')
+          .insert(unidades)
+          .select();
+
+        if (error) throw error;
+
+        // After creating multiple unidades, update the prototipo's unit counts
+        updatePrototipoUnitCounts(prototipo_id);
+
+        return data;
+      } catch (error) {
+        console.error('Error creating multiple unidades:', error);
+        throw error;
       }
-
-      const { data, error } = await supabase
-        .from('unidades')
-        .insert(unidades)
-        .select();
-
-      if (error) throw error;
-
-      // After creating multiple unidades, update the prototipo's unit counts
-      updatePrototipoUnitCounts(prototipoId);
-
-      return data;
-    } catch (error) {
-      console.error('Error creating multiple unidades:', error);
-      throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['unidades', prototipoId] });
+      
+      // Also invalidate the prototipo and desarrollo queries
+      if (prototipoId) {
+        queryClient.invalidateQueries({ queryKey: ['prototipo', prototipoId] });
+      }
     }
-  };
+  });
 
   // Update a unidad
   const updateUnidad = async ({ id, ...unidadData }: { id: string; [key: string]: any }) => {

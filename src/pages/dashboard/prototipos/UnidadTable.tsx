@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -11,15 +10,27 @@ import { useToast } from "@/hooks/use-toast";
 import useUnidades from "@/hooks/useUnidades";
 import useLeads from "@/hooks/useLeads";
 import { UnidadForm } from "./UnidadForm";
+import { Tables } from '@/integrations/supabase/types';
+import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 
-interface UnidadTableProps {
-  prototipoId: string;
-  prototipoNombre: string;
+export interface UnidadTableProps {
+  prototipo: ExtendedPrototipo;
+  unidades?: any[];
+  isLoading?: boolean;
+  onRefresh?: () => void;
 }
 
-export const UnidadTable = ({ prototipoId, prototipoNombre }: UnidadTableProps) => {
+export const UnidadTable = ({ prototipo, unidades: externalUnidades, isLoading: externalLoading, onRefresh: externalRefresh }: UnidadTableProps) => {
   const { toast } = useToast();
-  const { unidades, isLoading, createUnidad, updateUnidad, deleteUnidad, refetch } = useUnidades(prototipoId);
+  const { 
+    unidades: hookUnidades, 
+    isLoading: hookLoading, 
+    createUnidad, 
+    updateUnidad, 
+    deleteUnidad, 
+    refetch: hookRefetch 
+  } = useUnidades({ prototipo_id: prototipo.id });
+  
   const { leads } = useLeads();
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -27,7 +38,6 @@ export const UnidadTable = ({ prototipoId, prototipoNombre }: UnidadTableProps) 
   const [currentUnidad, setCurrentUnidad] = useState<any>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
-  // Use this effect to ensure we clean up state when component unmounts
   useEffect(() => {
     return () => {
       setCurrentUnidad(null);
@@ -40,7 +50,7 @@ export const UnidadTable = ({ prototipoId, prototipoNombre }: UnidadTableProps) 
   const handleAddUnidad = useCallback(async (data: any) => {
     try {
       await createUnidad({
-        prototipo_id: prototipoId,
+        prototipo_id: prototipo.id,
         numero: data.numero,
         estado: data.estado,
         nivel: data.nivel,
@@ -66,7 +76,7 @@ export const UnidadTable = ({ prototipoId, prototipoNombre }: UnidadTableProps) 
         variant: "destructive"
       });
     }
-  }, [prototipoId, createUnidad, toast, refetch]);
+  }, [prototipo.id, createUnidad, toast, refetch]);
 
   const handleEditUnidad = useCallback(async (data: any) => {
     if (!currentUnidad) return;
@@ -155,6 +165,10 @@ export const UnidadTable = ({ prototipoId, prototipoNombre }: UnidadTableProps) 
     }
   }, []);
 
+  const unidades = externalUnidades || hookUnidades;
+  const isLoading = externalLoading !== undefined ? externalLoading : hookLoading;
+  const refetch = externalRefresh || hookRefetch;
+
   if (isLoading) {
     return <div className="text-center py-4">Cargando unidades...</div>;
   }
@@ -162,7 +176,7 @@ export const UnidadTable = ({ prototipoId, prototipoNombre }: UnidadTableProps) 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">Unidades de {prototipoNombre}</h2>
+        <h2 className="text-xl font-bold">Unidades de {prototipo.nombre}</h2>
         <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Agregar Unidad
         </Button>
@@ -236,7 +250,6 @@ export const UnidadTable = ({ prototipoId, prototipoNombre }: UnidadTableProps) 
         </div>
       )}
       
-      {/* Add Unit Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <UnidadForm 
@@ -247,7 +260,6 @@ export const UnidadTable = ({ prototipoId, prototipoNombre }: UnidadTableProps) 
         </DialogContent>
       </Dialog>
       
-      {/* Edit Unit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={closeEditDialog}>
         <DialogContent className="sm:max-w-md">
           {currentUnidad && (
@@ -261,7 +273,6 @@ export const UnidadTable = ({ prototipoId, prototipoNombre }: UnidadTableProps) 
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
