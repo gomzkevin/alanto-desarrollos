@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   Table, 
@@ -31,7 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import useUnidades from '@/hooks/useUnidades';
-import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { Tables } from '@/integrations/supabase/types';
 import { toast } from '@/hooks/use-toast';
 
@@ -70,13 +69,11 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
     setStatusUpdateLoading(prev => ({ ...prev, [unidadId]: true }));
     
     try {
-      // Actualizar el estado de la unidad utilizando la función del hook
       await updateUnidad.mutateAsync({
         id: unidadId,
         estado: nuevoEstado
       });
       
-      // Refrescar tabla
       onRefresh();
       
       toast({
@@ -246,7 +243,6 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
         </TableBody>
       </Table>
       
-      {/* Diálogo para editar unidad con prototipo_id explícitamente pasado */}
       {unidadToEdit && (
         <AdminResourceDialog 
           resourceType="unidades"
@@ -258,7 +254,6 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
         />
       )}
       
-      {/* Diálogo de confirmación para eliminar */}
       <AlertDialog open={!!unidadToDelete} onOpenChange={(open) => !open && setUnidadToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -278,4 +273,3 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
     </div>
   );
 };
-
