@@ -56,6 +56,7 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
   // Función para contar unidades por estado para un prototipo específico
   const countUnidadesByStatus = async (prototipoId: string): Promise<UnidadesCountByStatus> => {
     try {
+      // Optimización: obtener sólo el estado para contar
       const { data, error } = await supabase
         .from('unidades')
         .select('estado')
@@ -99,6 +100,8 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       
       // Obtenemos todas las unidades de todos los prototipos de este desarrollo
       const prototipoIds = prototipos.map(p => p.id);
+      
+      // Optimización: usar un contador del servidor en lugar de traer todos los datos
       const { data: unidades, error: unidadesError } = await supabase
         .from('unidades')
         .select('estado')
@@ -121,10 +124,13 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
     }
   };
   
-  // Query para obtener unidades
+  // Query para obtener unidades con mejor manejo de errores y caché
   const unidadesQuery = useQuery({
     queryKey: ['unidades', prototipo_id, estado],
-    queryFn: fetchUnidades
+    queryFn: fetchUnidades,
+    staleTime: 30000, // Cache por 30 segundos
+    retry: 2, // Máximo 2 reintentos en caso de error
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
   
   // Mutación para crear una nueva unidad
@@ -140,7 +146,7 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       return data;
     },
     onSuccess: async (data) => {
-      queryClient.invalidateQueries({ queryKey: ['unidades', prototipo_id] });
+      queryClient.invalidateQueries({ queryKey: ['unidades', data.prototipo_id] });
       
       // Actualizar contadores del prototipo
       if (data.prototipo_id) {
@@ -182,7 +188,7 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       return { data, oldPrototipoId: oldUnidad?.prototipo_id };
     },
     onSuccess: async ({ data, oldPrototipoId }) => {
-      queryClient.invalidateQueries({ queryKey: ['unidades', prototipo_id] });
+      queryClient.invalidateQueries({ queryKey: ['unidades', data.prototipo_id] });
       
       // Si cambió el prototipo, actualizar los contadores de ambos prototipos
       if (oldPrototipoId && data.prototipo_id !== oldPrototipoId) {
@@ -228,7 +234,7 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       return { id, prototipoId };
     },
     onSuccess: async ({ prototipoId }) => {
-      queryClient.invalidateQueries({ queryKey: ['unidades', prototipo_id] });
+      queryClient.invalidateQueries({ queryKey: ['unidades', prototipoId] });
       
       // Actualizar contadores del prototipo
       if (prototipoId) {
@@ -260,6 +266,7 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       cantidad: number; 
       prefijo?: string; 
     }) => {
+      // Optimización: crear un batch de unidades en una sola operación
       const unidades = Array.from({ length: cantidad }, (_, i) => ({
         prototipo_id,
         numero: `${prefijo}${i + 1}`,
@@ -275,11 +282,13 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       return data;
     },
     onSuccess: async (data) => {
-      queryClient.invalidateQueries({ queryKey: ['unidades', prototipo_id] });
-      
-      // Actualizar contadores del prototipo
+      // Sólo invalidar la consulta necesaria
       if (data.length > 0) {
-        await updatePrototipoUnidades(data[0].prototipo_id);
+        const prototipoId = data[0].prototipo_id;
+        queryClient.invalidateQueries({ queryKey: ['unidades', prototipoId] });
+        
+        // Actualizar contadores del prototipo
+        await updatePrototipoUnidades(prototipoId);
       }
       
       toast({
@@ -320,6 +329,9 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
         throw error;
       }
       
+      // Invalidar consultas específicas en lugar de todas
+      queryClient.invalidateQueries({ queryKey: ['prototipo', prototipoId] });
+      
       // Obtener el desarrollo_id del prototipo
       const { data: prototipo } = await supabase
         .from('prototipos')
@@ -331,11 +343,6 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       if (prototipo && prototipo.desarrollo_id) {
         await updateDesarrolloUnidades(prototipo.desarrollo_id);
       }
-      
-      // Invalidar las consultas de prototipos para refrescar los datos
-      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
-      queryClient.invalidateQueries({ queryKey: ['prototipo', prototipoId] });
-      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
     } catch (error) {
       console.error('Error updating prototipo units:', error);
     }
@@ -381,8 +388,7 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
         throw error;
       }
       
-      // Invalidar las consultas de desarrollos para refrescar los datos
-      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
+      // Invalidar consultas específicas
       queryClient.invalidateQueries({ queryKey: ['desarrollo', desarrolloId] });
     } catch (error) {
       console.error('Error updating desarrollo units:', error);

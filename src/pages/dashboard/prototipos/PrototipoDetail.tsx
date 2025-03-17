@@ -47,6 +47,7 @@ const PrototipoDetail = () => {
   const [cantidadUnidades, setCantidadUnidades] = useState(1);
   const [prefijo, setPrefijo] = useState("");
   
+  // Fetch prototipo data with React Query
   const {
     data: prototipo,
     isLoading,
@@ -56,8 +57,11 @@ const PrototipoDetail = () => {
     queryKey: ['prototipo', id],
     queryFn: () => fetchPrototipoById(id as string),
     enabled: !!id,
+    retry: 2, // Limit retries to prevent excessive requests
+    staleTime: 30000, // Cache data for 30 seconds
   });
   
+  // Fetch unidades with a separate query
   const { 
     unidades, 
     isLoading: unidadesLoading, 
@@ -95,7 +99,8 @@ const PrototipoDetail = () => {
   // Update the prototipo unit counts in database if they don't match the calculated values
   useEffect(() => {
     const syncPrototipoUnitCounts = async () => {
-      if (id && !unidadesLoading && !isLoading && prototipo && unidades.length > 0) {
+      // Only perform synchronization when both queries have completed and we have actual data
+      if (id && !unidadesLoading && !isLoading && prototipo && unidades && unidades.length > 0) {
         const counts = calculateActualCounts();
         
         // Check if counts in prototipo record don't match actual counts from unidades
@@ -108,7 +113,7 @@ const PrototipoDetail = () => {
         if (countsNeedUpdate) {
           try {
             await updatePrototipoUnidades(id);
-            // Refetch prototipo to get updated counts
+            // Only refetch prototipo if needed
             refetch();
           } catch (error) {
             console.error('Error updating prototipo units:', error);
@@ -147,13 +152,24 @@ const PrototipoDetail = () => {
       setGenerarUnidadesModalOpen(false);
       setCantidadUnidades(1);
       setPrefijo("");
-      refetch();
+      // Only refetch what's needed
       refetchUnidades();
+      
+      toast({
+        title: "Unidades generadas",
+        description: `Se han generado ${cantidadUnidades} unidades correctamente.`,
+      });
     } catch (error) {
       console.error('Error al generar unidades:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron generar las unidades. Intente de nuevo.",
+        variant: "destructive"
+      });
     }
   };
   
+  // Show skeleton loading state
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -174,6 +190,7 @@ const PrototipoDetail = () => {
     );
   }
   
+  // Show error state
   if (error || !prototipo) {
     return (
       <DashboardLayout>
@@ -326,41 +343,60 @@ const PrototipoDetail = () => {
                 <TabsTrigger value="vendidas">Vendidas</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="todas">
-                <UnidadTable 
-                  unidades={unidades} 
-                  isLoading={unidadesLoading} 
-                  onRefresh={refetchUnidades}
-                  prototipo={prototipo}
-                />
-              </TabsContent>
-              
-              <TabsContent value="disponibles">
-                <UnidadTable 
-                  unidades={unidades.filter(u => u.estado === 'disponible')} 
-                  isLoading={unidadesLoading} 
-                  onRefresh={refetchUnidades}
-                  prototipo={prototipo}
-                />
-              </TabsContent>
-              
-              <TabsContent value="apartadas">
-                <UnidadTable 
-                  unidades={unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso')} 
-                  isLoading={unidadesLoading} 
-                  onRefresh={refetchUnidades}
-                  prototipo={prototipo}
-                />
-              </TabsContent>
-              
-              <TabsContent value="vendidas">
-                <UnidadTable 
-                  unidades={unidades.filter(u => u.estado === 'vendido')} 
-                  isLoading={unidadesLoading} 
-                  onRefresh={refetchUnidades}
-                  prototipo={prototipo}
-                />
-              </TabsContent>
+              {unidadesError ? (
+                <Alert variant="destructive">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>
+                    No se pudieron cargar las unidades.
+                    <p className="mt-2">{(unidadesError as Error).message}</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-2"
+                      onClick={() => refetchUnidades()}
+                    >
+                      Intentar de nuevo
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  <TabsContent value="todas">
+                    <UnidadTable 
+                      unidades={unidades} 
+                      isLoading={unidadesLoading} 
+                      onRefresh={refetchUnidades}
+                      prototipo={prototipo}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="disponibles">
+                    <UnidadTable 
+                      unidades={unidades.filter(u => u.estado === 'disponible')} 
+                      isLoading={unidadesLoading} 
+                      onRefresh={refetchUnidades}
+                      prototipo={prototipo}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="apartadas">
+                    <UnidadTable 
+                      unidades={unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso')} 
+                      isLoading={unidadesLoading} 
+                      onRefresh={refetchUnidades}
+                      prototipo={prototipo}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="vendidas">
+                    <UnidadTable 
+                      unidades={unidades.filter(u => u.estado === 'vendido')} 
+                      isLoading={unidadesLoading} 
+                      onRefresh={refetchUnidades}
+                      prototipo={prototipo}
+                    />
+                  </TabsContent>
+                </>
+              )}
             </Tabs>
           </div>
         </div>
@@ -401,7 +437,12 @@ const PrototipoDetail = () => {
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setGenerarUnidadesModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleGenerarUnidades}>Generar</Button>
+            <Button 
+              onClick={handleGenerarUnidades}
+              disabled={createMultipleUnidades.isPending}
+            >
+              {createMultipleUnidades.isPending ? 'Generando...' : 'Generar'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

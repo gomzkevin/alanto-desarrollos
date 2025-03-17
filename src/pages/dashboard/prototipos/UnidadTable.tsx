@@ -11,7 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Unidad } from '@/hooks/useUnidades';
-import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, AlertTriangle } from 'lucide-react';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +33,7 @@ import {
 import useUnidades from '@/hooks/useUnidades';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { Tables } from '@/integrations/supabase/types';
+import { useToast } from '@/hooks/use-toast';
 
 type Prototipo = Tables<"prototipos">;
 
@@ -47,6 +48,7 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
   const [unidadToEdit, setUnidadToEdit] = useState<string | null>(null);
   const [unidadToDelete, setUnidadToDelete] = useState<string | null>(null);
   const [statusUpdateLoading, setStatusUpdateLoading] = useState<Record<string, boolean>>({});
+  const { toast } = useToast();
   
   const { deleteUnidad, updateUnidad } = useUnidades();
   
@@ -77,8 +79,17 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
       
       // Refrescar tabla
       onRefresh();
+      toast({
+        title: "Estado actualizado",
+        description: `La unidad ha sido actualizada a "${nuevoEstado}".`
+      });
     } catch (error) {
       console.error('Error al actualizar estado:', error);
+      toast({
+        title: "Error al actualizar",
+        description: "No se pudo actualizar el estado de la unidad.",
+        variant: "destructive"
+      });
     } finally {
       setStatusUpdateLoading(prev => ({ ...prev, [unidadId]: false }));
     }
@@ -91,8 +102,17 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
       await deleteUnidad.mutateAsync(unidadToDelete);
       setUnidadToDelete(null);
       onRefresh();
+      toast({
+        title: "Unidad eliminada",
+        description: "La unidad ha sido eliminada correctamente."
+      });
     } catch (error) {
       console.error('Error deleting unidad:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la unidad. Intente de nuevo.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -113,7 +133,7 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
   }
   
   return (
-    <div>
+    <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -225,7 +245,7 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Eliminar
+              {deleteUnidad.isPending ? "Eliminando..." : "Eliminar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
