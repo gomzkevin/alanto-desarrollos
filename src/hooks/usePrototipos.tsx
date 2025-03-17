@@ -96,16 +96,18 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
     queryKey: ['prototipos', limit, desarrolloId, withDesarrollo],
     queryFn: fetchPrototipos,
     retry: 1,
-    onError: (error: Error) => {
-      console.error('Error in prototipos query:', error);
-      if (onError) {
-        onError(error);
-      } else {
-        toast({
-          title: 'Error',
-          description: `No se pudieron cargar los prototipos: ${error.message}`,
-          variant: 'destructive',
-        });
+    meta: {
+      onError: (error: Error) => {
+        console.error('Error in prototipos query:', error);
+        if (onError) {
+          onError(error);
+        } else {
+          toast({
+            title: 'Error',
+            description: `No se pudieron cargar los prototipos: ${error.message}`,
+            variant: 'destructive',
+          });
+        }
       }
     }
   });

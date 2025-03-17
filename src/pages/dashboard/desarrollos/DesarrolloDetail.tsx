@@ -118,6 +118,15 @@ const DesarrolloDetailPage = () => {
   const { isAdmin } = useUserRole();
   const { countDesarrolloUnidadesByStatus } = useUnidades();
   
+  const handleErrorNotification = (error: Error) => {
+    console.error('Error loading desarrollo:', error);
+    toast({
+      title: 'Error',
+      description: `Error al cargar el desarrollo: ${error.message}`,
+      variant: 'destructive',
+    });
+  };
+  
   const { 
     data: desarrollo, 
     isLoading: isLoadingDesarrollo,
@@ -128,13 +137,8 @@ const DesarrolloDetailPage = () => {
     queryFn: () => fetchDesarrolloById(id as string),
     enabled: !!id,
     retry: 1,
-    onError: (error: Error) => {
-      console.error('Error loading desarrollo:', error);
-      toast({
-        title: 'Error',
-        description: `Error al cargar el desarrollo: ${error.message}`,
-        variant: 'destructive',
-      });
+    meta: {
+      onError: handleErrorNotification
     }
   });
   
