@@ -1,13 +1,25 @@
 import { useState } from 'react';
-import { Tables } from '@/integrations/supabase/types';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, FileText, BarChart3, Search } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
-import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Unidad } from '@/hooks/useUnidades';
+import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -16,26 +28,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
+import useUnidades from '@/hooks/useUnidades';
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
+import { Tables } from '@/integrations/supabase/types';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Form, FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { useForm } from 'react-hook-form';
-import useLeads from '@/hooks/useLeads';
-import useDesarrollos from '@/hooks/useDesarrollos';
-import usePrototipos from '@/hooks/usePrototipos';
-import { Calendar as CalendarIcon } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 
-type Unidad = Tables<"unidades">;
 type Prototipo = Tables<"prototipos">;
 
 interface UnidadTableProps {
@@ -45,733 +44,276 @@ interface UnidadTableProps {
   prototipo: Prototipo;
 }
 
-interface CotizacionFormValues {
-  isExistingClient: boolean;
-  leadId?: string;
-  // Campos para nuevo lead
-  nombre?: string;
-  email?: string;
-  telefono?: string;
-  // Campos para cotización
-  desarrollo_id: string;
-  prototipo_id: string;
-  monto_anticipo: number;
-  numero_pagos: number;
-  usar_finiquito: boolean;
-  monto_finiquito?: number;
-  notas?: string;
-}
-
-export function UnidadTable({ unidades, isLoading, onRefresh, prototipo }: UnidadTableProps) {
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const [selectedUnidad, setSelectedUnidad] = useState<string | null>(null);
-  const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [openCotizacionDialog, setOpenCotizacionDialog] = useState(false);
-  const [isExistingClient, setIsExistingClient] = useState<boolean>(false);
-  const [searchLeadTerm, setSearchLeadTerm] = useState<string>('');
-  const [filteredLeads, setFilteredLeads] = useState<any[]>([]);
-  const [showLeadsDropdown, setShowLeadsDropdown] = useState<boolean>(false);
-  const [selectedLead, setSelectedLead] = useState<any | null>(null);
+export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: UnidadTableProps) => {
+  const [unidadToEdit, setUnidadToEdit] = useState<string | null>(null);
+  const [unidadToDelete, setUnidadToDelete] = useState<string | null>(null);
+  const [statusUpdateLoading, setStatusUpdateLoading] = useState<Record<string, boolean>>({});
   
-  // Form for creating a quotation
-  const form = useForm<CotizacionFormValues>({
-    defaultValues: {
-      isExistingClient: false,
-      desarrollo_id: prototipo.desarrollo_id || '',
-      prototipo_id: prototipo.id || '',
-      monto_anticipo: 0,
-      numero_pagos: 6,
-      usar_finiquito: false,
-    }
-  });
+  const { deleteUnidad, countUnidadesByStatus } = useUnidades();
+  const queryClient = useQueryClient();
   
-  const { leads } = useLeads({ limit: 100 });
-  const { desarrollos } = useDesarrollos();
-  const { prototipos } = usePrototipos({ 
-    desarrolloId: prototipo.desarrollo_id 
-  });
-
-  const [startDate, setStartDate] = useState<Date>(new Date());
-  const [finiquitoDate, setFiniquitoDate] = useState<Date | undefined>(undefined);
-
-  const getEstadoBadge = (estado: string) => {
-    switch (estado) {
+  const getStatusBadge = (status: string) => {
+    switch (status) {
       case 'disponible':
-        return <Badge className="bg-green-100 text-green-800">Disponible</Badge>;
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Disponible</Badge>;
       case 'apartado':
-        return <Badge className="bg-yellow-100 text-yellow-800">Apartado</Badge>;
+        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200">Apartado</Badge>;
       case 'en_proceso':
-        return <Badge className="bg-blue-100 text-blue-800">En proceso</Badge>;
-      case 'en_pagos':
-        return <Badge className="bg-purple-100 text-purple-800">En pagos</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">En Proceso</Badge>;
       case 'vendido':
-        return <Badge className="bg-gray-100 text-gray-800">Vendido</Badge>;
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">Vendido</Badge>;
       default:
-        return <Badge>{estado}</Badge>;
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+  
+  const handleUpdateStatus = async (unidadId: string, nuevoEstado: string) => {
+    setStatusUpdateLoading(prev => ({ ...prev, [unidadId]: true }));
+    
+    try {
+      // Actualizar el estado de la unidad
+      const { error } = await supabase
+        .from('unidades')
+        .update({ estado: nuevoEstado })
+        .eq('id', unidadId);
+        
+      if (error) throw error;
+      
+      // Actualizar los contadores del prototipo
+      if (prototipo.id) {
+        // Get the new counts
+        const counts = await countUnidadesByStatus(prototipo.id);
+        
+        // Update the prototipo
+        await supabase
+          .from('prototipos')
+          .update({
+            unidades_disponibles: counts.disponibles,
+            unidades_vendidas: counts.vendidas,
+            unidades_con_anticipo: counts.con_anticipo
+          })
+          .eq('id', prototipo.id);
+          
+        // Also update the desarrollo counts
+        if (prototipo.desarrollo_id) {
+          await updateDesarrolloUnidades(prototipo.desarrollo_id);
+        }
+      }
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['unidades'] });
+      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
+      queryClient.invalidateQueries({ queryKey: ['prototipo', prototipo.id] });
+      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
+      
+      // Refresh table data
+      onRefresh();
+    } catch (error) {
+      console.error('Error al actualizar estado:', error);
+    } finally {
+      setStatusUpdateLoading(prev => ({ ...prev, [unidadId]: false }));
     }
   };
   
   const handleDelete = async () => {
-    if (!selectedUnidad) return;
+    if (!unidadToDelete) return;
     
     try {
-      const { error } = await supabase
-        .from('unidades')
-        .delete()
-        .eq('id', selectedUnidad);
+      await deleteUnidad.mutateAsync(unidadToDelete);
       
-      if (error) throw error;
-      
-      toast({
-        title: 'Unidad eliminada',
-        description: 'La unidad ha sido eliminada correctamente',
-      });
-      
-      // Actualizar unidades disponibles en el prototipo
-      const unidad = unidades.find(u => u.id === selectedUnidad);
-      if (unidad && unidad.estado === 'disponible' && prototipo.id) {
+      // Additionally, update prototipo counts
+      if (prototipo.id) {
+        // Get the new counts
+        const counts = await countUnidadesByStatus(prototipo.id);
+        
+        // Update the prototipo
         await supabase
           .from('prototipos')
-          .update({ 
-            unidades_disponibles: (prototipo.unidades_disponibles || 0) - 1 
+          .update({
+            unidades_disponibles: counts.disponibles,
+            unidades_vendidas: counts.vendidas,
+            unidades_con_anticipo: counts.con_anticipo
           })
           .eq('id', prototipo.id);
-      }
-      
-      onRefresh();
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: `Error al eliminar la unidad: ${error.message}`,
-        variant: 'destructive',
-      });
-    } finally {
-      setOpenDeleteDialog(false);
-      setSelectedUnidad(null);
-    }
-  };
-  
-  const handleCotizacion = (unidadId: string) => {
-    setSelectedUnidad(unidadId);
-    setOpenCotizacionDialog(true);
-    form.reset({
-      isExistingClient: false,
-      desarrollo_id: prototipo.desarrollo_id || '',
-      prototipo_id: prototipo.id || '',
-      monto_anticipo: 0,
-      numero_pagos: 6,
-      usar_finiquito: false,
-    });
-  };
-  
-  const handleProyeccion = (unidadId: string) => {
-    // Navigate to projection page with unit ID
-    navigate(`/dashboard/proyecciones?unidad=${unidadId}`);
-  };
-
-  const handleToggleExistingClient = (checked: boolean) => {
-    setIsExistingClient(checked);
-    form.setValue('isExistingClient', checked);
-    // Clear related fields when switching
-    if (checked) {
-      form.setValue('nombre', undefined);
-      form.setValue('email', undefined);
-      form.setValue('telefono', undefined);
-    } else {
-      form.setValue('leadId', undefined);
-      setSelectedLead(null);
-      setSearchLeadTerm('');
-    }
-  };
-
-  const handleSelectLead = (lead: any) => {
-    setSelectedLead(lead);
-    form.setValue('leadId', lead.id);
-    setShowLeadsDropdown(false);
-    setSearchLeadTerm(lead.nombre);
-  };
-
-  const formatDate = (date: Date | undefined): string => {
-    if (!date) return "";
-    return format(date, "PPP", { locale: es });
-  };
-
-  const handleSubmitCotizacion = async (values: CotizacionFormValues) => {
-    try {
-      let leadId = values.leadId;
-      
-      // If it's a new client, create the lead first
-      if (!values.isExistingClient && values.nombre) {
-        const { data: newLead, error: leadError } = await supabase
-          .from('leads')
-          .insert({
-            nombre: values.nombre,
-            email: values.email,
-            telefono: values.telefono
-          })
-          .select()
-          .single();
-      
-        if (leadError) {
-          toast({
-            title: 'Error',
-            description: `No se pudo crear el cliente: ${leadError.message}`,
-            variant: 'destructive',
-          });
-          return;
+          
+        // Also update the desarrollo counts
+        if (prototipo.desarrollo_id) {
+          await updateDesarrolloUnidades(prototipo.desarrollo_id);
         }
+      }
       
-        leadId = newLead.id;
-      }
-    
-      // Verify that we have a leadId
-      if (!leadId) {
-        toast({
-          title: 'Error',
-          description: 'No se ha seleccionado o creado un cliente',
-          variant: 'destructive',
-        });
-        return;
-      }
-    
-      // Create the quotation
-      const { data: cotizacion, error: cotizacionError } = await supabase
-        .from('cotizaciones')
-        .insert({
-          lead_id: leadId,
-          desarrollo_id: values.desarrollo_id,
-          prototipo_id: values.prototipo_id,
-          monto_anticipo: values.monto_anticipo,
-          numero_pagos: values.numero_pagos,
-          usar_finiquito: values.usar_finiquito,
-          monto_finiquito: values.monto_finiquito,
-          notas: values.notas,
-          fecha_inicio_pagos: startDate.toISOString(), // Add the start date
-          fecha_finiquito: values.usar_finiquito && finiquitoDate ? finiquitoDate.toISOString() : null // Add finiquito date if applicable
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
+      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
+      
+      setUnidadToDelete(null);
+    } catch (error) {
+      console.error('Error deleting unidad:', error);
+    }
+  };
+  
+  // Update desarrollo's unit counts based on its prototipos
+  const updateDesarrolloUnidades = async (desarrolloId: string) => {
+    try {
+      // Get all prototipos for this desarrollo
+      const { data: prototipos } = await supabase
+        .from('prototipos')
+        .select('id, total_unidades, unidades_disponibles')
+        .eq('desarrollo_id', desarrolloId);
+        
+      if (!prototipos) return;
+      
+      // Calculate totals
+      const totalUnidades = prototipos.reduce((sum, p) => sum + (p.total_unidades || 0), 0);
+      const unidadesDisponibles = prototipos.reduce((sum, p) => sum + (p.unidades_disponibles || 0), 0);
+      
+      // Update the desarrollo
+      await supabase
+        .from('desarrollos')
+        .update({
+          total_unidades: totalUnidades,
+          unidades_disponibles: unidadesDisponibles
         })
-        .select();
-    
-      if (cotizacionError) {
-        toast({
-          title: 'Error',
-          description: `No se pudo crear la cotización: ${cotizacionError.message}`,
-          variant: 'destructive',
-        });
-        return;
-      }
-    
-      toast({
-        title: 'Éxito',
-        description: 'Cotización creada correctamente',
-      });
-    
-      setOpenCotizacionDialog(false);
-    
-    } catch (error: any) {
-      console.error('Error al crear cotización:', error);
-      toast({
-        title: 'Error',
-        description: 'Ocurrió un error al procesar la solicitud',
-        variant: 'destructive',
-      });
+        .eq('id', desarrolloId);
+    } catch (error) {
+      console.error('Error updating desarrollo units:', error);
     }
   };
   
   if (isLoading) {
     return (
-      <div className="w-full py-10">
-        <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-        </div>
+      <div className="w-full py-10 text-center">
+        <p className="text-slate-500">Cargando unidades...</p>
       </div>
     );
   }
   
   if (unidades.length === 0) {
     return (
-      <div className="w-full rounded-md border border-dashed p-10 text-center">
-        <h3 className="text-lg font-medium">No hay unidades</h3>
-        <p className="text-sm text-gray-500 mt-1">
-          No hay unidades registradas en este prototipo con los filtros seleccionados.
-        </p>
+      <div className="w-full py-10 text-center">
+        <p className="text-slate-500">No hay unidades disponibles.</p>
       </div>
     );
   }
   
   return (
-    <>
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Número</TableHead>
-              <TableHead>Nivel</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>Precio</TableHead>
-              <TableHead>Comprador</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
+    <div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Número</TableHead>
+            <TableHead>Nivel</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead>Cliente</TableHead>
+            <TableHead>Precio</TableHead>
+            <TableHead>Fecha Venta</TableHead>
+            <TableHead className="text-right">Acciones</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {unidades.map((unidad) => (
+            <TableRow key={unidad.id}>
+              <TableCell className="font-medium">{unidad.numero}</TableCell>
+              <TableCell>{unidad.nivel || '-'}</TableCell>
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 p-0">
+                      {getStatusBadge(unidad.estado)}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuLabel>Cambiar estado</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => handleUpdateStatus(unidad.id, 'disponible')}
+                      disabled={unidad.estado === 'disponible' || statusUpdateLoading[unidad.id]}
+                    >
+                      Disponible
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleUpdateStatus(unidad.id, 'apartado')}
+                      disabled={unidad.estado === 'apartado' || statusUpdateLoading[unidad.id]}
+                    >
+                      Apartado
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleUpdateStatus(unidad.id, 'en_proceso')}
+                      disabled={unidad.estado === 'en_proceso' || statusUpdateLoading[unidad.id]}
+                    >
+                      En Proceso
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleUpdateStatus(unidad.id, 'vendido')}
+                      disabled={unidad.estado === 'vendido' || statusUpdateLoading[unidad.id]}
+                    >
+                      Vendido
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+              <TableCell>{unidad.comprador_nombre || '-'}</TableCell>
+              <TableCell>{unidad.precio_venta ? `$${unidad.precio_venta.toLocaleString()}` : '-'}</TableCell>
+              <TableCell>{unidad.fecha_venta || '-'}</TableCell>
+              <TableCell className="text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Abrir menú</span>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setUnidadToEdit(unidad.id)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setUnidadToDelete(unidad.id)}
+                      className="text-red-600"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Eliminar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {unidades.map((unidad) => (
-              <TableRow key={unidad.id}>
-                <TableCell className="font-medium">{unidad.numero}</TableCell>
-                <TableCell>{unidad.nivel || '-'}</TableCell>
-                <TableCell>{getEstadoBadge(unidad.estado)}</TableCell>
-                <TableCell>{unidad.precio_venta ? formatCurrency(unidad.precio_venta) : '-'}</TableCell>
-                <TableCell>{unidad.comprador_nombre || '-'}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedUnidad(unidad.id);
-                        setOpenEditDialog(true);
-                      }}
-                      type="button"
-                    >
-                      <Pencil className="h-4 w-4" />
-                      <span className="sr-only">Editar</span>
-                    </Button>
-                    
-                    {unidad.estado === 'disponible' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleCotizacion(unidad.id)}
-                        className="flex items-center gap-1"
-                        type="button"
-                      >
-                        <FileText className="h-4 w-4" />
-                        <span className="sr-only">Cotizar</span>
-                      </Button>
-                    )}
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleProyeccion(unidad.id)}
-                      type="button"
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      <span className="sr-only">Proyección</span>
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-red-500 hover:text-red-700"
-                      onClick={() => {
-                        setSelectedUnidad(unidad.id);
-                        setOpenDeleteDialog(true);
-                      }}
-                      type="button"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Eliminar</span>
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+          ))}
+        </TableBody>
+      </Table>
       
-      {/* Diálogo para editar una unidad */}
+      {/* Diálogo para editar unidad */}
       <AdminResourceDialog 
         resourceType="unidades"
-        resourceId={selectedUnidad || undefined}
-        open={openEditDialog}
-        onClose={() => {
-          setOpenEditDialog(false);
-          setSelectedUnidad(null);
+        resourceId={unidadToEdit || undefined}
+        open={!!unidadToEdit}
+        onClose={() => setUnidadToEdit(null)}
+        onSuccess={() => {
+          setUnidadToEdit(null);
+          onRefresh();
         }}
-        onSuccess={onRefresh}
       />
       
-      {/* Diálogo para confirmar eliminación */}
-      <AlertDialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
+      {/* Diálogo de confirmación para eliminar */}
+      <AlertDialog open={!!unidadToDelete} onOpenChange={(open) => !open && setUnidadToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente esta unidad
-              del sistema.
+              Esta acción no se puede deshacer. Esto eliminará permanentemente la unidad.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              className="bg-red-500 hover:bg-red-600"
-              onClick={handleDelete}
-            >
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Diálogo para crear cotización - Reutilizando el mismo formato que en la sección de cotizaciones */}
-      <Dialog open={openCotizacionDialog} onOpenChange={setOpenCotizacionDialog}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Nueva Cotización</DialogTitle>
-            <DialogDescription>
-              Ingresa los datos para la nueva cotización
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmitCotizacion)} className="space-y-6">
-              {/* Selector de tipo de cliente */}
-              <div className="flex items-center space-x-4 py-2">
-                <FormLabel htmlFor="isExistingClient" className="flex-1">Cliente existente</FormLabel>
-                <Switch 
-                  id="isExistingClient" 
-                  checked={isExistingClient}
-                  onCheckedChange={handleToggleExistingClient}
-                />
-              </div>
-              
-              {/* Campos según tipo de cliente */}
-              {isExistingClient ? (
-                <div className="relative">
-                  <FormLabel htmlFor="searchLead">Buscar cliente</FormLabel>
-                  <div className="relative">
-                    <Input
-                      id="searchLead"
-                      placeholder="Buscar por nombre, email o teléfono"
-                      value={searchLeadTerm}
-                      onChange={(e) => {
-                        setSearchLeadTerm(e.target.value);
-                        setShowLeadsDropdown(true);
-                        
-                        // Filter leads based on search term
-                        if (e.target.value.trim() !== '') {
-                          const filtered = leads.filter(lead => 
-                            lead.nombre.toLowerCase().includes(e.target.value.toLowerCase()) ||
-                            (lead.email && lead.email.toLowerCase().includes(e.target.value.toLowerCase())) ||
-                            (lead.telefono && lead.telefono.toLowerCase().includes(e.target.value.toLowerCase()))
-                          );
-                          setFilteredLeads(filtered);
-                        } else {
-                          setFilteredLeads([]);
-                        }
-                      }}
-                      className="w-full pr-10"
-                    />
-                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  </div>
-                  
-                  {showLeadsDropdown && filteredLeads.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto">
-                      {filteredLeads.map((lead) => (
-                        <div 
-                          key={lead.id}
-                          className="p-2 hover:bg-gray-100 cursor-pointer"
-                          onClick={() => handleSelectLead(lead)}
-                        >
-                          <div className="font-medium">{lead.nombre}</div>
-                          <div className="text-sm text-gray-500">
-                            {lead.email || lead.telefono || "Sin datos de contacto"}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {selectedLead && (
-                    <div className="mt-2 p-2 border rounded-md bg-gray-50">
-                      <div className="font-medium">{selectedLead.nombre}</div>
-                      <div className="text-sm">
-                        {selectedLead.email && <div>Email: {selectedLead.email}</div>}
-                        {selectedLead.telefono && <div>Teléfono: {selectedLead.telefono}</div>}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="nombre"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nombre del cliente</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Nombre completo" />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="correo@ejemplo.com" type="email" />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="telefono"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Teléfono</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="+52 55 1234 5678" />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {/* Campos para la cotización */}
-              <div className="border-t pt-4 mt-4">
-                <h3 className="text-lg font-medium mb-4">Datos de la cotización</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="desarrollo_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Desarrollo</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          disabled={true} // Disabled because it's pre-filled from the prototype
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar desarrollo" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {desarrollos.map((desarrollo) => (
-                              <SelectItem key={desarrollo.id} value={desarrollo.id}>
-                                {desarrollo.nombre}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="prototipo_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Prototipo</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          disabled={true} // Disabled because it's pre-filled from the prototype
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar prototipo" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {prototipos.map((proto) => (
-                              <SelectItem key={proto.id} value={proto.id}>
-                                {proto.nombre}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <FormField
-                    control={form.control}
-                    name="monto_anticipo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Monto de anticipo</FormLabel>
-                        <FormControl>
-                          <Input 
-                            {...field} 
-                            type="number" 
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="numero_pagos"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Número de pagos</FormLabel>
-                        <FormControl>
-                          <Input 
-                            {...field} 
-                            type="number" 
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="mt-4">
-                  <FormItem>
-                    <FormLabel>Fecha de inicio de pagos</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !startDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {startDate ? formatDate(startDate) : "Seleccionar fecha"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={startDate}
-                          onSelect={(date) => date && setStartDate(date)}
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </FormItem>
-                </div>
-
-                <div className="mt-4">
-                  <FormField
-                    control={form.control}
-                    name="usar_finiquito"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <Switch 
-                            checked={field.value} 
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormLabel>Usar finiquito</FormLabel>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {form.watch('usar_finiquito') && (
-                  <div className="space-y-4 mt-4">
-                    <FormField
-                      control={form.control}
-                      name="monto_finiquito"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Monto de finiquito</FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field} 
-                              type="number" 
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormItem>
-                      <FormLabel>Fecha de finiquito</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !finiquitoDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {finiquitoDate ? formatDate(finiquitoDate) : "Seleccionar fecha"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={finiquitoDate}
-                            onSelect={(date) => date && setFiniquitoDate(date)}
-                            disabled={(date) => date < new Date()}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </FormItem>
-                  </div>
-                )}
-                
-                <div className="mt-4">
-                  <FormField
-                    control={form.control}
-                    name="notas"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Notas</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setOpenCotizacionDialog(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  type="submit"
-                  disabled={
-                    (!isExistingClient && !form.watch('nombre')) || 
-                    (isExistingClient && !selectedLead) ||
-                    !form.watch('desarrollo_id') ||
-                    !form.watch('prototipo_id')
-                  }
-                >
-                  Guardar cotización
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   );
-}
+};

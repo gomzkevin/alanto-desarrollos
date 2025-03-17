@@ -28,6 +28,35 @@ const fetchPrototipoById = async (id: string) => {
     .single();
   
   if (error) throw error;
+  
+  // Get the real unit counts
+  const { data: unidades } = await supabase
+    .from('unidades')
+    .select('estado')
+    .eq('prototipo_id', id);
+  
+  if (unidades) {
+    const vendidas = unidades.filter(u => u.estado === 'vendido').length;
+    const conAnticipo = unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso').length;
+    const disponibles = unidades.filter(u => u.estado === 'disponible').length;
+    
+    data.unidades_vendidas = vendidas;
+    data.unidades_con_anticipo = conAnticipo;
+    data.unidades_disponibles = disponibles;
+    
+    // Update the prototipo with accurate counts if they differ
+    if (data.unidades_disponibles !== disponibles) {
+      await supabase
+        .from('prototipos')
+        .update({
+          unidades_disponibles: disponibles,
+          unidades_vendidas: vendidas,
+          unidades_con_anticipo: conAnticipo
+        })
+        .eq('id', id);
+    }
+  }
+  
   return data;
 };
 
@@ -57,7 +86,8 @@ const PrototipoDetail = () => {
     unidades, 
     isLoading: unidadesLoading, 
     refetch: refetchUnidades,
-    createMultipleUnidades
+    createMultipleUnidades,
+    countUnidadesByStatus
   } = useUnidades({ prototipo_id: id });
   
   const handleBack = () => {
@@ -88,16 +118,57 @@ const PrototipoDetail = () => {
       setCantidadUnidades(1);
       setPrefijo("");
       
-      // También necesitamos actualizar el contador de unidades disponibles
+      // Get the updated unit counts
       if (prototipo) {
-        const updatedDisponibles = (prototipo.unidades_disponibles || 0) + cantidadUnidades;
+        const counts = await countUnidadesByStatus(id);
+        
+        // Update the prototipo with the new counts
         await supabase.from('prototipos').update({
-          unidades_disponibles: updatedDisponibles
+          unidades_disponibles: counts.disponibles,
+          unidades_vendidas: counts.vendidas,
+          unidades_con_anticipo: counts.con_anticipo
         }).eq('id', id);
+        
+        // Also update desarrollo counts
+        if (prototipo.desarrollo_id) {
+          await updateDesarrolloUnidades(prototipo.desarrollo_id);
+        }
+        
         refetch();
       }
     } catch (error) {
       console.error('Error al generar unidades:', error);
+    }
+  };
+  
+  // Update desarrollo's unit counts based on its prototipos
+  const updateDesarrolloUnidades = async (desarrolloId: string) => {
+    try {
+      // Get all prototipos for this desarrollo
+      const { data: prototipos } = await supabase
+        .from('prototipos')
+        .select('id, total_unidades, unidades_disponibles')
+        .eq('desarrollo_id', desarrolloId);
+        
+      if (!prototipos) return;
+      
+      // Calculate totals
+      const totalUnidades = prototipos.reduce((sum, p) => sum + (p.total_unidades || 0), 0);
+      const unidadesDisponibles = prototipos.reduce((sum, p) => sum + (p.unidades_disponibles || 0), 0);
+      
+      // Update the desarrollo
+      await supabase
+        .from('desarrollos')
+        .update({
+          total_unidades: totalUnidades,
+          unidades_disponibles: unidadesDisponibles
+        })
+        .eq('id', desarrolloId);
+        
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
+    } catch (error) {
+      console.error('Error updating desarrollo units:', error);
     }
   };
   
@@ -237,7 +308,10 @@ const PrototipoDetail = () => {
                   Unidades
                 </h2>
                 <p className="text-slate-600">
-                  {unidades.length} de {prototipo.total_unidades} unidades registradas
+                  {unidades.length} de {prototipo.total_unidades} unidades registradas 
+                  ({prototipo.unidades_disponibles || 0} disponibles, 
+                  {prototipo.unidades_vendidas || 0} vendidas, 
+                  {prototipo.unidades_con_anticipo || 0} con anticipo)
                 </p>
               </div>
               

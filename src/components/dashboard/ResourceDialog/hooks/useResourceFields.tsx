@@ -1,125 +1,424 @@
-
 import { useState, useEffect } from 'react';
-import { FieldDefinition, ResourceType, FieldType } from '../types';
-import useLeads from '@/hooks/useLeads';
+import { FieldDefinition, ResourceType } from '../types';
 
-export function useResourceFields(resourceType: ResourceType) {
+export const useResourceFields = (
+  resourceType: ResourceType,
+  resourceId?: string
+) => {
   const [fields, setFields] = useState<FieldDefinition[]>([]);
-  const { statusOptions, originOptions } = useLeads({});
 
   useEffect(() => {
-    const tiposPropiedad = [
-      { value: 'apartamento', label: 'Apartamento' },
-      { value: 'casa', label: 'Casa' },
-      { value: 'villa', label: 'Villa' },
-      { value: 'terreno', label: 'Terreno' },
-      { value: 'local', label: 'Local comercial' },
-      { value: 'oficina', label: 'Oficina' },
-      { value: 'otro', label: 'Otro' },
-    ];
+    const getFields = () => {
+      let resourceFields: FieldDefinition[] = [];
 
-    let fieldDefinitions: FieldDefinition[] = [];
+      switch (resourceType) {
+        case 'desarrollos':
+          resourceFields = [
+            {
+              name: 'nombre',
+              label: 'Nombre',
+              type: 'text',
+              tab: 'general',
+              required: true
+            },
+            {
+              name: 'ubicacion',
+              label: 'Ubicación',
+              type: 'text',
+              tab: 'general',
+              required: true
+            },
+            {
+              name: 'total_unidades',
+              label: 'Total Unidades',
+              type: 'number',
+              tab: 'general',
+              required: true
+            },
+            {
+              name: 'unidades_disponibles',
+              label: 'Unidades Disponibles',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'avance_porcentaje',
+              label: 'Avance (%)',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'descripcion',
+              label: 'Descripción',
+              type: 'textarea',
+              tab: 'general'
+            },
+            {
+              name: 'imagen_url',
+              label: 'Imagen URL',
+              type: 'image-upload',
+              tab: 'general',
+              bucket: 'desarrollo-images',
+              folder: 'desarrollos'
+            },
+            {
+              name: 'moneda',
+              label: 'Moneda',
+              type: 'select',
+              tab: 'general',
+              options: [
+                { label: 'MXN', value: 'MXN' },
+                { label: 'USD', value: 'USD' }
+              ],
+              required: true
+            },
+            {
+              name: 'comision_operador',
+              label: 'Comisión del Operador (%)',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'mantenimiento_valor',
+              label: 'Valor de Mantenimiento',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'es_mantenimiento_porcentaje',
+              label: '¿Es porcentaje?',
+              type: 'switch',
+              tab: 'general'
+            },
+            {
+              name: 'gastos_fijos',
+              label: 'Gastos Fijos',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'es_gastos_fijos_porcentaje',
+              label: '¿Gastos Fijos en Porcentaje?',
+              type: 'switch',
+              tab: 'general'
+            },
+            {
+              name: 'gastos_variables',
+              label: 'Gastos Variables',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'es_gastos_variables_porcentaje',
+              label: '¿Gastos Variables en Porcentaje?',
+              type: 'switch',
+              tab: 'general'
+            },
+            {
+              name: 'impuestos',
+              label: 'Impuestos (%)',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'es_impuestos_porcentaje',
+              label: '¿Impuestos en Porcentaje?',
+              type: 'switch',
+              tab: 'general'
+            },
+            {
+              name: 'adr_base',
+              label: 'ADR Base',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'ocupacion_anual',
+              label: 'Ocupación Anual (%)',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'amenidades',
+              label: 'Amenidades',
+              type: 'amenities',
+              tab: 'amenities'
+            }
+          ];
+          break;
 
-    switch (resourceType) {
-      case 'desarrollos':
-        fieldDefinitions = [
-          { name: 'nombre', label: 'Nombre', type: 'text' as FieldType, tab: 'general' },
-          { name: 'ubicacion', label: 'Ubicación', type: 'text' as FieldType, tab: 'general' },
-          { name: 'total_unidades', label: 'Total Unidades', type: 'number' as FieldType, tab: 'general' },
-          { name: 'unidades_disponibles', label: 'Unidades Disponibles', type: 'number' as FieldType, tab: 'general' },
-          { name: 'avance_porcentaje', label: 'Avance (%)', type: 'number' as FieldType, tab: 'general' },
-          { name: 'fecha_inicio', label: 'Fecha Inicio', type: 'date' as FieldType, tab: 'general' },
-          { name: 'fecha_entrega', label: 'Fecha Entrega', type: 'date' as FieldType, tab: 'general' },
-          { name: 'descripcion', label: 'Descripción', type: 'textarea' as FieldType, tab: 'general' },
-          { name: 'imagen_url', label: 'Imagen URL', type: 'image-upload' as FieldType, tab: 'media', bucket: 'prototipo-images', folder: 'desarrollos' },
-          { name: 'amenidades', label: 'Amenidades', type: 'amenities' as FieldType, tab: 'amenidades' },
-          { name: 'moneda', label: 'Moneda', type: 'select' as FieldType, options: [
-              { value: 'MXN', label: 'Peso Mexicano (MXN)' },
-              { value: 'USD', label: 'Dólar Estadounidense (USD)' }
-            ], tab: 'financiero' 
-          },
-          { name: 'comision_operador', label: 'Comisión Operador (%)', type: 'number' as FieldType, tab: 'financiero' },
-          { name: 'mantenimiento_valor', label: 'Mantenimiento', type: 'number' as FieldType, tab: 'financiero' },
-          { name: 'es_mantenimiento_porcentaje', label: 'Mantenimiento es porcentaje', type: 'switch' as FieldType, tab: 'financiero' },
-          { name: 'gastos_fijos', label: 'Gastos Fijos', type: 'number' as FieldType, tab: 'financiero' },
-          { name: 'es_gastos_fijos_porcentaje', label: 'Gastos Fijos es porcentaje', type: 'switch' as FieldType, tab: 'financiero' },
-          { name: 'gastos_variables', label: 'Gastos Variables (%)', type: 'number' as FieldType, tab: 'financiero' },
-          { name: 'es_gastos_variables_porcentaje', label: 'Gastos Variables es porcentaje', type: 'switch' as FieldType, tab: 'financiero' },
-          { name: 'impuestos', label: 'Impuestos (%)', type: 'number' as FieldType, tab: 'financiero' },
-          { name: 'es_impuestos_porcentaje', label: 'Impuestos es porcentaje', type: 'switch' as FieldType, tab: 'financiero' },
-          { name: 'adr_base', label: 'ADR Base', type: 'number' as FieldType, tab: 'financiero' },
-          { name: 'ocupacion_anual', label: 'Ocupación Anual (%)', type: 'number' as FieldType, tab: 'financiero' },
-        ];
-        break;
+        case 'prototipos':
+          resourceFields = [
+            {
+              name: 'nombre',
+              label: 'Nombre',
+              type: 'text',
+              tab: 'general',
+              required: true
+            },
+            {
+              name: 'tipo',
+              label: 'Tipo',
+              type: 'select',
+              tab: 'general',
+              options: [
+                { label: 'Apartamento', value: 'apartamento' },
+                { label: 'Casa', value: 'casa' },
+                { label: 'Villa', value: 'villa' },
+                { label: 'Lote', value: 'lote' },
+                { label: 'Comercial', value: 'comercial' }
+              ],
+              required: true
+            },
+            {
+              name: 'precio',
+              label: 'Precio',
+              type: 'number',
+              tab: 'general',
+              required: true
+            },
+            {
+              name: 'superficie',
+              label: 'Superficie (m²)',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'habitaciones',
+              label: 'Habitaciones',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'baños',
+              label: 'Baños',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'estacionamientos',
+              label: 'Estacionamientos',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'total_unidades',
+              label: 'Total Unidades',
+              type: 'number',
+              tab: 'general',
+              required: true
+            },
+            {
+              name: 'unidades_vendidas',
+              label: 'Unidades Vendidas',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'unidades_con_anticipo',
+              label: 'Unidades con Anticipo',
+              type: 'number',
+              tab: 'general'
+            },
+            {
+              name: 'descripcion',
+              label: 'Descripción',
+              type: 'textarea',
+              tab: 'general'
+            },
+            {
+              name: 'imagen_url',
+              label: 'Imagen URL',
+              type: 'image-upload',
+              tab: 'general',
+              bucket: 'prototipo-images',
+              folder: 'prototipos'
+            }
+          ];
+          break;
 
-      case 'prototipos':
-        fieldDefinitions = [
-          { name: 'nombre', label: 'Nombre', type: 'text' as FieldType, tab: 'general' },
-          { name: 'tipo', label: 'Tipo', type: 'select' as FieldType, options: tiposPropiedad, tab: 'general' },
-          { name: 'precio', label: 'Precio', type: 'number' as FieldType, tab: 'general' },
-          { name: 'superficie', label: 'Superficie (m²)', type: 'number' as FieldType, tab: 'general' },
-          { name: 'habitaciones', label: 'Habitaciones', type: 'number' as FieldType, tab: 'detalles' },
-          { name: 'baños', label: 'Baños', type: 'number' as FieldType, tab: 'detalles' },
-          { name: 'estacionamientos', label: 'Estacionamientos', type: 'number' as FieldType, tab: 'detalles' },
-          { name: 'total_unidades', label: 'Total Unidades', type: 'number' as FieldType, tab: 'detalles' },
-          { name: 'unidades_vendidas', label: 'Unidades Vendidas', type: 'number' as FieldType, tab: 'detalles' },
-          { name: 'unidades_con_anticipo', label: 'Unidades con Anticipo', type: 'number' as FieldType, tab: 'detalles' },
-          { name: 'descripcion', label: 'Descripción', type: 'textarea' as FieldType, tab: 'detalles' },
-          { name: 'imagen_url', label: 'Imagen', type: 'image-upload' as FieldType, tab: 'media', bucket: 'prototipo-images', folder: 'prototipos' },
-        ];
-        break;
+        case 'leads':
+          resourceFields = [
+            {
+              name: 'nombre',
+              label: 'Nombre',
+              type: 'text',
+              tab: 'general',
+              required: true
+            },
+            {
+              name: 'email',
+              label: 'Email',
+              type: 'email',
+              tab: 'general',
+              required: true
+            },
+            {
+              name: 'telefono',
+              label: 'Teléfono',
+              type: 'text',
+              tab: 'general'
+            },
+            {
+              name: 'interes_en',
+              label: 'Interesado en',
+              type: 'text',
+              tab: 'general'
+            },
+            {
+              name: 'origen',
+              label: 'Origen',
+              type: 'select',
+              tab: 'general',
+              options: [
+                { label: 'Web', value: 'web' },
+                { label: 'Referido', value: 'referido' },
+                { label: 'Publicidad', value: 'publicidad' }
+              ],
+              required: true
+            },
+            {
+              name: 'estado',
+              label: 'Estado',
+              type: 'select',
+              tab: 'general',
+              options: [
+                { label: 'Nuevo', value: 'nuevo' },
+                { label: 'Seguimiento', value: 'seguimiento' },
+                { label: 'Cotización', value: 'cotizacion' },
+                { label: 'Convertido', value: 'convertido' }
+              ],
+              required: true
+            },
+            {
+              name: 'subestado',
+              label: 'Subestado',
+              type: 'text',
+              tab: 'general'
+            },
+            {
+              name: 'agente',
+              label: 'Agente',
+              type: 'text',
+              tab: 'general'
+            },
+            {
+              name: 'notas',
+              label: 'Notas',
+              type: 'textarea',
+              tab: 'general'
+            },
+            {
+              name: 'ultimo_contacto',
+              label: 'Último Contacto',
+              type: 'date',
+              tab: 'general'
+            }
+          ];
+          break;
 
-      case 'leads':
-        fieldDefinitions = [
-          { name: 'nombre', label: 'Nombre', type: 'text' as FieldType, tab: 'general' },
-          { name: 'email', label: 'Email', type: 'email' as FieldType, tab: 'general' },
-          { name: 'telefono', label: 'Teléfono', type: 'text' as FieldType, tab: 'general' },
-          { name: 'agente', label: 'Agente', type: 'text' as FieldType, tab: 'general' },
-          { name: 'estado', label: 'Estado', type: 'select' as FieldType, options: statusOptions, tab: 'seguimiento' },
-          { name: 'subestado', label: 'Subestado', type: 'select' as FieldType, options: [], tab: 'seguimiento' },
-          { name: 'origen', label: 'Origen', type: 'select' as FieldType, options: originOptions, tab: 'seguimiento' },
-          { name: 'interes_en', label: 'Interés en', type: 'interest-selector' as FieldType, tab: 'seguimiento' },
-          { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' as FieldType, tab: 'seguimiento' },
-          { name: 'notas', label: 'Notas', type: 'textarea' as FieldType, tab: 'seguimiento' },
-        ];
-        break;
+        case 'cotizaciones':
+          resourceFields = [
+            {
+              name: 'lead_id',
+              label: 'Cliente',
+              type: 'select-lead',
+              required: true
+            },
+            {
+              name: 'desarrollo_id',
+              label: 'Desarrollo',
+              type: 'select',
+              required: true
+            },
+            {
+              name: 'prototipo_id',
+              label: 'Prototipo',
+              type: 'select',
+              required: true
+            },
+            {
+              name: 'monto_anticipo',
+              label: 'Monto de Anticipo',
+              type: 'number',
+              required: true
+            },
+            {
+              name: 'numero_pagos',
+              label: 'Número de Pagos',
+              type: 'number',
+              required: true
+            },
+            {
+              name: 'usar_finiquito',
+              label: 'Usar Finiquito',
+              type: 'switch'
+            },
+            {
+              name: 'monto_finiquito',
+              label: 'Monto de Finiquito',
+              type: 'number'
+            },
+            {
+              name: 'notas',
+              label: 'Notas',
+              type: 'textarea'
+            }
+          ];
+          break;
 
-      case 'cotizaciones':
-        fieldDefinitions = [
-          { name: 'lead_id', label: 'Cliente', type: 'select-lead' as FieldType, tab: 'general' },
-          { name: 'desarrollo_id', label: 'Desarrollo', type: 'select' as FieldType, options: [], tab: 'general' },
-          { name: 'prototipo_id', label: 'Prototipo', type: 'select' as FieldType, options: [], tab: 'general' },
-          { name: 'usar_finiquito', label: 'Liquidar con finiquito', type: 'switch' as FieldType, tab: 'financiamiento' },
-          { name: 'monto_anticipo', label: 'Monto Anticipo', type: 'number' as FieldType, tab: 'financiamiento' },
-          { name: 'numero_pagos', label: 'Número de Pagos', type: 'number' as FieldType, tab: 'financiamiento' },
-          { name: 'monto_finiquito', label: 'Monto Finiquito', type: 'number' as FieldType, tab: 'financiamiento' },
-          { name: 'notas', label: 'Notas', type: 'textarea' as FieldType, tab: 'adicional' },
-        ];
-        break;
+        case 'unidades':
+          resourceFields = [
+            {
+              name: 'numero',
+              label: 'Número de Unidad',
+              type: 'text',
+              required: true
+            },
+            {
+              name: 'nivel',
+              label: 'Nivel/Piso',
+              type: 'text'
+            },
+            {
+              name: 'estado',
+              label: 'Estado',
+              type: 'select',
+              options: [
+                { label: 'Disponible', value: 'disponible' },
+                { label: 'Apartado', value: 'apartado' },
+                { label: 'En Proceso', value: 'en_proceso' },
+                { label: 'Vendido', value: 'vendido' }
+              ],
+              required: true
+            },
+            {
+              name: 'comprador_id',
+              label: 'Cliente',
+              type: 'select-lead'
+            },
+            {
+              name: 'precio_venta',
+              label: 'Precio de Venta',
+              type: 'number'
+            },
+            {
+              name: 'fecha_venta',
+              label: 'Fecha de Venta',
+              type: 'date'
+            }
+          ];
+          break;
 
-      case 'unidades':
-        fieldDefinitions = [
-          { name: 'numero', label: 'Número/Identificador', type: 'text' as FieldType },
-          { name: 'estado', label: 'Estado', type: 'select' as FieldType, options: [
-            { value: 'disponible', label: 'Disponible' },
-            { value: 'reservada', label: 'Reservada' },
-            { value: 'vendida', label: 'Vendida' }
-          ]},
-          { name: 'precio_final', label: 'Precio Final', type: 'number' as FieldType },
-          { name: 'comprador_id', label: 'Comprador', type: 'select-lead' as FieldType },
-          { name: 'fecha_reserva', label: 'Fecha de Reserva', type: 'date' as FieldType },
-          { name: 'fecha_venta', label: 'Fecha de Venta', type: 'date' as FieldType },
-          { name: 'notas', label: 'Notas', type: 'textarea' as FieldType },
-        ];
-        break;
+        default:
+          break;
+      }
 
-      default:
-        fieldDefinitions = [];
-        break;
-    }
+      setFields(resourceFields);
+    };
 
-    setFields(fieldDefinitions);
-  }, [resourceType, statusOptions, originOptions]);
+    getFields();
+  }, [resourceType, resourceId]);
 
   return fields;
-}
+};

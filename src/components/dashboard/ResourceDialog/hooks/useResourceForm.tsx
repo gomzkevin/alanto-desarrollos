@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { FormValues, ResourceType } from '../types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Json } from '@/integrations/supabase/types';
+import useUnidades from '@/hooks/useUnidades';
 
 interface UseResourceFormProps {
   resourceType: ResourceType;
@@ -30,6 +32,7 @@ export function useResourceForm({
   const [resource, setResource] = useState<FormValues | null>(null);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const { toast } = useToast();
+  const { countUnidadesByStatus } = useUnidades();
 
   useEffect(() => {
     const fetchResource = async () => {
@@ -63,6 +66,18 @@ export function useResourceForm({
             } catch (error) {
               console.error('Error parsing amenidades:', error);
               data.amenidades = [];
+            }
+          }
+
+          // If this is a prototipo, fetch the unit counts
+          if (resourceType === 'prototipos') {
+            try {
+              const counts = await countUnidadesByStatus(resourceId);
+              data.unidades_vendidas = counts.vendidas;
+              data.unidades_con_anticipo = counts.con_anticipo;
+              data.unidades_disponibles = counts.disponibles;
+            } catch (error) {
+              console.error('Error getting unit counts:', error);
             }
           }
           
@@ -100,7 +115,9 @@ export function useResourceForm({
               baños: 0,
               estacionamientos: 0,
               total_unidades: 0,
-              unidades_disponibles: 0
+              unidades_disponibles: 0,
+              unidades_vendidas: 0,
+              unidades_con_anticipo: 0
             });
           } else if (resourceType === 'leads') {
             setResource({
@@ -144,7 +161,7 @@ export function useResourceForm({
     };
     
     fetchResource();
-  }, [resourceId, resourceType, desarrolloId, lead_id, prototipo_id, defaultValues, toast]);
+  }, [resourceId, resourceType, desarrolloId, lead_id, prototipo_id, defaultValues, toast, countUnidadesByStatus]);
 
   useEffect(() => {
     if (resource && resourceType === 'desarrollos') {
@@ -278,11 +295,23 @@ export function useResourceForm({
             .select();
         } else if (resourceType === 'prototipos') {
           const prototipoData = formData as any;
+          
+          // Calculate unidades_disponibles based on total, vendidas, and con_anticipo
+          const total = Number(prototipoData.total_unidades) || 0;
+          const vendidas = Number(prototipoData.unidades_vendidas) || 0;
+          const anticipos = Number(prototipoData.unidades_con_anticipo) || 0;
+          prototipoData.unidades_disponibles = total - vendidas - anticipos;
+          
           response = await supabase
             .from('prototipos')
             .update(prototipoData)
             .eq('id', resourceId)
             .select();
+            
+          // Also update the "desarrollo" total counts if this change affects availability
+          if (prototipoData.desarrollo_id) {
+            await updateDesarrolloUnidades(prototipoData.desarrollo_id);
+          }
         } else if (resourceType === 'leads') {
           const leadData = formData as any;
           response = await supabase
@@ -304,6 +333,11 @@ export function useResourceForm({
             .update(unidadData)
             .eq('id', resourceId)
             .select();
+            
+          // Update the prototipo unit counts
+          if (unidadData.prototipo_id) {
+            await updatePrototipoUnidades(unidadData.prototipo_id);
+          }
         }
       } else {
         if (resourceType === 'desarrollos') {
@@ -319,13 +353,22 @@ export function useResourceForm({
             .select();
         } else if (resourceType === 'prototipos') {
           const prototipoData = formData as any;
+          
+          // Calculate unidades_disponibles based on total, vendidas, and con_anticipo
+          const total = Number(prototipoData.total_unidades) || 0;
+          const vendidas = Number(prototipoData.unidades_vendidas) || 0;
+          const anticipos = Number(prototipoData.unidades_con_anticipo) || 0;
+          prototipoData.unidades_disponibles = total - vendidas - anticipos;
+          
           response = await supabase
             .from('prototipos')
-            .insert({
-              ...prototipoData,
-              unidades_disponibles: prototipoData.total_unidades || 0
-            })
+            .insert(prototipoData)
             .select();
+            
+          // Also update the "desarrollo" total counts
+          if (prototipoData.desarrollo_id) {
+            await updateDesarrolloUnidades(prototipoData.desarrollo_id);
+          }
         } else if (resourceType === 'leads') {
           const leadData = formData as any;
           response = await supabase
@@ -344,6 +387,11 @@ export function useResourceForm({
             .from('unidades')
             .insert(unidadData)
             .select();
+            
+          // Update the prototipo unit counts
+          if (unidadData.prototipo_id) {
+            await updatePrototipoUnidades(unidadData.prototipo_id);
+          }
         }
       }
       
@@ -375,6 +423,65 @@ export function useResourceForm({
       return false;
     } finally {
       setIsSubmitting(false);
+    }
+  };
+  
+  // Update prototipo's unit counts based on actual unit data
+  const updatePrototipoUnidades = async (prototipoId: string) => {
+    try {
+      // Count units by status
+      const counts = await countUnidadesByStatus(prototipoId);
+      
+      // Update the prototipo
+      await supabase
+        .from('prototipos')
+        .update({
+          unidades_disponibles: counts.disponibles,
+          unidades_vendidas: counts.vendidas,
+          unidades_con_anticipo: counts.con_anticipo
+        })
+        .eq('id', prototipoId);
+        
+      // Get the desarrollo_id to update desarrollo counts
+      const { data: prototipo } = await supabase
+        .from('prototipos')
+        .select('desarrollo_id')
+        .eq('id', prototipoId)
+        .single();
+        
+      if (prototipo && prototipo.desarrollo_id) {
+        await updateDesarrolloUnidades(prototipo.desarrollo_id);
+      }
+    } catch (error) {
+      console.error('Error updating prototipo units:', error);
+    }
+  };
+  
+  // Update desarrollo's unit counts based on its prototipos
+  const updateDesarrolloUnidades = async (desarrolloId: string) => {
+    try {
+      // Get all prototipos for this desarrollo
+      const { data: prototipos } = await supabase
+        .from('prototipos')
+        .select('id, total_unidades, unidades_disponibles')
+        .eq('desarrollo_id', desarrolloId);
+        
+      if (!prototipos) return;
+      
+      // Calculate totals
+      const totalUnidades = prototipos.reduce((sum, p) => sum + (p.total_unidades || 0), 0);
+      const unidadesDisponibles = prototipos.reduce((sum, p) => sum + (p.unidades_disponibles || 0), 0);
+      
+      // Update the desarrollo
+      await supabase
+        .from('desarrollos')
+        .update({
+          total_unidades: totalUnidades,
+          unidades_disponibles: unidadesDisponibles
+        })
+        .eq('id', desarrolloId);
+    } catch (error) {
+      console.error('Error updating desarrollo units:', error);
     }
   };
 

@@ -11,6 +11,13 @@ type FetchUnidadesOptions = {
   estado?: string;
 };
 
+type UnidadesCountByStatus = {
+  vendidas: number;
+  con_anticipo: number;
+  disponibles: number;
+  total: number;
+};
+
 export const useUnidades = (options: FetchUnidadesOptions = {}) => {
   const { prototipo_id, estado } = options;
   const { toast } = useToast();
@@ -46,6 +53,30 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
     }
   };
   
+  // Función para contar unidades por estado para un prototipo específico
+  const countUnidadesByStatus = async (prototipoId: string): Promise<UnidadesCountByStatus> => {
+    try {
+      const { data, error } = await supabase
+        .from('unidades')
+        .select('estado')
+        .eq('prototipo_id', prototipoId);
+        
+      if (error) throw error;
+      
+      const counts = {
+        vendidas: data.filter(u => u.estado === 'vendido').length,
+        con_anticipo: data.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso').length,
+        disponibles: data.filter(u => u.estado === 'disponible').length,
+        total: data.length
+      };
+      
+      return counts;
+    } catch (error) {
+      console.error('Error counting unidades by status:', error);
+      throw error;
+    }
+  };
+  
   // Query para obtener unidades
   const unidadesQuery = useQuery({
     queryKey: ['unidades', prototipo_id, estado],
@@ -66,6 +97,8 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unidades', prototipo_id] });
+      // Also invalidate the prototipos query to update counts
+      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
       toast({
         title: 'Unidad creada',
         description: 'La unidad ha sido creada correctamente',
@@ -95,6 +128,8 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unidades', prototipo_id] });
+      // Also invalidate the prototipos query to update counts
+      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
       toast({
         title: 'Unidad actualizada',
         description: 'La unidad ha sido actualizada correctamente',
@@ -122,6 +157,8 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unidades', prototipo_id] });
+      // Also invalidate the prototipos query to update counts
+      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
       toast({
         title: 'Unidad eliminada',
         description: 'La unidad ha sido eliminada correctamente',
@@ -163,6 +200,8 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unidades', prototipo_id] });
+      // Also invalidate the prototipos query to update counts
+      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
       toast({
         title: 'Unidades creadas',
         description: 'Las unidades han sido creadas correctamente',
@@ -185,7 +224,8 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
     createUnidad,
     updateUnidad,
     deleteUnidad,
-    createMultipleUnidades
+    createMultipleUnidades,
+    countUnidadesByStatus
   };
 };
 
