@@ -39,16 +39,10 @@ const DesarrollosPage = () => {
             // Get real counts from all units in this desarrollo
             const counts = await countDesarrolloUnidadesByStatus(desarrollo.id);
             
-            // Calculate avance_porcentaje based on sold and reserved units
-            const avance = counts.total > 0 
-              ? Math.round(((counts.vendidas + counts.con_anticipo) / counts.total) * 100)
-              : 0;
-            
             return {
               ...desarrollo,
               unidades_disponibles: counts.disponibles,
-              total_unidades: counts.total,
-              avance_porcentaje: avance
+              total_unidades: counts.total
             };
           } catch (error) {
             console.error('Error updating real counts for desarrollo:', desarrollo.id, error);
@@ -72,7 +66,11 @@ const DesarrollosPage = () => {
         unidades_disponibles: Math.min(
           desarrollo.unidades_disponibles || 0,
           desarrollo.total_unidades || 0
-        )
+        ),
+        // Calculate avance_porcentaje based on sold and reserved units
+        avance_porcentaje: desarrollo.total_unidades 
+          ? Math.round(((desarrollo.total_unidades - (desarrollo.unidades_disponibles || 0)) / desarrollo.total_unidades) * 100)
+          : 0
       };
       
       return normalizedDesarrollo;

@@ -156,7 +156,7 @@ const DesarrolloDetailPage = () => {
   
   // Calculate commercial progress percentage based on sold/reserved units
   const calculateComercialProgress = () => {
-    if (!unitCounts) return desarrollo?.avance_porcentaje || 0;
+    if (!unitCounts) return 0;
     
     const { vendidas, con_anticipo, total } = unitCounts;
     if (total === 0) return 0;

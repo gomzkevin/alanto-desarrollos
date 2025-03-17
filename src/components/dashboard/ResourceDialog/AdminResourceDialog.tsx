@@ -1,138 +1,284 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogTrigger } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit } from 'lucide-react';
-import { AdminResourceDialogProps, ResourceType, FormValues } from './types';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
-import { ResourceDialogContent } from './components/ResourceDialogContent';
-import useResourceData from './useResourceData';
-import useResourceActions from './useResourceActions';
 
-const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
+import { useState, useEffect } from 'react';
+import { Dialog } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { PlusCircle, Pencil } from 'lucide-react';
+import { AdminResourceDialogProps } from './types';
+import { useResourceForm } from './hooks/useResourceForm';
+import { useResourceFields } from './hooks/useResourceFields';
+import { ResourceDialogContent } from './components/ResourceDialogContent';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+const AdminResourceDialog = ({
   open,
   onClose,
   resourceType,
   resourceId,
   onSave,
-  buttonText,
-  buttonIcon = <PlusCircle className="mr-2 h-4 w-4" />,
-  buttonVariant = 'default',
+  buttonText = 'Editar',
+  buttonIcon,
+  buttonVariant = 'outline',
   onSuccess,
   desarrolloId,
   lead_id,
   prototipo_id,
   defaultValues
-}) => {
-  const [dialogOpen, setDialogOpen] = useState(open || false);
-  const [usarFiniquito, setUsarFiniquito] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | null>(desarrolloId || null);
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState('general');
-
-  const { resource, setResource, fields, isLoading } = useResourceData({
-    resourceType,
-    resourceId,
-    desarrolloId,
-    lead_id,
-    selectedDesarrolloId,
-    selectedStatus,
-    usarFiniquito,
-    selectedAmenities,
-    onStatusChange: setSelectedStatus,
-    onAmenitiesChange: setSelectedAmenities
+}: AdminResourceDialogProps) => {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
+  const [isExistingClient, setIsExistingClient] = useState(true);
+  const [newClientData, setNewClientData] = useState({
+    nombre: '',
+    email: '',
+    telefono: ''
   });
-
-  const { isSubmitting, uploading, handleImageUpload, saveResource } = useResourceActions({
-    resourceType,
-    resourceId,
-    desarrolloId,
-    onClose: () => {
-      setDialogOpen(false);
-      if (onClose) onClose();
-    },
-    onSave,
-    onSuccess,
-    selectedAmenities
-  });
-
-  useEffect(() => {
-    if (open !== undefined) {
-      setDialogOpen(open);
+  
+  // Initialize selectedDesarrolloId with the prop value but don't change it in useEffect
+  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | undefined>(
+    desarrolloId || undefined
+  );
+  
+  const isOpen = open !== undefined ? open : dialogOpen;
+  
+  const handleOpenChange = (newOpen: boolean) => {
+    if (onClose && !newOpen) {
+      onClose();
     }
-  }, [open]);
-
-  useEffect(() => {
-    if (desarrolloId) {
-      setSelectedDesarrolloId(desarrolloId);
-    }
-  }, [desarrolloId]);
-
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
-    if (onClose) onClose();
+    setDialogOpen(newOpen);
   };
 
-  const handleSubmit = async (values: FormValues) => {
-    if (resourceType === 'desarrollos') {
-      values.amenidades = selectedAmenities;
-    }
+  const fields = useResourceFields(resourceType);
 
-    if (defaultValues) {
-      values = { ...defaultValues, ...values };
-    }
+  const {
+    isLoading,
+    isSubmitting,
+    resource,
+    selectedAmenities,
+    handleChange,
+    handleSelectChange,
+    handleSwitchChange,
+    handleLeadSelect,
+    handleAmenitiesChange,
+    saveResource,
+    setResource,
+    handleDateChange
+  } = useResourceForm({
+    resourceType,
+    resourceId,
+    desarrolloId: selectedDesarrolloId,
+    lead_id,
+    prototipo_id,
+    defaultValues,
+    onSuccess,
+    onSave
+  });
 
-    if (resourceType === 'cotizaciones') {
-      if (!values.lead_id && lead_id) {
-        values.lead_id = lead_id;
+  // Set the desarrollo_id from the resource only once after initial load
+  useEffect(() => {
+    if (resource && !selectedDesarrolloId) {
+      const resourceAny = resource as any;
+      if (resourceAny.desarrollo_id) {
+        setSelectedDesarrolloId(resourceAny.desarrollo_id);
       }
+    }
+  }, [resource, selectedDesarrolloId]);
 
-      if (!values.prototipo_id && prototipo_id) {
-        values.prototipo_id = prototipo_id;
-      }
+  const handleDesarrolloSelect = (desarrolloId: string) => {
+    setSelectedDesarrolloId(desarrolloId);
+    
+    if (resource) {
+      const updatedResource = {
+        ...resource,
+        desarrollo_id: desarrolloId,
+        prototipo_id: ''
+      };
+      setResource(updatedResource);
+    }
+  };
 
-      if (!usarFiniquito) {
-        delete values.monto_finiquito;
+  const handleSave = async () => {
+    if (resource) {
+      const resourceAny = resource as any;
+      
+      if (resourceType === 'cotizaciones') {
+        const cotizacionData = resourceAny;
+        
+        if (!isExistingClient && !resourceId) {
+          if (!newClientData.nombre) {
+            toast({
+              title: 'Error',
+              description: 'El nombre del cliente es obligatorio',
+              variant: 'destructive',
+            });
+            return;
+          }
+        } else if (isExistingClient && !cotizacionData.lead_id) {
+          toast({
+            title: 'Error',
+            description: 'Debe seleccionar un cliente',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        if (!cotizacionData.desarrollo_id) {
+          toast({
+            title: 'Error',
+            description: 'Debe seleccionar un desarrollo',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        if (!cotizacionData.prototipo_id) {
+          toast({
+            title: 'Error',
+            description: 'Debe seleccionar un prototipo',
+            variant: 'destructive',
+          });
+          return;
+        }
       }
       
-      values.usar_finiquito = usarFiniquito;
+      if (!isExistingClient && resourceType === 'cotizaciones' && !resourceId) {
+        try {
+          if (!newClientData.nombre) {
+            toast({
+              title: 'Error',
+              description: 'El nombre del cliente es obligatorio',
+              variant: 'destructive',
+            });
+            return;
+          }
+          
+          const { data: newLead, error: leadError } = await supabase
+            .from('leads')
+            .insert({
+              nombre: newClientData.nombre,
+              email: newClientData.email,
+              telefono: newClientData.telefono,
+              estado: 'nuevo',
+              subestado: 'sin_contactar'
+            })
+            .select('id, nombre')
+            .single();
+          
+          if (leadError) throw leadError;
+          
+          if (newLead) {
+            const updatedResource = {
+              ...resource,
+              lead_id: newLead.id
+            };
+            
+            saveResource(updatedResource).then(success => {
+              if (success) {
+                handleOpenChange(false);
+              }
+            });
+          }
+        } catch (error: any) {
+          console.error('Error creando nuevo lead:', error);
+          toast({
+            title: 'Error',
+            description: `No se pudo crear el nuevo cliente: ${error.message}`,
+            variant: 'destructive',
+          });
+        }
+      } else {
+        saveResource(resource).then(success => {
+          if (success) {
+            handleOpenChange(false);
+          }
+        });
+      }
     }
-
-    return await saveResource(values);
   };
 
-  const hasTabsConfig = fields.some(field => field.tab);
-  const tabsConfig = hasTabsConfig 
-    ? [...new Set(fields.filter(f => f.tab).map(f => f.tab))] 
-    : [];
-
+  // Reset client data when dialog opens/closes
   useEffect(() => {
-    if (tabsConfig.length > 0 && tabsConfig[0]) {
-      setActiveTab(tabsConfig[0]);
+    if (isOpen) {
+      const resourceAny = resource as any;
+      const hasLeadId = lead_id || (resource && resourceAny.lead_id);
+      setIsExistingClient(!!hasLeadId);
+    } else {
+      setNewClientData({
+        nombre: '',
+        email: '',
+        telefono: ''
+      });
     }
-  }, [tabsConfig]);
+  }, [isOpen, lead_id, resource]);
 
-  const currentTabFields = hasTabsConfig 
-    ? fields.filter(field => field.tab === activeTab)
-    : fields;
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    setUploading(true);
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${resourceType}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    
+    try {
+      const { data, error } = await supabase.storage
+        .from('desarrollo-images')
+        .upload(fileName, file);
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('desarrollo-images')
+        .getPublicUrl(fileName);
+      
+      if (resource) {
+        setResource({
+          ...resource,
+          imagen_url: urlData.publicUrl
+        });
+      }
+      
+      toast({
+        title: 'Imagen subida',
+        description: 'La imagen ha sido subida correctamente',
+      });
+    } catch (error: any) {
+      console.error('Error subiendo imagen:', error);
+      toast({
+        title: 'Error',
+        description: `No se pudo subir la imagen: ${error.message}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
 
-  const TriggerButton = buttonText ? (
-    <Button variant={buttonVariant as any}>
-      {buttonIcon}
-      {buttonText}
-    </Button>
-  ) : null;
+  const handleNewClientDataChange = (field: string, value: string) => {
+    setNewClientData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      {TriggerButton && <DialogTrigger asChild>{TriggerButton}</DialogTrigger>}
+    <>
+      {open === undefined && (
+        <Button
+          variant={buttonVariant as any}
+          size="sm"
+          onClick={() => handleOpenChange(true)}
+          type="button"
+        >
+          {buttonIcon || (resourceId ? <Pencil className="h-4 w-4 mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />)}
+          {buttonText}
+        </Button>
+      )}
       
-      {dialogOpen && (
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <ResourceDialogContent
-          isOpen={dialogOpen}
-          onClose={handleCloseDialog}
+          isOpen={isOpen}
+          onClose={() => handleOpenChange(false)}
           resourceType={resourceType}
           resourceId={resourceId}
           isLoading={isLoading}
@@ -140,29 +286,26 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
           resource={resource}
           fields={fields}
           selectedAmenities={selectedAmenities}
-          handleChange={(e) => {
-            const { name, value } = e.target;
-            setResource(prev => ({ ...prev, [name]: value }));
-          }}
-          handleSelectChange={(name, value) => {
-            setResource(prev => ({ ...prev, [name]: value }));
-          }}
-          handleSwitchChange={(name, checked) => {
-            setResource(prev => ({ ...prev, [name]: checked }));
-          }}
-          handleAmenitiesChange={setSelectedAmenities}
-          saveResource={handleSubmit}
-          desarrolloId={desarrolloId}
+          handleChange={handleChange}
+          handleSelectChange={handleSelectChange}
+          handleSwitchChange={handleSwitchChange}
+          handleLeadSelect={handleLeadSelect}
+          handleAmenitiesChange={handleAmenitiesChange}
+          saveResource={handleSave}
+          desarrolloId={selectedDesarrolloId}
           prototipo_id={prototipo_id}
           lead_id={lead_id}
           handleImageUpload={handleImageUpload}
           uploading={uploading}
-          handleDateChange={(name, date) => {
-            setResource(prev => ({ ...prev, [name]: date }));
-          }}
+          isExistingClient={isExistingClient}
+          onExistingClientChange={setIsExistingClient}
+          newClientData={newClientData}
+          onNewClientDataChange={handleNewClientDataChange}
+          onDesarrolloSelect={handleDesarrolloSelect}
+          handleDateChange={handleDateChange}
         />
-      )}
-    </Dialog>
+      </Dialog>
+    </>
   );
 };
 

@@ -20,7 +20,6 @@ import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
 
 type Prototipo = Tables<"prototipos">;
 type Desarrollo = Tables<"desarrollos">;
@@ -47,7 +46,6 @@ const PrototipoDetail = () => {
   const [cantidadUnidades, setCantidadUnidades] = useState(1);
   const [prefijo, setPrefijo] = useState("");
   
-  // Fetch prototipo data with React Query
   const {
     data: prototipo,
     isLoading,
@@ -57,73 +55,14 @@ const PrototipoDetail = () => {
     queryKey: ['prototipo', id],
     queryFn: () => fetchPrototipoById(id as string),
     enabled: !!id,
-    retry: 2, // Limit retries to prevent excessive requests
-    staleTime: 30000, // Cache data for 30 seconds
   });
   
-  // Fetch unidades with a separate query
   const { 
     unidades, 
     isLoading: unidadesLoading, 
-    error: unidadesError,
     refetch: refetchUnidades,
-    createMultipleUnidades,
-    updatePrototipoUnidades
+    createMultipleUnidades
   } = useUnidades({ prototipo_id: id });
-  
-  // Calculate actual counts from the unidades array
-  const calculateActualCounts = () => {
-    if (!unidades || unidades.length === 0) {
-      return {
-        total: prototipo?.total_unidades || 0,
-        disponibles: prototipo?.unidades_disponibles || 0,
-        vendidas: prototipo?.unidades_vendidas || 0,
-        conAnticipo: prototipo?.unidades_con_anticipo || 0
-      };
-    }
-    
-    const disponibles = unidades.filter(u => u.estado === 'disponible').length;
-    const vendidas = unidades.filter(u => u.estado === 'vendido').length;
-    const conAnticipo = unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso').length;
-    
-    return {
-      total: unidades.length,
-      disponibles,
-      vendidas,
-      conAnticipo
-    };
-  };
-  
-  const unidadesCounts = calculateActualCounts();
-  
-  // Update the prototipo unit counts in database if they don't match the calculated values
-  useEffect(() => {
-    const syncPrototipoUnitCounts = async () => {
-      // Only perform synchronization when both queries have completed and we have actual data
-      if (id && !unidadesLoading && !isLoading && prototipo && unidades && unidades.length > 0) {
-        const counts = calculateActualCounts();
-        
-        // Check if counts in prototipo record don't match actual counts from unidades
-        const countsNeedUpdate = 
-          prototipo.unidades_disponibles !== counts.disponibles ||
-          prototipo.unidades_vendidas !== counts.vendidas ||
-          prototipo.unidades_con_anticipo !== counts.conAnticipo ||
-          prototipo.total_unidades !== counts.total;
-        
-        if (countsNeedUpdate) {
-          try {
-            await updatePrototipoUnidades(id);
-            // Only refetch prototipo if needed
-            refetch();
-          } catch (error) {
-            console.error('Error updating prototipo units:', error);
-          }
-        }
-      }
-    };
-    
-    syncPrototipoUnitCounts();
-  }, [unidades, id, prototipo, isLoading, unidadesLoading, updatePrototipoUnidades, refetch]);
   
   const handleBack = () => {
     const desarrollo = prototipo?.desarrollo as Desarrollo | undefined;
@@ -152,24 +91,12 @@ const PrototipoDetail = () => {
       setGenerarUnidadesModalOpen(false);
       setCantidadUnidades(1);
       setPrefijo("");
-      // Only refetch what's needed
-      refetchUnidades();
-      
-      toast({
-        title: "Unidades generadas",
-        description: `Se han generado ${cantidadUnidades} unidades correctamente.`,
-      });
+      refetch();
     } catch (error) {
       console.error('Error al generar unidades:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron generar las unidades. Intente de nuevo.",
-        variant: "destructive"
-      });
     }
   };
   
-  // Show skeleton loading state
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -190,7 +117,6 @@ const PrototipoDetail = () => {
     );
   }
   
-  // Show error state
   if (error || !prototipo) {
     return (
       <DashboardLayout>
@@ -307,21 +233,15 @@ const PrototipoDetail = () => {
                   Unidades
                 </h2>
                 <p className="text-slate-600">
-                  {unidadesLoading ? (
-                    <Skeleton className="h-4 w-64" />
-                  ) : (
-                    <>
-                      {unidadesCounts.total} de {prototipo.total_unidades} unidades registradas 
-                      ({unidadesCounts.disponibles} disponibles, 
-                      {unidadesCounts.vendidas} vendidas, 
-                      {unidadesCounts.conAnticipo} con anticipo)
-                    </>
-                  )}
+                  {unidades.length} de {prototipo.total_unidades} unidades registradas 
+                  ({prototipo.unidades_disponibles || 0} disponibles, 
+                  {prototipo.unidades_vendidas || 0} vendidas, 
+                  {prototipo.unidades_con_anticipo || 0} con anticipo)
                 </p>
               </div>
               
               <div className="flex space-x-2">
-                {!unidadesLoading && unidadesCounts.total < prototipo.total_unidades && (
+                {unidades.length < prototipo.total_unidades && (
                   <Button onClick={() => setGenerarUnidadesModalOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Generar unidades
@@ -343,60 +263,41 @@ const PrototipoDetail = () => {
                 <TabsTrigger value="vendidas">Vendidas</TabsTrigger>
               </TabsList>
               
-              {unidadesError ? (
-                <Alert variant="destructive">
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>
-                    No se pudieron cargar las unidades.
-                    <p className="mt-2">{(unidadesError as Error).message}</p>
-                    <Button 
-                      variant="outline" 
-                      className="mt-2"
-                      onClick={() => refetchUnidades()}
-                    >
-                      Intentar de nuevo
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <>
-                  <TabsContent value="todas">
-                    <UnidadTable 
-                      unidades={unidades} 
-                      isLoading={unidadesLoading} 
-                      onRefresh={refetchUnidades}
-                      prototipo={prototipo}
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="disponibles">
-                    <UnidadTable 
-                      unidades={unidades.filter(u => u.estado === 'disponible')} 
-                      isLoading={unidadesLoading} 
-                      onRefresh={refetchUnidades}
-                      prototipo={prototipo}
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="apartadas">
-                    <UnidadTable 
-                      unidades={unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso')} 
-                      isLoading={unidadesLoading} 
-                      onRefresh={refetchUnidades}
-                      prototipo={prototipo}
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="vendidas">
-                    <UnidadTable 
-                      unidades={unidades.filter(u => u.estado === 'vendido')} 
-                      isLoading={unidadesLoading} 
-                      onRefresh={refetchUnidades}
-                      prototipo={prototipo}
-                    />
-                  </TabsContent>
-                </>
-              )}
+              <TabsContent value="todas">
+                <UnidadTable 
+                  unidades={unidades} 
+                  isLoading={unidadesLoading} 
+                  onRefresh={refetchUnidades}
+                  prototipo={prototipo}
+                />
+              </TabsContent>
+              
+              <TabsContent value="disponibles">
+                <UnidadTable 
+                  unidades={unidades.filter(u => u.estado === 'disponible')} 
+                  isLoading={unidadesLoading} 
+                  onRefresh={refetchUnidades}
+                  prototipo={prototipo}
+                />
+              </TabsContent>
+              
+              <TabsContent value="apartadas">
+                <UnidadTable 
+                  unidades={unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso')} 
+                  isLoading={unidadesLoading} 
+                  onRefresh={refetchUnidades}
+                  prototipo={prototipo}
+                />
+              </TabsContent>
+              
+              <TabsContent value="vendidas">
+                <UnidadTable 
+                  unidades={unidades.filter(u => u.estado === 'vendido')} 
+                  isLoading={unidadesLoading} 
+                  onRefresh={refetchUnidades}
+                  prototipo={prototipo}
+                />
+              </TabsContent>
             </Tabs>
           </div>
         </div>
@@ -418,7 +319,7 @@ const PrototipoDetail = () => {
                 id="cantidad" 
                 type="number" 
                 min="1" 
-                max={prototipo.total_unidades - unidadesCounts.total}
+                max={prototipo.total_unidades - unidades.length}
                 value={cantidadUnidades} 
                 onChange={(e) => setCantidadUnidades(parseInt(e.target.value) || 1)} 
               />
@@ -437,12 +338,7 @@ const PrototipoDetail = () => {
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setGenerarUnidadesModalOpen(false)}>Cancelar</Button>
-            <Button 
-              onClick={handleGenerarUnidades}
-              disabled={createMultipleUnidades.isPending}
-            >
-              {createMultipleUnidades.isPending ? 'Generando...' : 'Generar'}
-            </Button>
+            <Button onClick={handleGenerarUnidades}>Generar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
