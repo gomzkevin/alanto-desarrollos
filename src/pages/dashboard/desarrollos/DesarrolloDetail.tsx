@@ -36,6 +36,7 @@ import { useUserRole } from '@/hooks';
 import { Badge } from '@/components/ui/badge';
 import useUnidades from '@/hooks/useUnidades';
 import { Progress } from '@/components/ui/progress';
+import useDesarrolloStats from '@/hooks/useDesarrolloStats';
 
 type Desarrollo = Tables<"desarrollos"> & {
   amenidades?: string[] | string;
@@ -128,6 +129,9 @@ const DesarrolloDetailPage = () => {
     desarrolloId: id,
   });
   
+  // Use the dedicated hook for getting desarrollo stats
+  const { data: desarrolloStats, isLoading: isLoadingStats } = useDesarrolloStats(id);
+  
   // Query for real unit counts for this desarrollo
   const { 
     data: unitCounts,
@@ -151,11 +155,17 @@ const DesarrolloDetailPage = () => {
     navigate(`/dashboard/prototipos/${prototipoId}`);
   };
   
-  const isLoading = isLoadingDesarrollo || isLoadingPrototipos || isLoadingUnitCounts;
+  const isLoading = isLoadingDesarrollo || isLoadingPrototipos || isLoadingUnitCounts || isLoadingStats;
   const hasError = errorDesarrollo || errorPrototipos;
   
   // Calculate commercial progress percentage based on sold/reserved units
   const calculateComercialProgress = () => {
+    // First try to use the dedicated hook data
+    if (desarrolloStats) {
+      return desarrolloStats.avanceComercial;
+    }
+    
+    // Fallback to the old calculation
     if (!unitCounts) return 0;
     
     const { vendidas, con_anticipo, total } = unitCounts;
@@ -166,6 +176,12 @@ const DesarrolloDetailPage = () => {
   
   // Get the display text for units and make sure available units don't exceed total
   const getUnitCountDisplay = () => {
+    // First try to use the dedicated hook data
+    if (desarrolloStats) {
+      return `${desarrolloStats.unidadesDisponibles}/${desarrolloStats.totalUnidades} disponibles`;
+    }
+    
+    // Fallback to the old calculation
     if (!unitCounts) return "0/0 disponibles";
     
     const { disponibles, total } = unitCounts;
@@ -298,7 +314,7 @@ const DesarrolloDetailPage = () => {
                 <div className="space-y-1">
                   <div className="flex items-center text-slate-500 text-sm">
                     <span className="h-4 w-4 mr-1 flex items-center justify-center font-bold">%</span>
-                    <span>Avance</span>
+                    <span>Avance Comercial</span>
                   </div>
                   <div>
                     <p className="font-semibold mb-1">{calculateComercialProgress()}%</p>
