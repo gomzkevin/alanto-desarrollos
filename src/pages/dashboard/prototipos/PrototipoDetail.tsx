@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tables } from '@/integrations/supabase/types';
@@ -16,16 +17,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatCurrency } from '@/lib/utils';
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 type Prototipo = Tables<"prototipos">;
 type Desarrollo = Tables<"desarrollos">;
-
-// Define a type that includes our custom unit count properties
-type PrototipoWithUnitCounts = Prototipo & {
-  unidades_vendidas?: number;
-  unidades_con_anticipo?: number;
-  desarrollo?: Desarrollo | null;
-};
 
 const fetchPrototipoById = async (id: string) => {
   const { data, error } = await supabase
@@ -36,45 +33,13 @@ const fetchPrototipoById = async (id: string) => {
   
   if (error) throw error;
   
-  // Using our custom type for the data
-  const prototipoData = data as PrototipoWithUnitCounts;
-  
-  // Get the real unit counts
-  const { data: unidades } = await supabase
-    .from('unidades')
-    .select('estado')
-    .eq('prototipo_id', id);
-  
-  if (unidades) {
-    const vendidas = unidades.filter(u => u.estado === 'vendido').length;
-    const conAnticipo = unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso').length;
-    const disponibles = unidades.filter(u => u.estado === 'disponible').length;
-    
-    prototipoData.unidades_vendidas = vendidas;
-    prototipoData.unidades_con_anticipo = conAnticipo;
-    prototipoData.unidades_disponibles = disponibles;
-    
-    // Update the prototipo with accurate counts if they differ
-    if (data.unidades_disponibles !== disponibles) {
-      await supabase
-        .from('prototipos')
-        .update({
-          unidades_disponibles: disponibles,
-          unidades_vendidas: vendidas,
-          unidades_con_anticipo: conAnticipo
-        })
-        .eq('id', id);
-    }
-  }
-  
-  return prototipoData as ExtendedPrototipo;
+  return data as ExtendedPrototipo;
 };
 
 const PrototipoDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [openAddUnidadDialog, setOpenAddUnidadDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [generarUnidadesModalOpen, setGenerarUnidadesModalOpen] = useState(false);
@@ -96,8 +61,7 @@ const PrototipoDetail = () => {
     unidades, 
     isLoading: unidadesLoading, 
     refetch: refetchUnidades,
-    createMultipleUnidades,
-    countUnidadesByStatus
+    createMultipleUnidades
   } = useUnidades({ prototipo_id: id });
   
   const handleBack = () => {
@@ -127,57 +91,9 @@ const PrototipoDetail = () => {
       setGenerarUnidadesModalOpen(false);
       setCantidadUnidades(1);
       setPrefijo("");
-      
-      // Get the updated unit counts
-      if (prototipo) {
-        const counts = await countUnidadesByStatus(id);
-        
-        // Update the prototipo with the new counts
-        await supabase.from('prototipos').update({
-          unidades_disponibles: counts.disponibles,
-          unidades_vendidas: counts.vendidas,
-          unidades_con_anticipo: counts.con_anticipo
-        }).eq('id', id);
-        
-        // Also update desarrollo counts
-        if (prototipo.desarrollo_id) {
-          await updateDesarrolloUnidades(prototipo.desarrollo_id);
-        }
-        
-        refetch();
-      }
+      refetch();
     } catch (error) {
       console.error('Error al generar unidades:', error);
-    }
-  };
-  
-  const updateDesarrolloUnidades = async (desarrolloId: string) => {
-    try {
-      // Get all prototipos for this desarrollo
-      const { data: prototipos } = await supabase
-        .from('prototipos')
-        .select('id, total_unidades, unidades_disponibles')
-        .eq('desarrollo_id', desarrolloId);
-        
-      if (!prototipos) return;
-      
-      // Calculate totals
-      const totalUnidades = prototipos.reduce((sum, p) => sum + (p.total_unidades || 0), 0);
-      const unidadesDisponibles = prototipos.reduce((sum, p) => sum + (p.unidades_disponibles || 0), 0);
-      
-      // Update the desarrollo
-      await supabase
-        .from('desarrollos')
-        .update({
-          total_unidades: totalUnidades,
-          unidades_disponibles: unidadesDisponibles
-        })
-        .eq('id', desarrolloId);
-        
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
-    } catch (error) {
-      console.error('Error updating desarrollo units:', error);
     }
   };
   
@@ -447,7 +363,3 @@ const PrototipoDetail = () => {
 };
 
 export default PrototipoDetail;
-
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';

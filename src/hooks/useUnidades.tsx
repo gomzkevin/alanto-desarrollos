@@ -95,10 +95,14 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['unidades', prototipo_id] });
-      // Also invalidate the prototipos query to update counts
-      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
+      
+      // Actualizar contadores del prototipo
+      if (data.prototipo_id) {
+        await updatePrototipoUnidades(data.prototipo_id);
+      }
+      
       toast({
         title: 'Unidad creada',
         description: 'La unidad ha sido creada correctamente',
@@ -116,6 +120,12 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
   // Mutación para actualizar una unidad existente
   const updateUnidad = useMutation({
     mutationFn: async ({ id, ...unidad }: Partial<Unidad> & { id: string }) => {
+      const { data: oldUnidad } = await supabase
+        .from('unidades')
+        .select('prototipo_id')
+        .eq('id', id)
+        .single();
+        
       const { data, error } = await supabase
         .from('unidades')
         .update(unidad)
@@ -124,12 +134,22 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
         .single();
         
       if (error) throw error;
-      return data;
+      
+      return { data, oldPrototipoId: oldUnidad?.prototipo_id };
     },
-    onSuccess: () => {
+    onSuccess: async ({ data, oldPrototipoId }) => {
       queryClient.invalidateQueries({ queryKey: ['unidades', prototipo_id] });
-      // Also invalidate the prototipos query to update counts
-      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
+      
+      // Si cambió el prototipo, actualizar los contadores de ambos prototipos
+      if (oldPrototipoId && data.prototipo_id !== oldPrototipoId) {
+        await updatePrototipoUnidades(oldPrototipoId);
+      }
+      
+      // Actualizar contadores del prototipo actual
+      if (data.prototipo_id) {
+        await updatePrototipoUnidades(data.prototipo_id);
+      }
+      
       toast({
         title: 'Unidad actualizada',
         description: 'La unidad ha sido actualizada correctamente',
@@ -147,18 +167,30 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
   // Mutación para eliminar una unidad
   const deleteUnidad = useMutation({
     mutationFn: async (id: string) => {
+      const { data } = await supabase
+        .from('unidades')
+        .select('prototipo_id')
+        .eq('id', id)
+        .single();
+        
+      const prototipoId = data?.prototipo_id;
+      
       const { error } = await supabase
         .from('unidades')
         .delete()
         .eq('id', id);
         
       if (error) throw error;
-      return id;
+      return { id, prototipoId };
     },
-    onSuccess: () => {
+    onSuccess: async ({ prototipoId }) => {
       queryClient.invalidateQueries({ queryKey: ['unidades', prototipo_id] });
-      // Also invalidate the prototipos query to update counts
-      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
+      
+      // Actualizar contadores del prototipo
+      if (prototipoId) {
+        await updatePrototipoUnidades(prototipoId);
+      }
+      
       toast({
         title: 'Unidad eliminada',
         description: 'La unidad ha sido eliminada correctamente',
@@ -198,10 +230,14 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['unidades', prototipo_id] });
-      // Also invalidate the prototipos query to update counts
-      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
+      
+      // Actualizar contadores del prototipo
+      if (data.length > 0) {
+        await updatePrototipoUnidades(data[0].prototipo_id);
+      }
+      
       toast({
         title: 'Unidades creadas',
         description: 'Las unidades han sido creadas correctamente',
@@ -216,6 +252,86 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
     },
   });
 
+  // Función para actualizar los contadores de un prototipo basado en sus unidades
+  const updatePrototipoUnidades = async (prototipoId: string) => {
+    try {
+      // Obtener los contadores actualizados
+      const counts = await countUnidadesByStatus(prototipoId);
+      
+      // Actualizar el prototipo con los nuevos contadores
+      await supabase
+        .from('prototipos')
+        .update({
+          unidades_disponibles: counts.disponibles,
+          unidades_vendidas: counts.vendidas,
+          unidades_con_anticipo: counts.con_anticipo,
+          total_unidades: counts.total
+        })
+        .eq('id', prototipoId);
+      
+      // Obtener el desarrollo_id del prototipo
+      const { data: prototipo } = await supabase
+        .from('prototipos')
+        .select('desarrollo_id')
+        .eq('id', prototipoId)
+        .single();
+      
+      // Si existe el desarrollo, actualizar sus contadores
+      if (prototipo && prototipo.desarrollo_id) {
+        await updateDesarrolloUnidades(prototipo.desarrollo_id);
+      }
+      
+      // Invalidar las consultas de prototipos para refrescar los datos
+      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
+      queryClient.invalidateQueries({ queryKey: ['prototipo', prototipoId] });
+      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
+    } catch (error) {
+      console.error('Error updating prototipo units:', error);
+    }
+  };
+  
+  // Función para actualizar los contadores de un desarrollo basado en sus prototipos
+  const updateDesarrolloUnidades = async (desarrolloId: string) => {
+    try {
+      // Obtener todos los prototipos de este desarrollo
+      const { data: prototipos } = await supabase
+        .from('prototipos')
+        .select('total_unidades, unidades_disponibles, unidades_vendidas, unidades_con_anticipo')
+        .eq('desarrollo_id', desarrolloId);
+      
+      if (!prototipos || prototipos.length === 0) return;
+      
+      // Calcular los totales sumando los valores de todos los prototipos
+      const totalUnidades = prototipos.reduce((sum, p) => sum + (p.total_unidades || 0), 0);
+      const unidadesDisponibles = prototipos.reduce((sum, p) => sum + (p.unidades_disponibles || 0), 0);
+      const unidadesVendidas = prototipos.reduce((sum, p) => sum + (p.unidades_vendidas || 0), 0);
+      const unidadesConAnticipo = prototipos.reduce((sum, p) => sum + (p.unidades_con_anticipo || 0), 0);
+      
+      console.log('Updating desarrollo counts:', {
+        desarrolloId,
+        totalUnidades,
+        unidadesDisponibles,
+        unidadesVendidas,
+        unidadesConAnticipo
+      });
+      
+      // Actualizar el desarrollo con los nuevos totales
+      await supabase
+        .from('desarrollos')
+        .update({
+          total_unidades: totalUnidades,
+          unidades_disponibles: unidadesDisponibles
+        })
+        .eq('id', desarrolloId);
+      
+      // Invalidar las consultas de desarrollos para refrescar los datos
+      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
+      queryClient.invalidateQueries({ queryKey: ['desarrollo', desarrolloId] });
+    } catch (error) {
+      console.error('Error updating desarrollo units:', error);
+    }
+  };
+
   return {
     unidades: unidadesQuery.data || [],
     isLoading: unidadesQuery.isLoading,
@@ -225,7 +341,9 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
     updateUnidad,
     deleteUnidad,
     createMultipleUnidades,
-    countUnidadesByStatus
+    countUnidadesByStatus,
+    updatePrototipoUnidades,
+    updateDesarrolloUnidades
   };
 };
 

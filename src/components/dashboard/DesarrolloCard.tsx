@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -141,7 +140,7 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
     }
   };
   
-  // Calculate status based on comercial progress
+  // Calculate status based on commercial progress
   const getDesarrolloStatus = (desarrollo: Desarrollo) => {
     if (desarrollo.avance_porcentaje === 0) {
       return { label: 'Pre-venta', color: 'bg-blue-100 text-blue-800' };

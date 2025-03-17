@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { 
   Table, 
@@ -32,8 +33,6 @@ import {
 import useUnidades from '@/hooks/useUnidades';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { Tables } from '@/integrations/supabase/types';
-import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 
 type Prototipo = Tables<"prototipos">;
 
@@ -49,8 +48,7 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
   const [unidadToDelete, setUnidadToDelete] = useState<string | null>(null);
   const [statusUpdateLoading, setStatusUpdateLoading] = useState<Record<string, boolean>>({});
   
-  const { deleteUnidad, countUnidadesByStatus } = useUnidades();
-  const queryClient = useQueryClient();
+  const { deleteUnidad, updateUnidad } = useUnidades();
   
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -71,42 +69,13 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
     setStatusUpdateLoading(prev => ({ ...prev, [unidadId]: true }));
     
     try {
-      // Actualizar el estado de la unidad
-      const { error } = await supabase
-        .from('unidades')
-        .update({ estado: nuevoEstado })
-        .eq('id', unidadId);
-        
-      if (error) throw error;
+      // Actualizar el estado de la unidad utilizando la función del hook
+      await updateUnidad.mutateAsync({
+        id: unidadId,
+        estado: nuevoEstado
+      });
       
-      // Actualizar los contadores del prototipo
-      if (prototipo.id) {
-        // Get the new counts
-        const counts = await countUnidadesByStatus(prototipo.id);
-        
-        // Update the prototipo
-        await supabase
-          .from('prototipos')
-          .update({
-            unidades_disponibles: counts.disponibles,
-            unidades_vendidas: counts.vendidas,
-            unidades_con_anticipo: counts.con_anticipo
-          })
-          .eq('id', prototipo.id);
-          
-        // Also update the desarrollo counts
-        if (prototipo.desarrollo_id) {
-          await updateDesarrolloUnidades(prototipo.desarrollo_id);
-        }
-      }
-      
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['unidades'] });
-      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
-      queryClient.invalidateQueries({ queryKey: ['prototipo', prototipo.id] });
-      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
-      
-      // Refresh table data
+      // Refrescar tabla
       onRefresh();
     } catch (error) {
       console.error('Error al actualizar estado:', error);
@@ -120,63 +89,10 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
     
     try {
       await deleteUnidad.mutateAsync(unidadToDelete);
-      
-      // Additionally, update prototipo counts
-      if (prototipo.id) {
-        // Get the new counts
-        const counts = await countUnidadesByStatus(prototipo.id);
-        
-        // Update the prototipo
-        await supabase
-          .from('prototipos')
-          .update({
-            unidades_disponibles: counts.disponibles,
-            unidades_vendidas: counts.vendidas,
-            unidades_con_anticipo: counts.con_anticipo
-          })
-          .eq('id', prototipo.id);
-          
-        // Also update the desarrollo counts
-        if (prototipo.desarrollo_id) {
-          await updateDesarrolloUnidades(prototipo.desarrollo_id);
-        }
-      }
-      
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['prototipos'] });
-      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
-      
       setUnidadToDelete(null);
+      onRefresh();
     } catch (error) {
       console.error('Error deleting unidad:', error);
-    }
-  };
-  
-  // Update desarrollo's unit counts based on its prototipos
-  const updateDesarrolloUnidades = async (desarrolloId: string) => {
-    try {
-      // Get all prototipos for this desarrollo
-      const { data: prototipos } = await supabase
-        .from('prototipos')
-        .select('id, total_unidades, unidades_disponibles')
-        .eq('desarrollo_id', desarrolloId);
-        
-      if (!prototipos) return;
-      
-      // Calculate totals
-      const totalUnidades = prototipos.reduce((sum, p) => sum + (p.total_unidades || 0), 0);
-      const unidadesDisponibles = prototipos.reduce((sum, p) => sum + (p.unidades_disponibles || 0), 0);
-      
-      // Update the desarrollo
-      await supabase
-        .from('desarrollos')
-        .update({
-          total_unidades: totalUnidades,
-          unidades_disponibles: unidadesDisponibles
-        })
-        .eq('id', desarrolloId);
-    } catch (error) {
-      console.error('Error updating desarrollo units:', error);
     }
   };
   
