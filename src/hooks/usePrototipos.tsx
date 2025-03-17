@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
+import { toast } from '@/hooks/use-toast';
 
 export type Prototipo = Tables<"prototipos">;
 
@@ -14,10 +15,11 @@ type FetchPrototiposOptions = {
   limit?: number;
   desarrolloId?: string | null;
   withDesarrollo?: boolean;
+  onError?: (error: Error) => void;
 };
 
 export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
-  const { limit, desarrolloId, withDesarrollo = false } = options;
+  const { limit, desarrolloId, withDesarrollo = false, onError } = options;
   
   // Function to fetch prototipos
   const fetchPrototipos = async (): Promise<ExtendedPrototipo[]> => {
@@ -47,7 +49,11 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
       // If withDesarrollo is requested, fetch the desarrollo for each prototipo
       if (withDesarrollo && prototipos && prototipos.length > 0) {
         // Get all unique desarrollo_ids
-        const desarrolloIds = [...new Set(prototipos.map(p => p.desarrollo_id))];
+        const desarrolloIds = [...new Set(prototipos.map(p => p.desarrollo_id))].filter(Boolean);
+        
+        if (desarrolloIds.length === 0) {
+          return prototipos as ExtendedPrototipo[];
+        }
         
         // Fetch all desarrollos in one query
         const { data: desarrollos, error: desarrollosError } = await supabase
@@ -63,7 +69,7 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
         
         // Map desarrollos to prototipos
         const extendedPrototipos: ExtendedPrototipo[] = prototipos.map(prototipo => {
-          const desarrollo = desarrollos.find(d => d.id === prototipo.desarrollo_id) || null;
+          const desarrollo = desarrollos?.find(d => d.id === prototipo.desarrollo_id) || null;
           return {
             ...prototipo,
             desarrollo
@@ -78,6 +84,9 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
       return prototipos as ExtendedPrototipo[];
     } catch (error) {
       console.error('Error in fetchPrototipos:', error);
+      if (onError && error instanceof Error) {
+        onError(error);
+      }
       throw error;
     }
   };
@@ -85,7 +94,20 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
   // Use React Query to fetch and cache the data
   const queryResult = useQuery({
     queryKey: ['prototipos', limit, desarrolloId, withDesarrollo],
-    queryFn: fetchPrototipos
+    queryFn: fetchPrototipos,
+    retry: 1,
+    onError: (error: Error) => {
+      console.error('Error in prototipos query:', error);
+      if (onError) {
+        onError(error);
+      } else {
+        toast({
+          title: 'Error',
+          description: `No se pudieron cargar los prototipos: ${error.message}`,
+          variant: 'destructive',
+        });
+      }
+    }
   });
 
   return {

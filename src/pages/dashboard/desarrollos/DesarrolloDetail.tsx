@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -22,7 +21,8 @@ import {
   Trees, 
   Waves, 
   GlassWater, 
-  Check 
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import PrototipoCard from '@/components/dashboard/PrototipoCard';
 import { useQuery } from '@tanstack/react-query';
@@ -36,6 +36,7 @@ import { useUserRole } from '@/hooks';
 import { Badge } from '@/components/ui/badge';
 import useUnidades from '@/hooks/useUnidades';
 import { Progress } from '@/components/ui/progress';
+import { toast } from '@/hooks/use-toast';
 
 type Desarrollo = Tables<"desarrollos"> & {
   amenidades?: string[] | string;
@@ -43,19 +44,28 @@ type Desarrollo = Tables<"desarrollos"> & {
 
 const fetchDesarrolloById = async (id: string) => {
   console.log('Fetching desarrollo with ID:', id);
-  const { data, error } = await supabase
-    .from('desarrollos')
-    .select('*')
-    .eq('id', id)
-    .single();
-  
-  if (error) {
-    console.error('Error fetching desarrollo:', error);
-    throw new Error(error.message);
+  try {
+    const { data, error } = await supabase
+      .from('desarrollos')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error fetching desarrollo:', error);
+      throw new Error(error.message);
+    }
+    
+    if (!data) {
+      throw new Error('Desarrollo no encontrado');
+    }
+    
+    console.log('Desarrollo fetched:', data);
+    return data as Desarrollo;
+  } catch (error) {
+    console.error('Error in fetchDesarrolloById:', error);
+    throw error;
   }
-  
-  console.log('Desarrollo fetched:', data);
-  return data as Desarrollo;
 };
 
 const getDesarrolloStatus = (desarrollo: Desarrollo) => {
@@ -117,6 +127,15 @@ const DesarrolloDetailPage = () => {
     queryKey: ['desarrollo', id],
     queryFn: () => fetchDesarrolloById(id as string),
     enabled: !!id,
+    retry: 1,
+    onError: (error: Error) => {
+      console.error('Error loading desarrollo:', error);
+      toast({
+        title: 'Error',
+        description: `Error al cargar el desarrollo: ${error.message}`,
+        variant: 'destructive',
+      });
+    }
   });
   
   const { 
@@ -126,9 +145,16 @@ const DesarrolloDetailPage = () => {
     refetch: refetchPrototipos
   } = usePrototipos({
     desarrolloId: id,
+    onError: (err) => {
+      console.error('Error loading prototipos:', err);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar los prototipos',
+        variant: 'destructive',
+      });
+    }
   });
   
-  // Query for real unit counts for this desarrollo
   const { 
     data: unitCounts,
     isLoading: isLoadingUnitCounts
@@ -136,6 +162,7 @@ const DesarrolloDetailPage = () => {
     queryKey: ['desarrollo-unit-counts', id],
     queryFn: () => countDesarrolloUnidadesByStatus(id as string),
     enabled: !!id,
+    retry: 1,
   });
   
   const handleVolver = () => {
@@ -154,7 +181,6 @@ const DesarrolloDetailPage = () => {
   const isLoading = isLoadingDesarrollo || isLoadingPrototipos || isLoadingUnitCounts;
   const hasError = errorDesarrollo || errorPrototipos;
   
-  // Calculate commercial progress percentage based on sold/reserved units
   const calculateComercialProgress = () => {
     if (!unitCounts) return desarrollo?.avance_porcentaje || 0;
     
@@ -164,7 +190,6 @@ const DesarrolloDetailPage = () => {
     return Math.round(((vendidas + con_anticipo) / total) * 100);
   };
   
-  // Get the display text for units and make sure available units don't exceed total
   const getUnitCountDisplay = () => {
     if (!unitCounts) return "0/0 disponibles";
     
@@ -190,8 +215,12 @@ const DesarrolloDetailPage = () => {
             <div className="h-48 bg-slate-100 animate-pulse rounded-xl" />
           </div>
         ) : hasError ? (
-          <div className="text-center py-10">
-            <p className="text-red-500">Error al cargar los datos del desarrollo</p>
+          <div className="text-center py-10 bg-red-50 rounded-xl">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <p className="text-red-600 font-semibold mb-2">Error al cargar los datos del desarrollo</p>
+            <p className="text-slate-600 mb-6 max-w-lg mx-auto">
+              No se pudieron obtener los datos de este desarrollo. Por favor, intenta nuevamente o contacta a soporte técnico.
+            </p>
             <Button 
               variant="outline" 
               className="mt-4"
