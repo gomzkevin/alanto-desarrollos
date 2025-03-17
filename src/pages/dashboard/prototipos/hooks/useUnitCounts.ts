@@ -9,7 +9,7 @@ interface UnitCounts {
 
 export const useUnitCounts = (unidades: any[]): UnitCounts => {
   const counts = useMemo(() => {
-    if (unidades.length === 0) {
+    if (!unidades || unidades.length === 0) {
       return {
         disponibles: 0,
         vendidas: 0,

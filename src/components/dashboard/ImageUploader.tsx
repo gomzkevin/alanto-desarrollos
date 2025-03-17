@@ -47,6 +47,8 @@ const ImageUploader = ({
       const fileExt = file.name.split('.').pop();
       const fileName = `${folderPath}/${entityId}-${Date.now()}.${fileExt}`;
       
+      console.log('Subiendo archivo:', fileName, 'al bucket:', bucketName);
+      
       // Subir el archivo a Supabase Storage
       const { data, error } = await supabase.storage
         .from(bucketName)
@@ -55,18 +57,24 @@ const ImageUploader = ({
           upsert: true
         });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error al subir imagen:', error);
+        throw error;
+      }
       
       // Obtener la URL pública del archivo
       const { data: publicUrlData } = supabase.storage
         .from(bucketName)
         .getPublicUrl(fileName);
       
+      const imageUrl = publicUrlData.publicUrl;
+      console.log('Imagen subida exitosamente. URL:', imageUrl);
+      
       // Mostrar la imagen en la vista previa
-      setPreviewUrl(publicUrlData.publicUrl);
+      setPreviewUrl(imageUrl);
       
       // Llamar al callback con la nueva URL
-      onImageUploaded(publicUrlData.publicUrl);
+      onImageUploaded(imageUrl);
       
       toast({
         title: "Éxito",

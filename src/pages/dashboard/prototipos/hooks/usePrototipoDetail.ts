@@ -43,13 +43,34 @@ export const usePrototipoDetail = () => {
     }
   };
   
+  const updatePrototipoImage = async (imageUrl: string) => {
+    if (!id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('prototipos')
+        .update({ imagen_url: imageUrl })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      await refetch();
+      
+      return true;
+    } catch (error) {
+      console.error('Error al actualizar imagen del prototipo:', error);
+      return false;
+    }
+  };
+  
   return {
     id,
     prototipo,
     isLoading,
     error,
     refetch,
-    handleBack
+    handleBack,
+    updatePrototipoImage
   };
 };
 

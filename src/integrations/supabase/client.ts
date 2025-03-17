@@ -19,7 +19,7 @@ export const supabase = createClient<Database>(
       autoRefreshToken: true,
     },
     global: {
-      fetch: async (url, options) => {
+      fetch: async (url, options = {}) => {
         // Maximum number of retries
         const MAX_RETRIES = 3;
         let retries = 0;
