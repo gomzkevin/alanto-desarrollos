@@ -143,6 +143,7 @@ export function ResourceDialogContent({
             isSubmitting={isSubmitting}
             onSubmit={saveResource}
             formId="resource-form"
+            resourceType={resourceType}
           />
         )}
       </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,8 +19,9 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AmenitiesSelector } from '../AmenitiesSelector';
-import { FieldDefinition, FormValues } from './types';
+import { FieldDefinition, FormValues, ResourceType } from './types';
 import ImageUploader from '../ImageUploader';
+import useLeads from '@/hooks/useLeads';
 
 interface GenericFormProps {
   fields: FieldDefinition[];
@@ -34,6 +36,7 @@ interface GenericFormProps {
   onSubmit?: () => void;
   formId: string;
   selectedAmenities?: string[];
+  resourceType?: ResourceType;
 }
 
 const GenericForm = ({
@@ -48,10 +51,12 @@ const GenericForm = ({
   formId,
   isSubmitting = false,
   onSubmit,
-  selectedAmenities = []
+  selectedAmenities = [],
+  resourceType
 }: GenericFormProps) => {
   const [activeTab, setActiveTab] = useState<string>('general');
   const [tabs, setTabs] = useState<{ id: string; label: string }[]>([]);
+  const { leads } = useLeads();
 
   const generateValidationSchema = () => {
     const schema: { [key: string]: any } = {};
@@ -70,6 +75,8 @@ const GenericForm = ({
       } else if (field.type === 'amenities') {
         schema[field.name] = z.array(z.string()).optional();
       } else if (field.type === 'image-upload' || field.type === 'upload') {
+        schema[field.name] = z.string().optional();
+      } else if (field.type === 'select-lead') {
         schema[field.name] = z.string().optional();
       }
     });
@@ -94,6 +101,14 @@ const GenericForm = ({
     
     if (onSelectChange && fields.some(field => field.name === name && (field.type === 'select' || field.type === 'select-lead'))) {
       onSelectChange(name, value as string);
+      
+      // Si es un campo de selección de lead y es para una unidad, también actualizamos el nombre del comprador
+      if (resourceType === 'unidades' && name === 'comprador_id' && onLeadSelect) {
+        const selectedLead = leads.find(lead => lead.id === value);
+        if (selectedLead) {
+          onLeadSelect(value as string, selectedLead.nombre);
+        }
+      }
     }
     
     if (onSwitchChange && fields.some(field => field.name === name && field.type === 'switch')) {
@@ -191,6 +206,35 @@ const GenericForm = ({
                       {field.options.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : field.type === 'select-lead' ? (
+                  <Select
+                    value={formField.value?.toString() || ''}
+                    disabled={field.readOnly}
+                    onValueChange={(value) => {
+                      if (!field.readOnly) {
+                        formField.onChange(value);
+                        onFormChange(field.name, value);
+                        
+                        // Si hay un lead seleccionado, obtener su nombre
+                        const selectedLead = leads.find(lead => lead.id === value);
+                        if (selectedLead && onLeadSelect) {
+                          onLeadSelect(value, selectedLead.nombre);
+                        }
+                      }
+                    }}
+                  >
+                    <SelectTrigger className={field.readOnly ? "bg-gray-100" : ""}>
+                      <SelectValue placeholder="Seleccionar cliente..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Ninguno</SelectItem>
+                      {leads.map((lead) => (
+                        <SelectItem key={lead.id} value={lead.id}>
+                          {lead.nombre} {lead.email ? `(${lead.email})` : lead.telefono ? `(${lead.telefono})` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
