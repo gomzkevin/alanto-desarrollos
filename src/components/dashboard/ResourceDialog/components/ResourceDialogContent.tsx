@@ -120,28 +120,7 @@ export function ResourceDialogContent({
           <GenericForm
             fields={fields}
             values={formValues}
-            onChange={(values) => {
-              // Extract the changed field by comparing with the original resource
-              if (resource) {
-                const changedFields = Object.entries(values).filter(
-                  ([key, value]) => resource[key as keyof FormValues] !== value
-                );
-                
-                if (changedFields.length > 0) {
-                  const [name, value] = changedFields[0];
-                  // Create a synthetic event object
-                  const syntheticEvent = {
-                    target: {
-                      name,
-                      value,
-                      type: typeof value === 'number' ? 'number' : 'text'
-                    }
-                  } as React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
-                  
-                  handleChange(syntheticEvent);
-                }
-              }
-            }}
+            onChange={handleChange}
             onSelectChange={handleSelectChange}
             onSwitchChange={handleSwitchChange}
             onLeadSelect={handleLeadSelect}

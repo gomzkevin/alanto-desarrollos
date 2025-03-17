@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import useUnidades from '@/hooks/useUnidades';
-import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog/AdminResourceDialog';
 import { Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -253,8 +253,9 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
           onClose={handleCloseDialog}
           onSuccess={handleSuccessEdit}
           prototipo_id={prototipo.id}
-          buttonVariant="outline"
+          desarrolloId={prototipo.desarrollo_id}
           buttonText="Editar unidad"
+          buttonVariant="outline"
         />
       )}
       
