@@ -1,16 +1,13 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, X, User } from 'lucide-react';
 import useLeads from '@/hooks/useLeads';
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Card } from '@/components/ui/card';
 
 interface ClientSearchProps {
   value: string;
@@ -95,7 +92,7 @@ export function ClientSearch({
 
   const renderExistingClientSearch = () => (
     <div className="relative w-full">
-      <div className="flex w-full relative rounded-md border border-input overflow-hidden focus-within:ring-1 focus-within:ring-ring">
+      <div className="flex w-full relative rounded-md border border-input overflow-hidden focus-within:ring-1 focus-within:ring-ring shadow-sm">
         <div className="flex-1 relative">
           {selectedLead ? (
             <Button 
@@ -164,7 +161,7 @@ export function ClientSearch({
       </div>
       
       {open && (
-        <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200">
+        <Card className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200">
           <div className="p-3 border-b">
             <Input
               placeholder="Buscar cliente..."
@@ -187,7 +184,7 @@ export function ClientSearch({
                     key={lead.id}
                     type="button"
                     variant="ghost"
-                    className="w-full justify-start px-3 py-2 text-left h-auto"
+                    className="w-full justify-start px-3 py-2 text-left h-auto hover:bg-gray-50"
                     onClick={() => handleSelectLead(lead)}
                   >
                     <div className="truncate flex flex-col items-start w-full">
@@ -208,7 +205,7 @@ export function ClientSearch({
               </div>
             )}
           </ScrollArea>
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -222,6 +219,7 @@ export function ClientSearch({
           placeholder="Nombre completo"
           value={newClientData?.nombre || ''}
           onChange={(e) => onNewClientDataChange && onNewClientDataChange('nombre', e.target.value)}
+          className="mt-1"
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -232,6 +230,7 @@ export function ClientSearch({
             placeholder="correo@ejemplo.com"
             value={newClientData?.email || ''}
             onChange={(e) => onNewClientDataChange && onNewClientDataChange('email', e.target.value)}
+            className="mt-1"
           />
         </div>
         <div>
@@ -241,6 +240,7 @@ export function ClientSearch({
             placeholder="+52 55 1234 5678"
             value={newClientData?.telefono || ''}
             onChange={(e) => onNewClientDataChange && onNewClientDataChange('telefono', e.target.value)}
+            className="mt-1"
           />
         </div>
       </div>
@@ -267,7 +267,7 @@ export function ClientSearch({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Label htmlFor="existingClient">Cliente existente</Label>
+        <Label htmlFor="existingClient" className="font-medium">Cliente existente</Label>
         <Switch
           id="existingClient"
           checked={isExistingClient}
@@ -277,7 +277,7 @@ export function ClientSearch({
       
       {isExistingClient ? (
         <div>
-          <Label>Buscar cliente</Label>
+          <Label className="font-medium">Buscar cliente</Label>
           {renderExistingClientSearch()}
         </div>
       ) : renderNewClientForm()}

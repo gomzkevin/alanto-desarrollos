@@ -1,7 +1,10 @@
 
 import { FieldDefinition } from '../types';
+import useLeads from '@/hooks/useLeads';
 
 export function useResourceFields(resourceType: string): FieldDefinition[] {
+  const { statusOptions, getSubstatusOptions, originOptions } = useLeads({});
+  
   switch (resourceType) {
     case 'desarrollos':
       return [
@@ -71,33 +74,74 @@ export function useResourceFields(resourceType: string): FieldDefinition[] {
       ];
       
     case 'leads':
+      // Get the first status option or default to 'nuevo'
+      const defaultStatus = statusOptions.length > 0 ? statusOptions[0].value : 'nuevo';
+      const substatusOptions = getSubstatusOptions(defaultStatus);
+      
       return [
-        { name: 'nombre', label: 'Nombre', type: 'text' },
-        { name: 'email', label: 'Email', type: 'email' },
-        { name: 'telefono', label: 'Teléfono', type: 'text' },
-        { name: 'agente', label: 'Agente', type: 'text' },
-        { name: 'estado', label: 'Estado', type: 'select', options: [
-          { value: 'nuevo', label: 'Nuevo' },
-          { value: 'seguimiento', label: 'Seguimiento' },
-          { value: 'convertido', label: 'Convertido' },
-          { value: 'perdido', label: 'Perdido' }
-        ]},
-        { name: 'subestado', label: 'Subestado', type: 'select', options: [] },
-        { name: 'origen', label: 'Origen', type: 'select', options: [
-          { value: 'sitio_web', label: 'Sitio web' },
-          { value: 'referido', label: 'Referido' },
-          { value: 'evento', label: 'Evento' },
-          { value: 'llamada', label: 'Llamada' },
-          { value: 'redes_sociales', label: 'Redes sociales' },
-          { value: 'whatsapp', label: 'WhatsApp' },
-          { value: 'portal_inmobiliario', label: 'Portal inmobiliario' },
-          { value: 'visita_fisica', label: 'Visita física' },
-          { value: 'campaña_email', label: 'Campaña de email' },
-          { value: 'otro', label: 'Otro' }
-        ]},
-        { name: 'interes_en', label: 'Interés en', type: 'interest-selector' },
-        { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' },
-        { name: 'notas', label: 'Notas', type: 'textarea' },
+        { 
+          name: 'nombre', 
+          label: 'Nombre', 
+          type: 'text',
+          tab: 'Información básica'
+        },
+        { 
+          name: 'email', 
+          label: 'Email', 
+          type: 'email',
+          tab: 'Información básica'
+        },
+        { 
+          name: 'telefono', 
+          label: 'Teléfono', 
+          type: 'text',
+          tab: 'Información básica'
+        },
+        { 
+          name: 'agente', 
+          label: 'Agente', 
+          type: 'text',
+          tab: 'Información básica'
+        },
+        { 
+          name: 'estado', 
+          label: 'Estado', 
+          type: 'select', 
+          options: statusOptions,
+          tab: 'Seguimiento'
+        },
+        { 
+          name: 'subestado', 
+          label: 'Subestado', 
+          type: 'select', 
+          options: substatusOptions,
+          tab: 'Seguimiento'
+        },
+        { 
+          name: 'origen', 
+          label: 'Origen', 
+          type: 'select', 
+          options: originOptions,
+          tab: 'Seguimiento'
+        },
+        { 
+          name: 'interes_en', 
+          label: 'Interés en', 
+          type: 'interest-selector',
+          tab: 'Seguimiento'
+        },
+        { 
+          name: 'ultimo_contacto', 
+          label: 'Última fecha de contacto', 
+          type: 'date',
+          tab: 'Seguimiento'
+        },
+        { 
+          name: 'notas', 
+          label: 'Notas', 
+          type: 'textarea',
+          tab: 'Notas' 
+        },
       ];
       
     case 'cotizaciones':

@@ -23,6 +23,7 @@ import { FieldDefinition } from './types';
 import { AmenitiesSelector } from '@/components/dashboard/AmenitiesSelector';
 import { ClientSearch } from './components/ClientSearch';
 import InterestSelector from './components/InterestSelector';
+import useLeads from '@/hooks/useLeads';
 
 interface GenericFormProps {
   fields: FieldDefinition[];
@@ -53,6 +54,16 @@ const GenericForm = ({
 }: GenericFormProps) => {
   const [activeTab, setActiveTab] = useState<string>('general');
   const [groupedFields, setGroupedFields] = useState<Record<string, FieldDefinition[]>>({});
+  const { getSubstatusOptions } = useLeads({});
+  const [substatusOptions, setSubstatusOptions] = useState<Array<{value: string, label: string}>>([]);
+
+  useEffect(() => {
+    // Update subestado options when estado changes
+    if (values.estado) {
+      const options = getSubstatusOptions(values.estado);
+      setSubstatusOptions(options);
+    }
+  }, [values.estado, getSubstatusOptions]);
 
   useEffect(() => {
     // Group fields by tab
@@ -93,20 +104,23 @@ const GenericForm = ({
     const { name, label, type, options = [] } = field;
     const value = values[name] !== undefined ? values[name] : '';
 
+    // For subestado field, use dynamic options
+    const fieldOptions = name === 'subestado' ? substatusOptions : options;
+
     switch (type) {
       case 'text':
       case 'email':
       case 'number':
         return (
           <div key={name} className="grid gap-2 py-2">
-            <Label htmlFor={name} className="text-gray-800">{label}</Label>
+            <Label htmlFor={name} className="text-gray-800 font-medium">{label}</Label>
             <Input
               id={name}
               name={name}
               type={type}
               value={value}
               onChange={handleInputChange}
-              className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+              className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
             />
           </div>
         );
@@ -114,13 +128,13 @@ const GenericForm = ({
       case 'date':
         return (
           <div key={name} className="grid gap-2 py-2">
-            <Label htmlFor={name} className="text-gray-800">{label}</Label>
+            <Label htmlFor={name} className="text-gray-800 font-medium">{label}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "w-full justify-start text-left font-normal border border-gray-300 rounded-md shadow-sm",
                     !value && "text-muted-foreground"
                   )}
                 >
@@ -135,7 +149,7 @@ const GenericForm = ({
                   onSelect={(date) => onDateChange(name, date)}
                   initialFocus
                   locale={es}
-                  className="pointer-events-auto"
+                  className="rounded-md shadow-md border border-gray-100"
                 />
               </PopoverContent>
             </Popover>
@@ -145,13 +159,13 @@ const GenericForm = ({
       case 'textarea':
         return (
           <div key={name} className="grid gap-2 py-2">
-            <Label htmlFor={name} className="text-gray-800">{label}</Label>
+            <Label htmlFor={name} className="text-gray-800 font-medium">{label}</Label>
             <Textarea
               id={name}
               name={name}
               value={value || ''}
               onChange={handleTextareaChange}
-              className="min-h-[100px] resize-y border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+              className="min-h-[100px] resize-y border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
             />
           </div>
         );
@@ -159,16 +173,16 @@ const GenericForm = ({
       case 'select':
         return (
           <div key={name} className="grid gap-2 py-2">
-            <Label htmlFor={name} className="text-gray-800">{label}</Label>
+            <Label htmlFor={name} className="text-gray-800 font-medium">{label}</Label>
             <Select
               value={value}
               onValueChange={(value) => onSelectChange(name, value)}
             >
-              <SelectTrigger className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+              <SelectTrigger className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                 <SelectValue placeholder={`Seleccionar ${label.toLowerCase()}`} />
               </SelectTrigger>
-              <SelectContent className="bg-white">
-                {options.map((option) => (
+              <SelectContent className="bg-white rounded-md shadow-md border border-gray-100">
+                {fieldOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -181,7 +195,7 @@ const GenericForm = ({
       case 'switch':
         return (
           <div key={name} className="flex items-center justify-between py-2">
-            <Label htmlFor={name} className="text-gray-800">{label}</Label>
+            <Label htmlFor={name} className="text-gray-800 font-medium">{label}</Label>
             <Switch
               id={name}
               checked={value || false}
@@ -193,7 +207,7 @@ const GenericForm = ({
       case 'amenities':
         return (
           <div key={name} className="grid gap-2 py-2">
-            <Label className="text-gray-800">{label}</Label>
+            <Label className="text-gray-800 font-medium">{label}</Label>
             {onAmenitiesChange && (
               <AmenitiesSelector
                 selectedAmenities={selectedAmenities}
@@ -206,7 +220,7 @@ const GenericForm = ({
       case 'select-lead':
         return (
           <div key={name} className="grid gap-2 py-2">
-            <Label className="text-gray-800">{label}</Label>
+            <Label className="text-gray-800 font-medium">{label}</Label>
             {onLeadSelect && (
               <ClientSearch
                 onClientSelect={(leadId, leadName) => onLeadSelect(leadId, leadName)}
@@ -221,11 +235,11 @@ const GenericForm = ({
       case 'interest-selector':
         return (
           <div key={name} className="grid gap-2 py-2">
-            <Label className="text-gray-800">{label}</Label>
+            <Label className="text-gray-800 font-medium">{label}</Label>
             <InterestSelector
               value={value || ''}
               onChange={(newValue) => onSelectChange(name, newValue)}
-              className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+              className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
             />
           </div>
         );
@@ -240,8 +254,8 @@ const GenericForm = ({
   if (tabs.length <= 1) {
     // Only one tab, render fields directly
     return (
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-1">
+      <form onSubmit={handleSubmit} className="space-y-5 bg-white p-4 rounded-lg shadow-sm">
+        <div className="space-y-4">
           {fields.map(field => renderField(field))}
         </div>
         
@@ -256,27 +270,31 @@ const GenericForm = ({
   
   // Multiple tabs, render tabbed interface
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+        <TabsList className="bg-gray-100 p-1 rounded-t-lg w-full flex overflow-x-auto">
           {tabs.map(tab => (
-            <TabsTrigger key={tab} value={tab} className="capitalize">
+            <TabsTrigger 
+              key={tab} 
+              value={tab} 
+              className="capitalize data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm rounded-md flex-1"
+            >
               {tab}
             </TabsTrigger>
           ))}
         </TabsList>
         
         {tabs.map(tab => (
-          <TabsContent key={tab} value={tab} className="space-y-4 pt-4">
-            <div className="space-y-1">
+          <TabsContent key={tab} value={tab} className="p-6 space-y-4">
+            <div className="space-y-4">
               {groupedFields[tab]?.map(field => renderField(field))}
             </div>
           </TabsContent>
         ))}
       </Tabs>
       
-      <div className="mt-6 flex justify-end">
-        <Button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+      <div className="p-4 flex justify-end border-t border-gray-100">
+        <Button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-24">
           {isSubmitting ? 'Guardando...' : 'Guardar'}
         </Button>
       </div>

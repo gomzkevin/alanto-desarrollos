@@ -149,3 +149,4 @@ export function objectToQueryString(obj: Record<string, any>): string {
     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(obj[key])}`)
     .join('&');
 }
+
