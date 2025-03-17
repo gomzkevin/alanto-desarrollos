@@ -24,6 +24,7 @@ const PrototipoCard: React.FC<PrototipoCardProps> = ({ prototipo, onViewDetails 
     if (onViewDetails) {
       onViewDetails(prototipo.id);
     } else {
+      // Navega directamente a la página de detalles
       navigate(`/dashboard/prototipos/${prototipo.id}`);
     }
   };

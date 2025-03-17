@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, Home, MapPin, Box, Building, Ruler, Bed, Bath, Car, Pencil, PlusCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { useToast } from '@/hooks/use-toast';
 import useUnidades from '@/hooks/useUnidades';
 import { UnidadTable } from './UnidadTable';
@@ -20,25 +19,32 @@ import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 
 type Prototipo = Tables<"prototipos">;
 type Desarrollo = Tables<"desarrollos">;
 
 const fetchPrototipoById = async (id: string) => {
   console.log('Fetching prototipo with ID:', id);
-  const { data, error } = await supabase
-    .from('prototipos')
-    .select('*, desarrollo:desarrollo_id(*)')
-    .eq('id', id)
-    .single();
   
-  if (error) {
-    console.error('Error fetching prototipo:', error);
+  try {
+    const { data, error } = await supabase
+      .from('prototipos')
+      .select('*, desarrollo:desarrollo_id(*)')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching prototipo:', error);
+      throw error;
+    }
+    
+    console.log('Prototipo data fetched successfully:', data);
+    return data as ExtendedPrototipo;
+  } catch (error) {
+    console.error('Exception in fetchPrototipoById:', error);
     throw error;
   }
-  
-  console.log('Prototipo data fetched:', data);
-  return data as ExtendedPrototipo;
 };
 
 const PrototipoDetail = () => {
@@ -102,6 +108,7 @@ const PrototipoDetail = () => {
   };
   
   const handleRefresh = () => {
+    console.log('Refreshing prototipo data...');
     refetch();
     refetchUnidades();
   };
@@ -134,6 +141,7 @@ const PrototipoDetail = () => {
     }
   };
   
+  // Early return for loading state
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -154,11 +162,13 @@ const PrototipoDetail = () => {
     );
   }
   
+  // Early return for error state
   if (error || !prototipo) {
+    console.error('Error state in PrototipoDetail:', error);
     return (
       <DashboardLayout>
         <div className="p-6">
-          <Button variant="outline" size="sm" onClick={handleBack}>
+          <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/desarrollos')}>
             <ChevronLeft className="mr-1 h-4 w-4" />
             Volver
           </Button>
@@ -393,8 +403,15 @@ const PrototipoDetail = () => {
           resourceType="prototipos"
           resourceId={id}
           open={openEditDialog}
-          onClose={() => setOpenEditDialog(false)}
-          onSuccess={handleRefresh}
+          onClose={() => {
+            console.log('Closing edit dialog');
+            setOpenEditDialog(false);
+          }}
+          onSuccess={() => {
+            console.log('Edit successful, refreshing');
+            setOpenEditDialog(false);
+            handleRefresh();
+          }}
         />
       )}
       
@@ -402,8 +419,15 @@ const PrototipoDetail = () => {
         <AdminResourceDialog 
           resourceType="unidades"
           open={openAddUnidadDialog}
-          onClose={() => setOpenAddUnidadDialog(false)}
-          onSuccess={refetchUnidades}
+          onClose={() => {
+            console.log('Closing add unidad dialog');
+            setOpenAddUnidadDialog(false);
+          }}
+          onSuccess={() => {
+            console.log('Add successful, refreshing');
+            setOpenAddUnidadDialog(false);
+            refetchUnidades();
+          }}
           prototipo_id={id}
         />
       )}
