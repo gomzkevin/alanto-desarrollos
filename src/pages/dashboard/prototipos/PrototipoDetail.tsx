@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -16,6 +15,7 @@ import { UnidadTable } from './UnidadTable';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatCurrency } from '@/lib/utils';
+import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 
 type Prototipo = Tables<"prototipos">;
 type Desarrollo = Tables<"desarrollos">;
@@ -57,7 +57,7 @@ const fetchPrototipoById = async (id: string) => {
     }
   }
   
-  return data;
+  return data as ExtendedPrototipo;
 };
 
 const PrototipoDetail = () => {
@@ -141,7 +141,6 @@ const PrototipoDetail = () => {
     }
   };
   
-  // Update desarrollo's unit counts based on its prototipos
   const updateDesarrolloUnidades = async (desarrolloId: string) => {
     try {
       // Get all prototipos for this desarrollo
@@ -378,7 +377,6 @@ const PrototipoDetail = () => {
         </div>
       </div>
       
-      {/* Modal para generar múltiples unidades */}
       <Dialog open={generarUnidadesModalOpen} onOpenChange={setGenerarUnidadesModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -419,7 +417,6 @@ const PrototipoDetail = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Diálogo para editar el prototipo */}
       <AdminResourceDialog 
         resourceType="prototipos"
         resourceId={id}
@@ -428,7 +425,6 @@ const PrototipoDetail = () => {
         onSuccess={handleRefresh}
       />
       
-      {/* Diálogo para agregar una unidad */}
       <AdminResourceDialog 
         resourceType="unidades"
         open={openAddUnidadDialog}
@@ -442,7 +438,6 @@ const PrototipoDetail = () => {
 
 export default PrototipoDetail;
 
-// Importaciones para el modal
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
