@@ -1,24 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check, ChevronDown } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
-import { cn } from '@/lib/utils';
 
 interface InterestSelectorProps {
   value: string;
@@ -26,171 +19,172 @@ interface InterestSelectorProps {
   className?: string;
 }
 
-const InterestSelector = ({ value, onChange, className }: InterestSelectorProps) => {
-  const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<'desarrollo' | 'prototipo'>('desarrollo');
-  const [selectedDesarrollo, setSelectedDesarrollo] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState('');
+const InterestSelector: React.FC<InterestSelectorProps> = ({
+  value,
+  onChange,
+  className,
+}) => {
+  const [activeTab, setActiveTab] = useState<string>('desarrollos');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | null>(null);
   
-  const { desarrollos, isLoading: isLoadingDesarrollos } = useDesarrollos();
-  const { prototipos, isLoading: isLoadingPrototipos } = usePrototipos({
-    desarrolloId: selectedDesarrollo || undefined,
+  const { desarrollos } = useDesarrollos();
+  const { prototipos } = usePrototipos({ 
+    desarrolloId: selectedDesarrolloId 
   });
 
-  // Parse the initial value to set appropriate states
+  // Detectar tipo de interés actual al cargar
   useEffect(() => {
     if (value) {
       if (value.startsWith('desarrollo:')) {
-        const desarrolloId = value.split(':')[1];
-        setTab('desarrollo');
-        setSelectedDesarrollo(desarrolloId);
-        
-        const desarrollo = desarrollos.find(d => d.id === desarrolloId);
-        if (desarrollo) {
-          setDisplayName(`Desarrollo: ${desarrollo.nombre}`);
-        }
+        setActiveTab('desarrollos');
       } else if (value.startsWith('prototipo:')) {
+        setActiveTab('prototipos');
+        // Extraer el ID del prototipo
         const prototipoId = value.split(':')[1];
-        setTab('prototipo');
-        
+        // Buscar el prototipo para obtener su desarrollo_id
         const prototipo = prototipos.find(p => p.id === prototipoId);
         if (prototipo) {
-          setSelectedDesarrollo(prototipo.desarrollo_id);
-          setDisplayName(`Prototipo: ${prototipo.nombre}`);
+          setSelectedDesarrolloId(prototipo.desarrollo_id);
         }
       }
-    } else {
-      setDisplayName('');
     }
-  }, [value, desarrollos, prototipos]);
+  }, [value, prototipos]);
 
-  const handleDesarrolloSelect = (desarrolloId: string) => {
-    const newValue = `desarrollo:${desarrolloId}`;
-    onChange(newValue);
-    setOpen(false);
+  // Filtrar desarrollos basados en el término de búsqueda
+  const filteredDesarrollos = desarrollos.filter(desarrollo =>
+    desarrollo.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-    // Update display name
-    const desarrollo = desarrollos.find(d => d.id === desarrolloId);
-    if (desarrollo) {
-      setDisplayName(`Desarrollo: ${desarrollo.nombre}`);
+  // Filtrar prototipos basados en el término de búsqueda
+  const filteredPrototipos = prototipos.filter(prototipo =>
+    prototipo.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Obtener el nombre del desarrollo o prototipo seleccionado
+  const getSelectedName = () => {
+    if (!value) return 'Seleccionar interés...';
+    
+    if (value.startsWith('desarrollo:')) {
+      const desarrolloId = value.split(':')[1];
+      const desarrollo = desarrollos.find(d => d.id === desarrolloId);
+      return desarrollo ? `${desarrollo.nombre} (Desarrollo)` : 'Seleccionar desarrollo...';
+    } else if (value.startsWith('prototipo:')) {
+      const prototipoId = value.split(':')[1];
+      const prototipo = prototipos.find(p => p.id === prototipoId);
+      return prototipo ? `${prototipo.nombre} (Prototipo)` : 'Seleccionar prototipo...';
     }
+    
+    return 'Seleccionar interés...';
   };
 
-  const handlePrototipoSelect = (prototipoId: string) => {
-    const newValue = `prototipo:${prototipoId}`;
-    onChange(newValue);
-    setOpen(false);
-
-    // Update display name
-    const prototipo = prototipos.find(p => p.id === prototipoId);
-    if (prototipo) {
-      setDisplayName(`Prototipo: ${prototipo.nombre}`);
-    }
+  // Manejar cambio de desarrollo seleccionado
+  const handleDesarrolloChange = (desarrolloId: string) => {
+    onChange(`desarrollo:${desarrolloId}`);
   };
 
-  const handleTabChange = (value: string) => {
-    setTab(value as 'desarrollo' | 'prototipo');
+  // Manejar cambio de desarrollo para filtrar prototipos
+  const handleDesarrolloFilterChange = (desarrolloId: string) => {
+    setSelectedDesarrolloId(desarrolloId);
+  };
+
+  // Manejar cambio de prototipo seleccionado
+  const handlePrototipoChange = (prototipoId: string) => {
+    onChange(`prototipo:${prototipoId}`);
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button 
-          variant="outline" 
-          role="combobox" 
-          aria-expanded={open} 
-          className={cn("w-full justify-between", className)}
-        >
-          {displayName || "Seleccionar interés..."}
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0">
-        <div className="p-1">
-          <Tabs value={tab} onValueChange={handleTabChange} className="w-full border-b pb-2">
-            <TabsList className="grid grid-cols-2 w-full bg-gray-100">
-              <TabsTrigger 
-                value="desarrollo"
-                className="data-[state=active]:bg-white data-[state=active]:text-indigo-600"
-              >
-                Desarrollos
-              </TabsTrigger>
-              <TabsTrigger 
-                value="prototipo"
-                className="data-[state=active]:bg-white data-[state=active]:text-indigo-600"
-              >
-                Prototipos
-              </TabsTrigger>
+    <div className={className}>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={getSelectedName()} />
+        </SelectTrigger>
+        <SelectContent className="w-[450px] max-h-[350px]">
+          <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="desarrollos" className="text-sm">Desarrollos</TabsTrigger>
+              <TabsTrigger value="prototipos" className="text-sm">Prototipos</TabsTrigger>
             </TabsList>
+            
+            <div className="relative mb-3">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder={`Buscar ${activeTab === 'desarrollos' ? 'desarrollos' : 'prototipos'}...`}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            
+            <TabsContent value="desarrollos" className="mt-0 max-h-[200px] overflow-y-auto">
+              {filteredDesarrollos.length > 0 ? (
+                filteredDesarrollos.map((desarrollo) => (
+                  <div
+                    key={desarrollo.id}
+                    className="flex items-center px-2 py-1.5 cursor-pointer hover:bg-gray-100 rounded-md"
+                    onClick={() => handleDesarrolloChange(desarrollo.id)}
+                  >
+                    <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center mr-2">
+                      <span className="text-xs text-indigo-700">{desarrollo.nombre.charAt(0)}</span>
+                    </div>
+                    <span className="text-sm">{desarrollo.nombre}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="px-2 py-4 text-center text-gray-500 text-sm">
+                  No se encontraron desarrollos
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="prototipos" className="mt-0 space-y-3">
+              <Select 
+                value={selectedDesarrolloId || ''} 
+                onValueChange={handleDesarrolloFilterChange}
+              >
+                <SelectTrigger className="w-full bg-gray-50">
+                  <SelectValue placeholder="Filtrar por desarrollo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {desarrollos.map((desarrollo) => (
+                    <SelectItem key={desarrollo.id} value={desarrollo.id}>
+                      {desarrollo.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <div className="max-h-[150px] overflow-y-auto">
+                {selectedDesarrolloId ? (
+                  filteredPrototipos.length > 0 ? (
+                    filteredPrototipos.map((prototipo) => (
+                      <div
+                        key={prototipo.id}
+                        className="flex items-center px-2 py-1.5 cursor-pointer hover:bg-gray-100 rounded-md"
+                        onClick={() => handlePrototipoChange(prototipo.id)}
+                      >
+                        <div className="w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center mr-2">
+                          <span className="text-xs text-teal-700">{prototipo.nombre.charAt(0)}</span>
+                        </div>
+                        <span className="text-sm">{prototipo.nombre}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-2 py-4 text-center text-gray-500 text-sm">
+                      No se encontraron prototipos para este desarrollo
+                    </div>
+                  )
+                ) : (
+                  <div className="px-2 py-4 text-center text-gray-500 text-sm">
+                    Selecciona un desarrollo para ver sus prototipos
+                  </div>
+                )}
+              </div>
+            </TabsContent>
           </Tabs>
-        </div>
-        
-        <Command>
-          <CommandInput placeholder={`Buscar ${tab === 'desarrollo' ? 'desarrollos' : 'prototipos'}...`} />
-          <CommandList>
-            <CommandEmpty>No se encontraron resultados.</CommandEmpty>
-            {tab === 'desarrollo' ? (
-              <CommandGroup heading="Desarrollos">
-                {isLoadingDesarrollos ? (
-                  <CommandItem disabled>Cargando desarrollos...</CommandItem>
-                ) : desarrollos.length === 0 ? (
-                  <CommandItem disabled>No hay desarrollos</CommandItem>
-                ) : (
-                  desarrollos.map((desarrollo) => (
-                    <CommandItem
-                      key={desarrollo.id}
-                      value={desarrollo.id}
-                      onSelect={handleDesarrolloSelect}
-                      className="flex items-center justify-between"
-                    >
-                      <span>{desarrollo.nombre}</span>
-                      {value === `desarrollo:${desarrollo.id}` && (
-                        <Check className="h-4 w-4 text-green-600" />
-                      )}
-                    </CommandItem>
-                  ))
-                )}
-              </CommandGroup>
-            ) : (
-              <CommandGroup heading="Prototipos">
-                {selectedDesarrollo ? (
-                  <>
-                    {isLoadingPrototipos ? (
-                      <CommandItem disabled>Cargando prototipos...</CommandItem>
-                    ) : prototipos.length === 0 ? (
-                      <CommandItem disabled>No hay prototipos para este desarrollo</CommandItem>
-                    ) : (
-                      prototipos.map((prototipo) => (
-                        <CommandItem
-                          key={prototipo.id}
-                          value={prototipo.id}
-                          onSelect={handlePrototipoSelect}
-                          className="flex items-center justify-between"
-                        >
-                          <div className="flex flex-col">
-                            <span>{prototipo.nombre}</span>
-                            <span className="text-xs text-gray-500">
-                              {desarrollos.find(d => d.id === prototipo.desarrollo_id)?.nombre}
-                            </span>
-                          </div>
-                          {value === `prototipo:${prototipo.id}` && (
-                            <Check className="h-4 w-4 text-green-600" />
-                          )}
-                        </CommandItem>
-                      ))
-                    )}
-                  </>
-                ) : (
-                  <CommandItem disabled>
-                    Seleccione primero un desarrollo
-                  </CommandItem>
-                )}
-              </CommandGroup>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+        </SelectContent>
+      </Select>
+    </div>
   );
 };
 

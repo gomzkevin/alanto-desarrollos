@@ -57,7 +57,7 @@ const GenericForm = ({
   const { getSubstatusOptions } = useLeads({});
   const [substatusOptions, setSubstatusOptions] = useState<Array<{value: string, label: string}>>([]);
 
-  // Update subestado options when estado changes - fixed to prevent infinite loops
+  // Update subestado options when estado changes
   useEffect(() => {
     if (values.estado) {
       const options = getSubstatusOptions(values.estado);
