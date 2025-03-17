@@ -33,7 +33,7 @@ import {
 import useUnidades from '@/hooks/useUnidades';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { Tables } from '@/integrations/supabase/types';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 type Prototipo = Tables<"prototipos">;
 
@@ -50,6 +50,7 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
   const [statusUpdateLoading, setStatusUpdateLoading] = useState<Record<string, boolean>>({});
   
   const { deleteUnidad, updateUnidad } = useUnidades();
+  const { toast } = useToast();
   
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -252,6 +253,8 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
           onClose={handleCloseDialog}
           onSuccess={handleSuccessEdit}
           prototipo_id={prototipo.id}
+          buttonVariant="outline"
+          buttonText="Editar unidad"
         />
       )}
       

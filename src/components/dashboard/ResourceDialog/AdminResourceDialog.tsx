@@ -49,6 +49,13 @@ const AdminResourceDialog = ({
     setDialogOpen(newOpen);
   };
 
+  // Logging to debug dialog open/close issues
+  console.log('AdminResourceDialog - open prop:', open);
+  console.log('AdminResourceDialog - dialogOpen state:', dialogOpen);
+  console.log('AdminResourceDialog - isOpen calculated:', isOpen);
+  console.log('AdminResourceDialog - resourceType:', resourceType);
+  console.log('AdminResourceDialog - resourceId:', resourceId);
+
   const fields = useResourceFields(resourceType);
 
   const {
@@ -188,6 +195,7 @@ const AdminResourceDialog = ({
           });
         }
       } else {
+        console.log('Saving resource with data:', resource);
         saveResource(resource).then(success => {
           if (success) {
             handleOpenChange(false);

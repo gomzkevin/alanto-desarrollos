@@ -96,6 +96,14 @@ export function ResourceDialogContent({
   // Use useMemo to ensure form values don't cause re-renders unnecessarily
   const formValues = useMemo(() => getFormValues(), [resource]);
 
+  // Add logging to help debug issues
+  console.log('ResourceDialogContent - isOpen:', isOpen);
+  console.log('ResourceDialogContent - resourceType:', resourceType);
+  console.log('ResourceDialogContent - resourceId:', resourceId);
+  console.log('ResourceDialogContent - isLoading:', isLoading);
+  console.log('ResourceDialogContent - resource:', resource);
+  console.log('ResourceDialogContent - fields:', fields);
+
   return (
     <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-gray-50 p-0">
       <DialogHeader
