@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -196,17 +195,18 @@ export default function useResourceData({
           break;
         case 'prototipos':
           fieldDefinitions = [
-            { name: 'nombre', label: 'Nombre', type: 'text' },
-            { name: 'tipo', label: 'Tipo', type: 'select', options: TIPOS_PROPIEDADES },
-            { name: 'precio', label: 'Precio', type: 'number' },
-            { name: 'superficie', label: 'Superficie (m²)', type: 'number' },
-            { name: 'habitaciones', label: 'Habitaciones', type: 'number' },
-            { name: 'baños', label: 'Baños', type: 'number' },
-            { name: 'total_unidades', label: 'Total Unidades', type: 'number' },
-            { name: 'unidades_vendidas', label: 'Unidades Vendidas', type: 'number' },
-            { name: 'unidades_con_anticipo', label: 'Unidades con Anticipo', type: 'number' },
-            { name: 'descripcion', label: 'Descripción', type: 'textarea' },
-            { name: 'imagen_url', label: 'Imagen URL', type: 'text' },
+            { name: 'nombre', label: 'Nombre', type: 'text', tab: 'general' },
+            { name: 'tipo', label: 'Tipo', type: 'select', options: TIPOS_PROPIEDADES, tab: 'general' },
+            { name: 'precio', label: 'Precio', type: 'number', tab: 'general' },
+            { name: 'superficie', label: 'Superficie (m²)', type: 'number', tab: 'general' },
+            { name: 'habitaciones', label: 'Habitaciones', type: 'number', tab: 'general' },
+            { name: 'baños', label: 'Baños', type: 'number', tab: 'general' },
+            { name: 'estacionamientos', label: 'Estacionamientos', type: 'number', tab: 'general' },
+            { name: 'total_unidades', label: 'Total Unidades', type: 'number', tab: 'detalles' },
+            { name: 'unidades_vendidas', label: 'Unidades Vendidas', type: 'number', tab: 'detalles' },
+            { name: 'unidades_con_anticipo', label: 'Unidades con Anticipo', type: 'number', tab: 'detalles' },
+            { name: 'descripcion', label: 'Descripción', type: 'textarea', tab: 'detalles' },
+            { name: 'imagen_url', label: 'Imagen', type: 'image-upload', tab: 'media' },
           ];
           break;
         case 'leads':

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +23,7 @@ import { AmenitiesSelector } from '@/components/dashboard/AmenitiesSelector';
 import { ClientSearch } from './components/ClientSearch';
 import InterestSelector from './components/InterestSelector';
 import useLeads from '@/hooks/useLeads';
+import ImageUploader from '@/components/dashboard/ImageUploader';
 
 interface GenericFormProps {
   fields: FieldDefinition[];
@@ -57,7 +57,6 @@ const GenericForm = ({
   const { getSubstatusOptions } = useLeads({});
   const [substatusOptions, setSubstatusOptions] = useState<Array<{value: string, label: string}>>([]);
 
-  // Update subestado options when estado changes
   useEffect(() => {
     if (values.estado) {
       const options = getSubstatusOptions(values.estado);
@@ -65,7 +64,6 @@ const GenericForm = ({
     }
   }, [values.estado, getSubstatusOptions]);
 
-  // Group fields by tab
   useEffect(() => {
     const grouped: Record<string, FieldDefinition[]> = {};
     
@@ -79,7 +77,6 @@ const GenericForm = ({
     
     setGroupedFields(grouped);
     
-    // Set first tab as active if it exists and no active tab is set
     const tabs = Object.keys(grouped);
     if (tabs.length > 0 && !tabs.includes(activeTab)) {
       setActiveTab(tabs[0]);
@@ -91,7 +88,6 @@ const GenericForm = ({
     onSubmit();
   };
 
-  // Fixed type mismatch by creating adapter functions
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.name, e.target.value);
   };
@@ -100,11 +96,14 @@ const GenericForm = ({
     onChange(e.target.name, e.target.value);
   };
 
+  const handleImageUpload = (name: string, imageUrl: string) => {
+    onChange(name, imageUrl);
+  };
+
   const renderField = (field: FieldDefinition) => {
-    const { name, label, type, options = [] } = field;
+    const { name, label, type, options = [], tab } = field;
     const value = values[name] !== undefined ? values[name] : '';
 
-    // For subestado field, use dynamic options
     const fieldOptions = name === 'subestado' ? substatusOptions : options;
 
     switch (type) {
@@ -244,6 +243,21 @@ const GenericForm = ({
           </div>
         );
         
+      case 'image-upload':
+        const entityId = values.id || 'new';
+        return (
+          <div key={name} className="grid gap-2 py-2">
+            <Label className="text-gray-800 font-medium">{label}</Label>
+            <ImageUploader
+              entityId={entityId}
+              bucketName="prototipo-images"
+              folderPath="prototipos"
+              currentImageUrl={value}
+              onImageUploaded={(imageUrl) => handleImageUpload(name, imageUrl)}
+            />
+          </div>
+        );
+        
       default:
         return null;
     }
@@ -252,7 +266,6 @@ const GenericForm = ({
   const tabs = Object.keys(groupedFields);
   
   if (tabs.length <= 1) {
-    // Only one tab, render fields directly
     return (
       <form onSubmit={handleSubmit} className="space-y-5 bg-white p-4 rounded-lg shadow-sm">
         <div className="space-y-4">
@@ -262,7 +275,6 @@ const GenericForm = ({
     );
   }
   
-  // Multiple tabs, render tabbed interface
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

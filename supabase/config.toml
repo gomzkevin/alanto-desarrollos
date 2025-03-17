@@ -1,1 +1,10 @@
+
 project_id = "bftuoerxiyocfputahrx"
+
+[api]
+# Igual que la URL del proyecto
+url = "https://bftuoerxiyocfputahrx.supabase.co"
+service_role = ""
+
+[storage.prototipo-images]
+public = true
