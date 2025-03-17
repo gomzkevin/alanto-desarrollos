@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -19,7 +18,7 @@ import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 
 type Prototipo = Tables<"prototipos">;
 type Desarrollo = Tables<"desarrollos">;
@@ -88,7 +87,6 @@ const PrototipoDetail = () => {
     countUnidadesByStatus
   } = useUnidades({ prototipo_id: id });
   
-  // Get real-time counts for this prototype's units
   const { 
     data: unitCounts,
     isLoading: isLoadingUnitCounts
@@ -141,7 +139,6 @@ const PrototipoDetail = () => {
     }
   };
   
-  // Early return for loading state
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -162,7 +159,6 @@ const PrototipoDetail = () => {
     );
   }
   
-  // Early return for error state
   if (error || !prototipo) {
     console.error('Error state in PrototipoDetail:', error);
     return (
@@ -195,7 +191,6 @@ const PrototipoDetail = () => {
   
   const desarrollo = prototipo.desarrollo as Desarrollo | null;
   
-  // Use real counts from database when available
   const displayedCounts = unitCounts || {
     disponibles: prototipo.unidades_disponibles || 0,
     vendidas: prototipo.unidades_vendidas || 0,

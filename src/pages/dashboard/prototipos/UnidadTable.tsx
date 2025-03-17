@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import useUnidades from '@/hooks/useUnidades';
-import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 import { Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 

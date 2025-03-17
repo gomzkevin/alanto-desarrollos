@@ -1,489 +1,143 @@
 
 import { useEffect, useState } from 'react';
-import { ResourceType, FieldDefinition } from '../types';
+import { supabase } from '@/integrations/supabase/client';
+import { FieldDefinition, ResourceType } from '../types';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 
 export const useResourceFields = (resourceType: ResourceType, selectedDesarrolloId?: string) => {
   const [fields, setFields] = useState<FieldDefinition[]>([]);
   const { desarrollos } = useDesarrollos();
-  const { prototipos } = usePrototipos();
+  const { prototipos } = usePrototipos({ 
+    desarrolloId: selectedDesarrolloId 
+  });
   
   useEffect(() => {
-    let resourceFields: FieldDefinition[] = [];
-    
-    switch (resourceType) {
-      case 'desarrollos':
-        resourceFields = [
-          {
-            name: 'nombre',
-            label: 'Nombre',
-            type: 'text',
-            tab: 'general'
-          },
-          {
-            name: 'descripcion',
-            label: 'Descripción',
-            type: 'textarea',
-            tab: 'general'
-          },
-          {
-            name: 'ubicacion',
-            label: 'Ubicación',
-            type: 'text',
-            tab: 'general'
-          },
-          {
-            name: 'disponible',
-            label: 'Disponible',
-            type: 'switch',
-            tab: 'general'
-          },
-          {
-            name: 'imagen_url',
-            label: 'Imagen principal',
-            type: 'image-upload',
-            bucket: 'desarrollo-images',
-            folder: 'desarrollos',
-            tab: 'imagenes'
-          },
-          {
-            name: 'fecha_inicio',
-            label: 'Fecha de inicio',
-            type: 'date',
-            tab: 'general'
-          },
-          {
-            name: 'fecha_entrega',
-            label: 'Fecha de entrega',
-            type: 'date',
-            tab: 'general'
-          },
-          {
-            name: 'estatus',
-            label: 'Estado',
-            type: 'select',
-            options: [
-              { value: 'planeacion', label: 'Planeación' },
-              { value: 'construccion', label: 'Construcción' },
-              { value: 'finalizado', label: 'Finalizado' },
-              { value: 'vendido', label: 'Vendido' }
-            ],
-            tab: 'general'
-          },
-          {
-            name: 'unidades_disponibles',
-            label: 'Unidades disponibles',
-            type: 'number',
-            readOnly: true,
-            tab: 'general'
-          },
-          {
-            name: 'total_unidades',
-            label: 'Total de unidades',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'amenidades',
-            label: 'Amenidades',
-            type: 'amenities',
-            tab: 'amenidades'
-          },
-          {
-            name: 'tipo_desarrollo',
-            label: 'Tipo de desarrollo',
-            type: 'select',
-            options: [
-              { value: 'horizontal', label: 'Horizontal' },
-              { value: 'vertical', label: 'Vertical' },
-              { value: 'mixto', label: 'Mixto' }
-            ],
-            tab: 'general'
-          }
-        ];
-        break;
-      
-      case 'prototipos':
-        resourceFields = [
-          {
-            name: 'nombre',
-            label: 'Nombre',
-            type: 'text',
-            tab: 'general'
-          },
-          {
-            name: 'descripcion',
-            label: 'Descripción',
-            type: 'textarea',
-            tab: 'general'
-          },
-          {
-            name: 'tipo',
-            label: 'Tipo',
-            type: 'select',
-            options: [
-              { value: 'casa', label: 'Casa' },
+    const getFieldsForResourceType = () => {
+      switch (resourceType) {
+        case 'desarrollos':
+          return [
+            { name: 'nombre', label: 'Nombre', type: 'text', required: true },
+            { name: 'ubicacion', label: 'Ubicación', type: 'text', required: true },
+            { name: 'total_unidades', label: 'Total Unidades', type: 'number', required: true },
+            { name: 'unidades_disponibles', label: 'Unidades Disponibles', type: 'number', required: true },
+            { name: 'avance_porcentaje', label: 'Avance (%)', type: 'number' },
+            { name: 'fecha_inicio', label: 'Fecha Inicio', type: 'date' },
+            { name: 'fecha_entrega', label: 'Fecha Entrega', type: 'date' },
+            { name: 'descripcion', label: 'Descripción', type: 'textarea' },
+            { name: 'imagen_url', label: 'Imagen', type: 'image-upload' },
+            { name: 'amenidades', label: 'Amenidades', type: 'amenities' },
+            // Campos financieros
+            { name: 'moneda', label: 'Moneda', type: 'select', options: [
+              { value: 'MXN', label: 'Peso Mexicano (MXN)' },
+              { value: 'USD', label: 'Dólar Estadounidense (USD)' }
+            ]},
+            { name: 'comision_operador', label: 'Comisión Operador (%)', type: 'number' },
+            { name: 'mantenimiento_valor', label: 'Mantenimiento', type: 'number' },
+            { name: 'es_mantenimiento_porcentaje', label: 'Mantenimiento es porcentaje', type: 'switch' },
+            { name: 'gastos_fijos', label: 'Gastos Fijos', type: 'number' },
+            { name: 'es_gastos_fijos_porcentaje', label: 'Gastos Fijos es porcentaje', type: 'switch' },
+            { name: 'gastos_variables', label: 'Gastos Variables', type: 'number' },
+            { name: 'es_gastos_variables_porcentaje', label: 'Gastos Variables es porcentaje', type: 'switch' },
+            { name: 'impuestos', label: 'Impuestos', type: 'number' },
+            { name: 'es_impuestos_porcentaje', label: 'Impuestos es porcentaje', type: 'switch' },
+            { name: 'adr_base', label: 'ADR Base', type: 'number' },
+            { name: 'ocupacion_anual', label: 'Ocupación Anual (%)', type: 'number' },
+          ];
+        case 'prototipos':
+          return [
+            { name: 'desarrollo_id', label: 'Desarrollo', type: 'select', options: desarrollos.map(d => ({ value: d.id, label: d.nombre })), required: true },
+            { name: 'nombre', label: 'Nombre', type: 'text', required: true },
+            { name: 'tipo', label: 'Tipo', type: 'select', options: [
               { value: 'apartamento', label: 'Apartamento' },
-              { value: 'duplex', label: 'Dúplex' },
-              { value: 'penthouse', label: 'Penthouse' },
-              { value: 'loft', label: 'Loft' },
+              { value: 'casa', label: 'Casa' },
+              { value: 'villa', label: 'Villa' },
               { value: 'terreno', label: 'Terreno' },
               { value: 'local', label: 'Local comercial' },
               { value: 'oficina', label: 'Oficina' },
-              { value: 'bodega', label: 'Bodega' },
-              { value: 'otro', label: 'Otro' }
-            ],
-            tab: 'general'
-          },
-          {
-            name: 'desarrollo_id',
-            label: 'Desarrollo',
-            type: 'select',
-            options: desarrollos.map(desarrollo => ({ 
-              value: desarrollo.id, 
-              label: desarrollo.nombre 
-            })),
-            tab: 'general'
-          },
-          {
-            name: 'imagen_url',
-            label: 'Imagen',
-            type: 'image-upload',
-            bucket: 'prototipo-images',
-            folder: 'prototipos',
-            tab: 'general'
-          },
-          {
-            name: 'precio',
-            label: 'Precio',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'superficie',
-            label: 'Superficie (m²)',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'habitaciones',
-            label: 'Habitaciones',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'baños',
-            label: 'Baños',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'estacionamientos',
-            label: 'Estacionamientos',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'total_unidades',
-            label: 'Total de unidades',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'unidades_disponibles',
-            label: 'Unidades disponibles',
-            type: 'number',
-            readOnly: true,
-            tab: 'general'
-          },
-          {
-            name: 'unidades_vendidas',
-            label: 'Unidades vendidas',
-            type: 'number',
-            readOnly: true,
-            tab: 'general'
-          },
-          {
-            name: 'unidades_con_anticipo',
-            label: 'Unidades con anticipo',
-            type: 'number',
-            readOnly: true,
-            tab: 'general'
-          }
-        ];
-        break;
-      
-      case 'leads':
-        resourceFields = [
-          {
-            name: 'nombre',
-            label: 'Nombre',
-            type: 'text',
-            tab: 'general'
-          },
-          {
-            name: 'email',
-            label: 'Email',
-            type: 'email',
-            tab: 'general'
-          },
-          {
-            name: 'telefono',
-            label: 'Teléfono',
-            type: 'text',
-            tab: 'general'
-          },
-          {
-            name: 'origen',
-            label: 'Origen',
-            type: 'select',
-            options: [
-              { value: 'sitio_web', label: 'Sitio web' },
-              { value: 'redes_sociales', label: 'Redes sociales' },
-              { value: 'referencia', label: 'Referencia' },
-              { value: 'evento', label: 'Evento' },
-              { value: 'visita_fisica', label: 'Visita física' },
-              { value: 'portal_inmobiliario', label: 'Portal inmobiliario' },
-              { value: 'otro', label: 'Otro' }
-            ],
-            tab: 'general'
-          },
-          {
-            name: 'estado',
-            label: 'Estado',
-            type: 'select',
-            options: [
+              { value: 'otro', label: 'Otro' },
+            ], required: true },
+            { name: 'precio', label: 'Precio', type: 'number', required: true },
+            { name: 'superficie', label: 'Superficie (m²)', type: 'number' },
+            { name: 'habitaciones', label: 'Habitaciones', type: 'number' },
+            { name: 'baños', label: 'Baños', type: 'number' },
+            { name: 'estacionamientos', label: 'Estacionamientos', type: 'number' },
+            { name: 'total_unidades', label: 'Total Unidades', type: 'number', required: true },
+            { name: 'descripcion', label: 'Descripción', type: 'textarea' },
+            { name: 'imagen_url', label: 'Imagen', type: 'image-upload' },
+          ];
+        case 'leads':
+          return [
+            { name: 'nombre', label: 'Nombre', type: 'text', required: true },
+            { name: 'email', label: 'Email', type: 'email' },
+            { name: 'telefono', label: 'Teléfono', type: 'text' },
+            { name: 'estado', label: 'Estado', type: 'select', options: [
               { value: 'nuevo', label: 'Nuevo' },
-              { value: 'seguimiento', label: 'En seguimiento' },
-              { value: 'convertido', label: 'Convertido' },
-              { value: 'perdido', label: 'Perdido' }
-            ],
-            tab: 'general'
-          },
-          {
-            name: 'subestado',
-            label: 'Sub-estado',
-            type: 'select',
-            options: [
-              { value: 'sin_contactar', label: 'Sin contactar' },
-              { value: 'primer_contacto', label: 'Primer contacto' },
-              { value: 'requiere_informacion', label: 'Requiere información' },
-              { value: 'requiere_visita', label: 'Requiere visita' },
-              { value: 'negociacion', label: 'En negociación' },
-              { value: 'cotizacion', label: 'Cotización enviada' },
+              { value: 'contactado', label: 'Contactado' },
+              { value: 'interesado', label: 'Interesado' },
+              { value: 'visita_programada', label: 'Visita Programada' },
+              { value: 'visita_realizada', label: 'Visita Realizada' },
+              { value: 'cotizacion', label: 'Cotización' },
+              { value: 'negociacion', label: 'Negociación' },
               { value: 'apartado', label: 'Apartado' },
-              { value: 'venta', label: 'Venta concretada' },
-              { value: 'no_interesado', label: 'No interesado' },
-              { value: 'sin_respuesta', label: 'Sin respuesta' },
-              { value: 'cambio_opinion', label: 'Cambió de opinión' },
-              { value: 'precio_alto', label: 'Precio alto' }
-            ],
-            tab: 'general'
-          },
-          {
-            name: 'interes_en',
-            label: 'Interés en',
-            type: 'text',
-            tab: 'general'
-          },
-          {
-            name: 'agente',
-            label: 'Agente asignado',
-            type: 'text',
-            tab: 'general'
-          },
-          {
-            name: 'notas',
-            label: 'Notas',
-            type: 'textarea',
-            tab: 'general'
-          }
-        ];
-        break;
-      
-      case 'cotizaciones':
-        resourceFields = [
-          {
-            name: 'lead_id',
-            label: 'Cliente',
-            type: 'select-lead',
-            tab: 'general'
-          },
-          {
-            name: 'desarrollo_id',
-            label: 'Desarrollo',
-            type: 'select',
-            options: desarrollos.map(desarrollo => ({ 
-              value: desarrollo.id, 
-              label: desarrollo.nombre 
-            })),
-            tab: 'general'
-          },
-          {
-            name: 'prototipo_id',
-            label: 'Prototipo',
-            type: 'select',
-            options: prototipos
-              .filter(p => !selectedDesarrolloId || p.desarrollo_id === selectedDesarrolloId)
-              .map(prototipo => ({ 
-                value: prototipo.id, 
-                label: prototipo.nombre 
-              })),
-            tab: 'general'
-          },
-          {
-            name: 'precio',
-            label: 'Precio',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'moneda',
-            label: 'Moneda',
-            type: 'select',
-            options: [
-              { value: 'MXN', label: 'Pesos Mexicanos (MXN)' },
-              { value: 'USD', label: 'Dólares Americanos (USD)' }
-            ],
-            tab: 'general'
-          },
-          {
-            name: 'enganche',
-            label: 'Enganche',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'fecha_enganche',
-            label: 'Fecha de enganche',
-            type: 'date',
-            tab: 'general'
-          },
-          {
-            name: 'mensualidades',
-            label: 'Número de mensualidades',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'importe_mensual',
-            label: 'Importe mensual',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'tasa_interes',
-            label: 'Tasa de interés anual',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'usar_finiquito',
-            label: 'Incluir finiquito',
-            type: 'switch',
-            tab: 'general'
-          },
-          {
-            name: 'finiquito',
-            label: 'Importe de finiquito',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'fecha_finiquito',
-            label: 'Fecha de finiquito',
-            type: 'date',
-            tab: 'general'
-          },
-          {
-            name: 'notas',
-            label: 'Notas',
-            type: 'textarea',
-            tab: 'general'
-          },
-          {
-            name: 'estado',
-            label: 'Estado',
-            type: 'select',
-            options: [
-              { value: 'borrador', label: 'Borrador' },
-              { value: 'enviada', label: 'Enviada' },
-              { value: 'aceptada', label: 'Aceptada' },
-              { value: 'rechazada', label: 'Rechazada' },
-              { value: 'vencida', label: 'Vencida' }
-            ],
-            tab: 'general'
-          }
-        ];
-        break;
-      
-      case 'unidades':
-        resourceFields = [
-          {
-            name: 'numero',
-            label: 'Número',
-            type: 'text',
-            tab: 'general'
-          },
-          {
-            name: 'nivel',
-            label: 'Nivel',
-            type: 'text',
-            tab: 'general'
-          },
-          {
-            name: 'estado',
-            label: 'Estado',
-            type: 'select',
-            options: [
+              { value: 'ganado', label: 'Ganado' },
+              { value: 'perdido', label: 'Perdido' },
+              { value: 'inactivo', label: 'Inactivo' }
+            ], required: true },
+            { name: 'subestado', label: 'Subestado', type: 'select', options: [] },
+            { name: 'origen', label: 'Origen', type: 'select', options: [
+              { value: 'sitio_web', label: 'Sitio Web' },
+              { value: 'referencia', label: 'Referencia' },
+              { value: 'redes_sociales', label: 'Redes Sociales' },
+              { value: 'llamada', label: 'Llamada' },
+              { value: 'email', label: 'Email' },
+              { value: 'visita_directa', label: 'Visita Directa' },
+              { value: 'otro', label: 'Otro' }
+            ] },
+            { name: 'interes_en', label: 'Interés en', type: 'text' },
+            { name: 'ultimo_contacto', label: 'Último contacto', type: 'date' },
+            { name: 'notas', label: 'Notas', type: 'textarea' },
+          ];
+        case 'cotizaciones':
+          return [
+            // Si no se ha pasado un lead_id, mostrar selector de cliente
+            { name: 'lead_id', label: 'Cliente', type: 'lead-select', required: true },
+            // Si no se ha pasado un desarrollo_id, mostrar selector de desarrollo
+            { name: 'desarrollo_id', label: 'Desarrollo', type: 'select', options: desarrollos.map(d => ({ value: d.id, label: d.nombre })), required: true },
+            // Prototipos filtrados por desarrollo seleccionado
+            { name: 'prototipo_id', label: 'Prototipo', type: 'select', options: prototipos.map(p => ({ value: p.id, label: p.nombre })), required: true },
+            // Opción para especificar finiquito
+            { name: 'usar_finiquito', label: 'Liquidar con finiquito', type: 'switch' },
+            // Monto de anticipo
+            { name: 'monto_anticipo', label: 'Monto Anticipo', type: 'number', required: true },
+            // Número de pagos mensuales
+            { name: 'numero_pagos', label: 'Número de Pagos', type: 'number', required: true },
+            // Monto de finiquito (opcional)
+            { name: 'monto_finiquito', label: 'Monto Finiquito', type: 'number' },
+            // Notas
+            { name: 'notas', label: 'Notas', type: 'textarea' },
+          ];
+        case 'unidades':
+          return [
+            { name: 'numero', label: 'Número/Identificador', type: 'text', required: true },
+            { name: 'nivel', label: 'Nivel/Piso', type: 'text' },
+            { name: 'precio_venta', label: 'Precio', type: 'number', required: true },
+            { name: 'estado', label: 'Estado', type: 'select', options: [
               { value: 'disponible', label: 'Disponible' },
               { value: 'apartado', label: 'Apartado' },
-              { value: 'en_proceso', label: 'En proceso' },
+              { value: 'en_proceso', label: 'En Proceso' },
               { value: 'vendido', label: 'Vendido' }
-            ],
-            tab: 'general'
-          },
-          {
-            name: 'prototipo_id',
-            label: 'Prototipo',
-            type: 'select',
-            options: prototipos
-              .filter(p => !selectedDesarrolloId || p.desarrollo_id === selectedDesarrolloId)
-              .map(prototipo => ({ 
-                value: prototipo.id, 
-                label: prototipo.nombre 
-              })),
-            tab: 'general'
-          },
-          {
-            name: 'comprador_id',
-            label: 'Cliente',
-            type: 'select-lead',
-            tab: 'general'
-          },
-          {
-            name: 'precio_venta',
-            label: 'Precio de venta',
-            type: 'number',
-            tab: 'general'
-          },
-          {
-            name: 'fecha_venta',
-            label: 'Fecha de venta',
-            type: 'date',
-            tab: 'general'
-          }
-        ];
-        break;
-      
-      default:
-        resourceFields = [];
-        break;
-    }
+            ], required: true },
+            { name: 'comprador_id', label: 'Comprador', type: 'lead-select' },
+            { name: 'fecha_venta', label: 'Fecha de Venta', type: 'date' },
+          ];
+        default:
+          return [];
+      }
+    };
     
-    setFields(resourceFields);
+    setFields(getFieldsForResourceType());
   }, [resourceType, desarrollos, prototipos, selectedDesarrolloId]);
-  
+
   return fields;
 };
