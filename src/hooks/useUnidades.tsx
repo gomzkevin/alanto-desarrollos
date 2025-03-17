@@ -36,7 +36,7 @@ export const useUnidades = (params?: UseUnidadesParams) => {
       throw error;
     }
 
-    return data || [];
+    return data as Unidad[] || [];
   };
 
   // CRUD operations hooks
