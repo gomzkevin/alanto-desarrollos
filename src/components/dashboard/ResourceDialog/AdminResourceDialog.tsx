@@ -34,7 +34,8 @@ const AdminResourceDialog = ({
     email: '',
     telefono: ''
   });
-  // Initialize with desarrolloId from props
+  
+  // Inicializamos pero no actualizamos este estado basado en el recurso
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>(desarrolloId || '');
   
   const isOpen = open !== undefined ? open : dialogOpen;
@@ -64,7 +65,7 @@ const AdminResourceDialog = ({
   } = useResourceForm({
     resourceType,
     resourceId,
-    desarrolloId: selectedDesarrolloId, // Use state value
+    desarrolloId: selectedDesarrolloId, 
     lead_id,
     prototipo_id,
     defaultValues,
@@ -72,17 +73,17 @@ const AdminResourceDialog = ({
     onSave
   });
 
-  // Handle initial desarrollo_id setup - only run once on mount and when resource or desarrolloId changes
+  // Modificamos este useEffect para que solo se ejecute cuando cambie resource
+  // y solo actualice selectedDesarrolloId si aún no tiene un valor
   useEffect(() => {
-    if (!selectedDesarrolloId && resource) {
+    if (resource) {
       const resourceAny = resource as any;
-      if (resourceAny.desarrollo_id) {
+      // Solo actualizamos si el recurso tiene desarrollo_id y selectedDesarrolloId está vacío
+      if (resourceAny.desarrollo_id && !selectedDesarrolloId) {
         setSelectedDesarrolloId(resourceAny.desarrollo_id);
-      } else if (desarrolloId) {
-        setSelectedDesarrolloId(desarrolloId);
       }
     }
-  }, [resource, desarrolloId, selectedDesarrolloId]);
+  }, [resource]);
 
   const handleDesarrolloSelect = (desarrolloId: string) => {
     setSelectedDesarrolloId(desarrolloId);
