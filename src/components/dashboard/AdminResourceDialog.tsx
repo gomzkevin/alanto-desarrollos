@@ -1,4 +1,4 @@
 
-import AdminResourceDialog from './ResourceDialog/AdminResourceDialog';
+import AdminResourceDialog from './ResourceDialog';
 
 export default AdminResourceDialog;
