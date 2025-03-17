@@ -1,10 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { es } from 'date-fns/locale';
@@ -258,12 +256,6 @@ const GenericForm = ({
         <div className="space-y-4">
           {fields.map(field => renderField(field))}
         </div>
-        
-        <div className="mt-6 flex justify-end">
-          <Button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-            {isSubmitting ? 'Guardando...' : 'Guardar'}
-          </Button>
-        </div>
       </form>
     );
   }
@@ -292,12 +284,6 @@ const GenericForm = ({
           </TabsContent>
         ))}
       </Tabs>
-      
-      <div className="p-4 flex justify-end border-t border-gray-100">
-        <Button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-24">
-          {isSubmitting ? 'Guardando...' : 'Guardar'}
-        </Button>
-      </div>
     </form>
   );
 };
