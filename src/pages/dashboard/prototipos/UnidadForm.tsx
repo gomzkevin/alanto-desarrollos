@@ -39,12 +39,12 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
     onSubmit(formattedData);
   };
 
+  // Filter out any empty or undefined options
+  const filteredLeads = leads.filter(lead => lead && lead.id);
+  const filteredVendedores = vendedores.filter(vendedor => vendedor && vendedor.id);
+
   return (
     <div className="space-y-4">
-      <div className="text-xl font-semibold mb-4">
-        {unidad ? 'Editar Unidad' : 'Agregar Unidad'}
-      </div>
-      
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
@@ -83,7 +83,7 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
               value={watch('comprador_id') || ''}
               onChange={handleLeadChange}
               placeholder="Selecciona un cliente"
-              options={leads}
+              options={filteredLeads}
             />
             
             <EntitySelect
@@ -91,7 +91,7 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
               value={watch('vendedor_id') || ''}
               onChange={handleVendedorChange}
               placeholder="Selecciona un vendedor"
-              options={vendedores}
+              options={filteredVendedores}
             />
             
             <DatePickerField

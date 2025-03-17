@@ -43,6 +43,7 @@ export const useUnidadTable = ({
   
   useEffect(() => {
     return () => {
+      // Clean up when component unmounts
       setCurrentUnidad(null);
       setIsAddDialogOpen(false);
       setIsEditDialogOpen(false);
@@ -71,8 +72,9 @@ export const useUnidadTable = ({
       });
       
       setIsAddDialogOpen(false);
-      await refetch();
+      refetch();
     } catch (error: any) {
+      console.error("Error creating unidad:", error);
       toast({
         title: "Error",
         description: `No se pudo crear la unidad: ${error.message}`,
@@ -105,8 +107,9 @@ export const useUnidadTable = ({
       
       setIsEditDialogOpen(false);
       setCurrentUnidad(null);
-      await refetch();
+      refetch();
     } catch (error: any) {
+      console.error("Error updating unidad:", error);
       toast({
         title: "Error",
         description: `No se pudo actualizar la unidad: ${error.message}`,
@@ -128,8 +131,9 @@ export const useUnidadTable = ({
       
       setIsDeleteDialogOpen(false);
       setCurrentUnidad(null);
-      await refetch();
+      refetch();
     } catch (error: any) {
+      console.error("Error deleting unidad:", error);
       toast({
         title: "Error",
         description: `No se pudo eliminar la unidad: ${error.message}`,
@@ -150,12 +154,18 @@ export const useUnidadTable = ({
 
   const closeEditDialog = useCallback(() => {
     setIsEditDialogOpen(false);
-    setCurrentUnidad(null);
+    // Wait a bit before clearing the current unidad to avoid UI flicker
+    setTimeout(() => {
+      setCurrentUnidad(null);
+    }, 100);
   }, []);
 
   const closeDeleteDialog = useCallback(() => {
     setIsDeleteDialogOpen(false);
-    setCurrentUnidad(null);
+    // Wait a bit before clearing the current unidad to avoid UI flicker
+    setTimeout(() => {
+      setCurrentUnidad(null);
+    }, 100);
   }, []);
 
   return {
