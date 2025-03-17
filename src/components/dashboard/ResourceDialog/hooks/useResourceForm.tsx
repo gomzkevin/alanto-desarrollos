@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useResourceData } from '../useResourceData';
-import { useResourceActions } from '../useResourceActions';
+import useResourceData from '../useResourceData';
+import useResourceActions from '../useResourceActions';
 import { ResourceType, FormValues } from '../types';
 
 interface UseResourceFormProps {
