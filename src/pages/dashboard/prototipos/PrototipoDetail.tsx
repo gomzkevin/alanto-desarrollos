@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +19,11 @@ import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
+
+// Carga perezosa de AdminResourceDialog para evitar referencias circulares
+const AdminResourceDialog = lazy(() => 
+  import('@/components/dashboard/ResourceDialog/AdminResourceDialog')
+);
 
 type Prototipo = Tables<"prototipos">;
 type Desarrollo = Tables<"desarrollos">;
@@ -67,6 +72,7 @@ const PrototipoDetail = () => {
     queryKey: ['prototipo', id],
     queryFn: () => fetchPrototipoById(id as string),
     enabled: !!id,
+    staleTime: 30000, // 30 segundos
     meta: {
       onError: (error: Error) => {
         console.error('Error fetching prototipo details:', error);
@@ -94,6 +100,7 @@ const PrototipoDetail = () => {
     queryKey: ['prototipo-unit-counts', id],
     queryFn: () => countUnidadesByStatus(id as string),
     enabled: !!id,
+    staleTime: 30000, // 30 segundos
   });
   
   const handleBack = () => {
@@ -394,37 +401,45 @@ const PrototipoDetail = () => {
       </Dialog>
       
       {openEditDialog && (
-        <AdminResourceDialog 
-          resourceType="prototipos"
-          resourceId={id}
-          open={openEditDialog}
-          onClose={() => {
-            console.log('Closing edit dialog');
-            setOpenEditDialog(false);
-          }}
-          onSuccess={() => {
-            console.log('Edit successful, refreshing');
-            setOpenEditDialog(false);
-            handleRefresh();
-          }}
-        />
+        <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-white p-4 rounded-md">Cargando editor...</div>
+        </div>}>
+          <AdminResourceDialog 
+            resourceType="prototipos"
+            resourceId={id}
+            open={openEditDialog}
+            onClose={() => {
+              console.log('Closing edit dialog');
+              setOpenEditDialog(false);
+            }}
+            onSuccess={() => {
+              console.log('Edit successful, refreshing');
+              setOpenEditDialog(false);
+              handleRefresh();
+            }}
+          />
+        </Suspense>
       )}
       
       {openAddUnidadDialog && (
-        <AdminResourceDialog 
-          resourceType="unidades"
-          open={openAddUnidadDialog}
-          onClose={() => {
-            console.log('Closing add unidad dialog');
-            setOpenAddUnidadDialog(false);
-          }}
-          onSuccess={() => {
-            console.log('Add successful, refreshing');
-            setOpenAddUnidadDialog(false);
-            refetchUnidades();
-          }}
-          prototipo_id={id}
-        />
+        <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-white p-4 rounded-md">Cargando editor...</div>
+        </div>}>
+          <AdminResourceDialog 
+            resourceType="unidades"
+            open={openAddUnidadDialog}
+            onClose={() => {
+              console.log('Closing add unidad dialog');
+              setOpenAddUnidadDialog(false);
+            }}
+            onSuccess={() => {
+              console.log('Add successful, refreshing');
+              setOpenAddUnidadDialog(false);
+              refetchUnidades();
+            }}
+            prototipo_id={id}
+          />
+        </Suspense>
       )}
     </DashboardLayout>
   );

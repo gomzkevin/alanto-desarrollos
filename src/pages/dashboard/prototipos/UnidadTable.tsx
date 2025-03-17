@@ -31,9 +31,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import useUnidades from '@/hooks/useUnidades';
-import AdminResourceDialog from '@/components/dashboard/ResourceDialog/AdminResourceDialog';
 import { Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
+import UnidadEditDialog from '@/components/dashboard/UnidadForm/UnidadEditDialog';
 
 type Prototipo = Tables<"prototipos">;
 
@@ -48,7 +48,6 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
   const [unidadToEdit, setUnidadToEdit] = useState<string | null>(null);
   const [unidadToDelete, setUnidadToDelete] = useState<string | null>(null);
   const [statusUpdateLoading, setStatusUpdateLoading] = useState<Record<string, boolean>>({});
-  const [dialogOpenCounter, setDialogOpenCounter] = useState(0); // Para debug
   
   const { deleteUnidad, updateUnidad } = useUnidades();
   const { toast } = useToast();
@@ -120,8 +119,6 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
   const handleEditClick = (id: string) => {
     console.log('Opening edit dialog for unidad ID:', id);
     setUnidadToEdit(id);
-    setDialogOpenCounter(prev => prev + 1); // Incrementamos el contador
-    console.log(`Dialog open counter: ${dialogOpenCounter + 1}`);
   };
   
   const handleCloseDialog = () => {
@@ -248,23 +245,13 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
         </TableBody>
       </Table>
       
-      {/* Mostramos información de debug */}
-      <div className="mt-2 text-xs text-gray-400">
-        <p>Debug: unidadToEdit = {unidadToEdit || 'null'}, prototipo_id = {prototipo.id}</p>
-      </div>
-      
       {unidadToEdit && (
-        <AdminResourceDialog 
-          key={`unidad-edit-${unidadToEdit}-${dialogOpenCounter}`} // Agregamos una key única
-          resourceType="unidades"
-          resourceId={unidadToEdit}
+        <UnidadEditDialog
+          unidadId={unidadToEdit}
           open={!!unidadToEdit}
           onClose={handleCloseDialog}
           onSuccess={handleSuccessEdit}
           prototipo_id={prototipo.id}
-          desarrolloId={prototipo.desarrollo_id}
-          buttonText="Editar unidad"
-          buttonVariant="outline"
         />
       )}
       
