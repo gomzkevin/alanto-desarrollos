@@ -108,7 +108,7 @@ export function ResourceDialogContent({
           <div className="py-6 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
           </div>
-        ) : (
+        ) : resource ? (
           <GenericForm
             fields={fields}
             values={formValues}
@@ -145,6 +145,10 @@ export function ResourceDialogContent({
             formId="resource-form"
             resourceType={resourceType}
           />
+        ) : (
+          <div className="py-6 text-center text-gray-500">
+            No se pudo cargar la información. Por favor, intente de nuevo.
+          </div>
         )}
       </div>
 

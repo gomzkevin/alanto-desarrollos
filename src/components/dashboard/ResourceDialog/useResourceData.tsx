@@ -62,103 +62,132 @@ export default function useResourceData({
   useEffect(() => {
     const fetchResource = async () => {
       setIsLoading(true);
-      if (resourceId) {
-        let query;
-        
-        if (resourceType === 'desarrollos') {
-          query = supabase
-            .from('desarrollos')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-        } else if (resourceType === 'prototipos') {
-          query = supabase
-            .from('prototipos')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-        } else if (resourceType === 'leads') {
-          query = supabase
-            .from('leads')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-        } else if (resourceType === 'cotizaciones') {
-          query = supabase
-            .from('cotizaciones')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-        }
-        
-        const { data, error } = await query;
+      try {
+        if (resourceId) {
+          let query;
+          
+          if (resourceType === 'desarrollos') {
+            query = supabase
+              .from('desarrollos')
+              .select('*')
+              .eq('id', resourceId)
+              .single();
+          } else if (resourceType === 'prototipos') {
+            query = supabase
+              .from('prototipos')
+              .select('*')
+              .eq('id', resourceId)
+              .single();
+          } else if (resourceType === 'leads') {
+            query = supabase
+              .from('leads')
+              .select('*')
+              .eq('id', resourceId)
+              .single();
+          } else if (resourceType === 'cotizaciones') {
+            query = supabase
+              .from('cotizaciones')
+              .select('*')
+              .eq('id', resourceId)
+              .single();
+          } else if (resourceType === 'unidades') {
+            query = supabase
+              .from('unidades')
+              .select('*')
+              .eq('id', resourceId)
+              .single();
+          }
+          
+          if (!query) {
+            throw new Error(`Tipo de recurso no soportado: ${resourceType}`);
+          }
+          
+          const { data, error } = await query;
 
-        if (error) {
-          console.error('Error fetching resource:', error);
-          toast({
-            title: 'Error',
-            description: `No se pudo cargar el recurso: ${error.message}`,
-            variant: 'destructive',
-          });
+          if (error) {
+            console.error('Error fetching resource:', error);
+            toast({
+              title: 'Error',
+              description: `No se pudo cargar el recurso: ${error.message}`,
+              variant: 'destructive',
+            });
+            setResource(null);
+          } else {
+            setResource(data as FormValues);
+            
+            if (resourceType === 'desarrollos' && data.amenidades) {
+              try {
+                const parsedAmenities = typeof data.amenidades === 'string' 
+                  ? JSON.parse(data.amenidades) 
+                  : data.amenidades || [];
+                onAmenitiesChange(parsedAmenities);
+              } catch (e) {
+                console.error('Error parsing amenities:', e);
+                onAmenitiesChange([]);
+              }
+            }
+            
+            if (resourceType === 'leads') {
+              if (data.estado) {
+                onStatusChange(data.estado);
+              }
+            }
+          }
         } else {
-          setResource(data as FormValues);
-          
-          if (resourceType === 'desarrollos' && data.amenidades) {
-            try {
-              const parsedAmenities = typeof data.amenidades === 'string' 
-                ? JSON.parse(data.amenidades) 
-                : data.amenidades || [];
-              onAmenitiesChange(parsedAmenities);
-            } catch (e) {
-              console.error('Error parsing amenities:', e);
-              onAmenitiesChange([]);
-            }
-          }
-          
-          if (resourceType === 'leads') {
-            if (data.estado) {
-              onStatusChange(data.estado);
-            }
+          if (resourceType === 'prototipos' && desarrolloId) {
+            setResource({
+              desarrollo_id: desarrolloId,
+              nombre: '',
+              tipo: '',
+              precio: 0,
+              total_unidades: 0,
+              unidades_disponibles: 0,
+              unidades_vendidas: 0,
+              unidades_con_anticipo: 0
+            } as PrototipoResource);
+          } else if (resourceType === 'desarrollos') {
+            setResource({
+              nombre: '',
+              ubicacion: '',
+              total_unidades: 0,
+              unidades_disponibles: 0,
+              amenidades: []
+            } as DesarrolloResource);
+          } else if (resourceType === 'leads') {
+            setResource({
+              nombre: '',
+              estado: 'nuevo',
+              subestado: 'sin_contactar'
+            } as LeadResource);
+            onStatusChange('nuevo');
+          } else if (resourceType === 'cotizaciones') {
+            setResource({
+              lead_id: lead_id || '',
+              desarrollo_id: selectedDesarrolloId || '',
+              prototipo_id: '',
+              monto_anticipo: 0,
+              numero_pagos: 0
+            } as CotizacionResource);
+          } else if (resourceType === 'unidades') {
+            setResource({
+              prototipo_id: prototipo_id || '',
+              numero: '',
+              estado: 'disponible',
+              precio_venta: 0
+            } as any);
           }
         }
-      } else {
-        if (resourceType === 'prototipos' && desarrolloId) {
-          setResource({
-            desarrollo_id: desarrolloId,
-            nombre: '',
-            tipo: '',
-            precio: 0,
-            total_unidades: 0,
-            unidades_disponibles: 0,
-            unidades_vendidas: 0,
-            unidades_con_anticipo: 0
-          } as PrototipoResource);
-        } else if (resourceType === 'desarrollos') {
-          setResource({
-            nombre: '',
-            ubicacion: '',
-            total_unidades: 0,
-            unidades_disponibles: 0,
-            amenidades: []
-          } as DesarrolloResource);
-        } else if (resourceType === 'leads') {
-          setResource({
-            nombre: '',
-            estado: 'nuevo',
-            subestado: 'sin_contactar'
-          } as LeadResource);
-          onStatusChange('nuevo');
-        } else if (resourceType === 'cotizaciones') {
-          setResource({
-            lead_id: lead_id || '',
-            desarrollo_id: selectedDesarrolloId || '',
-            prototipo_id: '',
-            monto_anticipo: 0,
-            numero_pagos: 0
-          } as CotizacionResource);
-        }
+      } catch (err) {
+        console.error('Error in fetchResource:', err);
+        toast({
+          title: 'Error',
+          description: `Error al cargar el recurso: ${(err as Error).message}`,
+          variant: 'destructive',
+        });
+        setResource(null);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     const defineFields = () => {
@@ -241,13 +270,14 @@ export default function useResourceData({
             { name: 'numero', label: 'Número/Identificador', type: 'text' as FieldType },
             { name: 'estado', label: 'Estado', type: 'select' as FieldType, options: [
               { value: 'disponible', label: 'Disponible' },
-              { value: 'reservada', label: 'Reservada' },
-              { value: 'vendida', label: 'Vendida' }
+              { value: 'apartado', label: 'Apartado' },
+              { value: 'en_proceso', label: 'En Proceso' },
+              { value: 'vendido', label: 'Vendido' }
             ]},
             { name: 'nivel', label: 'Nivel/Piso', type: 'text' as FieldType },
             { name: 'precio_venta', label: 'Precio', type: 'number' as FieldType },
             { name: 'fecha_venta', label: 'Fecha de Venta', type: 'date' as FieldType },
-            { name: 'comprador_id', label: 'Comprador', type: 'select' as FieldType, options: leads.map(lead => ({ value: lead.id, label: lead.nombre })) },
+            { name: 'comprador_id', label: 'Comprador', type: 'lead-select' as FieldType },
           ];
           break;
         default:
@@ -260,7 +290,7 @@ export default function useResourceData({
 
     fetchResource();
     defineFields();
-  }, [resourceId, resourceType, toast, leads, desarrollos, prototipos, usarFiniquito, desarrolloId, selectedDesarrolloId, lead_id, statusOptions, getSubstatusOptions, originOptions, selectedStatus, onStatusChange, onAmenitiesChange]);
+  }, [resourceId, resourceType, toast, leads, desarrollos, prototipos, usarFiniquito, desarrolloId, selectedDesarrolloId, lead_id, prototipo_id, statusOptions, getSubstatusOptions, originOptions, selectedStatus, onStatusChange, onAmenitiesChange]);
 
   return { resource, setResource, fields, isLoading };
 }

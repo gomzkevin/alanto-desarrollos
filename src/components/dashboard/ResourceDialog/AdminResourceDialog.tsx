@@ -194,6 +194,12 @@ const AdminResourceDialog = ({
           }
         });
       }
+    } else {
+      toast({
+        title: 'Error',
+        description: 'No hay datos para guardar',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -201,7 +207,7 @@ const AdminResourceDialog = ({
   useEffect(() => {
     if (isOpen) {
       const resourceAny = resource as any;
-      const hasLeadId = lead_id || (resource && resourceAny.lead_id);
+      const hasLeadId = lead_id || (resource && resourceAny && resourceAny.lead_id);
       setIsExistingClient(!!hasLeadId);
     } else {
       setNewClientData({
