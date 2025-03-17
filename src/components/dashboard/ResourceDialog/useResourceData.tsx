@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,7 +9,8 @@ import {
   LeadResource, 
   CotizacionResource, 
   FieldDefinition,
-  FieldType
+  FieldType,
+  UnidadResource
 } from './types';
 import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
@@ -66,6 +66,8 @@ export default function useResourceData({
     const fetchResource = async () => {
       setIsLoading(true);
       try {
+        console.log('Fetching resource:', resourceType, resourceId);
+        
         if (resourceId) {
           let query;
           
@@ -94,6 +96,7 @@ export default function useResourceData({
               .eq('id', resourceId)
               .single();
           } else if (resourceType === 'unidades') {
+            console.log('Fetching unidad with ID:', resourceId);
             query = supabase
               .from('unidades')
               .select('*')
@@ -106,6 +109,9 @@ export default function useResourceData({
           }
           
           const { data, error } = await query;
+
+          console.log('Resource data fetched:', data);
+          console.log('Resource fetch error:', error);
 
           if (error) {
             console.error('Error fetching resource:', error);
@@ -137,6 +143,9 @@ export default function useResourceData({
             }
           }
         } else {
+          console.log('Creating new resource of type:', resourceType);
+          console.log('With params - desarrolloId:', desarrolloId, 'prototipo_id:', prototipo_id);
+          
           if (resourceType === 'prototipos' && desarrolloId) {
             setResource({
               desarrollo_id: desarrolloId,
@@ -172,12 +181,13 @@ export default function useResourceData({
               numero_pagos: 0
             } as CotizacionResource);
           } else if (resourceType === 'unidades') {
+            console.log('Creating new unidad with prototipo_id:', prototipo_id);
             setResource({
               prototipo_id: prototipo_id || '',
               numero: '',
               estado: 'disponible',
               precio_venta: 0
-            } as any);
+            } as UnidadResource);
           }
         }
       } catch (err) {
@@ -269,6 +279,7 @@ export default function useResourceData({
           ];
           break;
         case 'unidades':
+          console.log('Defining fields for unidades');
           fieldDefinitions = [
             { name: 'numero', label: 'Número/Identificador', type: 'text' as FieldType },
             { name: 'estado', label: 'Estado', type: 'select' as FieldType, options: [
@@ -288,7 +299,7 @@ export default function useResourceData({
           break;
       }
 
-      console.log('Setting fields:', fieldDefinitions);
+      console.log('Setting fields for', resourceType, ':', fieldDefinitions);
       setFields(fieldDefinitions);
     };
 
@@ -298,3 +309,4 @@ export default function useResourceData({
 
   return { resource, setResource, fields, isLoading };
 }
+
