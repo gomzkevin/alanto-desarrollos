@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -54,7 +53,6 @@ const GenericForm = ({
   const [activeTab, setActiveTab] = useState<string>('general');
   const [tabs, setTabs] = useState<{ id: string; label: string }[]>([]);
 
-  // Crear el esquema de validación dinámicamente basado en los campos
   const generateValidationSchema = () => {
     const schema: { [key: string]: any } = {};
     
@@ -87,16 +85,13 @@ const GenericForm = ({
     defaultValues: values as any,
   });
 
-  // Actualizar el formulario cuando cambien los valores
   useEffect(() => {
     form.reset(values as any);
   }, [form, values]);
 
-  // Detectar cambios en el formulario y llamar a onChange
   const onFormChange = (name: string, value: any) => {
     onChange({ ...values, [name]: value });
     
-    // If additional handlers are provided, call them with appropriate values
     if (onSelectChange && fields.some(field => field.name === name && (field.type === 'select' || field.type === 'select-lead'))) {
       onSelectChange(name, value as string);
     }
@@ -110,7 +105,6 @@ const GenericForm = ({
     }
   };
 
-  // Organizar campos en pestañas
   useEffect(() => {
     const uniqueTabs = fields
       .filter(field => field.tab)
@@ -140,42 +134,57 @@ const GenericForm = ({
                   <Input
                     type={field.type}
                     {...formField}
+                    readOnly={field.readOnly}
+                    className={field.readOnly ? "bg-gray-100" : ""}
                     onChange={(e) => {
-                      formField.onChange(e);
-                      onFormChange(field.name, e.target.value);
+                      if (!field.readOnly) {
+                        formField.onChange(e);
+                        onFormChange(field.name, e.target.value);
+                      }
                     }}
                   />
                 ) : field.type === 'number' ? (
                   <Input
                     type="number"
                     {...formField}
+                    readOnly={field.readOnly}
+                    className={field.readOnly ? "bg-gray-100" : ""}
                     value={formField.value === undefined ? '' : formField.value}
                     onChange={(e) => {
-                      const value = e.target.value === '' ? null : Number(e.target.value);
-                      formField.onChange(value);
-                      onFormChange(field.name, value);
+                      if (!field.readOnly) {
+                        const value = e.target.value === '' ? null : Number(e.target.value);
+                        formField.onChange(value);
+                        onFormChange(field.name, value);
+                      }
                     }}
                   />
                 ) : field.type === 'textarea' ? (
                   <Textarea
                     {...formField}
+                    readOnly={field.readOnly}
+                    className={field.readOnly ? "bg-gray-100" : ""}
                     onChange={(e) => {
-                      formField.onChange(e);
-                      onFormChange(field.name, e.target.value);
+                      if (!field.readOnly) {
+                        formField.onChange(e);
+                        onFormChange(field.name, e.target.value);
+                      }
                     }}
                   />
                 ) : field.type === 'select' && field.options ? (
                   <Select
                     value={formField.value?.toString() || ''}
+                    disabled={field.readOnly}
                     onValueChange={(value) => {
-                      formField.onChange(value);
-                      onFormChange(field.name, value);
-                      if (onSelectChange) {
-                        onSelectChange(field.name, value);
+                      if (!field.readOnly) {
+                        formField.onChange(value);
+                        onFormChange(field.name, value);
+                        if (onSelectChange) {
+                          onSelectChange(field.name, value);
+                        }
                       }
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={field.readOnly ? "bg-gray-100" : ""}>
                       <SelectValue placeholder="Seleccionar..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -190,11 +199,15 @@ const GenericForm = ({
                   <Input
                     type="date"
                     {...formField}
+                    readOnly={field.readOnly}
+                    className={field.readOnly ? "bg-gray-100" : ""}
                     onChange={(e) => {
-                      formField.onChange(e);
-                      onFormChange(field.name, e.target.value);
-                      if (onDateChange) {
-                        onDateChange(field.name, e.target.value ? new Date(e.target.value) : undefined);
+                      if (!field.readOnly) {
+                        formField.onChange(e);
+                        onFormChange(field.name, e.target.value);
+                        if (onDateChange) {
+                          onDateChange(field.name, e.target.value ? new Date(e.target.value) : undefined);
+                        }
                       }
                     }}
                   />
@@ -202,11 +215,14 @@ const GenericForm = ({
                   <div className="flex items-center space-x-2">
                     <Switch
                       checked={formField.value || false}
+                      disabled={field.readOnly}
                       onCheckedChange={(checked) => {
-                        formField.onChange(checked);
-                        onFormChange(field.name, checked);
-                        if (onSwitchChange) {
-                          onSwitchChange(field.name, checked);
+                        if (!field.readOnly) {
+                          formField.onChange(checked);
+                          onFormChange(field.name, checked);
+                          if (onSwitchChange) {
+                            onSwitchChange(field.name, checked);
+                          }
                         }
                       }}
                     />
@@ -232,6 +248,11 @@ const GenericForm = ({
                   />
                 ) : null}
               </FormControl>
+              {field.readOnly && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Este campo se actualiza automáticamente basado en el estado de las unidades
+                </p>
+              )}
               <FormMessage />
             </FormItem>
           )}

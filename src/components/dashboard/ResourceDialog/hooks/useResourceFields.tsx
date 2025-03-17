@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { FieldDefinition, ResourceType } from '../types';
 
@@ -212,13 +213,15 @@ export const useResourceFields = (
               name: 'unidades_vendidas',
               label: 'Unidades Vendidas',
               type: 'number',
-              tab: 'general'
+              tab: 'general',
+              readOnly: true
             },
             {
               name: 'unidades_con_anticipo',
               label: 'Unidades con Anticipo',
               type: 'number',
-              tab: 'general'
+              tab: 'general',
+              readOnly: true
             },
             {
               name: 'descripcion',

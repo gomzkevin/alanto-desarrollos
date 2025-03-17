@@ -1,4 +1,3 @@
-
 export type FieldType = 
   | 'text' 
   | 'textarea' 
@@ -22,12 +21,12 @@ export interface FieldDefinition {
   name: string;
   label: string;
   type: FieldType;
+  options?: { label: string; value: string }[];
   tab?: string;
-  options?: FieldOption[];
-  description?: string;
   required?: boolean;
   bucket?: string;
   folder?: string;
+  readOnly?: boolean;
 }
 
 export type ResourceType = 
