@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
+import useDesarrollos from './useDesarrollos';
+import usePrototipos from './usePrototipos';
 
 export type Lead = Tables<"leads">;
 
@@ -65,6 +67,8 @@ type FetchLeadsOptions = {
 export const useLeads = (options: FetchLeadsOptions = {}) => {
   const { estado, agente, limit, search } = options;
   const { toast } = useToast();
+  const { desarrollos } = useDesarrollos();
+  const { prototipos } = usePrototipos();
   
   // Function to fetch leads
   const fetchLeads = async () => {
@@ -189,6 +193,28 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
     return option ? option.label : value;
   };
 
+  // Function to get the interest text based on the interest_en value
+  const getInterestText = (interest: string | null) => {
+    if (!interest) return '';
+    
+    if (interest.startsWith('desarrollo:')) {
+      const desarrolloId = interest.split(':')[1];
+      const desarrollo = desarrollos.find(d => d.id === desarrolloId);
+      return desarrollo ? `Desarrollo: ${desarrollo.nombre}` : interest;
+    } else if (interest.startsWith('prototipo:')) {
+      const prototipoId = interest.split(':')[1];
+      const prototipo = prototipos.find(p => p.id === prototipoId);
+      const desarrollo = prototipo 
+        ? desarrollos.find(d => d.id === prototipo.desarrollo_id) 
+        : null;
+      return prototipo 
+        ? `${prototipo.nombre}${desarrollo ? ` en ${desarrollo.nombre}` : ''}` 
+        : interest;
+    }
+    
+    return interest;
+  };
+
   return {
     leads: queryResult.data || [],
     isLoading: queryResult.isLoading,
@@ -200,7 +226,8 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
     originOptions: LEAD_ORIGIN_OPTIONS,
     getStatusLabel,
     getSubstatusLabel,
-    getOriginLabel
+    getOriginLabel,
+    getInterestText
   };
 };
 

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, Eye, Plus } from 'lucide-react';
+import { Search, Filter, Eye, Plus, Building, Home } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -23,6 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { format } from 'date-fns';
 import useLeads from '@/hooks/useLeads';
+import useDesarrollos from '@/hooks/useDesarrollos';
+import usePrototipos from '@/hooks/usePrototipos';
 
 const getBadgeVariant = (estado: string) => {
   switch (estado?.toLowerCase()) {
@@ -58,6 +60,9 @@ const LeadsPage = () => {
     search: searchTerm.length > 2 ? searchTerm : undefined
   });
   
+  const { desarrollos } = useDesarrollos();
+  const { prototipos } = usePrototipos();
+  
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
@@ -69,6 +74,46 @@ const LeadsPage = () => {
   const handleViewDetails = (leadId: string) => {
     setSelectedLeadId(leadId);
     setOpen(true);
+  };
+
+  // Función para mostrar el interés de forma amigable
+  const formatInterest = (interesEn: string | null) => {
+    if (!interesEn) return <span className="text-gray-400">-</span>;
+    
+    if (interesEn.startsWith('desarrollo:')) {
+      const desarrolloId = interesEn.split(':')[1];
+      const desarrollo = desarrollos.find(d => d.id === desarrolloId);
+      
+      return (
+        <div className="flex items-center">
+          <Building className="mr-2 h-4 w-4 text-indigo-600" />
+          <span>{desarrollo?.nombre || 'Desarrollo no encontrado'}</span>
+        </div>
+      );
+    } else if (interesEn.startsWith('prototipo:')) {
+      const prototipoId = interesEn.split(':')[1];
+      const prototipo = prototipos.find(p => p.id === prototipoId);
+      const desarrollo = prototipo 
+        ? desarrollos.find(d => d.id === prototipo.desarrollo_id) 
+        : null;
+      
+      return (
+        <div className="flex flex-col">
+          <div className="flex items-center">
+            <Home className="mr-2 h-4 w-4 text-sky-500" />
+            <span>{prototipo?.nombre || 'Prototipo no encontrado'}</span>
+          </div>
+          {desarrollo && (
+            <div className="flex items-center text-xs text-gray-500 mt-1">
+              <Building className="mr-1 h-3 w-3 text-indigo-400" />
+              <span>{desarrollo.nombre}</span>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    return interesEn;
   };
 
   return (
@@ -120,11 +165,11 @@ const LeadsPage = () => {
           </div>
         </div>
 
-        <div className="border rounded-md">
+        <div className="border rounded-md shadow-sm">
           <h2 className="text-xl font-semibold p-4 border-b">Lista de Prospectos</h2>
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-slate-50">
                 <TableHead>Nombre</TableHead>
                 <TableHead>Contacto</TableHead>
                 <TableHead>Estado</TableHead>
@@ -151,7 +196,7 @@ const LeadsPage = () => {
                 ))
               ) : leads.length > 0 ? (
                 leads.map((lead) => (
-                  <TableRow key={lead.id}>
+                  <TableRow key={lead.id} className="hover:bg-slate-50">
                     <TableCell className="font-medium">
                       {lead.nombre}
                     </TableCell>
@@ -172,7 +217,7 @@ const LeadsPage = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getBadgeVariant(lead.estado as string)}>
+                      <Badge variant={getBadgeVariant(lead.estado as string)} className="font-medium">
                         {getStatusLabel(lead.estado)}
                       </Badge>
                     </TableCell>
@@ -183,7 +228,7 @@ const LeadsPage = () => {
                       }
                     </TableCell>
                     <TableCell>
-                      {lead.interes_en || <span className="text-gray-400">-</span>}
+                      {formatInterest(lead.interes_en)}
                     </TableCell>
                     <TableCell>
                       {lead.origen ? 

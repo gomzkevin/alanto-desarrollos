@@ -73,31 +73,30 @@ export function useResourceFields(resourceType: string): FieldDefinition[] {
     case 'leads':
       return [
         { name: 'nombre', label: 'Nombre', type: 'text' },
-        { name: 'email', label: 'Email', type: 'text' },
+        { name: 'email', label: 'Email', type: 'email' },
         { name: 'telefono', label: 'Teléfono', type: 'text' },
-        { name: 'origen', label: 'Origen', type: 'select', options: [
-          { value: 'web', label: 'Sitio web' },
-          { value: 'referencia', label: 'Referencia' },
-          { value: 'evento', label: 'Evento' },
-          { value: 'publicidad', label: 'Publicidad' },
-          { value: 'otro', label: 'Otro' },
-        ]},
-        { name: 'interes_en', label: 'Interés en', type: 'text' },
+        { name: 'agente', label: 'Agente', type: 'text' },
         { name: 'estado', label: 'Estado', type: 'select', options: [
           { value: 'nuevo', label: 'Nuevo' },
-          { value: 'en_seguimiento', label: 'En seguimiento' },
+          { value: 'seguimiento', label: 'Seguimiento' },
           { value: 'convertido', label: 'Convertido' },
-          { value: 'no_interesado', label: 'No interesado' },
+          { value: 'perdido', label: 'Perdido' }
         ]},
-        { name: 'subestado', label: 'Subestado', type: 'select', options: [
-          { value: 'sin_contactar', label: 'Sin contactar' },
-          { value: 'contactado', label: 'Contactado' },
-          { value: 'reunion_agendada', label: 'Reunión agendada' },
-          { value: 'negociacion', label: 'En negociación' },
-          { value: 'solicitud_enviada', label: 'Solicitud enviada' },
-          { value: 'contrato_firmado', label: 'Contrato firmado' },
+        { name: 'subestado', label: 'Subestado', type: 'select', options: [] },
+        { name: 'origen', label: 'Origen', type: 'select', options: [
+          { value: 'sitio_web', label: 'Sitio web' },
+          { value: 'referido', label: 'Referido' },
+          { value: 'evento', label: 'Evento' },
+          { value: 'llamada', label: 'Llamada' },
+          { value: 'redes_sociales', label: 'Redes sociales' },
+          { value: 'whatsapp', label: 'WhatsApp' },
+          { value: 'portal_inmobiliario', label: 'Portal inmobiliario' },
+          { value: 'visita_fisica', label: 'Visita física' },
+          { value: 'campaña_email', label: 'Campaña de email' },
+          { value: 'otro', label: 'Otro' }
         ]},
-        { name: 'agente', label: 'Agente asignado', type: 'text' },
+        { name: 'interes_en', label: 'Interés en', type: 'interest-selector' },
+        { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' },
         { name: 'notas', label: 'Notas', type: 'textarea' },
       ];
       

@@ -1,3 +1,4 @@
+
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -65,4 +66,65 @@ export function formatPercent(value: number | string | null | undefined): string
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   }).format(numValue / 100);
+}
+
+/**
+ * Genera colores para gráficos según el nombre del conjunto de datos
+ */
+export function getDatasetColor(datasetName: string): string {
+  const colorMap: Record<string, string> = {
+    'Rendimiento Inmobiliario': '#8b5cf6', // Morado
+    'Rendimiento Alternativo': '#0ea5e9', // Azul cielo
+    'Ingresos': '#10b981', // Verde
+    'Gastos': '#f97316', // Naranja
+    'Utilidad': '#6366f1', // Índigo
+    'Ocupación': '#8b5cf6', // Morado
+  };
+  
+  return colorMap[datasetName] || '#8b5cf6'; // Morado por defecto
+}
+
+/**
+ * Trunca un texto si supera cierta longitud y agrega "..."
+ */
+export function truncateText(text: string, maxLength: number = 20): string {
+  if (!text) return '';
+  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+}
+
+/**
+ * Formatea un texto para su visualización, reemplazando valores nulos/vacíos
+ */
+export function formatText(value: string | null | undefined, placeholder: string = '-'): string {
+  if (value === null || value === undefined || value === '') return placeholder;
+  return value;
+}
+
+/**
+ * Formatea una fecha en formato amigable
+ */
+export function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '-';
+  
+  try {
+    const date = new Date(dateStr);
+    return new Intl.DateTimeFormat('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    }).format(date);
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateStr;
+  }
+}
+
+/**
+ * Convierte un objeto a formato query string para URLs
+ */
+export function objectToQueryString(obj: Record<string, any>): string {
+  return Object.keys(obj)
+    .filter(key => obj[key] !== undefined && obj[key] !== null && obj[key] !== '')
+    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(obj[key])}`)
+    .join('&');
 }
