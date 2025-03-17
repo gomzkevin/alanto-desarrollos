@@ -6,7 +6,7 @@ import { FieldDefinition } from '../types';
 import GenericForm from '../GenericForm';
 import { DialogHeader } from './DialogHeader';
 import { DialogFooter } from './DialogFooter';
-import { useState } from 'react';
+import { useMemo } from 'react';
 
 interface ResourceDialogContentProps {
   isOpen: boolean;
@@ -106,6 +106,9 @@ export function ResourceDialogContent({
     handleChange(syntheticEvent);
   };
 
+  // Use useMemo to ensure form values don't cause re-renders unnecessarily
+  const formValues = useMemo(() => getFormValues(), [resource]);
+
   return (
     <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-gray-50 p-0">
       <DialogHeader
@@ -121,7 +124,7 @@ export function ResourceDialogContent({
         ) : (
           <GenericForm
             fields={fields}
-            values={getFormValues()}
+            values={formValues}
             onChange={handleFormChange}
             onSelectChange={handleSelectChange}
             onSwitchChange={handleSwitchChange}

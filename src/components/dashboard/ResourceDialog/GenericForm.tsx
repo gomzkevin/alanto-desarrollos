@@ -57,16 +57,16 @@ const GenericForm = ({
   const { getSubstatusOptions } = useLeads({});
   const [substatusOptions, setSubstatusOptions] = useState<Array<{value: string, label: string}>>([]);
 
+  // Update subestado options when estado changes - fixed to prevent infinite loops
   useEffect(() => {
-    // Update subestado options when estado changes
     if (values.estado) {
       const options = getSubstatusOptions(values.estado);
       setSubstatusOptions(options);
     }
   }, [values.estado, getSubstatusOptions]);
 
+  // Group fields by tab
   useEffect(() => {
-    // Group fields by tab
     const grouped: Record<string, FieldDefinition[]> = {};
     
     fields.forEach(field => {
@@ -79,9 +79,9 @@ const GenericForm = ({
     
     setGroupedFields(grouped);
     
-    // Set first tab as active if it exists
+    // Set first tab as active if it exists and no active tab is set
     const tabs = Object.keys(grouped);
-    if (tabs.length > 0 && activeTab !== tabs[0]) {
+    if (tabs.length > 0 && !tabs.includes(activeTab)) {
       setActiveTab(tabs[0]);
     }
   }, [fields, activeTab]);
