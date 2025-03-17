@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +31,7 @@ export default function useResourceData({
   resourceId,
   desarrolloId,
   lead_id,
+  prototipo_id,
   selectedDesarrolloId,
   selectedStatus,
   usarFiniquito,
@@ -41,6 +43,7 @@ export default function useResourceData({
   resourceId?: string;
   desarrolloId?: string;
   lead_id?: string;
+  prototipo_id?: string;
   selectedDesarrolloId: string | null;
   selectedStatus: string | null;
   usarFiniquito: boolean;
