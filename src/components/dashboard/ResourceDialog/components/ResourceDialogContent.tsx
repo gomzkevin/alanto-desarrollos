@@ -143,8 +143,12 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
                 
                 {isExistingClient ? (
                   <ClientSearch
-                    selectedLeadId={lead_id || (resource?.lead_id as string)}
-                    onSelectLead={handleLeadSelect}
+                    value={lead_id || (resource?.lead_id as string) || ''}
+                    onClientSelect={handleLeadSelect}
+                    isExistingClient={isExistingClient}
+                    onExistingClientChange={onExistingClientChange}
+                    newClientData={newClientData}
+                    onNewClientDataChange={onNewClientDataChange}
                   />
                 ) : (
                   <div className="space-y-4">
