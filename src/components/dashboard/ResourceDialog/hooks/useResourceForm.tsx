@@ -79,7 +79,13 @@ export const useResourceForm = ({
   }, [resource, desarrolloId, prototipo_id, lead_id, resourceType, setResource]);
 
   // Setup resource actions
-  const { createResource, updateResource } = useResourceActions(resourceType);
+  const resourceActions = useResourceActions({
+    resourceType,
+    resourceId,
+    desarrolloId,
+    onSuccess,
+    selectedAmenities
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!resource) return;
@@ -155,11 +161,7 @@ export const useResourceForm = ({
       
       let result;
       
-      if (resourceId) {
-        result = await updateResource(resourceId, resourceToSave);
-      } else {
-        result = await createResource(resourceToSave);
-      }
+      result = await resourceActions.saveResource(resourceToSave);
       
       toast({
         title: 'Éxito',
