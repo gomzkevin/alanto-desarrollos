@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,7 @@ import { Label } from '@/components/ui/label';
 
 interface ClientSearchProps {
   value: string;
-  onSelect: (leadId: string, leadName: string) => void;
+  onClientSelect: (leadId: string, leadName: string) => void;
   placeholder?: string;
   isExistingClient: boolean;
   onExistingClientChange: (isExisting: boolean) => void;
@@ -29,7 +28,7 @@ interface ClientSearchProps {
 
 export function ClientSearch({ 
   value, 
-  onSelect, 
+  onClientSelect, 
   placeholder = "Buscar cliente...",
   isExistingClient,
   onExistingClientChange,
@@ -43,7 +42,6 @@ export function ClientSearch({
   const { leads, isLoading } = useLeads({});
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Actualizar el nombre mostrado cuando cambia el valor o se cargan los leads
   useEffect(() => {
     if (value && leads.length > 0 && isExistingClient) {
       const lead = leads.find(lead => lead.id === value);
@@ -57,7 +55,6 @@ export function ClientSearch({
     }
   }, [value, leads, isExistingClient]);
 
-  // Normalizar texto para búsqueda insensible a acentos
   const normalizeText = (text: string | null | undefined): string => {
     if (!text) return '';
     return text.toLowerCase()
@@ -65,7 +62,6 @@ export function ClientSearch({
       .replace(/[\u0300-\u036f]/g, "");
   };
 
-  // Filtrar leads basado en la búsqueda
   const filteredLeads = leads.filter(lead => {
     if (!search) return true;
     
@@ -78,21 +74,18 @@ export function ClientSearch({
     return nameMatch || emailMatch || phoneMatch;
   });
 
-  // Manejar la selección de un lead
   const handleSelectLead = (lead: any) => {
     setSelectedLead(lead);
-    onSelect(lead.id, lead.nombre || '');
+    onClientSelect(lead.id, lead.nombre || '');
     setSearch('');
     setOpen(false);
   };
 
-  // Limpiar la selección
   const handleClear = () => {
     setSelectedLead(null);
-    onSelect('', '');
+    onClientSelect('', '');
     setSearch('');
     setDisplayName('');
-    // Reabrir el popover después de limpiar
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.focus();
@@ -170,7 +163,6 @@ export function ClientSearch({
         </div>
       </div>
       
-      {/* Utilizamos un dropdown simple en lugar de Popover para mejor control */}
       {open && (
         <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200">
           <div className="p-3 border-b">
@@ -255,13 +247,10 @@ export function ClientSearch({
     </div>
   );
 
-  // Manejar clics fuera para cerrar el dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       if (open && !event.defaultPrevented && inputRef.current && !inputRef.current.contains(target)) {
-        // Solo cerrar si el clic no fue en un botón dentro del dropdown
-        // Fix: Use Element type assertion to access closest method
         const targetElement = event.target as Element;
         if (!targetElement.closest('button')) {
           setOpen(false);

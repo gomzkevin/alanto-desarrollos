@@ -120,6 +120,27 @@ export function formatDate(dateStr: string | null | undefined): string {
 }
 
 /**
+ * Formatea fecha y hora en formato amigable
+ */
+export function formatDateTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '-';
+  
+  try {
+    const date = new Date(dateStr);
+    return new Intl.DateTimeFormat('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  } catch (error) {
+    console.error('Error formatting date and time:', error);
+    return dateStr;
+  }
+}
+
+/**
  * Convierte un objeto a formato query string para URLs
  */
 export function objectToQueryString(obj: Record<string, any>): string {

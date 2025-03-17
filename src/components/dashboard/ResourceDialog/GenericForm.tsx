@@ -20,8 +20,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FieldDefinition } from './types';
-import AmenitiesSelector from '../AmenitiesSelector';
-import ClientSearch from './components/ClientSearch';
+import { AmenitiesSelector } from '@/components/dashboard/AmenitiesSelector';
+import { ClientSearch } from './components/ClientSearch';
 import InterestSelector from './components/InterestSelector';
 
 interface GenericFormProps {
@@ -80,6 +80,15 @@ const GenericForm = ({
     onSubmit();
   };
 
+  // Fixed type mismatch by creating adapter functions
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.name, e.target.value);
+  };
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onChange(e.target.name, e.target.value);
+  };
+
   const renderField = (field: FieldDefinition) => {
     const { name, label, type, options = [] } = field;
     const value = values[name] !== undefined ? values[name] : '';
@@ -96,7 +105,7 @@ const GenericForm = ({
               name={name}
               type={type}
               value={value}
-              onChange={onChange}
+              onChange={handleInputChange}
               className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
             />
           </div>
@@ -141,7 +150,7 @@ const GenericForm = ({
               id={name}
               name={name}
               value={value || ''}
-              onChange={onChange}
+              onChange={handleTextareaChange}
               className="min-h-[100px] resize-y border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
             />
           </div>
@@ -202,6 +211,8 @@ const GenericForm = ({
               <ClientSearch
                 onClientSelect={(leadId, leadName) => onLeadSelect(leadId, leadName)}
                 value={value}
+                isExistingClient={true}
+                onExistingClientChange={() => {}}
               />
             )}
           </div>

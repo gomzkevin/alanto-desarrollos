@@ -85,6 +85,12 @@ export function ResourceDialogContent({
 }: ResourceDialogContentProps) {
   const [activeTab, setActiveTab] = useState('Principal');
   
+  // Helper function to convert resource object to values object for GenericForm
+  const getFormValues = () => {
+    if (!resource) return {};
+    return resource;
+  };
+
   const formatDate = (date: string | undefined) => {
     if (!date) return undefined;
     try {
@@ -121,6 +127,19 @@ export function ResourceDialogContent({
     });
   };
 
+  // Create an adapter function for onChange to match expected signature in GenericForm
+  const handleFormChange = (name: string, value: any) => {
+    // Create a synthetic event object
+    const syntheticEvent = {
+      target: {
+        name,
+        value
+      }
+    } as React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
+    
+    handleChange(syntheticEvent);
+  };
+  
   const renderDesarrolloForm = () => {
     // Only render this form for "desarrollos" resource type
     if (!resource || resourceType !== 'desarrollos') return null;
@@ -499,25 +518,16 @@ export function ResourceDialogContent({
       ) : (
         <GenericForm
           fields={fields}
-          resource={resource}
-          handleChange={handleChange}
-          handleSelectChange={handleSelectChange}
-          handleSwitchChange={handleSwitchChange}
-          resourceType={resourceType}
-          handleAmenitiesChange={handleAmenitiesChange}
+          values={getFormValues()}
+          onChange={handleFormChange}
+          onSelectChange={handleSelectChange}
+          onSwitchChange={handleSwitchChange}
+          onLeadSelect={handleLeadSelect}
+          onDateChange={handleDateChange || (() => {})}
+          onAmenitiesChange={handleAmenitiesChange}
           selectedAmenities={selectedAmenities}
-          resourceId={resourceId}
-          desarrolloId={desarrolloId}
-          prototipo_id={prototipo_id}
-          lead_id={lead_id}
-          handleLeadSelect={handleLeadSelect}
-          handleImageUpload={handleImageUpload}
-          uploading={uploading}
-          isExistingClient={isExistingClient}
-          onExistingClientChange={onExistingClientChange}
-          newClientData={newClientData}
-          onNewClientDataChange={onNewClientDataChange}
-          onDesarrolloSelect={onDesarrolloSelect}
+          isSubmitting={isSubmitting}
+          onSubmit={saveResource}
         />
       )}
 
