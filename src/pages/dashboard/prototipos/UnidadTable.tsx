@@ -1,18 +1,18 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Plus, MoreVertical, Edit, Trash2 } from "lucide-react";
+import { Table, TableBody } from "@/components/ui/table";
+import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import useUnidades from "@/hooks/useUnidades";
 import useLeads from "@/hooks/useLeads";
 import { UnidadForm } from "./UnidadForm";
-import { Tables } from '@/integrations/supabase/types';
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
+import UnidadTableHeader from './components/UnidadTableHeader';
+import UnidadTableRow from './components/UnidadTableRow';
+import EmptyUnidadState from './components/EmptyUnidadState';
+import DeleteUnidadDialog from './components/DeleteUnidadDialog';
 
 export interface UnidadTableProps {
   prototipo: ExtendedPrototipo;
@@ -29,19 +29,21 @@ export const UnidadTable = ({ prototipo, unidades: externalUnidades, isLoading: 
     createUnidad, 
     updateUnidad, 
     deleteUnidad, 
-    refetch: hookRefetch 
+    refetch: hookRefresh 
   } = useUnidades({ prototipo_id: prototipo.id });
   
   const { leads } = useLeads();
   
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [currentUnidad, setCurrentUnidad] = useState<any>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  
+  // Use either the external or hook data
   const unidades = externalUnidades || hookUnidades;
   const isLoading = externalLoading !== undefined ? externalLoading : hookLoading;
-  const refetch = externalRefresh || hookRefetch;
+  const refetch = externalRefresh || hookRefresh;
+  
+  // Dialog state
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [currentUnidad, setCurrentUnidad] = useState<any>(null);
   
   useEffect(() => {
     return () => {
@@ -140,11 +142,6 @@ export const UnidadTable = ({ prototipo, unidades: externalUnidades, isLoading: 
     }
   }, [currentUnidad, deleteUnidad, toast, refetch]);
 
-  const closeEditDialog = useCallback(() => {
-    setIsEditDialogOpen(false);
-    setCurrentUnidad(null);
-  }, []);
-
   const openEditDialog = useCallback((unidad: any) => {
     setCurrentUnidad(unidad);
     setIsEditDialogOpen(true);
@@ -155,19 +152,14 @@ export const UnidadTable = ({ prototipo, unidades: externalUnidades, isLoading: 
     setIsDeleteDialogOpen(true);
   }, []);
 
-  const renderStatusBadge = useCallback((estado: string) => {
-    switch (estado) {
-      case 'disponible':
-        return <Badge className="bg-green-500 hover:bg-green-600">Disponible</Badge>;
-      case 'apartado':
-        return <Badge className="bg-blue-500 hover:bg-blue-600">Apartado</Badge>;
-      case 'en_proceso':
-        return <Badge className="bg-yellow-500 hover:bg-yellow-600">En Proceso</Badge>;
-      case 'vendido':
-        return <Badge className="bg-red-500 hover:bg-red-600">Vendido</Badge>;
-      default:
-        return <Badge>{estado}</Badge>;
-    }
+  const closeEditDialog = useCallback(() => {
+    setIsEditDialogOpen(false);
+    setCurrentUnidad(null);
+  }, []);
+
+  const closeDeleteDialog = useCallback(() => {
+    setIsDeleteDialogOpen(false);
+    setCurrentUnidad(null);
   }, []);
 
   if (isLoading) {
@@ -184,73 +176,26 @@ export const UnidadTable = ({ prototipo, unidades: externalUnidades, isLoading: 
       </div>
       
       {unidades.length === 0 ? (
-        <div className="text-center py-8 border rounded-md bg-gray-50">
-          <p className="text-gray-500">No hay unidades registradas para este prototipo.</p>
-          <Button onClick={() => setIsAddDialogOpen(true)} variant="outline" className="mt-2">
-            <Plus className="h-4 w-4 mr-1" /> Agregar Unidad
-          </Button>
-        </div>
+        <EmptyUnidadState onAddClick={() => setIsAddDialogOpen(true)} />
       ) : (
         <div className="border rounded-md overflow-hidden">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Número/ID</TableHead>
-                <TableHead>Nivel</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Precio</TableHead>
-                <TableHead>Comprador</TableHead>
-                <TableHead>Vendedor</TableHead>
-                <TableHead>Fecha Venta</TableHead>
-                <TableHead className="w-[80px]">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
+            <UnidadTableHeader />
             <TableBody>
               {unidades.map((unidad) => (
-                <TableRow key={unidad.id}>
-                  <TableCell className="font-medium">{unidad.numero}</TableCell>
-                  <TableCell>{unidad.nivel || '-'}</TableCell>
-                  <TableCell>{renderStatusBadge(unidad.estado)}</TableCell>
-                  <TableCell>
-                    {unidad.precio_venta 
-                      ? `$${unidad.precio_venta.toLocaleString('es-MX')}` 
-                      : '-'}
-                  </TableCell>
-                  <TableCell>{unidad.comprador_nombre || '-'}</TableCell>
-                  <TableCell>{unidad.vendedor_nombre || '-'}</TableCell>
-                  <TableCell>
-                    {unidad.fecha_venta 
-                      ? new Date(unidad.fecha_venta).toLocaleDateString('es-MX') 
-                      : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => openEditDialog(unidad)}>
-                          <Edit className="h-4 w-4 mr-2" /> Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-red-500" 
-                          onClick={() => openDeleteDialog(unidad)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" /> Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
+                <UnidadTableRow 
+                  key={unidad.id}
+                  unidad={unidad}
+                  onEdit={openEditDialog}
+                  onDelete={openDeleteDialog}
+                />
               ))}
             </TableBody>
           </Table>
         </div>
       )}
       
+      {/* Add Unidad Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <UnidadForm 
@@ -261,6 +206,7 @@ export const UnidadTable = ({ prototipo, unidades: externalUnidades, isLoading: 
         </DialogContent>
       </Dialog>
       
+      {/* Edit Unidad Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={closeEditDialog}>
         <DialogContent className="sm:max-w-md">
           {currentUnidad && (
@@ -274,27 +220,12 @@ export const UnidadTable = ({ prototipo, unidades: externalUnidades, isLoading: 
         </DialogContent>
       </Dialog>
       
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. La unidad será eliminada permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setIsDeleteDialogOpen(false);
-              setCurrentUnidad(null);
-            }}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteUnidad} className="bg-red-500 hover:bg-red-600">
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Delete Confirmation Dialog */}
+      <DeleteUnidadDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={closeDeleteDialog}
+        onConfirm={handleDeleteUnidad}
+      />
     </div>
   );
 };
