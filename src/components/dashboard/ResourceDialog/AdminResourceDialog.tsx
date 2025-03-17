@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { AdminResourceDialogProps, ResourceType, FormValues } from './types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import ResourceDialogContent from './components/ResourceDialogContent';
+import { ResourceDialogContent } from './components/ResourceDialogContent';
 import useResourceData from './useResourceData';
 import useResourceActions from './useResourceActions';
 
@@ -147,74 +146,36 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
       
       {dialogOpen && (
         <ResourceDialogContent
-          isLoading={isLoading}
-          isSubmitting={isSubmitting}
-          uploading={uploading}
+          isOpen={dialogOpen}
+          onClose={handleCloseDialog}
           resourceType={resourceType}
           resourceId={resourceId}
+          isLoading={isLoading}
+          isSubmitting={isSubmitting}
           resource={resource}
-          onClose={handleCloseDialog}
-          onSubmit={handleSubmit}
-          selectedStatus={selectedStatus}
-          setSelectedStatus={setSelectedStatus}
-          usarFiniquito={usarFiniquito}
-          setUsarFiniquito={setUsarFiniquito}
-          selectedDesarrolloId={selectedDesarrolloId}
-          setSelectedDesarrolloId={setSelectedDesarrolloId}
-          handleImageUpload={handleImageUpload}
+          fields={fields}
           selectedAmenities={selectedAmenities}
-          setSelectedAmenities={setSelectedAmenities}
-          setResource={setResource}
-        >
-          {isLoading ? (
-            <div className="space-y-4 p-4">
-              <Skeleton className="h-4 w-[250px]" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-20 w-full" />
-            </div>
-          ) : (
-            <>
-              {hasTabsConfig && (
-                <>
-                  <Tabs 
-                    defaultValue={tabsConfig[0]} 
-                    value={activeTab}
-                    onValueChange={setActiveTab}
-                    className="w-full"
-                  >
-                    <TabsList className="w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-                      {tabsConfig.map(tab => (
-                        <TabsTrigger key={tab} value={tab} className="capitalize">
-                          {tab}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-                    
-                    <Separator className="my-4" />
-                    
-                    {tabsConfig.map(tab => (
-                      <TabsContent key={tab} value={tab} className="space-y-4 py-2">
-                        {currentTabFields.map((field, index) => (
-                          <div key={`${field.name}-${index}`} className="space-y-1">
-                            <div className="grid grid-cols-1 gap-4">
-                              {field.name in (resource || {}) && field.type && (
-                                <div className="space-y-1">
-                                  {/* Field will be rendered by FormRenderer component */}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </TabsContent>
-                    ))}
-                  </Tabs>
-                </>
-              )}
-            </>
-          )}
-        </ResourceDialogContent>
+          handleChange={(e) => {
+            const { name, value } = e.target;
+            setResource(prev => ({ ...prev, [name]: value }));
+          }}
+          handleSelectChange={(name, value) => {
+            setResource(prev => ({ ...prev, [name]: value }));
+          }}
+          handleSwitchChange={(name, checked) => {
+            setResource(prev => ({ ...prev, [name]: checked }));
+          }}
+          handleAmenitiesChange={setSelectedAmenities}
+          saveResource={handleSubmit}
+          desarrolloId={desarrolloId}
+          prototipo_id={prototipo_id}
+          lead_id={lead_id}
+          handleImageUpload={handleImageUpload}
+          uploading={uploading}
+          handleDateChange={(name, date) => {
+            setResource(prev => ({ ...prev, [name]: date }));
+          }}
+        />
       )}
     </Dialog>
   );
