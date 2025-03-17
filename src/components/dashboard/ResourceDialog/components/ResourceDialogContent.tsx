@@ -94,16 +94,26 @@ export function ResourceDialogContent({
   };
 
   // Create an adapter function for onChange to match expected signature in GenericForm
-  const handleFormChange = (name: string, value: any) => {
-    // Create a synthetic event object
-    const syntheticEvent = {
-      target: {
-        name,
-        value
+  const handleFormChange = (values: FormValues) => {
+    // Extract the changed field by comparing with the original resource
+    if (resource) {
+      const changedFields = Object.entries(values).filter(
+        ([key, value]) => resource[key as keyof FormValues] !== value
+      );
+      
+      if (changedFields.length > 0) {
+        const [name, value] = changedFields[0];
+        // Create a synthetic event object
+        const syntheticEvent = {
+          target: {
+            name,
+            value
+          }
+        } as React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
+        
+        handleChange(syntheticEvent);
       }
-    } as React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
-    
-    handleChange(syntheticEvent);
+    }
   };
 
   // Use useMemo to ensure form values don't cause re-renders unnecessarily
@@ -125,15 +135,11 @@ export function ResourceDialogContent({
           <GenericForm
             fields={fields}
             values={formValues}
-            onChange={(values: FormValues) => {
-              Object.entries(values).forEach(([name, value]) => {
-                handleFormChange(name, value);
-              });
-            }}
+            onChange={handleFormChange}
             onSelectChange={handleSelectChange}
             onSwitchChange={handleSwitchChange}
             onLeadSelect={handleLeadSelect}
-            onDateChange={handleDateChange || (() => {})}
+            onDateChange={handleDateChange}
             onAmenitiesChange={handleAmenitiesChange}
             selectedAmenities={selectedAmenities}
             isSubmitting={isSubmitting}

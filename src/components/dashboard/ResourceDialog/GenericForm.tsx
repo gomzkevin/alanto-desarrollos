@@ -26,20 +26,30 @@ interface GenericFormProps {
   fields: FieldDefinition[];
   values: FormValues;
   onChange: (values: FormValues) => void;
-  formId: string;
+  onSelectChange?: (name: string, value: string) => void;
+  onSwitchChange?: (name: string, checked: boolean) => void;
+  onLeadSelect?: (leadId: string, leadName: string) => void;
+  onDateChange?: (name: string, date: Date | undefined) => void;
+  onAmenitiesChange?: (amenities: string[]) => void;
   isSubmitting?: boolean;
-  selectedAmenities: string[];
-  onAmenitiesChange: (amenities: string[]) => void;
+  onSubmit?: () => void;
+  formId: string;
+  selectedAmenities?: string[];
 }
 
 const GenericForm = ({
   fields,
   values,
   onChange,
+  onSelectChange,
+  onSwitchChange,
+  onLeadSelect,
+  onDateChange,
+  onAmenitiesChange,
   formId,
   isSubmitting = false,
-  selectedAmenities,
-  onAmenitiesChange
+  onSubmit,
+  selectedAmenities = []
 }: GenericFormProps) => {
   const [activeTab, setActiveTab] = useState<string>('general');
   const [tabs, setTabs] = useState<{ id: string; label: string }[]>([]);
@@ -85,6 +95,19 @@ const GenericForm = ({
   // Detectar cambios en el formulario y llamar a onChange
   const onFormChange = (name: string, value: any) => {
     onChange({ ...values, [name]: value });
+    
+    // If additional handlers are provided, call them with appropriate values
+    if (onSelectChange && (field.type === 'select' || field.type === 'select-lead')) {
+      onSelectChange(name, value as string);
+    }
+    
+    if (onSwitchChange && field.type === 'switch') {
+      onSwitchChange(name, value as boolean);
+    }
+    
+    if (onDateChange && field.type === 'date') {
+      onDateChange(name, value as Date | undefined);
+    }
   };
 
   // Organizar campos en pestañas
@@ -147,6 +170,9 @@ const GenericForm = ({
                     onValueChange={(value) => {
                       formField.onChange(value);
                       onFormChange(field.name, value);
+                      if (onSelectChange) {
+                        onSelectChange(field.name, value);
+                      }
                     }}
                   >
                     <SelectTrigger>
@@ -167,6 +193,9 @@ const GenericForm = ({
                     onChange={(e) => {
                       formField.onChange(e);
                       onFormChange(field.name, e.target.value);
+                      if (onDateChange) {
+                        onDateChange(field.name, e.target.value ? new Date(e.target.value) : undefined);
+                      }
                     }}
                   />
                 ) : field.type === 'switch' ? (
@@ -176,6 +205,9 @@ const GenericForm = ({
                       onCheckedChange={(checked) => {
                         formField.onChange(checked);
                         onFormChange(field.name, checked);
+                        if (onSwitchChange) {
+                          onSwitchChange(field.name, checked);
+                        }
                       }}
                     />
                     <span className="text-sm text-gray-500">
@@ -185,7 +217,7 @@ const GenericForm = ({
                 ) : field.type === 'amenities' ? (
                   <AmenitiesSelector
                     selectedAmenities={selectedAmenities}
-                    onChange={onAmenitiesChange}
+                    onChange={onAmenitiesChange || (() => {})}
                   />
                 ) : field.type === 'image-upload' ? (
                   <ImageUploader
@@ -211,7 +243,7 @@ const GenericForm = ({
 
   return (
     <Form {...form}>
-      <form id={formId} onSubmit={form.handleSubmit(() => {})}>
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit || (() => {}))}>
         {tabs.length > 1 ? (
           <Tabs defaultValue={tabs[0].id} value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
