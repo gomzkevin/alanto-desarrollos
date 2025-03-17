@@ -8,8 +8,6 @@ export type Prototipo = Tables<"prototipos">;
 // Define extended type without circular references
 export type ExtendedPrototipo = Prototipo & {
   desarrollo?: Tables<"desarrollos"> | null;
-  unidades_vendidas?: number;
-  unidades_con_anticipo?: number;
 };
 
 type FetchPrototiposOptions = {

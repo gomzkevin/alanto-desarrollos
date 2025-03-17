@@ -52,8 +52,8 @@ export interface PrototipoResource extends FormValues {
   estacionamientos?: number;
   total_unidades: number;
   unidades_disponibles: number;
-  unidades_vendidas?: number;
-  unidades_con_anticipo?: number;
+  unidades_vendidas: number;
+  unidades_con_anticipo: number;
   descripcion?: string;
   imagen_url?: string;
 }

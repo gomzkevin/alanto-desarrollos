@@ -391,7 +391,9 @@ export type Database = {
           superficie: number | null
           tipo: string
           total_unidades: number
+          unidades_con_anticipo: number | null
           unidades_disponibles: number
+          unidades_vendidas: number | null
         }
         Insert: {
           baños?: number | null
@@ -407,7 +409,9 @@ export type Database = {
           superficie?: number | null
           tipo: string
           total_unidades: number
+          unidades_con_anticipo?: number | null
           unidades_disponibles: number
+          unidades_vendidas?: number | null
         }
         Update: {
           baños?: number | null
@@ -423,7 +427,9 @@ export type Database = {
           superficie?: number | null
           tipo?: string
           total_unidades?: number
+          unidades_con_anticipo?: number | null
           unidades_disponibles?: number
+          unidades_vendidas?: number | null
         }
         Relationships: [
           {

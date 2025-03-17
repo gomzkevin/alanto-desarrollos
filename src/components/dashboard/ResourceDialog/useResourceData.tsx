@@ -204,8 +204,8 @@ export default function useResourceData({
             { name: 'baños', label: 'Baños', type: 'number' as FieldType, tab: 'general' },
             { name: 'estacionamientos', label: 'Estacionamientos', type: 'number' as FieldType, tab: 'general' },
             { name: 'total_unidades', label: 'Total Unidades', type: 'number' as FieldType, tab: 'detalles' },
-            { name: 'unidades_vendidas', label: 'Unidades Vendidas', type: 'number' as FieldType, tab: 'detalles' },
-            { name: 'unidades_con_anticipo', label: 'Unidades con Anticipo', type: 'number' as FieldType, tab: 'detalles' },
+            { name: 'unidades_vendidas', label: 'Unidades Vendidas', type: 'number' as FieldType, tab: 'detalles', readOnly: true },
+            { name: 'unidades_con_anticipo', label: 'Unidades con Anticipo', type: 'number' as FieldType, tab: 'detalles', readOnly: true },
             { name: 'descripcion', label: 'Descripción', type: 'textarea' as FieldType, tab: 'detalles' },
             { name: 'imagen_url', label: 'Imagen', type: 'image-upload' as FieldType, tab: 'media', bucket: 'prototipo-images', folder: 'prototipos' },
           ];
