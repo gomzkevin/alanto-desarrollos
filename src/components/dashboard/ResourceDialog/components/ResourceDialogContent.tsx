@@ -72,7 +72,7 @@ export function ResourceDialogContent({
   
   // Helper function to convert resource object to values object for GenericForm
   const getFormValues = () => {
-    if (!resource) return {};
+    if (!resource) return {} as FormValues;
     return resource;
   };
 
@@ -125,7 +125,11 @@ export function ResourceDialogContent({
           <GenericForm
             fields={fields}
             values={formValues}
-            onChange={handleFormChange}
+            onChange={(values: FormValues) => {
+              Object.entries(values).forEach(([name, value]) => {
+                handleFormChange(name, value);
+              });
+            }}
             onSelectChange={handleSelectChange}
             onSwitchChange={handleSwitchChange}
             onLeadSelect={handleLeadSelect}
@@ -134,6 +138,7 @@ export function ResourceDialogContent({
             selectedAmenities={selectedAmenities}
             isSubmitting={isSubmitting}
             onSubmit={saveResource}
+            formId="resource-form"
           />
         )}
       </div>

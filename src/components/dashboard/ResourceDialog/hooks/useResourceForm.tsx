@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { FormValues, ResourceType } from '../types';
 import { supabase } from '@/integrations/supabase/client';
@@ -268,7 +267,6 @@ export function useResourceForm({
           const desarrolloData = formData as any;
           const dataToSave = { ...desarrolloData };
           
-          // Prepare amenities for saving
           if (selectedAmenities.length > 0) {
             dataToSave.amenidades = selectedAmenities as unknown as Json;
           }
@@ -312,7 +310,6 @@ export function useResourceForm({
           const desarrolloData = formData as any;
           const dataToSave = { ...desarrolloData };
           
-          // Prepare amenities for saving as JSON
           const amenidadesJson = JSON.stringify(selectedAmenities) as unknown as Json;
           dataToSave.amenidades = selectedAmenities.length > 0 ? amenidadesJson : null;
           

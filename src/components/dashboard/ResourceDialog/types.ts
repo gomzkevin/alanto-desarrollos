@@ -1,8 +1,9 @@
+
 import { Json } from '@/integrations/supabase/types';
 
-export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones';
+export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones' | 'unidades';
 
-export type FieldType = 'text' | 'number' | 'select' | 'textarea' | 'date' | 'email' | 'switch' | 'amenities' | 'image-upload' | 'upload';
+export type FieldType = 'text' | 'number' | 'select' | 'textarea' | 'date' | 'email' | 'switch' | 'amenities' | 'image-upload' | 'upload' | 'interest-selector' | 'select-lead';
 
 export interface AdminResourceDialogProps {
   open?: boolean;

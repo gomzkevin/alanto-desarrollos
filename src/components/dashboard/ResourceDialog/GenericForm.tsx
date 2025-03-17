@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import AmenitiesSelector from '../AmenitiesSelector';
+import { AmenitiesSelector } from '../AmenitiesSelector';
 import { FieldDefinition, FormValues } from './types';
 import ImageUploader from '../ImageUploader';
 
