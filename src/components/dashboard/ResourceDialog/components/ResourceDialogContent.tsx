@@ -81,6 +81,7 @@ export function ResourceDialogContent({
     if (resource) {
       return saveResource(resource);
     }
+    return false;
   };
 
   const getResourceTypeName = () => {

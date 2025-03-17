@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -36,7 +35,6 @@ const AdminResourceDialog = ({
     telefono: ''
   });
   
-  // Initialize selectedDesarrolloId with the prop value but don't change it in useEffect
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | undefined>(
     desarrolloId || undefined
   );
@@ -52,7 +50,6 @@ const AdminResourceDialog = ({
 
   const fields = useResourceFields(resourceType);
 
-  // Get desarrollo stats if editing a desarrollo
   const { data: desarrolloStats } = useDesarrolloStats(
     resourceType === 'desarrollos' && resourceId ? resourceId : undefined
   );
@@ -81,7 +78,6 @@ const AdminResourceDialog = ({
     onSave
   });
 
-  // Set the desarrollo_id from the resource only once after initial load
   useEffect(() => {
     if (resource && !selectedDesarrolloId) {
       const resourceAny = resource as any;
@@ -91,7 +87,6 @@ const AdminResourceDialog = ({
     }
   }, [resource, selectedDesarrolloId]);
 
-  // Update unidades_disponibles and avance_porcentaje when stats change
   useEffect(() => {
     if (resource && resourceType === 'desarrollos' && desarrolloStats) {
       setResource({
@@ -115,7 +110,7 @@ const AdminResourceDialog = ({
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<boolean> => {
     if (resource) {
       const resourceAny = resource as any;
       
@@ -129,7 +124,7 @@ const AdminResourceDialog = ({
               description: 'El nombre del cliente es obligatorio',
               variant: 'destructive',
             });
-            return;
+            return false;
           }
         } else if (isExistingClient && !cotizacionData.lead_id) {
           toast({
@@ -137,7 +132,7 @@ const AdminResourceDialog = ({
             description: 'Debe seleccionar un cliente',
             variant: 'destructive',
           });
-          return;
+          return false;
         }
         
         if (!cotizacionData.desarrollo_id) {
@@ -146,7 +141,7 @@ const AdminResourceDialog = ({
             description: 'Debe seleccionar un desarrollo',
             variant: 'destructive',
           });
-          return;
+          return false;
         }
         
         if (!cotizacionData.prototipo_id) {
@@ -155,7 +150,7 @@ const AdminResourceDialog = ({
             description: 'Debe seleccionar un prototipo',
             variant: 'destructive',
           });
-          return;
+          return false;
         }
       }
       
@@ -167,7 +162,7 @@ const AdminResourceDialog = ({
               description: 'El nombre del cliente es obligatorio',
               variant: 'destructive',
             });
-            return;
+            return false;
           }
           
           const { data: newLead, error: leadError } = await supabase
@@ -190,12 +185,13 @@ const AdminResourceDialog = ({
               lead_id: newLead.id
             };
             
-            saveResource(updatedResource).then(success => {
-              if (success) {
-                handleOpenChange(false);
-              }
-            });
+            const success = await saveResource(updatedResource);
+            if (success) {
+              handleOpenChange(false);
+            }
+            return success;
           }
+          return false;
         } catch (error: any) {
           console.error('Error creando nuevo lead:', error);
           toast({
@@ -203,18 +199,19 @@ const AdminResourceDialog = ({
             description: `No se pudo crear el nuevo cliente: ${error.message}`,
             variant: 'destructive',
           });
+          return false;
         }
       } else {
-        saveResource(resource).then(success => {
-          if (success) {
-            handleOpenChange(false);
-          }
-        });
+        const success = await saveResource(resource);
+        if (success) {
+          handleOpenChange(false);
+        }
+        return success;
       }
     }
+    return false;
   };
 
-  // Reset client data when dialog opens/closes
   useEffect(() => {
     if (isOpen) {
       const resourceAny = resource as any;

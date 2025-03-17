@@ -27,6 +27,7 @@ export interface FieldDefinition {
   bucket?: string;
   folder?: string;
   readOnly?: boolean;
+  description?: string;
 }
 
 export type ResourceType = 
