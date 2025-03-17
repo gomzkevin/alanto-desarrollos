@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
+import { cn } from '@/lib/utils';
 
 interface InterestSelectorProps {
   value: string;
@@ -27,16 +28,18 @@ const InterestSelector: React.FC<InterestSelectorProps> = ({
     desarrolloId: selectedDesarrolloId 
   });
 
-  // Detectar tipo de interés actual al cargar
+  // Detect current interest type on load
   useEffect(() => {
     if (value) {
       if (value.startsWith('desarrollo:')) {
         setActiveTab('desarrollos');
+        const desarrolloId = value.split(':')[1];
+        setSelectedDesarrolloId(desarrolloId);
       } else if (value.startsWith('prototipo:')) {
         setActiveTab('prototipos');
-        // Extraer el ID del prototipo
+        // Extract prototipo ID
         const prototipoId = value.split(':')[1];
-        // Buscar el prototipo para obtener su desarrollo_id
+        // Find the prototipo to get its desarrollo_id
         const prototipo = prototipos.find(p => p.id === prototipoId);
         if (prototipo) {
           setSelectedDesarrolloId(prototipo.desarrollo_id);
@@ -45,17 +48,17 @@ const InterestSelector: React.FC<InterestSelectorProps> = ({
     }
   }, [value, prototipos]);
 
-  // Filtrar desarrollos basados en el término de búsqueda
+  // Filter desarrollos based on search term
   const filteredDesarrollos = desarrollos.filter(desarrollo =>
     desarrollo.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Filtrar prototipos basados en el término de búsqueda
+  // Filter prototipos based on search term and selected desarrollo
   const filteredPrototipos = prototipos.filter(prototipo =>
     prototipo.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Obtener el nombre del desarrollo o prototipo seleccionado
+  // Get the name of the selected desarrollo or prototipo
   const getSelectedName = () => {
     if (!value) return 'Seleccionar interés...';
     
@@ -66,33 +69,61 @@ const InterestSelector: React.FC<InterestSelectorProps> = ({
     } else if (value.startsWith('prototipo:')) {
       const prototipoId = value.split(':')[1];
       const prototipo = prototipos.find(p => p.id === prototipoId);
-      return prototipo ? `${prototipo.nombre} (Prototipo)` : 'Seleccionar prototipo...';
+      const desarrollo = prototipo && desarrollos.find(d => d.id === prototipo.desarrollo_id);
+      return prototipo 
+        ? `${prototipo.nombre} en ${desarrollo?.nombre || ''} (Prototipo)` 
+        : 'Seleccionar prototipo...';
     }
     
     return 'Seleccionar interés...';
   };
 
-  // Manejar cambio de desarrollo seleccionado
+  // Handle desarrollo selection
   const handleDesarrolloChange = (desarrolloId: string) => {
     onChange(`desarrollo:${desarrolloId}`);
-    setIsOpen(false);
-  };
-
-  // Manejar cambio de desarrollo para filtrar prototipos
-  const handleDesarrolloFilterChange = (desarrolloId: string) => {
     setSelectedDesarrolloId(desarrolloId);
+    
+    // If only one tab is showing, close the dropdown
+    if (activeTab === 'desarrollos') {
+      setIsOpen(false);
+    } else {
+      // If we're in the prototipos tab, switch to it
+      setActiveTab('prototipos');
+    }
   };
 
-  // Manejar cambio de prototipo seleccionado
+  // Handle prototipo selection
   const handlePrototipoChange = (prototipoId: string) => {
     onChange(`prototipo:${prototipoId}`);
     setIsOpen(false);
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (isOpen && !target.closest('.interest-selector-dropdown')) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Get the selected desarrollo name
+  const getSelectedDesarrolloName = () => {
+    if (!selectedDesarrolloId) return '';
+    const desarrollo = desarrollos.find(d => d.id === selectedDesarrolloId);
+    return desarrollo ? desarrollo.nombre : '';
+  };
+
   return (
     <div className={className}>
-      <div className="relative">
-        {/* Selector principal que muestra el valor actual */}
+      <div className="relative interest-selector-dropdown">
+        {/* Main selector showing current value */}
         <div 
           className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
           onClick={() => setIsOpen(!isOpen)}
@@ -120,7 +151,12 @@ const InterestSelector: React.FC<InterestSelectorProps> = ({
             <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4 sticky top-0 bg-white z-10">
                 <TabsTrigger value="desarrollos" className="text-sm">Desarrollos</TabsTrigger>
-                <TabsTrigger value="prototipos" className="text-sm">Prototipos</TabsTrigger>
+                <TabsTrigger value="prototipos" className={cn(
+                  "text-sm",
+                  !selectedDesarrolloId && "opacity-50 cursor-not-allowed"
+                )}>
+                  Prototipos
+                </TabsTrigger>
               </TabsList>
               
               <div className="relative mx-3 mb-3 sticky top-12 bg-white z-10 pb-2">
@@ -142,7 +178,12 @@ const InterestSelector: React.FC<InterestSelectorProps> = ({
                   filteredDesarrollos.map((desarrollo) => (
                     <div
                       key={desarrollo.id}
-                      className="flex items-center px-3 py-2 cursor-pointer hover:bg-gray-100 rounded-md"
+                      className={cn(
+                        "flex items-center px-3 py-2 cursor-pointer rounded-md",
+                        selectedDesarrolloId === desarrollo.id 
+                          ? "bg-indigo-100 text-indigo-700" 
+                          : "hover:bg-gray-100"
+                      )}
                       onClick={() => handleDesarrolloChange(desarrollo.id)}
                     >
                       <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-2">
@@ -159,37 +200,21 @@ const InterestSelector: React.FC<InterestSelectorProps> = ({
               </TabsContent>
               
               <TabsContent value="prototipos" className="mt-0 px-3 pb-2">
-                <div className="mb-3">
-                  <div className="px-2 py-2 font-medium text-sm text-gray-700">Filtrar por desarrollo:</div>
-                  <div className="space-y-1 max-h-[120px] overflow-y-auto">
-                    {desarrollos.map((desarrollo) => (
-                      <div
-                        key={desarrollo.id}
-                        className={`px-3 py-1.5 rounded text-sm cursor-pointer ${
-                          selectedDesarrolloId === desarrollo.id 
-                            ? 'bg-indigo-100 text-indigo-700 font-medium' 
-                            : 'hover:bg-gray-100'
-                        }`}
-                        onClick={() => handleDesarrolloFilterChange(desarrollo.id)}
-                      >
-                        {desarrollo.nombre}
-                      </div>
-                    ))}
+                {!selectedDesarrolloId ? (
+                  <div className="px-3 py-4 text-center text-gray-500 text-sm">
+                    Selecciona un desarrollo primero para ver sus prototipos
                   </div>
-                </div>
-                
-                <div className="max-h-[200px] overflow-y-auto mt-4">
-                  <div className="px-2 mb-2 font-medium text-sm text-gray-700">
-                    {selectedDesarrolloId 
-                      ? `Prototipos en ${desarrollos.find(d => d.id === selectedDesarrolloId)?.nombre || ''}:` 
-                      : 'Selecciona un desarrollo para ver sus prototipos'}
-                  </div>
-                  {prototiposLoading ? (
-                    <div className="px-2 py-2 text-center text-gray-500 text-sm">
-                      Cargando prototipos...
+                ) : (
+                  <>
+                    <div className="px-3 py-2 font-medium text-sm mb-3 bg-indigo-50 rounded-md text-indigo-700">
+                      Prototipos en {getSelectedDesarrolloName()}
                     </div>
-                  ) : selectedDesarrolloId ? (
-                    filteredPrototipos.length > 0 ? (
+                    
+                    {prototiposLoading ? (
+                      <div className="px-2 py-4 text-center text-gray-500 text-sm">
+                        Cargando prototipos...
+                      </div>
+                    ) : filteredPrototipos.length > 0 ? (
                       filteredPrototipos.map((prototipo) => (
                         <div
                           key={prototipo.id}
@@ -206,13 +231,9 @@ const InterestSelector: React.FC<InterestSelectorProps> = ({
                       <div className="px-2 py-4 text-center text-gray-500 text-sm">
                         No se encontraron prototipos para este desarrollo
                       </div>
-                    )
-                  ) : (
-                    <div className="px-2 py-4 text-center text-gray-500 text-sm">
-                      Selecciona un desarrollo para ver sus prototipos
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </>
+                )}
               </TabsContent>
             </Tabs>
           </div>
