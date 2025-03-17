@@ -25,14 +25,19 @@ type Prototipo = Tables<"prototipos">;
 type Desarrollo = Tables<"desarrollos">;
 
 const fetchPrototipoById = async (id: string) => {
+  console.log('Fetching prototipo with ID:', id);
   const { data, error } = await supabase
     .from('prototipos')
     .select('*, desarrollo:desarrollo_id(*)')
     .eq('id', id)
     .single();
   
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching prototipo:', error);
+    throw error;
+  }
   
+  console.log('Prototipo data fetched:', data);
   return data as ExtendedPrototipo;
 };
 
@@ -46,6 +51,8 @@ const PrototipoDetail = () => {
   const [cantidadUnidades, setCantidadUnidades] = useState(1);
   const [prefijo, setPrefijo] = useState("");
   
+  console.log('PrototipoDetail rendered with ID:', id);
+  
   const {
     data: prototipo,
     isLoading,
@@ -55,6 +62,16 @@ const PrototipoDetail = () => {
     queryKey: ['prototipo', id],
     queryFn: () => fetchPrototipoById(id as string),
     enabled: !!id,
+    meta: {
+      onError: (error: Error) => {
+        console.error('Error fetching prototipo details:', error);
+        toast({
+          title: 'Error',
+          description: `No se pudo cargar el prototipo: ${error.message}`,
+          variant: 'destructive',
+        });
+      }
+    }
   });
   
   const { 
@@ -102,9 +119,18 @@ const PrototipoDetail = () => {
       setGenerarUnidadesModalOpen(false);
       setCantidadUnidades(1);
       setPrefijo("");
-      refetch();
+      refetchUnidades();
+      toast({
+        title: 'Unidades generadas',
+        description: `Se generaron ${cantidadUnidades} unidades correctamente`,
+      });
     } catch (error) {
       console.error('Error al generar unidades:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron generar las unidades',
+        variant: 'destructive',
+      });
     }
   };
   
@@ -362,21 +388,25 @@ const PrototipoDetail = () => {
         </DialogContent>
       </Dialog>
       
-      <AdminResourceDialog 
-        resourceType="prototipos"
-        resourceId={id}
-        open={openEditDialog}
-        onClose={() => setOpenEditDialog(false)}
-        onSuccess={handleRefresh}
-      />
+      {openEditDialog && (
+        <AdminResourceDialog 
+          resourceType="prototipos"
+          resourceId={id}
+          open={openEditDialog}
+          onClose={() => setOpenEditDialog(false)}
+          onSuccess={handleRefresh}
+        />
+      )}
       
-      <AdminResourceDialog 
-        resourceType="unidades"
-        open={openAddUnidadDialog}
-        onClose={() => setOpenAddUnidadDialog(false)}
-        onSuccess={refetchUnidades}
-        prototipo_id={id}
-      />
+      {openAddUnidadDialog && (
+        <AdminResourceDialog 
+          resourceType="unidades"
+          open={openAddUnidadDialog}
+          onClose={() => setOpenAddUnidadDialog(false)}
+          onSuccess={refetchUnidades}
+          prototipo_id={id}
+        />
+      )}
     </DashboardLayout>
   );
 };
