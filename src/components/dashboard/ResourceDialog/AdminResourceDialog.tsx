@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Pencil } from 'lucide-react';
-import { AdminResourceDialogProps, FormValues } from './types';
+import { AdminResourceDialogProps } from './types';
 import { useResourceForm } from './hooks/useResourceForm';
 import { useResourceFields } from './hooks/useResourceFields';
 import { ResourceDialogContent } from './components/ResourceDialogContent';
@@ -35,7 +35,7 @@ const AdminResourceDialog = ({
     telefono: ''
   });
   
-  // Initialize selectedDesarrolloId with the prop value
+  // Initialize selectedDesarrolloId with the prop value but don't change it in useEffect
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | undefined>(
     desarrolloId || undefined
   );
@@ -49,24 +49,14 @@ const AdminResourceDialog = ({
     setDialogOpen(newOpen);
   };
 
-  // Logging for debugging
-  console.log('AdminResourceDialog - open prop:', open);
-  console.log('AdminResourceDialog - dialogOpen state:', dialogOpen);
-  console.log('AdminResourceDialog - isOpen calculated:', isOpen);
-  console.log('AdminResourceDialog - resourceType:', resourceType);
-  console.log('AdminResourceDialog - resourceId:', resourceId);
-  console.log('AdminResourceDialog - selectedDesarrolloId:', selectedDesarrolloId);
-  console.log('AdminResourceDialog - desarrolloId prop:', desarrolloId);
-
-  // Pass selectedDesarrolloId to useResourceFields
-  const fields = useResourceFields(resourceType, selectedDesarrolloId);
+  const fields = useResourceFields(resourceType);
 
   const {
     isLoading,
     isSubmitting,
     resource,
     selectedAmenities,
-    handleChange: originalHandleChange,
+    handleChange,
     handleSelectChange,
     handleSwitchChange,
     handleLeadSelect,
@@ -84,21 +74,6 @@ const AdminResourceDialog = ({
     onSuccess,
     onSave
   });
-
-  // Custom handleChange that can accept both event objects and direct form values
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | FormValues
-  ) => {
-    if (!resource) return;
-    
-    if ('target' in e) {
-      // It's an event object
-      originalHandleChange(e);
-    } else {
-      // It's a form values object - directly update the resource
-      setResource({ ...resource, ...e });
-    }
-  };
 
   // Set the desarrollo_id from the resource only once after initial load
   useEffect(() => {
@@ -213,19 +188,12 @@ const AdminResourceDialog = ({
           });
         }
       } else {
-        console.log('Saving resource with data:', resource);
         saveResource(resource).then(success => {
           if (success) {
             handleOpenChange(false);
           }
         });
       }
-    } else {
-      toast({
-        title: 'Error',
-        description: 'No hay datos para guardar',
-        variant: 'destructive',
-      });
     }
   };
 
@@ -233,7 +201,7 @@ const AdminResourceDialog = ({
   useEffect(() => {
     if (isOpen) {
       const resourceAny = resource as any;
-      const hasLeadId = lead_id || (resource && resourceAny && resourceAny.lead_id);
+      const hasLeadId = lead_id || (resource && resourceAny.lead_id);
       setIsExistingClient(!!hasLeadId);
     } else {
       setNewClientData({

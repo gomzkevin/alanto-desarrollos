@@ -18,9 +18,8 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AmenitiesSelector } from '../AmenitiesSelector';
-import { FieldDefinition, FormValues, ResourceType, FieldType } from './types';
+import { FieldDefinition, FormValues } from './types';
 import ImageUploader from '../ImageUploader';
-import useLeads from '@/hooks/useLeads';
 
 interface GenericFormProps {
   fields: FieldDefinition[];
@@ -35,7 +34,6 @@ interface GenericFormProps {
   onSubmit?: () => void;
   formId: string;
   selectedAmenities?: string[];
-  resourceType?: ResourceType;
 }
 
 const GenericForm = ({
@@ -50,16 +48,10 @@ const GenericForm = ({
   formId,
   isSubmitting = false,
   onSubmit,
-  selectedAmenities = [],
-  resourceType
+  selectedAmenities = []
 }: GenericFormProps) => {
   const [activeTab, setActiveTab] = useState<string>('general');
   const [tabs, setTabs] = useState<{ id: string; label: string }[]>([]);
-  const { leads } = useLeads();
-
-  // Add debug logging
-  console.log('GenericForm - initializing with values:', values);
-  console.log('GenericForm - fields:', fields);
 
   const generateValidationSchema = () => {
     const schema: { [key: string]: any } = {};
@@ -68,19 +60,17 @@ const GenericForm = ({
       if (field.type === 'text' || field.type === 'textarea' || field.type === 'email') {
         schema[field.name] = z.string().optional();
       } else if (field.type === 'number') {
-        schema[field.name] = z.number().optional().nullable();
-      } else if (field.type === 'select' || field.type === 'select-lead' || field.type === 'lead-select') {
+        schema[field.name] = z.number().optional();
+      } else if (field.type === 'select') {
         schema[field.name] = z.string().optional();
       } else if (field.type === 'date') {
-        schema[field.name] = z.string().optional().nullable();
+        schema[field.name] = z.string().optional();
       } else if (field.type === 'switch') {
         schema[field.name] = z.boolean().optional();
       } else if (field.type === 'amenities') {
         schema[field.name] = z.array(z.string()).optional();
       } else if (field.type === 'image-upload' || field.type === 'upload') {
-        schema[field.name] = z.string().optional().nullable();
-      } else if (field.type === 'multiple-select') {
-        schema[field.name] = z.array(z.string()).optional();
+        schema[field.name] = z.string().optional();
       }
     });
     
@@ -93,34 +83,17 @@ const GenericForm = ({
   const form = useForm<ValidationSchema>({
     resolver: zodResolver(validationSchema),
     defaultValues: values as any,
-    mode: 'onChange',
   });
 
   useEffect(() => {
-    console.log('GenericForm - resetting form with values:', values);
     form.reset(values as any);
   }, [form, values]);
 
   const onFormChange = (name: string, value: any) => {
-    console.log(`GenericForm - field changed: ${name} = `, value);
+    onChange({ ...values, [name]: value });
     
-    // Create a merged object with the updated field
-    const updatedValues = { ...values, [name]: value };
-    
-    // Send the complete updated form values to the parent
-    onChange(updatedValues);
-    
-    // Additional handlers for specific field types
-    if (onSelectChange && (fields.some(field => field.name === name && (field.type === 'select' || field.type === 'select-lead' || field.type === 'lead-select')))) {
+    if (onSelectChange && fields.some(field => field.name === name && (field.type === 'select' || field.type === 'select-lead'))) {
       onSelectChange(name, value as string);
-      
-      // If it's a lead selection for a unit, also update the buyer name
-      if (resourceType === 'unidades' && (name === 'comprador_id' || name === 'lead_id') && onLeadSelect) {
-        const selectedLead = leads.find(lead => lead.id === value);
-        if (selectedLead) {
-          onLeadSelect(value as string, selectedLead.nombre);
-        }
-      }
     }
     
     if (onSwitchChange && fields.some(field => field.name === name && field.type === 'switch')) {
@@ -176,7 +149,7 @@ const GenericForm = ({
                     {...formField}
                     readOnly={field.readOnly}
                     className={field.readOnly ? "bg-gray-100" : ""}
-                    value={formField.value === undefined || formField.value === null ? '' : formField.value}
+                    value={formField.value === undefined ? '' : formField.value}
                     onChange={(e) => {
                       if (!field.readOnly) {
                         const value = e.target.value === '' ? null : Number(e.target.value);
@@ -199,12 +172,15 @@ const GenericForm = ({
                   />
                 ) : field.type === 'select' && field.options ? (
                   <Select
-                    value={String(formField.value || '')}
+                    value={formField.value?.toString() || ''}
                     disabled={field.readOnly}
                     onValueChange={(value) => {
                       if (!field.readOnly) {
                         formField.onChange(value);
                         onFormChange(field.name, value);
+                        if (onSelectChange) {
+                          onSelectChange(field.name, value);
+                        }
                       }
                     }}
                   >
@@ -219,44 +195,12 @@ const GenericForm = ({
                       ))}
                     </SelectContent>
                   </Select>
-                ) : (field.type === 'select-lead' || field.type === 'lead-select') ? (
-                  <Select
-                    value={String(formField.value || '')}
-                    disabled={field.readOnly}
-                    onValueChange={(value) => {
-                      if (!field.readOnly) {
-                        formField.onChange(value);
-                        onFormChange(field.name, value);
-                        
-                        // Si hay un lead seleccionado, obtener su nombre
-                        if (value) {
-                          const selectedLead = leads.find(lead => lead.id === value);
-                          if (selectedLead && onLeadSelect) {
-                            onLeadSelect(value, selectedLead.nombre);
-                          }
-                        }
-                      }
-                    }}
-                  >
-                    <SelectTrigger className={field.readOnly ? "bg-gray-100" : ""}>
-                      <SelectValue placeholder="Seleccionar cliente..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Ninguno</SelectItem>
-                      {leads.map((lead) => (
-                        <SelectItem key={lead.id} value={lead.id}>
-                          {lead.nombre} {lead.email ? `(${lead.email})` : lead.telefono ? `(${lead.telefono})` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 ) : field.type === 'date' ? (
                   <Input
                     type="date"
                     {...formField}
                     readOnly={field.readOnly}
                     className={field.readOnly ? "bg-gray-100" : ""}
-                    value={formField.value || ''}
                     onChange={(e) => {
                       if (!field.readOnly) {
                         formField.onChange(e);
@@ -276,6 +220,9 @@ const GenericForm = ({
                         if (!field.readOnly) {
                           formField.onChange(checked);
                           onFormChange(field.name, checked);
+                          if (onSwitchChange) {
+                            onSwitchChange(field.name, checked);
+                          }
                         }
                       }}
                     />
@@ -288,7 +235,7 @@ const GenericForm = ({
                     selectedAmenities={selectedAmenities}
                     onChange={onAmenitiesChange || (() => {})}
                   />
-                ) : field.type === 'image-upload' || field.type === 'upload' ? (
+                ) : field.type === 'image-upload' ? (
                   <ImageUploader
                     entityId={values.id || 'new'}
                     bucketName={field.bucket || 'prototipo-images'}

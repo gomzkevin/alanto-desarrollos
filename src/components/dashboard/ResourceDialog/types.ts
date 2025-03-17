@@ -1,24 +1,73 @@
+export type FieldType = 
+  | 'text' 
+  | 'textarea' 
+  | 'email' 
+  | 'number' 
+  | 'select'
+  | 'date'
+  | 'switch'
+  | 'amenities'
+  | 'image-upload'
+  | 'upload'
+  | 'interest-selector'
+  | 'select-lead';
 
-import { Json } from '@/integrations/supabase/types';
+export interface FieldOption {
+  label: string;
+  value: string;
+}
 
-export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones' | 'unidades';
+export interface FieldDefinition {
+  name: string;
+  label: string;
+  type: FieldType;
+  options?: { label: string; value: string }[];
+  tab?: string;
+  required?: boolean;
+  bucket?: string;
+  folder?: string;
+  readOnly?: boolean;
+}
+
+export type ResourceType = 
+  | 'desarrollos' 
+  | 'prototipos' 
+  | 'leads' 
+  | 'cotizaciones'
+  | 'unidades';
 
 export interface FormValues {
   [key: string]: any;
+  id?: string;
+}
+
+export interface PrototipoResource extends FormValues {
+  nombre: string;
+  desarrollo_id: string;
+  tipo: string;
+  precio: number;
+  superficie?: number;
+  habitaciones?: number;
+  baños?: number;
+  estacionamientos?: number;
+  total_unidades: number;
+  unidades_disponibles: number;
+  unidades_vendidas: number;
+  unidades_con_anticipo: number;
+  descripcion?: string;
+  imagen_url?: string;
 }
 
 export interface DesarrolloResource extends FormValues {
-  id?: string;
   nombre: string;
   ubicacion: string;
   total_unidades: number;
   unidades_disponibles: number;
-  amenidades?: string[] | string;
-  descripcion?: string;
-  fecha_inicio?: string | Date;
-  fecha_entrega?: string | Date;
-  imagen_url?: string;
   avance_porcentaje?: number;
+  fecha_inicio?: string;
+  fecha_entrega?: string;
+  descripcion?: string;
+  imagen_url?: string;
   moneda?: string;
   comision_operador?: number;
   mantenimiento_valor?: number;
@@ -31,66 +80,42 @@ export interface DesarrolloResource extends FormValues {
   es_impuestos_porcentaje?: boolean;
   adr_base?: number;
   ocupacion_anual?: number;
-}
-
-export interface PrototipoResource extends FormValues {
-  id?: string;
-  desarrollo_id: string;
-  nombre: string;
-  tipo: string;
-  precio: number;
-  total_unidades: number;
-  unidades_disponibles: number;
-  unidades_vendidas?: number;
-  unidades_con_anticipo?: number;
-  superficie?: number;
-  habitaciones?: number;
-  baños?: number;
-  estacionamientos?: number;
-  descripcion?: string;
-  imagen_url?: string;
+  amenidades?: string[] | null;
 }
 
 export interface LeadResource extends FormValues {
-  id?: string;
   nombre: string;
   email?: string;
   telefono?: string;
   interes_en?: string;
   origen?: string;
-  estado: string;
+  estado?: string;
   subestado?: string;
   agente?: string;
-  fecha_creacion?: string | Date;
-  ultimo_contacto?: string | Date;
   notas?: string;
+  ultimo_contacto?: string;
 }
 
 export interface CotizacionResource extends FormValues {
-  id?: string;
   lead_id: string;
   desarrollo_id: string;
   prototipo_id: string;
   monto_anticipo: number;
   numero_pagos: number;
-  monto_finiquito?: number;
   usar_finiquito?: boolean;
-  fecha_inicio_pagos?: string | Date;
-  fecha_finiquito?: string | Date;
+  monto_finiquito?: number;
   notas?: string;
 }
 
 export interface UnidadResource extends FormValues {
-  id?: string;
   prototipo_id: string;
   numero: string;
+  estado: 'disponible' | 'apartado' | 'en_proceso' | 'vendido';
   nivel?: string;
-  estado: string;
   precio_venta?: number;
-  fecha_venta?: string | Date;
   comprador_id?: string;
   comprador_nombre?: string;
-  created_at?: string | Date;
+  fecha_venta?: string;
 }
 
 export interface AdminResourceDialogProps {
@@ -98,31 +123,13 @@ export interface AdminResourceDialogProps {
   onClose?: () => void;
   resourceType: ResourceType;
   resourceId?: string;
-  onSave?: (resource: FormValues) => void;
+  onSave?: () => void;
   buttonText?: string;
   buttonIcon?: React.ReactNode;
   buttonVariant?: string;
   onSuccess?: () => void;
   desarrolloId?: string;
-  prototipo_id?: string;
   lead_id?: string;
-  defaultValues?: FormValues;
-}
-
-export interface FieldOption {
-  value: string;
-  label: string;
-}
-
-export type FieldType = 'text' | 'number' | 'select' | 'textarea' | 'switch' | 'image-upload' | 'date' | 'email' | 'select-lead' | 'lead-select' | 'amenities' | 'multiple-select' | 'upload';
-
-export interface FieldDefinition {
-  name: string;
-  label: string;
-  type: FieldType;
-  options?: FieldOption[];
-  tab?: string;
-  bucket?: string;
-  folder?: string;
-  readOnly?: boolean;
+  prototipo_id?: string;
+  defaultValues?: Record<string, any>;
 }

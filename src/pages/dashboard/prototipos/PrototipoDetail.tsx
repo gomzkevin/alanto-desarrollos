@@ -1,15 +1,17 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tables } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Home, MapPin, Box, Building, Ruler, Bed, Bath, Car, Pencil, PlusCircle, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Home, MapPin, Box, Building, Ruler, Bed, Bath, Car, Pencil, PlusCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { useToast } from '@/hooks/use-toast';
-import { useUnidades } from '@/hooks';
+import useUnidades from '@/hooks/useUnidades';
 import { UnidadTable } from './UnidadTable';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,44 +20,20 @@ import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
-
-const AdminResourceDialog = lazy(() => 
-  import('@/components/dashboard/ResourceDialog/AdminResourceDialog')
-);
 
 type Prototipo = Tables<"prototipos">;
 type Desarrollo = Tables<"desarrollos">;
 
 const fetchPrototipoById = async (id: string) => {
-  console.log('Fetching prototipo with ID:', id);
+  const { data, error } = await supabase
+    .from('prototipos')
+    .select('*, desarrollo:desarrollo_id(*)')
+    .eq('id', id)
+    .single();
   
-  if (!id) {
-    throw new Error('ID de prototipo no válido');
-  }
+  if (error) throw error;
   
-  try {
-    const { data, error } = await supabase
-      .from('prototipos')
-      .select('*, desarrollo:desarrollo_id(*)')
-      .eq('id', id)
-      .single();
-    
-    if (error) {
-      console.error('Error fetching prototipo:', error);
-      throw error;
-    }
-    
-    if (!data) {
-      throw new Error('No se encontró el prototipo');
-    }
-    
-    console.log('Prototipo data fetched successfully:', data);
-    return data as ExtendedPrototipo;
-  } catch (error) {
-    console.error('Exception in fetchPrototipoById:', error);
-    throw error;
-  }
+  return data as ExtendedPrototipo;
 };
 
 const PrototipoDetail = () => {
@@ -67,59 +45,24 @@ const PrototipoDetail = () => {
   const [generarUnidadesModalOpen, setGenerarUnidadesModalOpen] = useState(false);
   const [cantidadUnidades, setCantidadUnidades] = useState(1);
   const [prefijo, setPrefijo] = useState("");
-  const [isRefetching, setIsRefetching] = useState(false);
-  
-  console.log('PrototipoDetail rendered with ID:', id);
   
   const {
     data: prototipo,
     isLoading,
     error,
-    refetch,
-    isError
+    refetch
   } = useQuery({
     queryKey: ['prototipo', id],
     queryFn: () => fetchPrototipoById(id as string),
     enabled: !!id,
-    staleTime: 60000,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
-    meta: {
-      onError: (error: Error) => {
-        console.error('Error fetching prototipo details:', error);
-        toast({
-          title: 'Error',
-          description: `No se pudo cargar el prototipo: ${error.message}`,
-          variant: 'destructive',
-        });
-      }
-    }
   });
   
   const { 
     unidades, 
     isLoading: unidadesLoading, 
     refetch: refetchUnidades,
-    createMultipleUnidades,
-    countUnidadesByStatus,
-    isError: unidadesError
-  } = useUnidades({ 
-    prototipo_id: id,
-    staleTime: 60000
-  });
-  
-  const { 
-    data: unitCounts,
-    isLoading: isLoadingUnitCounts,
-    refetch: refetchUnitCounts
-  } = useQuery({
-    queryKey: ['prototipo-unit-counts', id],
-    queryFn: () => countUnidadesByStatus(id as string),
-    enabled: !!id && !isError,
-    staleTime: 60000,
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000)
-  });
+    createMultipleUnidades
+  } = useUnidades({ prototipo_id: id });
   
   const handleBack = () => {
     const desarrollo = prototipo?.desarrollo as Desarrollo | undefined;
@@ -130,30 +73,9 @@ const PrototipoDetail = () => {
     }
   };
   
-  const handleRefresh = async () => {
-    console.log('Refreshing prototipo data...');
-    setIsRefetching(true);
-    try {
-      await Promise.all([
-        refetch(), 
-        refetchUnidades(),
-        refetchUnitCounts()
-      ]);
-      
-      toast({
-        title: 'Datos actualizados',
-        description: 'La información ha sido actualizada correctamente',
-      });
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron actualizar los datos',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsRefetching(false);
-    }
+  const handleRefresh = () => {
+    refetch();
+    refetchUnidades();
   };
   
   const handleGenerarUnidades = async () => {
@@ -169,18 +91,9 @@ const PrototipoDetail = () => {
       setGenerarUnidadesModalOpen(false);
       setCantidadUnidades(1);
       setPrefijo("");
-      refetchUnidades();
-      toast({
-        title: 'Unidades generadas',
-        description: `Se generaron ${cantidadUnidades} unidades correctamente`,
-      });
+      refetch();
     } catch (error) {
       console.error('Error al generar unidades:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron generar las unidades',
-        variant: 'destructive',
-      });
     }
   };
   
@@ -188,70 +101,45 @@ const PrototipoDetail = () => {
     return (
       <DashboardLayout>
         <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/desarrollos')}>
+          <div className="flex items-center">
+            <Button variant="outline" size="sm" onClick={handleBack}>
               <ChevronLeft className="mr-1 h-4 w-4" />
               Volver
             </Button>
-            
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefetching}>
-              <RefreshCw className={`mr-1 h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-              Actualizar
-            </Button>
           </div>
-          
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-1/3" />
-            <Skeleton className="h-4 w-1/4" />
-            <Skeleton className="h-20 w-full" />
-            
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-            </div>
-            
-            <Skeleton className="h-64 w-full" />
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-slate-200 rounded w-1/3"></div>
+            <div className="h-32 bg-slate-200 rounded"></div>
+            <div className="h-64 bg-slate-200 rounded"></div>
           </div>
         </div>
       </DashboardLayout>
     );
   }
   
-  if (isError || !prototipo) {
-    console.error('Error state in PrototipoDetail:', error);
+  if (error || !prototipo) {
     return (
       <DashboardLayout>
         <div className="p-6">
-          <div className="flex items-center justify-between">
-            <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/desarrollos')}>
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Volver
-            </Button>
-            
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefetching}>
-              <RefreshCw className={`mr-1 h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-              Actualizar
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={handleBack}>
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Volver
+          </Button>
           
           <Alert variant="destructive" className="mt-6">
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>
               No se pudo cargar la información del prototipo.
               {error && <p className="mt-2">{(error as Error).message}</p>}
-              <p className="mt-2">Compruebe su conexión a internet e intente de nuevo.</p>
             </AlertDescription>
           </Alert>
           
           <Button 
             variant="outline" 
             className="mt-4"
-            onClick={handleRefresh}
-            disabled={isRefetching}
+            onClick={() => refetch()}
           >
-            {isRefetching ? 'Actualizando...' : 'Intentar de nuevo'}
+            Intentar de nuevo
           </Button>
         </div>
       </DashboardLayout>
@@ -259,13 +147,6 @@ const PrototipoDetail = () => {
   }
   
   const desarrollo = prototipo.desarrollo as Desarrollo | null;
-  
-  const displayedCounts = unitCounts || {
-    disponibles: prototipo.unidades_disponibles || 0,
-    vendidas: prototipo.unidades_vendidas || 0,
-    con_anticipo: prototipo.unidades_con_anticipo || 0,
-    total: prototipo.total_unidades || 0
-  };
   
   return (
     <DashboardLayout>
@@ -277,16 +158,6 @@ const PrototipoDetail = () => {
           </Button>
           
           <div className="flex items-center space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isRefetching}
-            >
-              <RefreshCw className={`mr-1 h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-              {isRefetching ? 'Actualizando...' : 'Actualizar'}
-            </Button>
-            
             <Button 
               variant="outline" 
               size="sm" 
@@ -354,98 +225,81 @@ const PrototipoDetail = () => {
             </Card>
           </div>
           
-          {unidadesError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>
-                No se pudieron cargar las unidades. Por favor, intenta actualizar la página.
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2"
-                  onClick={() => refetchUnidades()}
-                >
-                  Reintentar
-                </Button>
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div className="bg-slate-50 p-6 rounded-lg">
-              <div className="flex justify-between items-center mb-6">
-                <div className="space-y-1">
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    <Building className="h-5 w-5" />
-                    Unidades
-                  </h2>
-                  <p className="text-slate-600">
-                    {unidades.length} de {displayedCounts.total} unidades registradas 
-                    ({displayedCounts.disponibles} disponibles, 
-                    {displayedCounts.vendidas} vendidas, 
-                    {displayedCounts.con_anticipo} con anticipo)
-                  </p>
-                </div>
-                
-                <div className="flex space-x-2">
-                  {unidades.length < prototipo.total_unidades && (
-                    <Button onClick={() => setGenerarUnidadesModalOpen(true)}>
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Generar unidades
-                    </Button>
-                  )}
-                  
-                  <Button onClick={() => setOpenAddUnidadDialog(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Agregar unidad
-                  </Button>
-                </div>
+          <div className="bg-slate-50 p-6 rounded-lg">
+            <div className="flex justify-between items-center mb-6">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  Unidades
+                </h2>
+                <p className="text-slate-600">
+                  {unidades.length} de {prototipo.total_unidades} unidades registradas 
+                  ({prototipo.unidades_disponibles || 0} disponibles, 
+                  {prototipo.unidades_vendidas || 0} vendidas, 
+                  {prototipo.unidades_con_anticipo || 0} con anticipo)
+                </p>
               </div>
               
-              <Tabs defaultValue="todas">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="todas">Todas</TabsTrigger>
-                  <TabsTrigger value="disponibles">Disponibles</TabsTrigger>
-                  <TabsTrigger value="apartadas">Apartadas</TabsTrigger>
-                  <TabsTrigger value="vendidas">Vendidas</TabsTrigger>
-                </TabsList>
+              <div className="flex space-x-2">
+                {unidades.length < prototipo.total_unidades && (
+                  <Button onClick={() => setGenerarUnidadesModalOpen(true)}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Generar unidades
+                  </Button>
+                )}
                 
-                <TabsContent value="todas">
-                  <UnidadTable 
-                    unidades={unidades} 
-                    isLoading={unidadesLoading} 
-                    onRefresh={refetchUnidades}
-                    prototipo={prototipo}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="disponibles">
-                  <UnidadTable 
-                    unidades={unidades.filter(u => u.estado === 'disponible')} 
-                    isLoading={unidadesLoading} 
-                    onRefresh={refetchUnidades}
-                    prototipo={prototipo}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="apartadas">
-                  <UnidadTable 
-                    unidades={unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso')} 
-                    isLoading={unidadesLoading} 
-                    onRefresh={refetchUnidades}
-                    prototipo={prototipo}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="vendidas">
-                  <UnidadTable 
-                    unidades={unidades.filter(u => u.estado === 'vendido')} 
-                    isLoading={unidadesLoading} 
-                    onRefresh={refetchUnidades}
-                    prototipo={prototipo}
-                  />
-                </TabsContent>
-              </Tabs>
+                <Button onClick={() => setOpenAddUnidadDialog(true)}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Agregar unidad
+                </Button>
+              </div>
             </div>
-          )}
+            
+            <Tabs defaultValue="todas">
+              <TabsList className="mb-4">
+                <TabsTrigger value="todas">Todas</TabsTrigger>
+                <TabsTrigger value="disponibles">Disponibles</TabsTrigger>
+                <TabsTrigger value="apartadas">Apartadas</TabsTrigger>
+                <TabsTrigger value="vendidas">Vendidas</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="todas">
+                <UnidadTable 
+                  unidades={unidades} 
+                  isLoading={unidadesLoading} 
+                  onRefresh={refetchUnidades}
+                  prototipo={prototipo}
+                />
+              </TabsContent>
+              
+              <TabsContent value="disponibles">
+                <UnidadTable 
+                  unidades={unidades.filter(u => u.estado === 'disponible')} 
+                  isLoading={unidadesLoading} 
+                  onRefresh={refetchUnidades}
+                  prototipo={prototipo}
+                />
+              </TabsContent>
+              
+              <TabsContent value="apartadas">
+                <UnidadTable 
+                  unidades={unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso')} 
+                  isLoading={unidadesLoading} 
+                  onRefresh={refetchUnidades}
+                  prototipo={prototipo}
+                />
+              </TabsContent>
+              
+              <TabsContent value="vendidas">
+                <UnidadTable 
+                  unidades={unidades.filter(u => u.estado === 'vendido')} 
+                  isLoading={unidadesLoading} 
+                  onRefresh={refetchUnidades}
+                  prototipo={prototipo}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
       
@@ -484,57 +338,26 @@ const PrototipoDetail = () => {
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setGenerarUnidadesModalOpen(false)}>Cancelar</Button>
-            <Button 
-              onClick={handleGenerarUnidades}
-              disabled={createMultipleUnidades.isPending}
-            >
-              {createMultipleUnidades.isPending ? 'Generando...' : 'Generar'}
-            </Button>
+            <Button onClick={handleGenerarUnidades}>Generar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {openEditDialog && (
-        <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="bg-white p-4 rounded-md">Cargando editor...</div>
-        </div>}>
-          <AdminResourceDialog 
-            resourceType="prototipos"
-            resourceId={id}
-            open={openEditDialog}
-            onClose={() => {
-              console.log('Closing edit dialog');
-              setOpenEditDialog(false);
-            }}
-            onSuccess={() => {
-              console.log('Edit successful, refreshing');
-              setOpenEditDialog(false);
-              handleRefresh();
-            }}
-          />
-        </Suspense>
-      )}
+      <AdminResourceDialog 
+        resourceType="prototipos"
+        resourceId={id}
+        open={openEditDialog}
+        onClose={() => setOpenEditDialog(false)}
+        onSuccess={handleRefresh}
+      />
       
-      {openAddUnidadDialog && (
-        <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="bg-white p-4 rounded-md">Cargando editor...</div>
-        </div>}>
-          <AdminResourceDialog 
-            resourceType="unidades"
-            open={openAddUnidadDialog}
-            onClose={() => {
-              console.log('Closing add unidad dialog');
-              setOpenAddUnidadDialog(false);
-            }}
-            onSuccess={() => {
-              console.log('Add successful, refreshing');
-              setOpenAddUnidadDialog(false);
-              refetchUnidades();
-            }}
-            prototipo_id={id}
-          />
-        </Suspense>
-      )}
+      <AdminResourceDialog 
+        resourceType="unidades"
+        open={openAddUnidadDialog}
+        onClose={() => setOpenAddUnidadDialog(false)}
+        onSuccess={refetchUnidades}
+        prototipo_id={id}
+      />
     </DashboardLayout>
   );
 };

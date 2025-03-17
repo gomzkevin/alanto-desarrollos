@@ -20,11 +20,9 @@ const PrototipoCard: React.FC<PrototipoCardProps> = ({ prototipo, onViewDetails 
   const navigate = useNavigate();
   
   const handleCardClick = () => {
-    console.log('Clicked on prototype card with ID:', prototipo.id);
     if (onViewDetails) {
       onViewDetails(prototipo.id);
     } else {
-      // Navega directamente a la página de detalles
       navigate(`/dashboard/prototipos/${prototipo.id}`);
     }
   };

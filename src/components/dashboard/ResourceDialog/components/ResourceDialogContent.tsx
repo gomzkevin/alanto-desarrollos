@@ -18,7 +18,7 @@ interface ResourceDialogContentProps {
   resource: FormValues | null;
   fields: FieldDefinition[];
   selectedAmenities?: string[];
-  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | FormValues) => void;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleSelectChange: (name: string, value: string) => void;
   handleSwitchChange: (name: string, checked: boolean) => void;
   handleLeadSelect?: (leadId: string, leadName: string) => void;
@@ -93,22 +93,31 @@ export function ResourceDialogContent({
     }
   };
 
+  // Create an adapter function for onChange to match expected signature in GenericForm
+  const handleFormChange = (values: FormValues) => {
+    // Extract the changed field by comparing with the original resource
+    if (resource) {
+      const changedFields = Object.entries(values).filter(
+        ([key, value]) => resource[key as keyof FormValues] !== value
+      );
+      
+      if (changedFields.length > 0) {
+        const [name, value] = changedFields[0];
+        // Create a synthetic event object
+        const syntheticEvent = {
+          target: {
+            name,
+            value
+          }
+        } as React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
+        
+        handleChange(syntheticEvent);
+      }
+    }
+  };
+
   // Use useMemo to ensure form values don't cause re-renders unnecessarily
   const formValues = useMemo(() => getFormValues(), [resource]);
-
-  // Add logging to help debug issues
-  console.log('ResourceDialogContent - isOpen:', isOpen);
-  console.log('ResourceDialogContent - resourceType:', resourceType);
-  console.log('ResourceDialogContent - resourceId:', resourceId);
-  console.log('ResourceDialogContent - isLoading:', isLoading);
-  console.log('ResourceDialogContent - resource:', resource);
-  console.log('ResourceDialogContent - fields:', fields);
-
-  // Handle form changes from GenericForm
-  const handleFormChange = (values: FormValues) => {
-    console.log('ResourceDialogContent - handleFormChange called with values:', values);
-    handleChange(values);
-  };
 
   return (
     <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-gray-50 p-0">
@@ -122,7 +131,7 @@ export function ResourceDialogContent({
           <div className="py-6 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
           </div>
-        ) : resource ? (
+        ) : (
           <GenericForm
             fields={fields}
             values={formValues}
@@ -136,12 +145,7 @@ export function ResourceDialogContent({
             isSubmitting={isSubmitting}
             onSubmit={saveResource}
             formId="resource-form"
-            resourceType={resourceType}
           />
-        ) : (
-          <div className="py-6 text-center text-gray-500">
-            No se pudo cargar la información. Por favor, intente de nuevo.
-          </div>
         )}
       </div>
 
