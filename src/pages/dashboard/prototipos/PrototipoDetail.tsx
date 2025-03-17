@@ -20,6 +20,7 @@ import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Prototipo = Tables<"prototipos">;
 type Desarrollo = Tables<"desarrollos">;
@@ -60,9 +61,64 @@ const PrototipoDetail = () => {
   const { 
     unidades, 
     isLoading: unidadesLoading, 
+    error: unidadesError,
     refetch: refetchUnidades,
-    createMultipleUnidades
+    createMultipleUnidades,
+    updatePrototipoUnidades
   } = useUnidades({ prototipo_id: id });
+  
+  // Calculate actual counts from the unidades array
+  const calculateActualCounts = () => {
+    if (!unidades || unidades.length === 0) {
+      return {
+        total: prototipo?.total_unidades || 0,
+        disponibles: prototipo?.unidades_disponibles || 0,
+        vendidas: prototipo?.unidades_vendidas || 0,
+        conAnticipo: prototipo?.unidades_con_anticipo || 0
+      };
+    }
+    
+    const disponibles = unidades.filter(u => u.estado === 'disponible').length;
+    const vendidas = unidades.filter(u => u.estado === 'vendido').length;
+    const conAnticipo = unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso').length;
+    
+    return {
+      total: unidades.length,
+      disponibles,
+      vendidas,
+      conAnticipo
+    };
+  };
+  
+  const unidadesCounts = calculateActualCounts();
+  
+  // Update the prototipo unit counts in database if they don't match the calculated values
+  useEffect(() => {
+    const syncPrototipoUnitCounts = async () => {
+      if (id && !unidadesLoading && !isLoading && prototipo && unidades.length > 0) {
+        const counts = calculateActualCounts();
+        
+        // Check if counts in prototipo record don't match actual counts from unidades
+        const countsNeedUpdate = 
+          prototipo.unidades_disponibles !== counts.disponibles ||
+          prototipo.unidades_vendidas !== counts.vendidas ||
+          prototipo.unidades_con_anticipo !== counts.conAnticipo ||
+          prototipo.total_unidades !== counts.total;
+        
+        if (countsNeedUpdate) {
+          try {
+            await updatePrototipoUnidades(id);
+            // Refetch prototipo to get updated counts
+            refetch();
+          } catch (error) {
+            console.error('Error updating prototipo units:', error);
+          }
+        }
+      }
+    };
+    
+    syncPrototipoUnitCounts();
+  }, [unidades, id, prototipo, isLoading, unidadesLoading, updatePrototipoUnidades, refetch]);
   
   const handleBack = () => {
     const desarrollo = prototipo?.desarrollo as Desarrollo | undefined;
@@ -92,6 +148,7 @@ const PrototipoDetail = () => {
       setCantidadUnidades(1);
       setPrefijo("");
       refetch();
+      refetchUnidades();
     } catch (error) {
       console.error('Error al generar unidades:', error);
     }
@@ -233,15 +290,21 @@ const PrototipoDetail = () => {
                   Unidades
                 </h2>
                 <p className="text-slate-600">
-                  {unidades.length} de {prototipo.total_unidades} unidades registradas 
-                  ({prototipo.unidades_disponibles || 0} disponibles, 
-                  {prototipo.unidades_vendidas || 0} vendidas, 
-                  {prototipo.unidades_con_anticipo || 0} con anticipo)
+                  {unidadesLoading ? (
+                    <Skeleton className="h-4 w-64" />
+                  ) : (
+                    <>
+                      {unidadesCounts.total} de {prototipo.total_unidades} unidades registradas 
+                      ({unidadesCounts.disponibles} disponibles, 
+                      {unidadesCounts.vendidas} vendidas, 
+                      {unidadesCounts.conAnticipo} con anticipo)
+                    </>
+                  )}
                 </p>
               </div>
               
               <div className="flex space-x-2">
-                {unidades.length < prototipo.total_unidades && (
+                {!unidadesLoading && unidadesCounts.total < prototipo.total_unidades && (
                   <Button onClick={() => setGenerarUnidadesModalOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Generar unidades
@@ -319,7 +382,7 @@ const PrototipoDetail = () => {
                 id="cantidad" 
                 type="number" 
                 min="1" 
-                max={prototipo.total_unidades - unidades.length}
+                max={prototipo.total_unidades - unidadesCounts.total}
                 value={cantidadUnidades} 
                 onChange={(e) => setCantidadUnidades(parseInt(e.target.value) || 1)} 
               />

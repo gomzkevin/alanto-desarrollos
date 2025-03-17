@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
@@ -301,16 +302,23 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       // Obtener los contadores actualizados
       const counts = await countUnidadesByStatus(prototipoId);
       
+      console.log('Counts for prototipo', prototipoId, ':', counts);
+      
       // Actualizar el prototipo con los nuevos contadores
-      await supabase
+      const { error } = await supabase
         .from('prototipos')
         .update({
           unidades_disponibles: counts.disponibles,
           unidades_vendidas: counts.vendidas,
           unidades_con_anticipo: counts.con_anticipo,
-          total_unidades: counts.total
+          total_unidades: Math.max(counts.total, await getPrototipoTotalUnidades(prototipoId))
         })
         .eq('id', prototipoId);
+        
+      if (error) {
+        console.error('Error updating prototipo units:', error);
+        throw error;
+      }
       
       // Obtener el desarrollo_id del prototipo
       const { data: prototipo } = await supabase
@@ -333,6 +341,24 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
     }
   };
   
+  // Función para obtener el total_unidades del prototipo
+  const getPrototipoTotalUnidades = async (prototipoId: string): Promise<number> => {
+    try {
+      const { data, error } = await supabase
+        .from('prototipos')
+        .select('total_unidades')
+        .eq('id', prototipoId)
+        .single();
+        
+      if (error) throw error;
+      
+      return data.total_unidades || 0;
+    } catch (error) {
+      console.error('Error getting prototipo total_unidades:', error);
+      return 0;
+    }
+  };
+  
   // Función para actualizar los contadores de un desarrollo basado en sus prototipos
   const updateDesarrolloUnidades = async (desarrolloId: string) => {
     try {
@@ -342,13 +368,18 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       console.log('Real counts from units table for desarrollo:', desarrolloId, counts);
       
       // Actualizar el desarrollo con los valores reales
-      await supabase
+      const { error } = await supabase
         .from('desarrollos')
         .update({
           total_unidades: counts.total,
           unidades_disponibles: counts.disponibles
         })
         .eq('id', desarrolloId);
+        
+      if (error) {
+        console.error('Error updating desarrollo units:', error);
+        throw error;
+      }
       
       // Invalidar las consultas de desarrollos para refrescar los datos
       queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
