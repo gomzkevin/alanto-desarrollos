@@ -10,3 +10,4 @@ export { useToast } from './use-toast';
 export { useIsMobile } from './use-mobile';
 export { default as useChartData } from './useChartData';
 export { default as useDesarrolloStats } from './useDesarrolloStats';
+export { default as useUnidades } from './useUnidades';
