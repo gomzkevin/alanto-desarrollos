@@ -58,51 +58,41 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
     selectedAmenities
   });
 
-  // If open prop changes, update internal state
   useEffect(() => {
     if (open !== undefined) {
       setDialogOpen(open);
     }
   }, [open]);
 
-  // Track desarrolloId changes
   useEffect(() => {
     if (desarrolloId) {
       setSelectedDesarrolloId(desarrolloId);
     }
   }, [desarrolloId]);
 
-  // Handle close
   const handleCloseDialog = () => {
     setDialogOpen(false);
     if (onClose) onClose();
   };
 
-  // Handle form submission
   const handleSubmit = async (values: FormValues) => {
-    // For desarrollos, ensure amenities are included
     if (resourceType === 'desarrollos') {
       values.amenidades = selectedAmenities;
     }
 
-    // Merge with default values if any
     if (defaultValues) {
       values = { ...defaultValues, ...values };
     }
 
-    // Handle specific fields based on resource type
     if (resourceType === 'cotizaciones') {
-      // Ensure lead_id is set if not in values and provided as prop
       if (!values.lead_id && lead_id) {
         values.lead_id = lead_id;
       }
 
-      // Ensure prototipo_id is set if not in values and provided as prop
       if (!values.prototipo_id && prototipo_id) {
         values.prototipo_id = prototipo_id;
       }
 
-      // If finiquito option is not used, remove monto_finiquito
       if (!usarFiniquito) {
         delete values.monto_finiquito;
       }
@@ -110,29 +100,24 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
       values.usar_finiquito = usarFiniquito;
     }
 
-    // Save the resource
     return await saveResource(values);
   };
 
-  // Generate tabs for fields if any field has a tab property
   const hasTabsConfig = fields.some(field => field.tab);
   const tabsConfig = hasTabsConfig 
     ? [...new Set(fields.filter(f => f.tab).map(f => f.tab))] 
     : [];
 
-  // Update active tab when tab configuration changes
   useEffect(() => {
     if (tabsConfig.length > 0 && tabsConfig[0]) {
       setActiveTab(tabsConfig[0]);
     }
   }, [tabsConfig]);
 
-  // Filter fields by current active tab
   const currentTabFields = hasTabsConfig 
     ? fields.filter(field => field.tab === activeTab)
     : fields;
 
-  // Button component to trigger the dialog
   const TriggerButton = buttonText ? (
     <Button variant={buttonVariant as any}>
       {buttonIcon}

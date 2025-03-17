@@ -23,7 +23,7 @@ interface ResourceDialogContentProps {
   handleSwitchChange: (name: string, checked: boolean) => void;
   handleLeadSelect?: (leadId: string, leadName: string) => void;
   handleAmenitiesChange?: (amenities: string[]) => void;
-  saveResource: () => void;
+  saveResource: (values: FormValues) => Promise<boolean>;
   desarrolloId?: string;
   prototipo_id?: string;
   lead_id?: string;
@@ -93,26 +93,10 @@ export function ResourceDialogContent({
     }
   };
 
-  // Create an adapter function for onChange to match expected signature in GenericForm
-  const handleFormChange = (values: FormValues) => {
-    // Extract the changed field by comparing with the original resource
+  // Create an adapter function for onSubmit to match expected signature in GenericForm
+  const handleFormSubmit = () => {
     if (resource) {
-      const changedFields = Object.entries(values).filter(
-        ([key, value]) => resource[key as keyof FormValues] !== value
-      );
-      
-      if (changedFields.length > 0) {
-        const [name, value] = changedFields[0];
-        // Create a synthetic event object
-        const syntheticEvent = {
-          target: {
-            name,
-            value
-          }
-        } as React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
-        
-        handleChange(syntheticEvent);
-      }
+      saveResource(resource);
     }
   };
 
@@ -135,7 +119,7 @@ export function ResourceDialogContent({
           <GenericForm
             fields={fields}
             values={formValues}
-            onChange={handleFormChange}
+            onChange={handleChange}
             onSelectChange={handleSelectChange}
             onSwitchChange={handleSwitchChange}
             onLeadSelect={handleLeadSelect}
@@ -143,7 +127,7 @@ export function ResourceDialogContent({
             onAmenitiesChange={handleAmenitiesChange}
             selectedAmenities={selectedAmenities}
             isSubmitting={isSubmitting}
-            onSubmit={saveResource}
+            onSubmit={handleFormSubmit}
             formId="resource-form"
           />
         )}
@@ -151,7 +135,7 @@ export function ResourceDialogContent({
 
       <DialogFooter
         onClose={onClose}
-        onSave={saveResource}
+        onSave={handleFormSubmit}
         isSubmitting={isSubmitting}
       />
     </DialogContent>
