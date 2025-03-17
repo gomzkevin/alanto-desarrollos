@@ -1,13 +1,14 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Building, PlusCircle } from 'lucide-react';
+import { Building } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { UnidadTable } from '../UnidadTable';
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
+import UnidadTableActions from './UnidadTableActions';
 
 interface PrototipoUnidadesProps {
   prototipo: ExtendedPrototipo;
@@ -33,15 +34,18 @@ export const PrototipoUnidades = ({
   onRefreshUnidades 
 }: PrototipoUnidadesProps) => {
   const [generarUnidadesModalOpen, setGenerarUnidadesModalOpen] = useState(false);
-  const [cantidadUnidades, setCantidadUnidades] = useState(1);
   const [prefijo, setPrefijo] = useState("");
   
+  // Determinar la cantidad total de unidades que se deben generar
+  const unidadesRestantes = (prototipo.total_unidades || 0) - unidades.length;
+  const noHayUnidades = unidades.length === 0;
+  
   const handleGenerarUnidades = async () => {
-    if (cantidadUnidades <= 0) return;
+    // Si no hay unidades restantes, no hacer nada
+    if (unidadesRestantes <= 0) return;
     
-    await onGenerateUnidades(cantidadUnidades, prefijo);
+    await onGenerateUnidades(unidadesRestantes, prefijo);
     setGenerarUnidadesModalOpen(false);
-    setCantidadUnidades(1);
     setPrefijo("");
   };
   
@@ -61,19 +65,13 @@ export const PrototipoUnidades = ({
           </p>
         </div>
         
-        <div className="flex space-x-2">
-          {unidades.length < prototipo.total_unidades && (
-            <Button onClick={() => setGenerarUnidadesModalOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Generar unidades
-            </Button>
-          )}
-          
-          <Button onClick={onAddUnidad}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Agregar unidad
-          </Button>
-        </div>
+        <UnidadTableActions
+          onAddClick={onAddUnidad}
+          onGenerateClick={() => setGenerarUnidadesModalOpen(true)}
+          unidadesCount={unidades.length}
+          totalUnidades={prototipo.total_unidades || 0}
+          showGenerateButton={true}
+        />
       </div>
       
       <Tabs defaultValue="todas">
@@ -136,11 +134,14 @@ export const PrototipoUnidades = ({
               <Input 
                 id="cantidad" 
                 type="number" 
-                min="1" 
-                max={prototipo.total_unidades - unidades.length}
-                value={cantidadUnidades} 
-                onChange={(e) => setCantidadUnidades(parseInt(e.target.value) || 1)} 
+                value={unidadesRestantes}
+                readOnly
+                disabled
+                className="bg-gray-100"
               />
+              <p className="text-sm text-muted-foreground">
+                Este valor está predefinido según el total de unidades del prototipo.
+              </p>
             </div>
             
             <div className="space-y-2">

@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import { Table, TableBody } from "@/components/ui/table";
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import UnidadTableHeader from './components/UnidadTableHeader';
@@ -54,11 +53,14 @@ export const UnidadTable = ({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Unidades de {prototipo.nombre}</h2>
-        <UnidadTableActions 
-          onAddClick={() => setIsAddDialogOpen(true)}
-          unidadesCount={unidades.length}
-          totalUnidades={prototipo.total_unidades || 0}
-        />
+        
+        {/* Solo mostrar el botón de Agregar Unidad en esta tabla, no el de Generar (ya está en el componente padre) */}
+        {unidades.length > 0 && unidades.length < prototipo.total_unidades && (
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Agregar unidad
+          </Button>
+        )}
       </div>
       
       {unidades.length === 0 ? (
@@ -97,5 +99,9 @@ export const UnidadTable = ({
     </div>
   );
 };
+
+// Importing needed components
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export default UnidadTable;
