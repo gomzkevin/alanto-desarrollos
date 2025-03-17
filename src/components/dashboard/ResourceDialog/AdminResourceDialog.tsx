@@ -85,17 +85,17 @@ const AdminResourceDialog = ({
     onSave
   });
 
-  // Handle form changes from both events and direct form values
+  // Custom handleChange that can accept both event objects and direct form values
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | FormValues
   ) => {
     if (!resource) return;
     
     if ('target' in e) {
-      // It's an event
+      // It's an event object
       originalHandleChange(e);
     } else {
-      // It's a form values object
+      // It's a form values object - directly update the resource
       setResource({ ...resource, ...e });
     }
   };

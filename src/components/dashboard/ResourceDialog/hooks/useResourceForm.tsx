@@ -38,6 +38,7 @@ export const useResourceForm = ({
     resourceId,
     desarrolloId,
     lead_id,
+    prototipo_id,
     selectedDesarrolloId,
     selectedStatus,
     usarFiniquito,
@@ -87,18 +88,25 @@ export const useResourceForm = ({
     selectedAmenities
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | FormValues) => {
     if (!resource) return;
-    
-    const { name, value, type } = e.target;
-    let updatedValue: any = value;
-    
-    if (type === 'number') {
-      updatedValue = value === '' ? null : Number(value);
+
+    if ('target' in e) {
+      // It's an event
+      const { name, value, type } = e.target;
+      let updatedValue: any = value;
+      
+      if (type === 'number') {
+        updatedValue = value === '' ? null : Number(value);
+      }
+      
+      console.log(`Updating resource field ${name} with value:`, updatedValue);
+      setResource({ ...resource, [name]: updatedValue });
+    } else {
+      // It's a direct values object
+      console.log(`Updating resource with form values:`, e);
+      setResource({ ...resource, ...e });
     }
-    
-    console.log(`Updating resource field ${name} with value:`, updatedValue);
-    setResource({ ...resource, [name]: updatedValue });
   };
 
   const handleSelectChange = (name: string, value: string) => {

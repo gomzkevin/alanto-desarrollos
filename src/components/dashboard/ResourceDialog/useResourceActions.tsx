@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import useDesarrolloImagenes from '@/hooks/useDesarrolloImagenes';
-import { ResourceType, FormValues, PrototipoResource, DesarrolloResource, LeadResource, CotizacionResource } from './types';
+import { ResourceType, FormValues, PrototipoResource, DesarrolloResource, LeadResource, CotizacionResource, UnidadResource } from './types';
 
 export default function useResourceActions({
   resourceType,
@@ -199,10 +199,12 @@ export default function useResourceActions({
             .eq('id', resourceId);
         }
       } else if (resourceType === 'unidades') {
+        const unidadData = dataToSave as UnidadResource;
+        
         // Format dates for Supabase
         const formattedData = {
-          ...dataToSave,
-          fecha_venta: formatDate(dataToSave.fecha_venta)
+          ...unidadData,
+          fecha_venta: formatDate(unidadData.fecha_venta)
         };
         
         if (!resourceId) {
