@@ -1,3 +1,4 @@
+
 export type FieldType = 
   | 'text' 
   | 'textarea' 
@@ -116,4 +117,20 @@ export interface UnidadResource extends FormValues {
   comprador_id?: string;
   comprador_nombre?: string;
   fecha_venta?: string;
+}
+
+export interface AdminResourceDialogProps {
+  open?: boolean;
+  onClose?: () => void;
+  resourceType: ResourceType;
+  resourceId?: string;
+  onSave?: () => void;
+  buttonText?: string;
+  buttonIcon?: React.ReactNode;
+  buttonVariant?: string;
+  onSuccess?: () => void;
+  desarrolloId?: string;
+  lead_id?: string;
+  prototipo_id?: string;
+  defaultValues?: Record<string, any>;
 }
