@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,7 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AmenitiesSelector } from '../AmenitiesSelector';
-import { FieldDefinition, FormValues, ResourceType } from './types';
+import { FieldDefinition, FormValues, ResourceType, FieldType } from './types';
 import ImageUploader from '../ImageUploader';
 import useLeads from '@/hooks/useLeads';
 
@@ -80,6 +79,8 @@ const GenericForm = ({
         schema[field.name] = z.array(z.string()).optional();
       } else if (field.type === 'image-upload' || field.type === 'upload') {
         schema[field.name] = z.string().optional().nullable();
+      } else if (field.type === 'multiple-select') {
+        schema[field.name] = z.array(z.string()).optional();
       }
     });
     
@@ -287,7 +288,7 @@ const GenericForm = ({
                     selectedAmenities={selectedAmenities}
                     onChange={onAmenitiesChange || (() => {})}
                   />
-                ) : field.type === 'image-upload' ? (
+                ) : field.type === 'image-upload' || field.type === 'upload' ? (
                   <ImageUploader
                     entityId={values.id || 'new'}
                     bucketName={field.bucket || 'prototipo-images'}

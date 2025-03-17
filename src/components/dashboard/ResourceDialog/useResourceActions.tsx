@@ -165,7 +165,8 @@ export default function useResourceActions({
         // Format dates for Supabase
         const formattedData = {
           ...leadData,
-          ultimo_contacto: formatDate(leadData.ultimo_contacto)
+          ultimo_contacto: formatDate(leadData.ultimo_contacto),
+          fecha_creacion: formatDate(leadData.fecha_creacion)
         };
         
         if (!resourceId) {
@@ -204,7 +205,8 @@ export default function useResourceActions({
         // Format dates for Supabase
         const formattedData = {
           ...unidadData,
-          fecha_venta: formatDate(unidadData.fecha_venta)
+          fecha_venta: formatDate(unidadData.fecha_venta),
+          created_at: formatDate(unidadData.created_at)
         };
         
         if (!resourceId) {

@@ -114,7 +114,7 @@ export interface FieldOption {
   label: string;
 }
 
-export type FieldType = 'text' | 'number' | 'select' | 'textarea' | 'switch' | 'image-upload' | 'date' | 'email' | 'select-lead' | 'lead-select' | 'amenities' | 'multiple-select';
+export type FieldType = 'text' | 'number' | 'select' | 'textarea' | 'switch' | 'image-upload' | 'date' | 'email' | 'select-lead' | 'lead-select' | 'amenities' | 'multiple-select' | 'upload';
 
 export interface FieldDefinition {
   name: string;
