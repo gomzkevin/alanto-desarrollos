@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -8,21 +8,55 @@ import DesarrolloCard from '@/components/dashboard/DesarrolloCard';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import useUserRole from '@/hooks/useUserRole';
 import { Tables } from '@/integrations/supabase/types';
+import useUnidades from '@/hooks/useUnidades';
+import { supabase } from '@/integrations/supabase/client';
 
 type Desarrollo = Tables<"desarrollos">;
 
 const DesarrollosPage = () => {
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
+  const [desarrollosWithRealCounts, setDesarrollosWithRealCounts] = useState<Desarrollo[]>([]);
   
   const { 
     desarrollos = [], 
     isLoading, 
     error,
     refetch 
-  } = useDesarrollos({ withPrototipos: true });  // Agregamos withPrototipos
+  } = useDesarrollos({ withPrototipos: true });
+  
+  const { countDesarrolloUnidadesByStatus } = useUnidades();
 
   const { canCreateResource } = useUserRole();
+
+  useEffect(() => {
+    const updateRealUnitCounts = async () => {
+      if (desarrollos.length === 0 || isLoading) return;
+      
+      // For each desarrollo, get the real unit counts from the database
+      const updatedDesarrollos = await Promise.all(
+        desarrollos.map(async (desarrollo) => {
+          try {
+            // Get real counts from all units in this desarrollo
+            const counts = await countDesarrolloUnidadesByStatus(desarrollo.id);
+            
+            return {
+              ...desarrollo,
+              unidades_disponibles: counts.disponibles,
+              total_unidades: counts.total
+            };
+          } catch (error) {
+            console.error('Error updating real counts for desarrollo:', desarrollo.id, error);
+            return desarrollo;
+          }
+        })
+      );
+      
+      setDesarrollosWithRealCounts(updatedDesarrollos);
+    };
+    
+    updateRealUnitCounts();
+  }, [desarrollos, isLoading]);
 
   // Function to normalize desarrollo data before display
   const normalizeDesarrollos = (desarrollos: Desarrollo[]): Desarrollo[] => {
@@ -44,7 +78,10 @@ const DesarrollosPage = () => {
     navigate(`/dashboard/desarrollos/${id}`);
   };
 
-  const normalizedDesarrollos = normalizeDesarrollos(desarrollos as Desarrollo[]);
+  // Use real counts when available, otherwise use normalized desarrollos
+  const displayDesarrollos = desarrollosWithRealCounts.length > 0 
+    ? normalizeDesarrollos(desarrollosWithRealCounts)
+    : normalizeDesarrollos(desarrollos as Desarrollo[]);
 
   return (
     <DashboardLayout>
@@ -92,7 +129,7 @@ const DesarrollosPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {normalizedDesarrollos.map((desarrollo) => (
+            {displayDesarrollos.map((desarrollo) => (
               <DesarrolloCard 
                 key={desarrollo.id} 
                 desarrollo={desarrollo}

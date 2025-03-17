@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
@@ -73,6 +72,50 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
       return counts;
     } catch (error) {
       console.error('Error counting unidades by status:', error);
+      throw error;
+    }
+  };
+  
+  // Función para contar unidades por estado para un desarrollo completo
+  const countDesarrolloUnidadesByStatus = async (desarrolloId: string): Promise<UnidadesCountByStatus> => {
+    try {
+      // Primero obtenemos todos los prototipos de este desarrollo
+      const { data: prototipos, error: prototiposError } = await supabase
+        .from('prototipos')
+        .select('id')
+        .eq('desarrollo_id', desarrolloId);
+      
+      if (prototiposError) throw prototiposError;
+      
+      if (!prototipos || prototipos.length === 0) {
+        return {
+          disponibles: 0,
+          vendidas: 0,
+          con_anticipo: 0,
+          total: 0
+        };
+      }
+      
+      // Obtenemos todas las unidades de todos los prototipos de este desarrollo
+      const prototipoIds = prototipos.map(p => p.id);
+      const { data: unidades, error: unidadesError } = await supabase
+        .from('unidades')
+        .select('estado')
+        .in('prototipo_id', prototipoIds);
+      
+      if (unidadesError) throw unidadesError;
+      
+      // Contamos por estado
+      const counts = {
+        vendidas: unidades.filter(u => u.estado === 'vendido').length,
+        con_anticipo: unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso').length,
+        disponibles: unidades.filter(u => u.estado === 'disponible').length,
+        total: unidades.length
+      };
+      
+      return counts;
+    } catch (error) {
+      console.error('Error counting desarrollo unidades by status:', error);
       throw error;
     }
   };
@@ -293,34 +336,17 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
   // Función para actualizar los contadores de un desarrollo basado en sus prototipos
   const updateDesarrolloUnidades = async (desarrolloId: string) => {
     try {
-      // Obtener todos los prototipos de este desarrollo
-      const { data: prototipos } = await supabase
-        .from('prototipos')
-        .select('total_unidades, unidades_disponibles, unidades_vendidas, unidades_con_anticipo')
-        .eq('desarrollo_id', desarrolloId);
+      // Obtener conteo real de unidades por estado directamente de la tabla unidades
+      const counts = await countDesarrolloUnidadesByStatus(desarrolloId);
       
-      if (!prototipos || prototipos.length === 0) return;
+      console.log('Real counts from units table for desarrollo:', desarrolloId, counts);
       
-      // Calcular los totales sumando los valores de todos los prototipos
-      const totalUnidades = prototipos.reduce((sum, p) => sum + (p.total_unidades || 0), 0);
-      const unidadesDisponibles = prototipos.reduce((sum, p) => sum + (p.unidades_disponibles || 0), 0);
-      const unidadesVendidas = prototipos.reduce((sum, p) => sum + (p.unidades_vendidas || 0), 0);
-      const unidadesConAnticipo = prototipos.reduce((sum, p) => sum + (p.unidades_con_anticipo || 0), 0);
-      
-      console.log('Updating desarrollo counts:', {
-        desarrolloId,
-        totalUnidades,
-        unidadesDisponibles,
-        unidadesVendidas,
-        unidadesConAnticipo
-      });
-      
-      // Actualizar el desarrollo con los nuevos totales
+      // Actualizar el desarrollo con los valores reales
       await supabase
         .from('desarrollos')
         .update({
-          total_unidades: totalUnidades,
-          unidades_disponibles: unidadesDisponibles
+          total_unidades: counts.total,
+          unidades_disponibles: counts.disponibles
         })
         .eq('id', desarrolloId);
       
@@ -342,6 +368,7 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
     deleteUnidad,
     createMultipleUnidades,
     countUnidadesByStatus,
+    countDesarrolloUnidadesByStatus,
     updatePrototipoUnidades,
     updateDesarrolloUnidades
   };
