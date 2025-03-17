@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ const AdminResourceDialog = ({
     email: '',
     telefono: ''
   });
+  // Initialize with desarrolloId from props
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>(desarrolloId || '');
   
   const isOpen = open !== undefined ? open : dialogOpen;
@@ -62,7 +64,7 @@ const AdminResourceDialog = ({
   } = useResourceForm({
     resourceType,
     resourceId,
-    desarrolloId: selectedDesarrolloId || desarrolloId,
+    desarrolloId: selectedDesarrolloId, // Use state value
     lead_id,
     prototipo_id,
     defaultValues,
@@ -70,20 +72,19 @@ const AdminResourceDialog = ({
     onSave
   });
 
+  // Handle initial desarrollo_id setup - only run once on mount and when resource or desarrolloId changes
   useEffect(() => {
-    const resourceAny = resource as any;
-    
-    if (resource && resourceAny.desarrollo_id) {
-      console.log('Setting selectedDesarrolloId from resource:', resourceAny.desarrollo_id);
-      setSelectedDesarrolloId(resourceAny.desarrollo_id);
-    } else if (desarrolloId) {
-      console.log('Setting selectedDesarrolloId from props:', desarrolloId);
-      setSelectedDesarrolloId(desarrolloId);
+    if (!selectedDesarrolloId && resource) {
+      const resourceAny = resource as any;
+      if (resourceAny.desarrollo_id) {
+        setSelectedDesarrolloId(resourceAny.desarrollo_id);
+      } else if (desarrolloId) {
+        setSelectedDesarrolloId(desarrolloId);
+      }
     }
-  }, [resource, desarrolloId]);
+  }, [resource, desarrolloId, selectedDesarrolloId]);
 
   const handleDesarrolloSelect = (desarrolloId: string) => {
-    console.log('handleDesarrolloSelect called with:', desarrolloId);
     setSelectedDesarrolloId(desarrolloId);
     
     if (resource) {
@@ -92,7 +93,6 @@ const AdminResourceDialog = ({
         desarrollo_id: desarrolloId,
         prototipo_id: ''
       };
-      console.log('Updating resource with new desarrollo_id:', updatedResource);
       setResource(updatedResource);
     }
   };
@@ -196,6 +196,7 @@ const AdminResourceDialog = ({
     }
   };
 
+  // Reset client data when dialog opens/closes
   useEffect(() => {
     if (isOpen) {
       const resourceAny = resource as any;
@@ -290,7 +291,7 @@ const AdminResourceDialog = ({
           handleLeadSelect={handleLeadSelect}
           handleAmenitiesChange={handleAmenitiesChange}
           saveResource={handleSave}
-          desarrolloId={selectedDesarrolloId || desarrolloId}
+          desarrolloId={selectedDesarrolloId}
           prototipo_id={prototipo_id}
           lead_id={lead_id}
           handleImageUpload={handleImageUpload}
