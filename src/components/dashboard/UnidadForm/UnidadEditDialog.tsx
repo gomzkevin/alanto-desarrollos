@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -89,7 +89,7 @@ export const UnidadEditDialog = ({
   });
   
   // Actualizar form cuando se carga la unidad
-  React.useEffect(() => {
+  useEffect(() => {
     if (unidad) {
       reset({
         numero: unidad.numero || '',
