@@ -7,7 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ChevronDownIcon, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -119,16 +119,22 @@ export const EntitySelect = ({
   options: { id: string; nombre: string }[];
   emptyOption?: boolean;
 }) => {
+  // Ensure we have valid options before rendering
+  const safeOptions = options?.filter(option => option && option.id) || [];
+  
   return (
     <div className="space-y-2">
       <Label htmlFor={label}>{label}</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger>
-          <SelectValue placeholder={placeholder} />
+        <SelectTrigger className="w-full">
+          <div className="flex items-center gap-2">
+            <UserRound className="h-4 w-4 shrink-0 opacity-50" />
+            <SelectValue placeholder={placeholder} />
+          </div>
         </SelectTrigger>
         <SelectContent>
           {emptyOption && <SelectItem value="">Sin asignar</SelectItem>}
-          {options.map(option => (
+          {safeOptions.map(option => (
             <SelectItem key={option.id} value={option.id}>
               {option.nombre}
             </SelectItem>

@@ -7,6 +7,7 @@ import {
   EntitySelect, 
   FormActions 
 } from './components/FormInputs';
+import SearchableEntitySelect from './components/SearchableEntitySelect';
 import useUnidadForm from './hooks/useUnidadForm';
 import useVendedores from './hooks/useVendedores';
 
@@ -78,12 +79,13 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
               {...register('precio_venta')}
             />
             
-            <EntitySelect
+            <SearchableEntitySelect
               label="Comprador"
               value={watch('comprador_id') || ''}
-              onChange={handleLeadChange}
-              placeholder="Selecciona un cliente"
+              onChange={(leadId, leadName) => handleLeadChange(leadId, leadName)}
+              placeholder="Buscar cliente..."
               options={filteredLeads}
+              emptyMessage="No se encontraron clientes con ese nombre."
             />
             
             <EntitySelect
@@ -92,6 +94,7 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
               onChange={handleVendedorChange}
               placeholder="Selecciona un vendedor"
               options={filteredVendedores}
+              emptyOption={true}
             />
             
             <DatePickerField

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -54,11 +53,20 @@ export const useUnidadForm = ({ unidad, leads, vendedores }: UnidadFormHookProps
     setValue('estado', estado);
   }, [estado, setValue]);
   
-  const handleLeadChange = (leadId: string) => {
-    const selectedLead = leads.find(lead => lead.id === leadId);
-    if (selectedLead) {
-      setValue('comprador_id', selectedLead.id);
-      setValue('comprador_nombre', selectedLead.nombre);
+  const handleLeadChange = (leadId: string, leadName?: string) => {
+    if (leadId) {
+      // If leadName is provided, use it
+      if (leadName) {
+        setValue('comprador_id', leadId);
+        setValue('comprador_nombre', leadName);
+      } else {
+        // Otherwise find the lead by ID
+        const selectedLead = leads.find(lead => lead.id === leadId);
+        if (selectedLead) {
+          setValue('comprador_id', selectedLead.id);
+          setValue('comprador_nombre', selectedLead.nombre);
+        }
+      }
     } else {
       setValue('comprador_id', '');
       setValue('comprador_nombre', '');
