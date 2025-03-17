@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import useCotizaciones from "@/hooks/useCotizaciones";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { CotizacionEditForm } from "./ResourceDialog/components/CotizacionEditForm";
 
 type EditCotizacionButtonProps = {
   cotizacionId: string;
@@ -137,8 +138,5 @@ export const EditCotizacionButton = ({
     </>
   );
 };
-
-// Import this at the top of the file
-import { CotizacionEditForm } from "./ResourceDialog/components/CotizacionEditForm";
 
 export default EditCotizacionButton;

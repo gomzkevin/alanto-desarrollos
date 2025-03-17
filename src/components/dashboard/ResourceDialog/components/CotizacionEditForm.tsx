@@ -48,6 +48,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
     desarrolloId: cotizacion.desarrollo_id 
   });
 
+  // Update the form with additional fields for new client
   const form = useForm({
     defaultValues: {
       isExistingClient: true,
@@ -58,7 +59,11 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
       numero_pagos: cotizacion.numero_pagos,
       usar_finiquito: cotizacion.usar_finiquito,
       monto_finiquito: cotizacion.monto_finiquito || 0,
-      notas: cotizacion.notas || ''
+      notas: cotizacion.notas || '',
+      // Add fields for new client
+      nombre: '',
+      email: '',
+      telefono: ''
     }
   });
 
@@ -360,6 +365,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                             "w-full justify-start text-left font-normal",
                             !startDate && "text-muted-foreground"
                           )}
+                          type="button"
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {startDate ? formatDate(startDate) : "Seleccionar fecha"}
@@ -424,6 +430,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                               "w-full justify-start text-left font-normal",
                               !finiquitoDate && "text-muted-foreground"
                             )}
+                            type="button"
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {finiquitoDate ? formatDate(finiquitoDate) : "Seleccionar fecha"}
