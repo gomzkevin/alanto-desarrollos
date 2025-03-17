@@ -453,6 +453,8 @@ export type Database = {
           numero: string
           precio_venta: number | null
           prototipo_id: string
+          vendedor_id: string | null
+          vendedor_nombre: string | null
         }
         Insert: {
           comprador_id?: string | null
@@ -465,6 +467,8 @@ export type Database = {
           numero: string
           precio_venta?: number | null
           prototipo_id: string
+          vendedor_id?: string | null
+          vendedor_nombre?: string | null
         }
         Update: {
           comprador_id?: string | null
@@ -477,6 +481,8 @@ export type Database = {
           numero?: string
           precio_venta?: number | null
           prototipo_id?: string
+          vendedor_id?: string | null
+          vendedor_nombre?: string | null
         }
         Relationships: [
           {
@@ -491,6 +497,13 @@ export type Database = {
             columns: ["prototipo_id"]
             isOneToOne: false
             referencedRelation: "prototipos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unidades_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
             referencedColumns: ["id"]
           },
         ]

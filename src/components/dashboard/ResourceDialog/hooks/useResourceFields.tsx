@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,6 +53,7 @@ export const useResourceFields = (resourceType: ResourceType) => {
             { name: 'comprador_id', label: 'Comprador', type: 'select', options: leads.map(lead => ({ value: lead.id, label: lead.nombre })), description: 'Cliente que ha comprado o reservado esta unidad' },
             { name: 'comprador_nombre', label: 'Nombre del Comprador', type: 'text', description: 'Nombre del comprador en caso de no estar registrado como lead' },
             { name: 'vendedor_id', label: 'Vendedor', type: 'select', options: vendedores.map(v => ({ value: v.id, label: v.nombre })), description: 'Agente de ventas asignado a esta unidad' },
+            { name: 'vendedor_nombre', label: 'Nombre del Vendedor', type: 'text', description: 'Nombre del vendedor en caso de no estar registrado en el sistema' },
             { name: 'fecha_venta', label: 'Fecha de Venta/Apartado', type: 'date', description: 'Fecha en que se realizó la venta o apartado' },
           ];
         case 'desarrollos':
