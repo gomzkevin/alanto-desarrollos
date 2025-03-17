@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export type Prototipo = Tables<"prototipos">;
 
@@ -15,13 +15,15 @@ type FetchPrototiposOptions = {
   limit?: number;
   desarrolloId?: string | null;
   withDesarrollo?: boolean;
+  staleTime?: number;
   onError?: (error: Error) => void;
 };
 
 export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
-  const { limit, desarrolloId, withDesarrollo = false, onError } = options;
+  const { limit, desarrolloId, withDesarrollo = false, staleTime = 60000, onError } = options;
+  const { toast } = useToast();
   
-  // Function to fetch prototipos
+  // Function to fetch prototipos with better error handling
   const fetchPrototipos = async (): Promise<ExtendedPrototipo[]> => {
     console.log('Fetching prototipos with options:', options);
     
@@ -43,7 +45,7 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
       
       if (error) {
         console.error('Error fetching prototipos:', error);
-        throw new Error(error.message);
+        throw new Error(`Error al cargar prototipos: ${error.message}`);
       }
       
       // If withDesarrollo is requested, fetch the desarrollo for each prototipo
@@ -76,11 +78,9 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
           };
         });
         
-        console.log('Extended prototipos fetched:', extendedPrototipos);
         return extendedPrototipos;
       }
       
-      console.log('Prototipos fetched:', prototipos);
       return prototipos as ExtendedPrototipo[];
     } catch (error) {
       console.error('Error in fetchPrototipos:', error);
@@ -91,11 +91,13 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
     }
   };
 
-  // Use React Query to fetch and cache the data
+  // Use React Query to fetch and cache the data with improved settings
   const queryResult = useQuery({
     queryKey: ['prototipos', limit, desarrolloId, withDesarrollo],
     queryFn: fetchPrototipos,
-    retry: 1,
+    staleTime: staleTime,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
     meta: {
       onError: (error: Error) => {
         console.error('Error in prototipos query:', error);

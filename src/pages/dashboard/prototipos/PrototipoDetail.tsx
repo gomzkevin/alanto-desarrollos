@@ -1,4 +1,3 @@
-
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -10,7 +9,7 @@ import { ChevronLeft, Home, MapPin, Box, Building, Ruler, Bed, Bath, Car, Pencil
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import useUnidades from '@/hooks/useUnidades';
+import { useUnidades } from '@/hooks';
 import { UnidadTable } from './UnidadTable';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,7 +20,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Carga perezosa de AdminResourceDialog para evitar referencias circulares
 const AdminResourceDialog = lazy(() => 
   import('@/components/dashboard/ResourceDialog/AdminResourceDialog')
 );
@@ -83,9 +81,9 @@ const PrototipoDetail = () => {
     queryKey: ['prototipo', id],
     queryFn: () => fetchPrototipoById(id as string),
     enabled: !!id,
-    staleTime: 30000, // 30 segundos
+    staleTime: 60000,
     retry: 3,
-    retryDelay: 1000,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
     meta: {
       onError: (error: Error) => {
         console.error('Error fetching prototipo details:', error);
@@ -105,17 +103,22 @@ const PrototipoDetail = () => {
     createMultipleUnidades,
     countUnidadesByStatus,
     isError: unidadesError
-  } = useUnidades({ prototipo_id: id });
+  } = useUnidades({ 
+    prototipo_id: id,
+    staleTime: 60000
+  });
   
   const { 
     data: unitCounts,
-    isLoading: isLoadingUnitCounts
+    isLoading: isLoadingUnitCounts,
+    refetch: refetchUnitCounts
   } = useQuery({
     queryKey: ['prototipo-unit-counts', id],
     queryFn: () => countUnidadesByStatus(id as string),
     enabled: !!id && !isError,
-    staleTime: 30000, // 30 segundos
-    retry: 2
+    staleTime: 60000,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000)
   });
   
   const handleBack = () => {
@@ -131,9 +134,23 @@ const PrototipoDetail = () => {
     console.log('Refreshing prototipo data...');
     setIsRefetching(true);
     try {
-      await Promise.all([refetch(), refetchUnidades()]);
+      await Promise.all([
+        refetch(), 
+        refetchUnidades(),
+        refetchUnitCounts()
+      ]);
+      
+      toast({
+        title: 'Datos actualizados',
+        description: 'La información ha sido actualizada correctamente',
+      });
     } catch (error) {
       console.error('Error refreshing data:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron actualizar los datos',
+        variant: 'destructive',
+      });
     } finally {
       setIsRefetching(false);
     }
@@ -224,6 +241,7 @@ const PrototipoDetail = () => {
             <AlertDescription>
               No se pudo cargar la información del prototipo.
               {error && <p className="mt-2">{(error as Error).message}</p>}
+              <p className="mt-2">Compruebe su conexión a internet e intente de nuevo.</p>
             </AlertDescription>
           </Alert>
           
@@ -266,7 +284,7 @@ const PrototipoDetail = () => {
               disabled={isRefetching}
             >
               <RefreshCw className={`mr-1 h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-              Actualizar
+              {isRefetching ? 'Actualizando...' : 'Actualizar'}
             </Button>
             
             <Button 
