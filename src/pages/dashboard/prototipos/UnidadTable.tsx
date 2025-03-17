@@ -31,8 +31,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import useUnidades from '@/hooks/useUnidades';
-import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 import { Tables } from '@/integrations/supabase/types';
+import { toast } from '@/hooks/use-toast';
 
 type Prototipo = Tables<"prototipos">;
 
@@ -77,8 +78,18 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
       
       // Refrescar tabla
       onRefresh();
+      
+      toast({
+        title: 'Estado actualizado',
+        description: `La unidad ha sido actualizada a "${nuevoEstado}"`,
+      });
     } catch (error) {
       console.error('Error al actualizar estado:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo actualizar el estado de la unidad',
+        variant: 'destructive',
+      });
     } finally {
       setStatusUpdateLoading(prev => ({ ...prev, [unidadId]: false }));
     }
@@ -91,9 +102,40 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
       await deleteUnidad.mutateAsync(unidadToDelete);
       setUnidadToDelete(null);
       onRefresh();
+      
+      toast({
+        title: 'Unidad eliminada',
+        description: 'La unidad ha sido eliminada correctamente',
+      });
     } catch (error) {
       console.error('Error deleting unidad:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo eliminar la unidad',
+        variant: 'destructive',
+      });
     }
+  };
+  
+  const handleEditClick = (id: string) => {
+    console.log('Opening edit dialog for unidad ID:', id);
+    setUnidadToEdit(id);
+  };
+  
+  const handleCloseDialog = () => {
+    console.log('Closing edit dialog');
+    setUnidadToEdit(null);
+  };
+  
+  const handleSuccessEdit = () => {
+    console.log('Edit successful, refreshing data');
+    setUnidadToEdit(null);
+    onRefresh();
+    
+    toast({
+      title: 'Unidad actualizada',
+      description: 'La unidad ha sido actualizada correctamente',
+    });
   };
   
   if (isLoading) {
@@ -185,7 +227,7 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setUnidadToEdit(unidad.id)}>
+                    <DropdownMenuItem onClick={() => handleEditClick(unidad.id)}>
                       <Edit className="mr-2 h-4 w-4" />
                       Editar
                     </DropdownMenuItem>
@@ -204,17 +246,17 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
         </TableBody>
       </Table>
       
-      {/* Diálogo para editar unidad */}
-      <AdminResourceDialog 
-        resourceType="unidades"
-        resourceId={unidadToEdit || undefined}
-        open={!!unidadToEdit}
-        onClose={() => setUnidadToEdit(null)}
-        onSuccess={() => {
-          setUnidadToEdit(null);
-          onRefresh();
-        }}
-      />
+      {/* Diálogo para editar unidad con prototipo_id explícitamente pasado */}
+      {unidadToEdit && (
+        <AdminResourceDialog 
+          resourceType="unidades"
+          resourceId={unidadToEdit}
+          open={!!unidadToEdit}
+          onClose={handleCloseDialog}
+          onSuccess={handleSuccessEdit}
+          prototipo_id={prototipo.id}
+        />
+      )}
       
       {/* Diálogo de confirmación para eliminar */}
       <AlertDialog open={!!unidadToDelete} onOpenChange={(open) => !open && setUnidadToDelete(null)}>
@@ -236,3 +278,4 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
     </div>
   );
 };
+
