@@ -362,6 +362,7 @@ export const useUnidades = (options: FetchUnidadesOptions = {}) => {
     unidades: unidadesQuery.data || [],
     isLoading: unidadesQuery.isLoading,
     error: unidadesQuery.error,
+    isError: unidadesQuery.isError,
     refetch: unidadesQuery.refetch,
     createUnidad,
     updateUnidad,
