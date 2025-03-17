@@ -1,3 +1,4 @@
+
 export type FieldType = 
   | 'text' 
   | 'textarea' 
@@ -117,6 +118,8 @@ export interface UnidadResource extends FormValues {
   comprador_id?: string;
   comprador_nombre?: string;
   fecha_venta?: string;
+  vendedor_id?: string;
+  vendedor_nombre?: string;
 }
 
 export interface AdminResourceDialogProps {

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -96,11 +96,11 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
     }
   };
   
-  const handleCloseEditDialog = () => {
+  const handleCloseEditDialog = useCallback(() => {
     // Ensure state is reset and refresh is called
     setUnidadToEdit(null);
     onRefresh();
-  };
+  }, [onRefresh]);
   
   if (isLoading) {
     return (
@@ -127,6 +127,7 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
             <TableHead>Nivel</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Cliente</TableHead>
+            <TableHead>Vendedor</TableHead>
             <TableHead>Precio</TableHead>
             <TableHead>Fecha Venta</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
@@ -175,6 +176,7 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
                 </DropdownMenu>
               </TableCell>
               <TableCell>{unidad.comprador_nombre || '-'}</TableCell>
+              <TableCell>{unidad.vendedor_nombre || '-'}</TableCell>
               <TableCell>{unidad.precio_venta ? `$${unidad.precio_venta.toLocaleString()}` : '-'}</TableCell>
               <TableCell>{unidad.fecha_venta || '-'}</TableCell>
               <TableCell className="text-right">
