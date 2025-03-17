@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -15,7 +16,7 @@ import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 
 export interface UnidadTableProps {
   prototipo: ExtendedPrototipo;
-  unidades?: any[];
+  unidades: any[];
   isLoading?: boolean;
   onRefresh?: () => void;
 }
@@ -37,6 +38,10 @@ export const UnidadTable = ({ prototipo, unidades: externalUnidades, isLoading: 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentUnidad, setCurrentUnidad] = useState<any>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
+  const unidades = externalUnidades || hookUnidades;
+  const isLoading = externalLoading !== undefined ? externalLoading : hookLoading;
+  const refetch = externalRefresh || hookRefetch;
   
   useEffect(() => {
     return () => {
@@ -164,10 +169,6 @@ export const UnidadTable = ({ prototipo, unidades: externalUnidades, isLoading: 
         return <Badge>{estado}</Badge>;
     }
   }, []);
-
-  const unidades = externalUnidades || hookUnidades;
-  const isLoading = externalLoading !== undefined ? externalLoading : hookLoading;
-  const refetch = externalRefresh || hookRefetch;
 
   if (isLoading) {
     return <div className="text-center py-4">Cargando unidades...</div>;
