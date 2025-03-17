@@ -145,7 +145,9 @@ export function useResourceForm({
           setResource({
             prototipo_id: prototipo_id || '',
             numero: '',
-            estado: 'disponible'
+            estado: 'disponible',
+            comprador_id: '',
+            comprador_nombre: ''
           });
         }
       }

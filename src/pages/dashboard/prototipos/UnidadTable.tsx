@@ -170,7 +170,10 @@ export const UnidadTable = ({ unidades, isLoading, onRefresh, prototipo }: Unida
               </TableCell>
               <TableCell>{unidad.comprador_nombre || '-'}</TableCell>
               <TableCell>{unidad.precio_venta ? `$${unidad.precio_venta.toLocaleString()}` : '-'}</TableCell>
-              <TableCell>{unidad.fecha_venta || '-'}</TableCell>
+              <TableCell>{unidad.fecha_venta 
+                ? new Date(unidad.fecha_venta).toLocaleDateString() 
+                : '-'}
+              </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

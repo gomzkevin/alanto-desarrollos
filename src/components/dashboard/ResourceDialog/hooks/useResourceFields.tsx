@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { FieldDefinition, ResourceType } from '../types';
 
@@ -398,7 +397,8 @@ export const useResourceFields = (
             {
               name: 'comprador_id',
               label: 'Cliente',
-              type: 'select-lead'
+              type: 'select-lead',
+              required: false
             },
             {
               name: 'precio_venta',

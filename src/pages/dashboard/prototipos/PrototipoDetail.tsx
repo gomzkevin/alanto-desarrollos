@@ -61,8 +61,19 @@ const PrototipoDetail = () => {
     unidades, 
     isLoading: unidadesLoading, 
     refetch: refetchUnidades,
-    createMultipleUnidades
+    createMultipleUnidades,
+    countUnidadesByStatus
   } = useUnidades({ prototipo_id: id });
+  
+  // Get real-time counts for this prototype's units
+  const { 
+    data: unitCounts,
+    isLoading: isLoadingUnitCounts
+  } = useQuery({
+    queryKey: ['prototipo-unit-counts', id],
+    queryFn: () => countUnidadesByStatus(id as string),
+    enabled: !!id,
+  });
   
   const handleBack = () => {
     const desarrollo = prototipo?.desarrollo as Desarrollo | undefined;
@@ -147,6 +158,14 @@ const PrototipoDetail = () => {
   }
   
   const desarrollo = prototipo.desarrollo as Desarrollo | null;
+  
+  // Use real counts from database when available
+  const displayedCounts = unitCounts || {
+    disponibles: prototipo.unidades_disponibles || 0,
+    vendidas: prototipo.unidades_vendidas || 0,
+    con_anticipo: prototipo.unidades_con_anticipo || 0,
+    total: prototipo.total_unidades || 0
+  };
   
   return (
     <DashboardLayout>
@@ -233,10 +252,10 @@ const PrototipoDetail = () => {
                   Unidades
                 </h2>
                 <p className="text-slate-600">
-                  {unidades.length} de {prototipo.total_unidades} unidades registradas 
-                  ({prototipo.unidades_disponibles || 0} disponibles, 
-                  {prototipo.unidades_vendidas || 0} vendidas, 
-                  {prototipo.unidades_con_anticipo || 0} con anticipo)
+                  {unidades.length} de {displayedCounts.total} unidades registradas 
+                  ({displayedCounts.disponibles} disponibles, 
+                  {displayedCounts.vendidas} vendidas, 
+                  {displayedCounts.con_anticipo} con anticipo)
                 </p>
               </div>
               
