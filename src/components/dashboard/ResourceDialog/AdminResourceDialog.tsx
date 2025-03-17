@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -55,8 +54,10 @@ const AdminResourceDialog = ({
   console.log('AdminResourceDialog - isOpen calculated:', isOpen);
   console.log('AdminResourceDialog - resourceType:', resourceType);
   console.log('AdminResourceDialog - resourceId:', resourceId);
+  console.log('AdminResourceDialog - selectedDesarrolloId:', selectedDesarrolloId);
 
-  const fields = useResourceFields(resourceType);
+  // Pass selectedDesarrolloId to useResourceFields
+  const fields = useResourceFields(resourceType, selectedDesarrolloId);
 
   const {
     isLoading,

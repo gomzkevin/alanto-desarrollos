@@ -4,7 +4,7 @@ import { ResourceType, FieldDefinition } from '../types';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 
-export const useResourceFields = (resourceType: ResourceType) => {
+export const useResourceFields = (resourceType: ResourceType, selectedDesarrolloId?: string) => {
   const [fields, setFields] = useState<FieldDefinition[]>([]);
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos();
@@ -325,7 +325,7 @@ export const useResourceFields = (resourceType: ResourceType) => {
             label: 'Prototipo',
             type: 'select',
             options: prototipos
-              .filter(p => !desarrolloId || p.desarrollo_id === desarrolloId)
+              .filter(p => !selectedDesarrolloId || p.desarrollo_id === selectedDesarrolloId)
               .map(prototipo => ({ 
                 value: prototipo.id, 
                 label: prototipo.nombre 
@@ -481,7 +481,7 @@ export const useResourceFields = (resourceType: ResourceType) => {
     }
     
     setFields(resourceFields);
-  }, [resourceType, desarrollos, prototipos]);
+  }, [resourceType, desarrollos, prototipos, selectedDesarrolloId]);
   
   return fields;
 };
