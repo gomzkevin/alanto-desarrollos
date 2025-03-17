@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { useResourceFields } from './hooks/useResourceFields';
 import { ResourceDialogContent } from './components/ResourceDialogContent';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { FormValues } from './types';
 
 const AdminResourceDialog = ({
   open,
@@ -34,7 +36,7 @@ const AdminResourceDialog = ({
     telefono: ''
   });
   
-  // Initialize selectedDesarrolloId with the prop value but don't change it in useEffect
+  // Initialize selectedDesarrolloId with the prop value
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | undefined>(
     desarrolloId || undefined
   );
@@ -48,13 +50,14 @@ const AdminResourceDialog = ({
     setDialogOpen(newOpen);
   };
 
-  // Logging to debug dialog open/close issues
+  // Logging for debugging
   console.log('AdminResourceDialog - open prop:', open);
   console.log('AdminResourceDialog - dialogOpen state:', dialogOpen);
   console.log('AdminResourceDialog - isOpen calculated:', isOpen);
   console.log('AdminResourceDialog - resourceType:', resourceType);
   console.log('AdminResourceDialog - resourceId:', resourceId);
   console.log('AdminResourceDialog - selectedDesarrolloId:', selectedDesarrolloId);
+  console.log('AdminResourceDialog - desarrolloId prop:', desarrolloId);
 
   // Pass selectedDesarrolloId to useResourceFields
   const fields = useResourceFields(resourceType, selectedDesarrolloId);
@@ -82,6 +85,19 @@ const AdminResourceDialog = ({
     onSuccess,
     onSave
   });
+
+  // Modified handleChange to accept either event or form values
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | FormValues) => {
+    console.log('handleFormChange called with:', e);
+    
+    if (typeof e === 'object' && 'target' in e) {
+      // It's an event
+      handleChange(e);
+    } else {
+      // It's a form values object
+      setResource(e as FormValues);
+    }
+  };
 
   // Set the desarrollo_id from the resource only once after initial load
   useEffect(() => {
@@ -301,7 +317,7 @@ const AdminResourceDialog = ({
           resource={resource}
           fields={fields}
           selectedAmenities={selectedAmenities}
-          handleChange={handleChange}
+          handleChange={handleFormChange}
           handleSelectChange={handleSelectChange}
           handleSwitchChange={handleSwitchChange}
           handleLeadSelect={handleLeadSelect}

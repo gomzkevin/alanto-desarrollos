@@ -1,61 +1,40 @@
+
+export type ResourceType = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones' | 'unidades';
+
 export type FieldType = 
   | 'text' 
   | 'textarea' 
-  | 'email' 
   | 'number' 
-  | 'select'
-  | 'date'
-  | 'switch'
+  | 'select' 
+  | 'date' 
+  | 'switch' 
   | 'amenities'
+  | 'email'
   | 'image-upload'
   | 'upload'
-  | 'interest-selector'
-  | 'select-lead';
+  | 'select-lead'
+  | 'lead-select';
 
 export interface FieldOption {
-  label: string;
   value: string;
+  label: string;
 }
 
 export interface FieldDefinition {
   name: string;
   label: string;
   type: FieldType;
-  options?: { label: string; value: string }[];
-  tab?: string;
   required?: boolean;
+  tab?: string;
+  options?: FieldOption[];
+  readOnly?: boolean;
   bucket?: string;
   folder?: string;
-  readOnly?: boolean;
 }
-
-export type ResourceType = 
-  | 'desarrollos' 
-  | 'prototipos' 
-  | 'leads' 
-  | 'cotizaciones'
-  | 'unidades';
 
 export interface FormValues {
   [key: string]: any;
   id?: string;
-}
-
-export interface PrototipoResource extends FormValues {
-  nombre: string;
-  desarrollo_id: string;
-  tipo: string;
-  precio: number;
-  superficie?: number;
-  habitaciones?: number;
-  baños?: number;
-  estacionamientos?: number;
-  total_unidades: number;
-  unidades_disponibles: number;
-  unidades_vendidas: number;
-  unidades_con_anticipo: number;
-  descripcion?: string;
-  imagen_url?: string;
 }
 
 export interface DesarrolloResource extends FormValues {
@@ -63,12 +42,12 @@ export interface DesarrolloResource extends FormValues {
   ubicacion: string;
   total_unidades: number;
   unidades_disponibles: number;
-  avance_porcentaje?: number;
-  fecha_inicio?: string;
-  fecha_entrega?: string;
   descripcion?: string;
+  avance_porcentaje?: number;
+  fecha_inicio?: string | Date;
+  fecha_entrega?: string | Date;
+  amenidades?: string[] | string;
   imagen_url?: string;
-  moneda?: string;
   comision_operador?: number;
   mantenimiento_valor?: number;
   es_mantenimiento_porcentaje?: boolean;
@@ -80,20 +59,37 @@ export interface DesarrolloResource extends FormValues {
   es_impuestos_porcentaje?: boolean;
   adr_base?: number;
   ocupacion_anual?: number;
-  amenidades?: string[] | null;
+  moneda?: string;
+}
+
+export interface PrototipoResource extends FormValues {
+  nombre: string;
+  tipo: string;
+  precio: number;
+  superficie?: number;
+  habitaciones?: number;
+  baños?: number;
+  estacionamientos?: number;
+  descripcion?: string;
+  total_unidades: number;
+  unidades_disponibles: number;
+  unidades_vendidas: number;
+  unidades_con_anticipo: number;
+  desarrollo_id: string;
+  imagen_url?: string;
 }
 
 export interface LeadResource extends FormValues {
   nombre: string;
   email?: string;
   telefono?: string;
-  interes_en?: string;
-  origen?: string;
-  estado?: string;
-  subestado?: string;
   agente?: string;
+  estado: string;
+  subestado?: string;
+  origen?: string;
+  interes_en?: string;
+  ultimo_contacto?: string | Date;
   notas?: string;
-  ultimo_contacto?: string;
 }
 
 export interface CotizacionResource extends FormValues {
@@ -104,18 +100,9 @@ export interface CotizacionResource extends FormValues {
   numero_pagos: number;
   usar_finiquito?: boolean;
   monto_finiquito?: number;
+  fecha_inicio_pagos?: string | Date;
+  fecha_finiquito?: string | Date;
   notas?: string;
-}
-
-export interface UnidadResource extends FormValues {
-  prototipo_id: string;
-  numero: string;
-  estado: 'disponible' | 'apartado' | 'en_proceso' | 'vendido';
-  nivel?: string;
-  precio_venta?: number;
-  comprador_id?: string;
-  comprador_nombre?: string;
-  fecha_venta?: string;
 }
 
 export interface AdminResourceDialogProps {
@@ -123,13 +110,13 @@ export interface AdminResourceDialogProps {
   onClose?: () => void;
   resourceType: ResourceType;
   resourceId?: string;
-  onSave?: () => void;
+  onSave?: (resource: FormValues) => void;
   buttonText?: string;
   buttonIcon?: React.ReactNode;
-  buttonVariant?: string;
+  buttonVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
   onSuccess?: () => void;
   desarrolloId?: string;
   lead_id?: string;
   prototipo_id?: string;
-  defaultValues?: Record<string, any>;
+  defaultValues?: FormValues;
 }

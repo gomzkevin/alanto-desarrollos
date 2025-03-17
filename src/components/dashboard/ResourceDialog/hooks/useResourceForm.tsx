@@ -97,6 +97,7 @@ export const useResourceForm = ({
       updatedValue = value === '' ? null : Number(value);
     }
     
+    console.log(`Updating resource field ${name} with value:`, updatedValue);
     setResource({ ...resource, [name]: updatedValue });
   };
 
@@ -107,6 +108,7 @@ export const useResourceForm = ({
       setSelectedStatus(value);
     }
     
+    console.log(`Updating resource select field ${name} with value:`, value);
     setResource({ ...resource, [name]: value });
   };
 
@@ -117,6 +119,7 @@ export const useResourceForm = ({
       setUsarFiniquito(checked);
     }
     
+    console.log(`Updating resource switch field ${name} with value:`, checked);
     setResource({ ...resource, [name]: checked });
   };
 
@@ -124,6 +127,7 @@ export const useResourceForm = ({
     if (!resource) return;
     
     setSelectedAmenities(amenities);
+    console.log(`Updating amenities with:`, amenities);
     setResource({ ...resource, amenidades: amenities });
   };
 
@@ -132,12 +136,14 @@ export const useResourceForm = ({
     
     // Si estamos en unidades, también guardamos el nombre para mostrar
     if (resourceType === 'unidades') {
+      console.log(`Selected lead for unit: ${leadId} - ${leadName}`);
       setResource({ 
         ...resource, 
         comprador_id: leadId,
         comprador_nombre: leadName
       });
     } else {
+      console.log(`Selected lead: ${leadId}`);
       setResource({ ...resource, lead_id: leadId });
     }
   };
@@ -145,6 +151,7 @@ export const useResourceForm = ({
   const handleDateChange = (name: string, date: Date | undefined) => {
     if (!resource) return;
     
+    console.log(`Updating resource date field ${name} with value:`, date);
     setResource({ ...resource, [name]: date });
   };
 
@@ -152,6 +159,7 @@ export const useResourceForm = ({
     if (!resourceToSave) return false;
     
     setIsSubmitting(true);
+    console.log('Saving resource with data:', resourceToSave);
     
     try {
       // Si hay amenidades en formato array, conviertelas a JSON

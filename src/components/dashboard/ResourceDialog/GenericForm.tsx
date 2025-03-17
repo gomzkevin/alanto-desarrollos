@@ -58,6 +58,10 @@ const GenericForm = ({
   const [tabs, setTabs] = useState<{ id: string; label: string }[]>([]);
   const { leads } = useLeads();
 
+  // Add debug logging
+  console.log('GenericForm - initializing with values:', values);
+  console.log('GenericForm - fields:', fields);
+
   const generateValidationSchema = () => {
     const schema: { [key: string]: any } = {};
     
@@ -65,19 +69,17 @@ const GenericForm = ({
       if (field.type === 'text' || field.type === 'textarea' || field.type === 'email') {
         schema[field.name] = z.string().optional();
       } else if (field.type === 'number') {
-        schema[field.name] = z.number().optional();
-      } else if (field.type === 'select') {
+        schema[field.name] = z.number().optional().nullable();
+      } else if (field.type === 'select' || field.type === 'select-lead' || field.type === 'lead-select') {
         schema[field.name] = z.string().optional();
       } else if (field.type === 'date') {
-        schema[field.name] = z.string().optional();
+        schema[field.name] = z.string().optional().nullable();
       } else if (field.type === 'switch') {
         schema[field.name] = z.boolean().optional();
       } else if (field.type === 'amenities') {
         schema[field.name] = z.array(z.string()).optional();
       } else if (field.type === 'image-upload' || field.type === 'upload') {
-        schema[field.name] = z.string().optional();
-      } else if (field.type === 'select-lead') {
-        schema[field.name] = z.string().optional();
+        schema[field.name] = z.string().optional().nullable();
       }
     });
     
@@ -90,20 +92,29 @@ const GenericForm = ({
   const form = useForm<ValidationSchema>({
     resolver: zodResolver(validationSchema),
     defaultValues: values as any,
+    mode: 'onChange',
   });
 
   useEffect(() => {
+    console.log('GenericForm - resetting form with values:', values);
     form.reset(values as any);
   }, [form, values]);
 
   const onFormChange = (name: string, value: any) => {
-    onChange({ ...values, [name]: value });
+    console.log(`GenericForm - field changed: ${name} = `, value);
     
-    if (onSelectChange && fields.some(field => field.name === name && (field.type === 'select' || field.type === 'select-lead'))) {
+    // Create a merged object with the updated field
+    const updatedValues = { ...values, [name]: value };
+    
+    // Send the complete updated form values to the parent
+    onChange(updatedValues);
+    
+    // Additional handlers for specific field types
+    if (onSelectChange && (fields.some(field => field.name === name && (field.type === 'select' || field.type === 'select-lead' || field.type === 'lead-select')))) {
       onSelectChange(name, value as string);
       
-      // Si es un campo de selección de lead y es para una unidad, también actualizamos el nombre del comprador
-      if (resourceType === 'unidades' && name === 'comprador_id' && onLeadSelect) {
+      // If it's a lead selection for a unit, also update the buyer name
+      if (resourceType === 'unidades' && (name === 'comprador_id' || name === 'lead_id') && onLeadSelect) {
         const selectedLead = leads.find(lead => lead.id === value);
         if (selectedLead) {
           onLeadSelect(value as string, selectedLead.nombre);
@@ -164,7 +175,7 @@ const GenericForm = ({
                     {...formField}
                     readOnly={field.readOnly}
                     className={field.readOnly ? "bg-gray-100" : ""}
-                    value={formField.value === undefined ? '' : formField.value}
+                    value={formField.value === undefined || formField.value === null ? '' : formField.value}
                     onChange={(e) => {
                       if (!field.readOnly) {
                         const value = e.target.value === '' ? null : Number(e.target.value);
@@ -187,15 +198,12 @@ const GenericForm = ({
                   />
                 ) : field.type === 'select' && field.options ? (
                   <Select
-                    value={formField.value?.toString() || ''}
+                    value={String(formField.value || '')}
                     disabled={field.readOnly}
                     onValueChange={(value) => {
                       if (!field.readOnly) {
                         formField.onChange(value);
                         onFormChange(field.name, value);
-                        if (onSelectChange) {
-                          onSelectChange(field.name, value);
-                        }
                       }
                     }}
                   >
@@ -210,9 +218,9 @@ const GenericForm = ({
                       ))}
                     </SelectContent>
                   </Select>
-                ) : field.type === 'select-lead' ? (
+                ) : (field.type === 'select-lead' || field.type === 'lead-select') ? (
                   <Select
-                    value={formField.value?.toString() || ''}
+                    value={String(formField.value || '')}
                     disabled={field.readOnly}
                     onValueChange={(value) => {
                       if (!field.readOnly) {
@@ -220,9 +228,11 @@ const GenericForm = ({
                         onFormChange(field.name, value);
                         
                         // Si hay un lead seleccionado, obtener su nombre
-                        const selectedLead = leads.find(lead => lead.id === value);
-                        if (selectedLead && onLeadSelect) {
-                          onLeadSelect(value, selectedLead.nombre);
+                        if (value) {
+                          const selectedLead = leads.find(lead => lead.id === value);
+                          if (selectedLead && onLeadSelect) {
+                            onLeadSelect(value, selectedLead.nombre);
+                          }
                         }
                       }
                     }}
@@ -245,6 +255,7 @@ const GenericForm = ({
                     {...formField}
                     readOnly={field.readOnly}
                     className={field.readOnly ? "bg-gray-100" : ""}
+                    value={formField.value || ''}
                     onChange={(e) => {
                       if (!field.readOnly) {
                         formField.onChange(e);
@@ -264,9 +275,6 @@ const GenericForm = ({
                         if (!field.readOnly) {
                           formField.onChange(checked);
                           onFormChange(field.name, checked);
-                          if (onSwitchChange) {
-                            onSwitchChange(field.name, checked);
-                          }
                         }
                       }}
                     />

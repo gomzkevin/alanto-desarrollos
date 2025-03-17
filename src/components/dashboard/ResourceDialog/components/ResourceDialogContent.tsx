@@ -18,7 +18,7 @@ interface ResourceDialogContentProps {
   resource: FormValues | null;
   fields: FieldDefinition[];
   selectedAmenities?: string[];
-  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | FormValues) => void;
   handleSelectChange: (name: string, value: string) => void;
   handleSwitchChange: (name: string, checked: boolean) => void;
   handleLeadSelect?: (leadId: string, leadName: string) => void;
@@ -104,6 +104,17 @@ export function ResourceDialogContent({
   console.log('ResourceDialogContent - resource:', resource);
   console.log('ResourceDialogContent - fields:', fields);
 
+  // Handle the different onChange patterns
+  const handleFormChange = (values: FormValues | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (typeof values === 'object' && 'target' in values) {
+      // It's an event from direct input change
+      handleChange(values);
+    } else {
+      // It's a FormValues object from GenericForm
+      handleChange(values as FormValues);
+    }
+  };
+
   return (
     <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-gray-50 p-0">
       <DialogHeader
@@ -120,7 +131,7 @@ export function ResourceDialogContent({
           <GenericForm
             fields={fields}
             values={formValues}
-            onChange={handleChange}
+            onChange={handleFormChange}
             onSelectChange={handleSelectChange}
             onSwitchChange={handleSwitchChange}
             onLeadSelect={handleLeadSelect}

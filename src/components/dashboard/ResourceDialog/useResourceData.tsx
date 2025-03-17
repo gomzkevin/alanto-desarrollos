@@ -258,7 +258,7 @@ export default function useResourceData({
           break;
         case 'cotizaciones':
           fieldDefinitions = [
-            { name: 'lead_id', label: 'Lead', type: 'select' as FieldType, options: leads.map(lead => ({ value: lead.id, label: `${lead.nombre} ${lead.email ? `(${lead.email})` : lead.telefono ? `(${lead.telefono})` : ''}` })) },
+            { name: 'lead_id', label: 'Lead', type: 'select-lead' as FieldType, options: leads.map(lead => ({ value: lead.id, label: `${lead.nombre} ${lead.email ? `(${lead.email})` : lead.telefono ? `(${lead.telefono})` : ''}` })) },
             { name: 'desarrollo_id', label: 'Desarrollo', type: 'select' as FieldType, options: desarrollos.map(desarrollo => ({ value: desarrollo.id, label: desarrollo.nombre })) },
             { name: 'prototipo_id', label: 'Prototipo', type: 'select' as FieldType, options: prototipos.map(prototipo => ({ value: prototipo.id, label: prototipo.nombre })) },
             { name: 'usar_finiquito', label: 'Liquidar con finiquito', type: 'switch' as FieldType },
@@ -288,6 +288,7 @@ export default function useResourceData({
           break;
       }
 
+      console.log('Setting fields:', fieldDefinitions);
       setFields(fieldDefinitions);
     };
 
