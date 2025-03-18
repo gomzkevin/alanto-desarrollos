@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ResourceType, FormValues } from '../types';
 import { useToast } from '@/hooks/use-toast';
+import { Json } from '@/integrations/supabase/types';
 
 interface UseResourceFormProps {
   resourceType: ResourceType;
@@ -345,66 +346,228 @@ export const useResourceForm = ({
     setIsSubmitting(true);
     try {
       let query;
-      const dataToSave = { ...resourceToSave };
       
-      // Handle special cases by resource type
-      if (resourceType === 'desarrollos') {
-        // Convert amenities array to JSON string for storage
-        if (selectedAmenities.length > 0) {
-          dataToSave.amenidades = selectedAmenities;
-        }
+      // Special handling for amenities in desarrollos
+      let dataToSave: Record<string, any> = { ...resourceToSave };
+      
+      if (resourceType === 'desarrollos' && selectedAmenities.length > 0) {
+        dataToSave.amenidades = selectedAmenities;
+      }
+      
+      // Validate required fields based on resource type
+      const validationError = validateResourceData(dataToSave);
+      if (validationError) {
+        toast({
+          title: 'Error de validación',
+          description: validationError,
+          variant: 'destructive',
+        });
+        return false;
       }
       
       if (resourceId) {
         // Update existing resource
         if (resourceType === 'desarrollos') {
+          const { nombre, ubicacion, descripcion, total_unidades, unidades_disponibles, ...rest } = dataToSave;
+          // Make sure we have all required fields
+          if (!nombre || !ubicacion || total_unidades === undefined || unidades_disponibles === undefined) {
+            toast({
+              title: 'Error',
+              description: 'Faltan campos requeridos para el desarrollo',
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
           query = supabase
             .from('desarrollos')
-            .update(dataToSave)
+            .update({ 
+              nombre, 
+              ubicacion, 
+              descripcion, 
+              total_unidades, 
+              unidades_disponibles,
+              ...rest 
+            })
             .eq('id', resourceId);
         } else if (resourceType === 'prototipos') {
+          const { nombre, desarrollo_id, tipo, precio, total_unidades, unidades_disponibles, ...rest } = dataToSave;
+          // Make sure we have all required fields
+          if (!nombre || !desarrollo_id || !tipo || precio === undefined || total_unidades === undefined || unidades_disponibles === undefined) {
+            toast({
+              title: 'Error',
+              description: 'Faltan campos requeridos para el prototipo',
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
           query = supabase
             .from('prototipos')
-            .update(dataToSave)
+            .update({ 
+              nombre, 
+              desarrollo_id, 
+              tipo, 
+              precio, 
+              total_unidades, 
+              unidades_disponibles,
+              ...rest
+            })
             .eq('id', resourceId);
         } else if (resourceType === 'leads') {
+          const { nombre, ...rest } = dataToSave;
+          // Make sure we have all required fields
+          if (!nombre) {
+            toast({
+              title: 'Error',
+              description: 'El nombre es requerido para el lead',
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
           query = supabase
             .from('leads')
-            .update(dataToSave)
+            .update({ nombre, ...rest })
             .eq('id', resourceId);
         } else if (resourceType === 'cotizaciones') {
+          const { desarrollo_id, lead_id, prototipo_id, monto_anticipo, numero_pagos, ...rest } = dataToSave;
+          // Make sure we have all required fields
+          if (!desarrollo_id || !lead_id || !prototipo_id || monto_anticipo === undefined || numero_pagos === undefined) {
+            toast({
+              title: 'Error',
+              description: 'Faltan campos requeridos para la cotización',
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
           query = supabase
             .from('cotizaciones')
-            .update(dataToSave)
+            .update({ 
+              desarrollo_id, 
+              lead_id, 
+              prototipo_id, 
+              monto_anticipo, 
+              numero_pagos,
+              ...rest 
+            })
             .eq('id', resourceId);
         } else if (resourceType === 'unidades') {
+          const { numero, prototipo_id, ...rest } = dataToSave;
+          // Make sure we have all required fields
+          if (!numero || !prototipo_id) {
+            toast({
+              title: 'Error',
+              description: 'Faltan campos requeridos para la unidad',
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
           query = supabase
             .from('unidades')
-            .update(dataToSave)
+            .update({ numero, prototipo_id, ...rest })
             .eq('id', resourceId);
         }
       } else {
         // Insert new resource
         if (resourceType === 'desarrollos') {
+          const { nombre, ubicacion, total_unidades, unidades_disponibles, ...rest } = dataToSave;
+          // Make sure we have all required fields
+          if (!nombre || !ubicacion || total_unidades === undefined || unidades_disponibles === undefined) {
+            toast({
+              title: 'Error',
+              description: 'Faltan campos requeridos para el desarrollo',
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
           query = supabase
             .from('desarrollos')
-            .insert(dataToSave);
+            .insert({ 
+              nombre, 
+              ubicacion, 
+              total_unidades, 
+              unidades_disponibles,
+              ...rest 
+            });
         } else if (resourceType === 'prototipos') {
+          const { nombre, desarrollo_id, tipo, precio, total_unidades, unidades_disponibles, ...rest } = dataToSave;
+          // Make sure we have all required fields
+          if (!nombre || !desarrollo_id || !tipo || precio === undefined || total_unidades === undefined || unidades_disponibles === undefined) {
+            toast({
+              title: 'Error',
+              description: 'Faltan campos requeridos para el prototipo',
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
           query = supabase
             .from('prototipos')
-            .insert(dataToSave);
+            .insert({ 
+              nombre, 
+              desarrollo_id, 
+              tipo, 
+              precio, 
+              total_unidades, 
+              unidades_disponibles,
+              ...rest 
+            });
         } else if (resourceType === 'leads') {
+          const { nombre, ...rest } = dataToSave;
+          // Make sure we have all required fields
+          if (!nombre) {
+            toast({
+              title: 'Error',
+              description: 'El nombre es requerido para el lead',
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
           query = supabase
             .from('leads')
-            .insert(dataToSave);
+            .insert({ nombre, ...rest });
         } else if (resourceType === 'cotizaciones') {
+          const { desarrollo_id, lead_id, prototipo_id, monto_anticipo, numero_pagos, ...rest } = dataToSave;
+          // Make sure we have all required fields
+          if (!desarrollo_id || !lead_id || !prototipo_id || monto_anticipo === undefined || numero_pagos === undefined) {
+            toast({
+              title: 'Error',
+              description: 'Faltan campos requeridos para la cotización',
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
           query = supabase
             .from('cotizaciones')
-            .insert(dataToSave);
+            .insert({ 
+              desarrollo_id, 
+              lead_id, 
+              prototipo_id, 
+              monto_anticipo, 
+              numero_pagos,
+              ...rest 
+            });
         } else if (resourceType === 'unidades') {
+          const { numero, prototipo_id, ...rest } = dataToSave;
+          // Make sure we have all required fields
+          if (!numero || !prototipo_id) {
+            toast({
+              title: 'Error',
+              description: 'Faltan campos requeridos para la unidad',
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
           query = supabase
             .from('unidades')
-            .insert(dataToSave);
+            .insert({ numero, prototipo_id, ...rest });
         }
       }
       
@@ -445,6 +608,36 @@ export const useResourceForm = ({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Validate required fields based on resource type
+  const validateResourceData = (data: Record<string, any>): string | null => {
+    if (resourceType === 'desarrollos') {
+      if (!data.nombre) return 'El nombre es requerido';
+      if (!data.ubicacion) return 'La ubicación es requerida';
+      if (data.total_unidades === undefined) return 'El total de unidades es requerido';
+      if (data.unidades_disponibles === undefined) return 'Las unidades disponibles son requeridas';
+    } else if (resourceType === 'prototipos') {
+      if (!data.nombre) return 'El nombre es requerido';
+      if (!data.desarrollo_id) return 'El desarrollo es requerido';
+      if (!data.tipo) return 'El tipo es requerido';
+      if (data.precio === undefined) return 'El precio es requerido';
+      if (data.total_unidades === undefined) return 'El total de unidades es requerido';
+      if (data.unidades_disponibles === undefined) return 'Las unidades disponibles son requeridas';
+    } else if (resourceType === 'leads') {
+      if (!data.nombre) return 'El nombre es requerido';
+    } else if (resourceType === 'cotizaciones') {
+      if (!data.lead_id) return 'El lead es requerido';
+      if (!data.desarrollo_id) return 'El desarrollo es requerido';
+      if (!data.prototipo_id) return 'El prototipo es requerido';
+      if (data.monto_anticipo === undefined) return 'El monto del anticipo es requerido';
+      if (data.numero_pagos === undefined) return 'El número de pagos es requerido';
+    } else if (resourceType === 'unidades') {
+      if (!data.numero) return 'El número es requerido';
+      if (!data.prototipo_id) return 'El prototipo es requerido';
+    }
+    
+    return null;
   };
 
   return {
