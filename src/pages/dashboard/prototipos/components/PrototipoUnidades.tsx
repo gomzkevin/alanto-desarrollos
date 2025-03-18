@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Building } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -33,8 +33,26 @@ export const PrototipoUnidades = ({
   onGenerateUnidades,
   onRefreshUnidades 
 }: PrototipoUnidadesProps) => {
+  const [currentTab, setCurrentTab] = useState("todas");
   const [generarUnidadesModalOpen, setGenerarUnidadesModalOpen] = useState(false);
   const [prefijo, setPrefijo] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Memoize the filtered unidades
+  const disponibles = React.useMemo(() => 
+    unidades.filter(u => u.estado === 'disponible'),
+    [unidades]
+  );
+  
+  const apartadas = React.useMemo(() => 
+    unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso'),
+    [unidades]
+  );
+  
+  const vendidas = React.useMemo(() => 
+    unidades.filter(u => u.estado === 'vendido'),
+    [unidades]
+  );
   
   // Determinar la cantidad total de unidades que se deben generar
   const unidadesRestantes = (prototipo.total_unidades || 0) - unidades.length;
@@ -42,12 +60,24 @@ export const PrototipoUnidades = ({
   
   const handleGenerarUnidades = async () => {
     // Si no hay unidades restantes, no hacer nada
-    if (unidadesRestantes <= 0) return;
+    if (unidadesRestantes <= 0 || isGenerating) return;
     
-    await onGenerateUnidades(unidadesRestantes, prefijo);
-    setGenerarUnidadesModalOpen(false);
-    setPrefijo("");
+    setIsGenerating(true);
+    try {
+      await onGenerateUnidades(unidadesRestantes, prefijo);
+      setGenerarUnidadesModalOpen(false);
+      setPrefijo("");
+    } catch (error) {
+      console.error("Error al generar unidades:", error);
+    } finally {
+      setIsGenerating(false);
+    }
   };
+  
+  // Handler for tab changes
+  const handleTabChange = useCallback((value: string) => {
+    setCurrentTab(value);
+  }, []);
   
   return (
     <div className="bg-slate-50 p-6 rounded-lg">
@@ -74,7 +104,7 @@ export const PrototipoUnidades = ({
         />
       </div>
       
-      <Tabs defaultValue="todas">
+      <Tabs defaultValue="todas" value={currentTab} onValueChange={handleTabChange}>
         <TabsList className="mb-4">
           <TabsTrigger value="todas">Todas</TabsTrigger>
           <TabsTrigger value="disponibles">Disponibles</TabsTrigger>
@@ -82,41 +112,49 @@ export const PrototipoUnidades = ({
           <TabsTrigger value="vendidas">Vendidas</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="todas">
-          <UnidadTable 
-            prototipo={prototipo}
-            unidades={unidades} 
-            isLoading={unidadesLoading} 
-            onRefresh={onRefreshUnidades}
-          />
-        </TabsContent>
+        {currentTab === "todas" && (
+          <TabsContent value="todas" forceMount>
+            <UnidadTable 
+              prototipo={prototipo}
+              unidades={unidades} 
+              isLoading={unidadesLoading} 
+              onRefresh={onRefreshUnidades}
+            />
+          </TabsContent>
+        )}
         
-        <TabsContent value="disponibles">
-          <UnidadTable 
-            prototipo={prototipo}
-            unidades={unidades.filter(u => u.estado === 'disponible')} 
-            isLoading={unidadesLoading} 
-            onRefresh={onRefreshUnidades}
-          />
-        </TabsContent>
+        {currentTab === "disponibles" && (
+          <TabsContent value="disponibles" forceMount>
+            <UnidadTable 
+              prototipo={prototipo}
+              unidades={disponibles} 
+              isLoading={unidadesLoading} 
+              onRefresh={onRefreshUnidades}
+            />
+          </TabsContent>
+        )}
         
-        <TabsContent value="apartadas">
-          <UnidadTable 
-            prototipo={prototipo}
-            unidades={unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso')} 
-            isLoading={unidadesLoading} 
-            onRefresh={onRefreshUnidades}
-          />
-        </TabsContent>
+        {currentTab === "apartadas" && (
+          <TabsContent value="apartadas" forceMount>
+            <UnidadTable 
+              prototipo={prototipo}
+              unidades={apartadas} 
+              isLoading={unidadesLoading} 
+              onRefresh={onRefreshUnidades}
+            />
+          </TabsContent>
+        )}
         
-        <TabsContent value="vendidas">
-          <UnidadTable 
-            prototipo={prototipo}
-            unidades={unidades.filter(u => u.estado === 'vendido')} 
-            isLoading={unidadesLoading} 
-            onRefresh={onRefreshUnidades}
-          />
-        </TabsContent>
+        {currentTab === "vendidas" && (
+          <TabsContent value="vendidas" forceMount>
+            <UnidadTable 
+              prototipo={prototipo}
+              unidades={vendidas} 
+              isLoading={unidadesLoading} 
+              onRefresh={onRefreshUnidades}
+            />
+          </TabsContent>
+        )}
       </Tabs>
       
       <Dialog open={generarUnidadesModalOpen} onOpenChange={setGenerarUnidadesModalOpen}>
@@ -156,8 +194,19 @@ export const PrototipoUnidades = ({
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setGenerarUnidadesModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleGenerarUnidades}>Generar</Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setGenerarUnidadesModalOpen(false)}
+              disabled={isGenerating}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleGenerarUnidades}
+              disabled={isGenerating}
+            >
+              {isGenerating ? 'Generando...' : 'Generar'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

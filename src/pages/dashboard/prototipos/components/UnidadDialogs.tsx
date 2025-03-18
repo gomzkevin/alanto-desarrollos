@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import DeleteUnidadDialog from './DeleteUnidadDialog';
 import { UnidadForm } from "../UnidadForm";
@@ -31,6 +31,33 @@ export const UnidadDialogs = ({
   handleEditUnidad,
   handleDeleteUnidad
 }: UnidadDialogsProps) => {
+  // Track whether form should be visible to prevent rendering issues
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  
+  // Update form visibility with a slight delay to prevent UI flicker
+  useEffect(() => {
+    let addTimer: number | undefined;
+    let editTimer: number | undefined;
+    
+    if (isAddDialogOpen) {
+      addTimer = window.setTimeout(() => setShowAddForm(true), 100);
+    } else {
+      setShowAddForm(false);
+    }
+    
+    if (isEditDialogOpen) {
+      editTimer = window.setTimeout(() => setShowEditForm(true), 100);
+    } else {
+      setShowEditForm(false);
+    }
+    
+    return () => {
+      if (addTimer) clearTimeout(addTimer);
+      if (editTimer) clearTimeout(editTimer);
+    };
+  }, [isAddDialogOpen, isEditDialogOpen]);
+  
   // First close dialog then process the data
   const handleAddSubmit = (data: any) => {
     // Close dialog first
@@ -64,11 +91,11 @@ export const UnidadDialogs = ({
         <DialogContent className="sm:max-w-md">
           <DialogTitle>Agregar Unidad</DialogTitle>
           <DialogDescription>Ingresa los datos de la nueva unidad</DialogDescription>
-          {isAddDialogOpen && (
+          {showAddForm && (
             <UnidadForm 
               onSubmit={handleAddSubmit}
               onCancel={() => setIsAddDialogOpen(false)}
-              leads={leads}
+              leads={leads || []}
             />
           )}
         </DialogContent>
@@ -84,12 +111,12 @@ export const UnidadDialogs = ({
         <DialogContent className="sm:max-w-md">
           <DialogTitle>Editar Unidad</DialogTitle>
           <DialogDescription>Modifica los datos de la unidad</DialogDescription>
-          {isEditDialogOpen && currentUnidad && (
+          {showEditForm && currentUnidad && (
             <UnidadForm 
               unidad={currentUnidad}
               onSubmit={handleEditSubmit}
               onCancel={closeEditDialog}
-              leads={leads}
+              leads={leads || []}
             />
           )}
         </DialogContent>

@@ -37,6 +37,7 @@ export const useUnidadTable = ({
   
   // Use refs to avoid race conditions
   const isProcessingRef = useRef(false);
+  const pendingOperationRef = useRef<null | (() => Promise<void>)>(null);
   
   // Dialog state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -57,8 +58,63 @@ export const useUnidadTable = ({
     return Number(price);
   };
 
+  // Process any pending operations
+  const processPendingOperation = useCallback(async () => {
+    if (pendingOperationRef.current) {
+      try {
+        await pendingOperationRef.current();
+      } catch (error) {
+        console.error("Error in pending operation:", error);
+      } finally {
+        pendingOperationRef.current = null;
+      }
+    }
+  }, []);
+  
+  useEffect(() => {
+    if (!isProcessing && pendingOperationRef.current) {
+      processPendingOperation();
+    }
+  }, [isProcessing, processPendingOperation]);
+
   const handleAddUnidad = useCallback(async (data: any) => {
-    if (isProcessingRef.current) return;
+    if (isProcessingRef.current) {
+      // Queue the operation for later if already processing
+      const operation = async () => {
+        try {
+          await createUnidad({
+            prototipo_id: prototipo.id,
+            numero: data.numero,
+            estado: data.estado,
+            nivel: data.nivel,
+            precio_venta: normalizePrice(data.precio_venta),
+            comprador_id: data.comprador_id,
+            comprador_nombre: data.comprador_nombre,
+            vendedor_id: data.vendedor_id,
+            vendedor_nombre: data.vendedor_nombre,
+            fecha_venta: data.fecha_venta
+          });
+          
+          toast({
+            title: "Unidad creada",
+            description: "La unidad ha sido creada exitosamente"
+          });
+          
+          refetch();
+        } catch (error: any) {
+          console.error("Error creating unidad:", error);
+          toast({
+            title: "Error",
+            description: `No se pudo crear la unidad: ${error.message}`,
+            variant: "destructive"
+          });
+        }
+      };
+      
+      pendingOperationRef.current = operation;
+      return;
+    }
+    
     isProcessingRef.current = true;
     setIsProcessing(true);
     
@@ -83,12 +139,14 @@ export const useUnidadTable = ({
         description: "La unidad ha sido creada exitosamente"
       });
       
-      // Wait a moment before refreshing
+      // Wait before refreshing
       setTimeout(() => {
         refetch();
-        isProcessingRef.current = false;
-        setIsProcessing(false);
-      }, 1000);
+        setTimeout(() => {
+          isProcessingRef.current = false;
+          setIsProcessing(false);
+        }, 500);
+      }, 500);
     } catch (error: any) {
       console.error("Error creating unidad:", error);
       toast({
@@ -102,7 +160,45 @@ export const useUnidadTable = ({
   }, [prototipo.id, createUnidad, toast, refetch]);
 
   const handleEditUnidad = useCallback(async (data: any) => {
-    if (!currentUnidad || isProcessingRef.current) return;
+    if (!currentUnidad) return;
+    
+    if (isProcessingRef.current) {
+      // Queue the operation for later if already processing
+      const operation = async () => {
+        try {
+          await updateUnidad({
+            id: currentUnidad.id,
+            numero: data.numero,
+            estado: data.estado,
+            nivel: data.nivel,
+            precio_venta: normalizePrice(data.precio_venta),
+            comprador_id: data.comprador_id,
+            comprador_nombre: data.comprador_nombre,
+            vendedor_id: data.vendedor_id,
+            vendedor_nombre: data.vendedor_nombre,
+            fecha_venta: data.fecha_venta
+          });
+          
+          toast({
+            title: "Unidad actualizada",
+            description: "La unidad ha sido actualizada exitosamente"
+          });
+          
+          refetch();
+        } catch (error: any) {
+          console.error("Error updating unidad:", error);
+          toast({
+            title: "Error",
+            description: `No se pudo actualizar la unidad: ${error.message}`,
+            variant: "destructive"
+          });
+        }
+      };
+      
+      pendingOperationRef.current = operation;
+      return;
+    }
+    
     isProcessingRef.current = true;
     setIsProcessing(true);
     
@@ -129,12 +225,14 @@ export const useUnidadTable = ({
         description: "La unidad ha sido actualizada exitosamente"
       });
       
-      // Wait a bit before refreshing
+      // Wait before refreshing
       setTimeout(() => {
         refetch();
-        isProcessingRef.current = false;
-        setIsProcessing(false);
-      }, 1000);
+        setTimeout(() => {
+          isProcessingRef.current = false;
+          setIsProcessing(false);
+        }, 500);
+      }, 500);
     } catch (error: any) {
       console.error("Error updating unidad:", error);
       toast({
@@ -148,7 +246,34 @@ export const useUnidadTable = ({
   }, [currentUnidad, updateUnidad, toast, refetch]);
 
   const handleDeleteUnidad = useCallback(async () => {
-    if (!currentUnidad || isProcessingRef.current) return;
+    if (!currentUnidad) return;
+    
+    if (isProcessingRef.current) {
+      // Queue the operation for later if already processing
+      const operation = async () => {
+        try {
+          await deleteUnidad(currentUnidad.id);
+          
+          toast({
+            title: "Unidad eliminada",
+            description: "La unidad ha sido eliminada exitosamente"
+          });
+          
+          refetch();
+        } catch (error: any) {
+          console.error("Error deleting unidad:", error);
+          toast({
+            title: "Error",
+            description: `No se pudo eliminar la unidad: ${error.message}`,
+            variant: "destructive"
+          });
+        }
+      };
+      
+      pendingOperationRef.current = operation;
+      return;
+    }
+    
     isProcessingRef.current = true;
     setIsProcessing(true);
     
@@ -166,9 +291,11 @@ export const useUnidadTable = ({
       // Wait before refreshing
       setTimeout(() => {
         refetch();
-        isProcessingRef.current = false;
-        setIsProcessing(false);
-      }, 1000);
+        setTimeout(() => {
+          isProcessingRef.current = false;
+          setIsProcessing(false);
+        }, 500);
+      }, 500);
     } catch (error: any) {
       console.error("Error deleting unidad:", error);
       toast({
@@ -195,7 +322,7 @@ export const useUnidadTable = ({
 
   const closeEditDialog = useCallback(() => {
     setIsEditDialogOpen(false);
-    // Wait a bit before clearing the current unidad
+    // Wait before clearing the current unidad
     setTimeout(() => {
       setCurrentUnidad(null);
     }, 300);
@@ -203,7 +330,7 @@ export const useUnidadTable = ({
 
   const closeDeleteDialog = useCallback(() => {
     setIsDeleteDialogOpen(false);
-    // Wait a bit before clearing the current unidad
+    // Wait before clearing the current unidad
     setTimeout(() => {
       setCurrentUnidad(null);
     }, 300);
@@ -213,6 +340,7 @@ export const useUnidadTable = ({
   useEffect(() => {
     return () => {
       isProcessingRef.current = false;
+      pendingOperationRef.current = null;
       setCurrentUnidad(null);
       setIsAddDialogOpen(false);
       setIsEditDialogOpen(false);

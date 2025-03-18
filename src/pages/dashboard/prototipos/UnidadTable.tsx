@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Table, TableBody } from "@/components/ui/table";
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
@@ -22,12 +23,22 @@ export const UnidadTable = ({
   onRefresh: externalRefresh 
 }: UnidadTableProps) => {
   const [isMounted, setIsMounted] = useState(false);
-  const [showLoadingAfterOperation, setShowLoadingAfterOperation] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false);
+  
+  // Use a ref to store the current unidades to prevent unnecessary re-renders
+  const [stableUnidades, setStableUnidades] = useState([]);
   
   useEffect(() => {
     setIsMounted(true);
     return () => setIsMounted(false);
   }, []);
+  
+  // Update stable unidades only when externalUnidades changes
+  useEffect(() => {
+    if (externalUnidades && Array.isArray(externalUnidades)) {
+      setStableUnidades(externalUnidades);
+    }
+  }, [externalUnidades]);
   
   const {
     unidades,
@@ -48,30 +59,41 @@ export const UnidadTable = ({
     handleDeleteUnidad
   } = useUnidadTable({
     prototipo,
-    externalUnidades,
+    externalUnidades: stableUnidades,
     externalLoading,
     externalRefresh
   });
   
+  // Handle loading state more effectively
   useEffect(() => {
     if (isProcessing && isMounted) {
-      setShowLoadingAfterOperation(true);
+      setLocalLoading(true);
     } else if (!isProcessing && isMounted) {
       const timer = setTimeout(() => {
         if (isMounted) {
-          setShowLoadingAfterOperation(false);
+          setLocalLoading(false);
         }
-      }, 1000);
+      }, 500);
       
       return () => clearTimeout(timer);
     }
   }, [isProcessing, isMounted]);
   
-  const finalIsLoading = isLoading || showLoadingAfterOperation;
+  const finalIsLoading = externalLoading || localLoading;
 
+  // Simple loading state display
   if (finalIsLoading) {
-    return <div className="text-center py-4">Cargando unidades...</div>;
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <span className="ml-2">Cargando unidades...</span>
+      </div>
+    );
   }
+
+  // Ensure we're rendering a stable array of units
+  const displayUnidades = Array.isArray(unidades) ? unidades : [];
+  const hasUnidades = displayUnidades.length > 0;
 
   return (
     <div className="space-y-4">
@@ -80,20 +102,20 @@ export const UnidadTable = ({
         
         <UnidadTableActions 
           onAddClick={() => !isProcessing && setIsAddDialogOpen(true)}
-          unidadesCount={unidades.length}
+          unidadesCount={displayUnidades.length}
           totalUnidades={prototipo.total_unidades}
           showGenerateButton={false}
         />
       </div>
       
-      {(!unidades || unidades.length === 0) ? (
+      {!hasUnidades ? (
         <EmptyUnidadState onAddClick={() => !isProcessing && setIsAddDialogOpen(true)} />
       ) : (
         <div className="border rounded-md overflow-hidden">
           <Table>
             <UnidadTableHeader />
             <TableBody>
-              {unidades.map((unidad) => (
+              {displayUnidades.map((unidad) => (
                 <UnidadTableRow 
                   key={unidad.id}
                   unidad={unidad}

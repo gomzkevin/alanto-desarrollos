@@ -63,11 +63,12 @@ export const useUnidades = (params?: UseUnidadesParams) => {
     queryKey: ['unidades', prototipoId],
     queryFn: fetchUnidades,
     enabled: !!prototipoId,
-    staleTime: 10000, // Consider data stale after 10 seconds (reduced frequency)
-    refetchOnWindowFocus: true,
-    refetchInterval: 30000,  // Less frequent auto-refresh (30 seconds)
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000)
+    staleTime: 3000, // Reduced stale time to improve data freshness
+    gcTime: 5 * 60 * 1000, // Keep cache for 5 minutes
+    refetchOnWindowFocus: false, // Prevent excessive refetches on focus
+    refetchInterval: false, // Disable auto refresh to reduce render cycles
+    retry: 1, // Reduced retries to avoid cascading failures
+    retryDelay: 1000 // Simple 1 second delay between retries
   });
 
   return {
