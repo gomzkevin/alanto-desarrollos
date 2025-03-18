@@ -199,20 +199,11 @@ export function useResourceForm({
     setIsResourceFetched(false);
   }, [resourceId, resourceType]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (values: FormValues) => {
     if (!resource) return;
-    
-    const { name, value, type } = e.target;
-    
-    let updatedValue: any = value;
-    
-    if (type === 'number') {
-      updatedValue = value === '' ? '' : Number(value);
-    }
-    
     setResource({
       ...resource,
-      [name]: updatedValue
+      ...values
     });
   };
   

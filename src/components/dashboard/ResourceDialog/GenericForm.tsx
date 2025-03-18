@@ -90,7 +90,7 @@ const GenericForm = ({
   }, [form, values]);
 
   const onFormChange = (name: string, value: any) => {
-    onChange({ ...values, [name]: value });
+    onChange({ [name]: value });
     
     if (onSelectChange && fields.some(field => field.name === name && (field.type === 'select' || field.type === 'select-lead'))) {
       onSelectChange(name, value as string);
@@ -178,9 +178,6 @@ const GenericForm = ({
                       formField.onChange(value);
                       if (!field.readOnly) {
                         onFormChange(field.name, value);
-                        if (onSelectChange) {
-                          onSelectChange(field.name, value);
-                        }
                       }
                     }}
                   >
@@ -205,9 +202,6 @@ const GenericForm = ({
                       formField.onChange(e);
                       if (!field.readOnly) {
                         onFormChange(field.name, e.target.value);
-                        if (onDateChange) {
-                          onDateChange(field.name, e.target.value ? new Date(e.target.value) : undefined);
-                        }
                       }
                     }}
                   />
@@ -220,9 +214,6 @@ const GenericForm = ({
                         formField.onChange(checked);
                         if (!field.readOnly) {
                           onFormChange(field.name, checked);
-                          if (onSwitchChange) {
-                            onSwitchChange(field.name, checked);
-                          }
                         }
                       }}
                     />

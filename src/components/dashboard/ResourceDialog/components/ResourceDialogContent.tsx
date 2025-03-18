@@ -90,7 +90,7 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
       return { ...field, readOnly: true };
     }
     
-    return { ...field, readOnly: field.readOnly === true };
+    return field;
   });
   
   useEffect(() => {
