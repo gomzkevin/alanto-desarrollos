@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { EditIcon } from 'lucide-react';
 import { useUserRole } from '@/hooks';
 import { Tables } from '@/integrations/supabase/types';
-import AdminResourceDialog from './ResourceDialog';
+import AdminResourceDialog from './ResourceDialog/AdminResourceDialog';
 
 type Desarrollo = Tables<"desarrollos">;
 

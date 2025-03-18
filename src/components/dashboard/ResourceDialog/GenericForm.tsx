@@ -137,8 +137,8 @@ const GenericForm = ({
                     readOnly={field.readOnly}
                     className={field.readOnly ? "bg-gray-100" : ""}
                     onChange={(e) => {
+                      formField.onChange(e);
                       if (!field.readOnly) {
-                        formField.onChange(e);
                         onFormChange(field.name, e.target.value);
                       }
                     }}
@@ -151,9 +151,9 @@ const GenericForm = ({
                     className={field.readOnly ? "bg-gray-100" : ""}
                     value={formField.value === undefined ? '' : formField.value}
                     onChange={(e) => {
+                      const value = e.target.value === '' ? null : Number(e.target.value);
+                      formField.onChange(value);
                       if (!field.readOnly) {
-                        const value = e.target.value === '' ? null : Number(e.target.value);
-                        formField.onChange(value);
                         onFormChange(field.name, value);
                       }
                     }}
@@ -164,8 +164,8 @@ const GenericForm = ({
                     readOnly={field.readOnly}
                     className={field.readOnly ? "bg-gray-100" : ""}
                     onChange={(e) => {
+                      formField.onChange(e);
                       if (!field.readOnly) {
-                        formField.onChange(e);
                         onFormChange(field.name, e.target.value);
                       }
                     }}
@@ -175,8 +175,8 @@ const GenericForm = ({
                     value={formField.value?.toString() || ''}
                     disabled={field.readOnly}
                     onValueChange={(value) => {
+                      formField.onChange(value);
                       if (!field.readOnly) {
-                        formField.onChange(value);
                         onFormChange(field.name, value);
                         if (onSelectChange) {
                           onSelectChange(field.name, value);
@@ -202,8 +202,8 @@ const GenericForm = ({
                     readOnly={field.readOnly}
                     className={field.readOnly ? "bg-gray-100" : ""}
                     onChange={(e) => {
+                      formField.onChange(e);
                       if (!field.readOnly) {
-                        formField.onChange(e);
                         onFormChange(field.name, e.target.value);
                         if (onDateChange) {
                           onDateChange(field.name, e.target.value ? new Date(e.target.value) : undefined);
@@ -217,8 +217,8 @@ const GenericForm = ({
                       checked={formField.value || false}
                       disabled={field.readOnly}
                       onCheckedChange={(checked) => {
+                        formField.onChange(checked);
                         if (!field.readOnly) {
-                          formField.onChange(checked);
                           onFormChange(field.name, checked);
                           if (onSwitchChange) {
                             onSwitchChange(field.name, checked);
@@ -243,7 +243,9 @@ const GenericForm = ({
                     currentImageUrl={formField.value as string}
                     onImageUploaded={(imageUrl) => {
                       formField.onChange(imageUrl);
-                      onFormChange(field.name, imageUrl);
+                      if (!field.readOnly) {
+                        onFormChange(field.name, imageUrl);
+                      }
                     }}
                   />
                 ) : null}
