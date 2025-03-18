@@ -16,7 +16,7 @@ interface ResourceDialogProps {
   desarrolloId?: string;
   lead_id?: string;
   prototipo_id?: string;
-  // Added buttonText prop
+  // Added buttonText prop and others
   buttonText?: string;
   buttonIcon?: React.ReactNode;
   buttonVariant?: string;
@@ -64,7 +64,7 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
   const fields = useResourceFields(resourceType, selectedStatus);
 
   // Custom hook for resource actions (save, delete)
-  const { saveResource, handleImageUpload } = useResourceActions({
+  const { saveResource, handleImageUpload: uploadResourceImage } = useResourceActions({
     resourceType,
     resourceId,
     onSuccess,
@@ -159,7 +159,7 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     setUploading(true);
     
     try {
-      const imageUrl = await uploadImage(file);
+      const imageUrl = await uploadResourceImage(file);
       
       if (imageUrl && resource) {
         setResource({ ...resource, imagen_url: imageUrl });

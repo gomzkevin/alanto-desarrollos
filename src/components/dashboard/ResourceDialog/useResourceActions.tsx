@@ -114,17 +114,20 @@ const useResourceActions = ({
         values.lead_id = newLead.id;
       }
       
+      // Prepare resource data based on type before saving
+      let resourceData: any = { ...values };
+      
       if (resourceId) {
         // Update existing
         query = supabase
           .from(resourceType)
-          .update(values)
+          .update(resourceData)
           .eq('id', resourceId);
       } else {
         // Create new
         query = supabase
           .from(resourceType)
-          .insert(values);
+          .insert(resourceData);
       }
       
       const { error } = await query;
@@ -158,7 +161,7 @@ const useResourceActions = ({
 
   return {
     saveResource,
-    handleImageUpload, // Necesario asegurarse de exportar esto
+    handleImageUpload,
     isSubmitting,
     uploading
   };
