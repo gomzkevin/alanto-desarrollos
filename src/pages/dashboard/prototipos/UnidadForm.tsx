@@ -114,13 +114,14 @@ export const UnidadForm = ({
       <div className="space-y-2">
         <Label htmlFor="numero">Número *</Label>
         {isEditing ? (
-          // Read-only input for editing existing units
+          // Read-only input for editing existing units - applying proper read-only styling
           <Input
             id="numero"
             name="numero"
             value={formData.numero}
             readOnly
-            className="bg-gray-100 text-gray-800"
+            disabled
+            className="bg-gray-100 text-gray-800 cursor-not-allowed"
           />
         ) : (
           // Editable input for new units
