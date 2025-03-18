@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import SearchableEntitySelect from './components/SearchableEntitySelect';
 import useVendedores from './hooks/useVendedores';
 import FormInputs from './components/FormInputs';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface UnidadFormProps {
   unidad?: any;
@@ -106,46 +109,102 @@ export const UnidadForm = ({
   
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <FormInputs 
-        formData={formData}
-        onChange={handleChange}
-      />
+      {/* Basic Information Fields */}
+      <div className="space-y-2">
+        <Label htmlFor="numero">Número *</Label>
+        <Input
+          id="numero"
+          name="numero"
+          value={formData.numero}
+          onChange={handleChange}
+          placeholder="Ej. A101"
+          required
+          disabled={isSubmitting}
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="nivel">Nivel</Label>
+        <Input
+          id="nivel"
+          name="nivel"
+          value={formData.nivel}
+          onChange={handleChange}
+          placeholder="Ej. 1"
+          disabled={isSubmitting}
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="estado">Estado *</Label>
+        <Select 
+          name="estado" 
+          value={formData.estado} 
+          onValueChange={(value) => handleChange({
+            target: { name: 'estado', value }
+          } as React.ChangeEvent<HTMLSelectElement>)}
+          disabled={isSubmitting}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Selecciona un estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="disponible">Disponible</SelectItem>
+            <SelectItem value="apartado">Apartado</SelectItem>
+            <SelectItem value="en_proceso">En Proceso</SelectItem>
+            <SelectItem value="vendido">Vendido</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="precio_venta">Precio de Venta</Label>
+        <Input
+          id="precio_venta"
+          name="precio_venta"
+          value={formData.precio_venta}
+          onChange={handleChange}
+          placeholder="Ej. 1500000"
+          type="number"
+          min="0"
+          step="1000"
+          disabled={isSubmitting}
+        />
+      </div>
       
       {formData.estado !== 'disponible' && (
         <>
-          <div className="space-y-2">
-            <SearchableEntitySelect
-              label="Comprador"
-              entities={leads}
-              value={formData.comprador_id}
-              displayValue={formData.comprador_nombre}
-              onSelect={handleLeadSelect}
-              disabled={isSubmitting}
-            />
-          </div>
+          <SearchableEntitySelect
+            label="Comprador"
+            entities={leads}
+            value={formData.comprador_id}
+            displayValue={formData.comprador_nombre}
+            onSelect={handleLeadSelect}
+            placeholder="Seleccionar comprador"
+            disabled={isSubmitting}
+          />
+          
+          <SearchableEntitySelect
+            label="Vendedor"
+            entities={vendedores}
+            value={formData.vendedor_id}
+            displayValue={formData.vendedor_nombre}
+            onSelect={handleVendedorSelect}
+            placeholder="Seleccionar vendedor"
+            disabled={isSubmitting}
+          />
           
           <div className="space-y-2">
-            <SearchableEntitySelect
-              label="Vendedor"
-              entities={vendedores}
-              value={formData.vendedor_id}
-              displayValue={formData.vendedor_nombre}
-              onSelect={handleVendedorSelect}
-              disabled={isSubmitting}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label className="block text-sm font-medium" htmlFor="fechaVenta">
+            <Label className="block text-sm font-medium" htmlFor="fechaVenta">
               Fecha de Venta
-            </label>
-            <input
+            </Label>
+            <Input
               type="date"
               id="fechaVenta"
               name="fecha_venta"
               value={formData.fecha_venta ? formData.fecha_venta.slice(0, 10) : ''}
               onChange={handleChange}
-              className="w-full p-2 border rounded-md"
+              className="w-full"
               disabled={isSubmitting}
             />
           </div>

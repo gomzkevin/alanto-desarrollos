@@ -164,3 +164,14 @@ export const FormActions = ({
     </div>
   );
 };
+
+// Create a default export for the FormInputs
+const FormInputs = {
+  FormField,
+  EstadoSelect,
+  DatePickerField,
+  EntitySelect,
+  FormActions
+};
+
+export default FormInputs;

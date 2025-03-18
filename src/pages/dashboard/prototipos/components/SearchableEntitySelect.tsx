@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
 
 interface EntityOption {
   id: string;
@@ -23,36 +24,49 @@ interface EntityOption {
   [key: string]: any;
 }
 
-interface SearchableEntitySelectProps {
+export interface SearchableEntitySelectProps {
   value: string;
-  onChange: (value: string, name?: string) => void;
-  placeholder: string;
-  options: EntityOption[];
+  onChange?: (value: string, name?: string) => void;
+  onSelect?: (entity: any) => void;
+  placeholder?: string;
+  options?: EntityOption[];
+  entities?: EntityOption[];
+  label?: string; // Add label prop
   emptyMessage?: string;
+  displayValue?: string;
+  disabled?: boolean;
 }
 
 export const SearchableEntitySelect = ({
   value,
   onChange,
-  placeholder,
-  options,
-  emptyMessage = "No se encontraron resultados."
+  onSelect,
+  placeholder = "Seleccionar...",
+  options = [],
+  entities = [],
+  label,
+  emptyMessage = "No se encontraron resultados.",
+  displayValue = "",
+  disabled = false
 }: SearchableEntitySelectProps) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Use either options or entities (for backward compatibility)
+  const entityOptions = options.length > 0 ? options : entities;
   
   // More flexible filtering logic to handle accents and case insensitivity
   const normalizeString = (str: string) => 
     str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
   
-  const filteredOptions = options.filter(option => {
+  const filteredOptions = entityOptions.filter(option => {
     if (!searchTerm) return true;
     const normalizedSearch = normalizeString(searchTerm);
     const normalizedName = normalizeString(option.nombre);
     return normalizedName.includes(normalizedSearch);
   });
   
-  const selectedOption = options.find(option => option.id === value);
+  const selectedOption = entityOptions.find(option => option.id === value);
   
   // Update the search term when a value is selected externally
   useEffect(() => {
@@ -60,9 +74,24 @@ export const SearchableEntitySelect = ({
       setSearchTerm("");
     }
   }, [selectedOption, searchTerm]);
+
+  const handleSelect = (entityId: string, entityName: string) => {
+    if (onChange) {
+      onChange(entityId, entityName);
+    }
+    
+    if (onSelect) {
+      const selectedEntity = entityOptions.find(entity => entity.id === entityId);
+      onSelect(selectedEntity || null);
+    }
+    
+    setSearchTerm("");
+    setOpen(false);
+  };
   
   return (
-    <div>
+    <div className="space-y-2">
+      {label && <Label>{label}</Label>}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -71,11 +100,12 @@ export const SearchableEntitySelect = ({
             aria-expanded={open}
             className="w-full justify-between"
             onClick={() => setOpen(!open)}
+            disabled={disabled}
           >
             <div className="flex items-center gap-2">
               <UserRound className="h-4 w-4 shrink-0 opacity-50" />
               <span className="truncate">
-                {selectedOption ? selectedOption.nombre : placeholder}
+                {displayValue || (selectedOption ? selectedOption.nombre : placeholder)}
               </span>
             </div>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -95,11 +125,7 @@ export const SearchableEntitySelect = ({
                 <CommandItem
                   key="empty-option"
                   value=""
-                  onSelect={() => {
-                    onChange("", "");
-                    setOpen(false);
-                    setSearchTerm("");
-                  }}
+                  onSelect={() => handleSelect("", "")}
                 >
                   <span>Sin asignar</span>
                 </CommandItem>
@@ -107,11 +133,7 @@ export const SearchableEntitySelect = ({
                   <CommandItem
                     key={option.id}
                     value={option.nombre}
-                    onSelect={() => {
-                      onChange(option.id, option.nombre);
-                      setSearchTerm("");
-                      setOpen(false);
-                    }}
+                    onSelect={() => handleSelect(option.id, option.nombre)}
                   >
                     <Check
                       className={cn(
