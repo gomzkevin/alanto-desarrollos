@@ -219,6 +219,16 @@ export default function useResourceData({
           ];
           break;
         case 'leads':
+          // Verificamos que las constantes tienen datos
+          console.log("Estado options count:", LEAD_STATUS_OPTIONS.length);
+          console.log("Origen options count:", LEAD_ORIGIN_OPTIONS.length);
+          
+          // Comprobamos si hay subopciones para el estado seleccionado
+          const subestadoOptions = selectedStatus 
+            ? LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] || [] 
+            : [];
+          console.log("Subestado options count:", subestadoOptions.length);
+          
           fieldDefinitions = [
             { name: 'nombre', label: 'Nombre', type: 'text' as FieldType },
             { name: 'email', label: 'Email', type: 'email' as FieldType },
@@ -228,19 +238,19 @@ export default function useResourceData({
               name: 'estado', 
               label: 'Estado', 
               type: 'select' as FieldType, 
-              options: LEAD_STATUS_OPTIONS 
+              options: LEAD_STATUS_OPTIONS.map(option => ({ value: option.value, label: option.label }))
             },
             { 
               name: 'subestado', 
               label: 'Subestado', 
               type: 'select' as FieldType, 
-              options: selectedStatus ? LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] || [] : [] 
+              options: subestadoOptions.map(option => ({ value: option.value, label: option.label }))
             },
             { 
               name: 'origen', 
               label: 'Origen', 
               type: 'select' as FieldType, 
-              options: LEAD_ORIGIN_OPTIONS 
+              options: LEAD_ORIGIN_OPTIONS.map(option => ({ value: option.value, label: option.label }))
             },
             { name: 'interes_en', label: 'Interés en', type: 'text' as FieldType },
             { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' as FieldType },
