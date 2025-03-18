@@ -219,15 +219,32 @@ export default function useResourceData({
           ];
           break;
         case 'leads':
-          // Verificamos que las constantes tienen datos
-          console.log("Estado options count:", LEAD_STATUS_OPTIONS.length);
-          console.log("Origen options count:", LEAD_ORIGIN_OPTIONS.length);
+          // Verificamos que las constantes tienen datos y están en el formato correcto
+          console.log("LEAD_STATUS_OPTIONS raw:", LEAD_STATUS_OPTIONS);
+          
+          // Ensure we have status options
+          if (!LEAD_STATUS_OPTIONS || LEAD_STATUS_OPTIONS.length === 0) {
+            console.error("No status options available!");
+          }
           
           // Comprobamos si hay subopciones para el estado seleccionado
           const subestadoOptions = selectedStatus 
             ? LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] || [] 
             : [];
-          console.log("Subestado options count:", subestadoOptions.length);
+          
+          console.log("Subestado options for status", selectedStatus, ":", subestadoOptions);
+          
+          // Create a properly formatted copy of the options arrays
+          const statusOptions = Array.isArray(LEAD_STATUS_OPTIONS) 
+            ? LEAD_STATUS_OPTIONS 
+            : [];
+            
+          const originOptions = Array.isArray(LEAD_ORIGIN_OPTIONS) 
+            ? LEAD_ORIGIN_OPTIONS 
+            : [];
+          
+          console.log("Formatted status options:", statusOptions);
+          console.log("Formatted origin options:", originOptions);
           
           fieldDefinitions = [
             { name: 'nombre', label: 'Nombre', type: 'text' as FieldType },
@@ -238,19 +255,19 @@ export default function useResourceData({
               name: 'estado', 
               label: 'Estado', 
               type: 'select' as FieldType, 
-              options: LEAD_STATUS_OPTIONS.map(option => ({ value: option.value, label: option.label }))
+              options: statusOptions
             },
             { 
               name: 'subestado', 
               label: 'Subestado', 
               type: 'select' as FieldType, 
-              options: subestadoOptions.map(option => ({ value: option.value, label: option.label }))
+              options: subestadoOptions
             },
             { 
               name: 'origen', 
               label: 'Origen', 
               type: 'select' as FieldType, 
-              options: LEAD_ORIGIN_OPTIONS.map(option => ({ value: option.value, label: option.label }))
+              options: originOptions
             },
             { name: 'interes_en', label: 'Interés en', type: 'text' as FieldType },
             { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' as FieldType },

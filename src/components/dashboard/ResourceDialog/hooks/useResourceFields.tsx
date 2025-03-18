@@ -1,9 +1,8 @@
-
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { FieldDefinition, ResourceType } from '../types';
-import useLeads from '@/hooks/useLeads';
+import useLeads, { LEAD_STATUS_OPTIONS, LEAD_SUBSTATUS_OPTIONS, LEAD_ORIGIN_OPTIONS } from '@/hooks/useLeads';
 
 const ESTADOS_UNIDAD = [
   { value: 'disponible', label: 'Disponible' },
@@ -150,14 +149,34 @@ export const useResourceFields = (resourceType: ResourceType) => {
             { name: 'imagen_url', label: 'Imagen', type: 'image-upload', bucket: 'prototipo-images', folder: 'prototipos' },
           ];
         case 'leads':
+          console.log("Setting lead fields with options:", {
+            status: LEAD_STATUS_OPTIONS,
+            origin: LEAD_ORIGIN_OPTIONS
+          });
+          
           return [
             { name: 'nombre', label: 'Nombre', type: 'text' },
             { name: 'email', label: 'Email', type: 'email' },
             { name: 'telefono', label: 'Teléfono', type: 'text' },
             { name: 'agente', label: 'Agente', type: 'text' },
-            { name: 'estado', label: 'Estado', type: 'select', options: [] },
-            { name: 'subestado', label: 'Subestado', type: 'select', options: [] },
-            { name: 'origen', label: 'Origen', type: 'select', options: [] },
+            { 
+              name: 'estado', 
+              label: 'Estado', 
+              type: 'select', 
+              options: LEAD_STATUS_OPTIONS 
+            },
+            { 
+              name: 'subestado', 
+              label: 'Subestado', 
+              type: 'select', 
+              options: [] // This will be populated dynamically based on selected estado
+            },
+            { 
+              name: 'origen', 
+              label: 'Origen', 
+              type: 'select', 
+              options: LEAD_ORIGIN_OPTIONS 
+            },
             { name: 'interes_en', label: 'Interés en', type: 'text' },
             { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' },
             { name: 'notas', label: 'Notas', type: 'textarea' },
