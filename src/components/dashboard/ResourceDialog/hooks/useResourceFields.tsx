@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,7 +63,8 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
               type: 'select', 
               options: ESTADOS_UNIDAD, 
               required: true, 
-              description: 'Estado actual de la unidad' 
+              description: 'Estado actual de la unidad',
+              placeholder: 'Seleccionar estado...'
             },
             { 
               name: 'nivel', 
@@ -81,7 +83,8 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
               label: 'Comprador', 
               type: 'select', 
               options: leads.map(lead => ({ value: lead.id, label: lead.nombre })), 
-              description: 'Cliente que ha comprado o reservado esta unidad' 
+              description: 'Cliente que ha comprado o reservado esta unidad',
+              placeholder: 'Seleccionar comprador...'
             },
             { 
               name: 'comprador_nombre', 
@@ -94,7 +97,8 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
               label: 'Vendedor', 
               type: 'select', 
               options: vendedores.map(v => ({ value: v.id, label: v.nombre })), 
-              description: 'Agente de ventas asignado a esta unidad' 
+              description: 'Agente de ventas asignado a esta unidad',
+              placeholder: 'Seleccionar vendedor...'
             },
             { 
               name: 'vendedor_nombre', 
@@ -124,7 +128,7 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
             { name: 'moneda', label: 'Moneda', type: 'select', options: [
               { value: 'MXN', label: 'Peso Mexicano (MXN)' },
               { value: 'USD', label: 'Dólar Estadounidense (USD)' }
-            ] },
+            ], placeholder: 'Seleccionar moneda...' },
             { name: 'comision_operador', label: 'Comisión Operador (%)', type: 'number' },
             { name: 'mantenimiento_valor', label: 'Mantenimiento', type: 'number' },
             { name: 'es_mantenimiento_porcentaje', label: 'Mantenimiento es porcentaje', type: 'switch' },
@@ -140,7 +144,7 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
         case 'prototipos':
           return [
             { name: 'nombre', label: 'Nombre', type: 'text' },
-            { name: 'tipo', label: 'Tipo', type: 'select', options: TIPOS_PROPIEDADES },
+            { name: 'tipo', label: 'Tipo', type: 'select', options: TIPOS_PROPIEDADES, placeholder: 'Seleccionar tipo...' },
             { name: 'precio', label: 'Precio', type: 'number' },
             { name: 'superficie', label: 'Superficie (m²)', type: 'number' },
             { name: 'habitaciones', label: 'Habitaciones', type: 'number' },
@@ -153,42 +157,36 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
             { name: 'imagen_url', label: 'Imagen', type: 'image-upload', bucket: 'prototipo-images', folder: 'prototipos' },
           ];
         case 'leads':
-          console.log("Setting lead fields with status:", selectedStatus);
-          console.log("Status options:", LEAD_STATUS_OPTIONS);
-          console.log("Origin options:", LEAD_ORIGIN_OPTIONS);
-          
           // Get substatus options based on the selected status
           const substatusOptions = selectedStatus && LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
             ? LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
             : [];
-            
-          console.log("Substatus options for status", selectedStatus, ":", substatusOptions);
           
           return [
-            { name: 'nombre', label: 'Nombre', type: 'text' },
-            { name: 'email', label: 'Email', type: 'email' },
-            { name: 'telefono', label: 'Teléfono', type: 'text' },
-            { name: 'agente', label: 'Agente', type: 'text' },
+            { name: 'nombre', label: 'Nombre', type: 'text', placeholder: 'Ingrese el nombre completo...' },
+            { name: 'email', label: 'Email', type: 'email', placeholder: 'ejemplo@correo.com' },
+            { name: 'telefono', label: 'Teléfono', type: 'text', placeholder: '+52 1234567890' },
+            { name: 'agente', label: 'Agente', type: 'text', placeholder: 'Nombre del agente asignado...' },
             { 
               name: 'estado', 
               label: 'Estado', 
               type: 'select', 
               options: LEAD_STATUS_OPTIONS,
-              placeholder: 'Seleccione un estado'
+              placeholder: 'Seleccionar estado...'
             },
             { 
               name: 'subestado', 
               label: 'Subestado', 
               type: 'select', 
               options: substatusOptions,
-              placeholder: 'Seleccione un subestado'
+              placeholder: 'Seleccione un subestado...'
             },
             { 
               name: 'origen', 
               label: 'Origen', 
               type: 'select', 
               options: LEAD_ORIGIN_OPTIONS,
-              placeholder: 'Seleccione un origen'
+              placeholder: 'Seleccione un origen...'
             },
             { 
               name: 'interes_en', 
@@ -197,18 +195,39 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
               description: 'Selecciona un desarrollo o prototipo de interés'
             },
             { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' },
-            { name: 'notas', label: 'Notas', type: 'textarea' },
+            { name: 'notas', label: 'Notas', type: 'textarea', placeholder: 'Escriba notas adicionales sobre el prospecto...' },
           ];
         case 'cotizaciones':
           return [
-            { name: 'lead_id', label: 'Lead', type: 'select', options: [] },
-            { name: 'desarrollo_id', label: 'Desarrollo', type: 'select', options: [] },
-            { name: 'prototipo_id', label: 'Prototipo', type: 'select', options: [] },
+            { 
+              name: 'lead_id', 
+              label: 'Lead', 
+              type: 'select', 
+              options: leads.map(lead => ({ 
+                value: lead.id, 
+                label: lead.nombre + (lead.email ? ` (${lead.email})` : lead.telefono ? ` (${lead.telefono})` : '')
+              })),
+              placeholder: 'Seleccionar cliente...'
+            },
+            { 
+              name: 'desarrollo_id', 
+              label: 'Desarrollo', 
+              type: 'select', 
+              options: desarrollos.map(d => ({ value: d.id, label: d.nombre })),
+              placeholder: 'Seleccionar desarrollo...'
+            },
+            { 
+              name: 'prototipo_id', 
+              label: 'Prototipo', 
+              type: 'select', 
+              options: prototipos.map(p => ({ value: p.id, label: p.nombre })),
+              placeholder: 'Seleccionar prototipo...'
+            },
             { name: 'usar_finiquito', label: 'Liquidar con finiquito', type: 'switch' },
-            { name: 'monto_anticipo', label: 'Monto Anticipo', type: 'number' },
-            { name: 'numero_pagos', label: 'Número de Pagos', type: 'number' },
-            { name: 'monto_finiquito', label: 'Monto Finiquito', type: 'number' },
-            { name: 'notas', label: 'Notas', type: 'textarea' },
+            { name: 'monto_anticipo', label: 'Monto Anticipo', type: 'number', placeholder: '0.00' },
+            { name: 'numero_pagos', label: 'Número de Pagos', type: 'number', placeholder: '0' },
+            { name: 'monto_finiquito', label: 'Monto Finiquito', type: 'number', placeholder: '0.00' },
+            { name: 'notas', label: 'Notas', type: 'textarea', placeholder: 'Notas adicionales sobre la cotización...' },
           ];
         default:
           return [];
@@ -216,7 +235,7 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
     };
 
     setFields(getFieldDefinitions());
-  }, [resourceType, leads, vendedores, selectedStatus]);
+  }, [resourceType, leads, vendedores, selectedStatus, desarrollos, prototipos]);
 
   return fields;
 };

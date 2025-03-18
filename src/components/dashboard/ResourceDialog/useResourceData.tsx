@@ -16,16 +16,6 @@ import useLeads, { LEAD_STATUS_OPTIONS, LEAD_SUBSTATUS_OPTIONS, LEAD_ORIGIN_OPTI
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 
-const TIPOS_PROPIEDADES = [
-  { value: 'apartamento', label: 'Apartamento' },
-  { value: 'casa', label: 'Casa' },
-  { value: 'villa', label: 'Villa' },
-  { value: 'terreno', label: 'Terreno' },
-  { value: 'local', label: 'Local comercial' },
-  { value: 'oficina', label: 'Oficina' },
-  { value: 'otro', label: 'Otro' },
-];
-
 export default function useResourceData({
   resourceType,
   resourceId,
@@ -54,6 +44,7 @@ export default function useResourceData({
   const [fields, setFields] = useState<FieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [initialFetchComplete, setInitialFetchComplete] = useState(false);
+  const [prevStatus, setPrevStatus] = useState<string | null>(null);
 
   const { leads } = useLeads();
   const { desarrollos } = useDesarrollos();
@@ -61,6 +52,7 @@ export default function useResourceData({
     desarrolloId: selectedDesarrolloId 
   });
 
+  // Fetch resource data on initial load
   useEffect(() => {
     const fetchResource = async () => {
       setIsLoading(true);
@@ -118,10 +110,9 @@ export default function useResourceData({
               }
             }
             
-            if (resourceType === 'leads') {
-              if (data.estado) {
-                onStatusChange(data.estado);
-              }
+            if (resourceType === 'leads' && data.estado) {
+              onStatusChange(data.estado);
+              setPrevStatus(data.estado);
             }
           }
         }
@@ -154,6 +145,7 @@ export default function useResourceData({
             subestado: 'sin_contactar'
           } as LeadResource);
           onStatusChange('nuevo');
+          setPrevStatus('nuevo');
         } else if (resourceType === 'cotizaciones') {
           setResource({
             lead_id: lead_id || '',
@@ -168,173 +160,29 @@ export default function useResourceData({
       setInitialFetchComplete(true);
     };
 
-    console.log("Status options from LEAD_STATUS_OPTIONS:", LEAD_STATUS_OPTIONS);
-    console.log("Selected status:", selectedStatus);
-    console.log("Substatus options:", selectedStatus ? LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] || [] : []);
-    console.log("Origin options:", LEAD_ORIGIN_OPTIONS);
-
-    const defineFields = () => {
-      let fieldDefinitions: FieldDefinition[] = [];
-
-      switch (resourceType) {
-        case 'desarrollos':
-          fieldDefinitions = [
-            { name: 'nombre', label: 'Nombre', type: 'text' as FieldType, tab: 'general' },
-            { name: 'ubicacion', label: 'Ubicación', type: 'text' as FieldType, tab: 'general' },
-            { name: 'total_unidades', label: 'Total Unidades', type: 'number' as FieldType, tab: 'general' },
-            { name: 'unidades_disponibles', label: 'Unidades Disponibles', type: 'number' as FieldType, tab: 'general' },
-            { name: 'avance_porcentaje', label: 'Avance (%)', type: 'number' as FieldType, tab: 'general' },
-            { name: 'fecha_inicio', label: 'Fecha Inicio', type: 'date' as FieldType, tab: 'general' },
-            { name: 'fecha_entrega', label: 'Fecha Entrega', type: 'date' as FieldType, tab: 'general' },
-            { name: 'descripcion', label: 'Descripción', type: 'textarea' as FieldType, tab: 'general' },
-            { name: 'imagen_url', label: 'Imagen', type: 'image-upload' as FieldType, tab: 'media', bucket: 'prototipo-images', folder: 'desarrollos' },
-            { name: 'amenidades', label: 'Amenidades', type: 'amenities' as FieldType, tab: 'amenidades' },
-            { name: 'moneda', label: 'Moneda', type: 'select' as FieldType, options: [
-              { value: 'MXN', label: 'Peso Mexicano (MXN)' },
-              { value: 'USD', label: 'Dólar Estadounidense (USD)' }
-            ], tab: 'financiero' },
-            { name: 'comision_operador', label: 'Comisión Operador (%)', type: 'number' as FieldType, tab: 'financiero' },
-            { name: 'mantenimiento_valor', label: 'Mantenimiento', type: 'number' as FieldType, tab: 'financiero' },
-            { name: 'es_mantenimiento_porcentaje', label: 'Mantenimiento es porcentaje', type: 'switch' as FieldType, tab: 'financiero' },
-            { name: 'gastos_fijos', label: 'Gastos Fijos', type: 'number' as FieldType, tab: 'financiero' },
-            { name: 'es_gastos_fijos_porcentaje', label: 'Gastos Fijos es porcentaje', type: 'switch' as FieldType, tab: 'financiero' },
-            { name: 'gastos_variables', label: 'Gastos Variables (%)', type: 'number' as FieldType, tab: 'financiero' },
-            { name: 'es_gastos_variables_porcentaje', label: 'Gastos Variables es porcentaje', type: 'switch' as FieldType, tab: 'financiero' },
-            { name: 'impuestos', label: 'Impuestos (%)', type: 'number' as FieldType, tab: 'financiero' },
-            { name: 'es_impuestos_porcentaje', label: 'Impuestos es porcentaje', type: 'switch' as FieldType, tab: 'financiero' },
-            { name: 'adr_base', label: 'ADR Base', type: 'number' as FieldType, tab: 'financiero' },
-            { name: 'ocupacion_anual', label: 'Ocupación Anual (%)', type: 'number' as FieldType, tab: 'financiero' },
-          ];
-          break;
-        case 'prototipos':
-          fieldDefinitions = [
-            { name: 'nombre', label: 'Nombre', type: 'text' as FieldType, tab: 'general' },
-            { name: 'tipo', label: 'Tipo', type: 'select' as FieldType, options: TIPOS_PROPIEDADES, tab: 'general' },
-            { name: 'precio', label: 'Precio', type: 'number' as FieldType, tab: 'general' },
-            { name: 'superficie', label: 'Superficie (m²)', type: 'number' as FieldType, tab: 'general' },
-            { name: 'habitaciones', label: 'Habitaciones', type: 'number' as FieldType, tab: 'general' },
-            { name: 'baños', label: 'Baños', type: 'number' as FieldType, tab: 'general' },
-            { name: 'estacionamientos', label: 'Estacionamientos', type: 'number' as FieldType, tab: 'general' },
-            { name: 'total_unidades', label: 'Total Unidades', type: 'number' as FieldType, tab: 'detalles' },
-            { name: 'unidades_vendidas', label: 'Unidades Vendidas', type: 'number' as FieldType, tab: 'detalles', readOnly: true },
-            { name: 'unidades_con_anticipo', label: 'Unidades con Anticipo', type: 'number' as FieldType, tab: 'detalles', readOnly: true },
-            { name: 'descripcion', label: 'Descripción', type: 'textarea' as FieldType, tab: 'detalles' },
-            { name: 'imagen_url', label: 'Imagen', type: 'image-upload' as FieldType, tab: 'media', bucket: 'prototipo-images', folder: 'prototipos' },
-          ];
-          break;
-        case 'leads':
-          // Verificamos que las constantes tienen datos y están en el formato correcto
-          console.log("LEAD_STATUS_OPTIONS raw:", LEAD_STATUS_OPTIONS);
-          
-          // Ensure we have status options
-          if (!LEAD_STATUS_OPTIONS || LEAD_STATUS_OPTIONS.length === 0) {
-            console.error("No status options available!");
-          }
-          
-          // Comprobamos si hay subopciones para el estado seleccionado
-          const subestadoOptions = selectedStatus 
-            ? LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] || [] 
-            : [];
-          
-          console.log("Subestado options for status", selectedStatus, ":", subestadoOptions);
-          
-          // Create a properly formatted copy of the options arrays
-          const statusOptions = Array.isArray(LEAD_STATUS_OPTIONS) 
-            ? LEAD_STATUS_OPTIONS 
-            : [];
-            
-          const originOptions = Array.isArray(LEAD_ORIGIN_OPTIONS) 
-            ? LEAD_ORIGIN_OPTIONS 
-            : [];
-          
-          console.log("Formatted status options:", statusOptions);
-          console.log("Formatted origin options:", originOptions);
-          
-          fieldDefinitions = [
-            { name: 'nombre', label: 'Nombre', type: 'text' as FieldType },
-            { name: 'email', label: 'Email', type: 'email' as FieldType },
-            { name: 'telefono', label: 'Teléfono', type: 'text' as FieldType },
-            { name: 'agente', label: 'Agente', type: 'text' as FieldType },
-            { 
-              name: 'estado', 
-              label: 'Estado', 
-              type: 'select' as FieldType, 
-              options: statusOptions
-            },
-            { 
-              name: 'subestado', 
-              label: 'Subestado', 
-              type: 'select' as FieldType, 
-              options: subestadoOptions
-            },
-            { 
-              name: 'origen', 
-              label: 'Origen', 
-              type: 'select' as FieldType, 
-              options: originOptions
-            },
-            { name: 'interes_en', label: 'Interés en', type: 'text' as FieldType },
-            { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' as FieldType },
-            { name: 'notas', label: 'Notas', type: 'textarea' as FieldType },
-          ];
-          break;
-        case 'cotizaciones':
-          fieldDefinitions = [
-            { name: 'lead_id', label: 'Lead', type: 'select' as FieldType, options: leads.map(lead => ({ value: lead.id, label: `${lead.nombre} ${lead.email ? `(${lead.email})` : lead.telefono ? `(${lead.telefono})` : ''}` })) },
-            { name: 'desarrollo_id', label: 'Desarrollo', type: 'select' as FieldType, options: desarrollos.map(desarrollo => ({ value: desarrollo.id, label: desarrollo.nombre })) },
-            { name: 'prototipo_id', label: 'Prototipo', type: 'select' as FieldType, options: prototipos.map(prototipo => ({ value: prototipo.id, label: prototipo.nombre })) },
-            { name: 'usar_finiquito', label: 'Liquidar con finiquito', type: 'switch' as FieldType },
-            { name: 'monto_anticipo', label: 'Monto Anticipo', type: 'number' as FieldType },
-            { name: 'numero_pagos', label: 'Número de Pagos', type: 'number' as FieldType },
-            ...(usarFiniquito ? [{ name: 'monto_finiquito', label: 'Monto Finiquito', type: 'number' as FieldType }] : []),
-            { name: 'notas', label: 'Notas', type: 'textarea' as FieldType },
-          ];
-          break;
-        case 'unidades':
-          fieldDefinitions = [
-            { name: 'numero', label: 'Número/Identificador', type: 'text' as FieldType },
-            { name: 'estado', label: 'Estado', type: 'select' as FieldType, options: [
-              { value: 'disponible', label: 'Disponible' },
-              { value: 'reservada', label: 'Reservada' },
-              { value: 'vendida', label: 'Vendida' }
-            ]},
-            { name: 'nivel', label: 'Nivel/Piso', type: 'text' as FieldType },
-            { name: 'precio_venta', label: 'Precio', type: 'number' as FieldType },
-            { name: 'fecha_venta', label: 'Fecha de Venta', type: 'date' as FieldType },
-            { name: 'comprador_id', label: 'Comprador', type: 'select' as FieldType, options: leads.map(lead => ({ value: lead.id, label: lead.nombre })) },
-          ];
-          break;
-        default:
-          fieldDefinitions = [];
-          break;
-      }
-
-      console.log("Fields defined for resourceType:", resourceType, fieldDefinitions);
-      setFields(fieldDefinitions);
-    };
-
     fetchResource();
-    defineFields();
-  }, [resourceId, resourceType, toast, leads, desarrollos, prototipos, usarFiniquito, desarrolloId, selectedDesarrolloId, lead_id, selectedStatus, onStatusChange, onAmenitiesChange]);
+  }, [resourceId, resourceType, toast, desarrolloId, selectedDesarrolloId, lead_id, onStatusChange, onAmenitiesChange]);
 
-  // Ensure we don't reset the resource when selectedStatus changes after initial load
+  // Handle changes to status for leads
   useEffect(() => {
-    if (initialFetchComplete && resourceType === 'leads' && !resourceId && selectedStatus) {
-      // Only update the estado and subestado fields based on the new status, preserve other fields
+    if (initialFetchComplete && resourceType === 'leads' && selectedStatus && prevStatus !== selectedStatus) {
+      setPrevStatus(selectedStatus);
+      
       setResource(prev => {
         if (!prev) return prev;
         
-        console.log("Preserving form data while updating status to:", selectedStatus);
-        console.log("Current form data:", prev);
+        console.log("Updating status from", prevStatus, "to", selectedStatus);
+        console.log("Current resource data:", prev);
         
+        // Preserve all existing form data, only update estado and reset subestado
         return {
           ...prev,
           estado: selectedStatus,
-          subestado: ''
+          subestado: '' // Reset subestado when estado changes
         };
       });
     }
-  }, [selectedStatus, initialFetchComplete, resourceType, resourceId]);
+  }, [selectedStatus, initialFetchComplete, resourceType, prevStatus]);
 
   return { resource, setResource, fields, isLoading };
 }

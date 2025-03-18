@@ -92,7 +92,15 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
   // Handle form change
   const handleChange = (values: FormValues) => {
     if (resource) {
-      setResource({ ...resource, ...values });
+      // Create a copy of the current resource
+      const updatedResource = { ...resource };
+      
+      // Update only the fields that have changed
+      Object.keys(values).forEach(key => {
+        updatedResource[key] = values[key];
+      });
+      
+      setResource(updatedResource);
     }
   };
 
@@ -101,32 +109,36 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     console.log("Select changed:", name, value);
     
     if (name === 'estado' && resourceType === 'leads') {
+      // Update the selected status
       setSelectedStatus(value);
       
-      // Preserve all existing values when changing status
+      // When changing status, preserve all form data and just update the status
       if (resource) {
-        setResource({
+        const updatedResource = {
           ...resource,
           estado: value,
-          // Only reset substatus which depends on selected status
+          // Only reset subestado which depends on selected status
           subestado: ''
-        });
+        };
+        setResource(updatedResource);
       }
     } else if (name === 'desarrollo_id' && resourceType === 'cotizaciones') {
       setSelectedDesarrolloId(value);
       
       if (resource) {
-        setResource({
+        const updatedResource = {
           ...resource,
           [name]: value
-        });
+        };
+        setResource(updatedResource);
       }
     } else if (resource) {
       // For any other field, just update that specific field
-      setResource({
+      const updatedResource = {
         ...resource,
         [name]: value
-      });
+      };
+      setResource(updatedResource);
     }
   };
 
@@ -137,17 +149,22 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     }
     
     if (resource) {
-      setResource({
+      const updatedResource = {
         ...resource,
         [name]: checked
-      });
+      };
+      setResource(updatedResource);
     }
   };
 
   // Handle client selection
   const handleLeadSelect = (leadId: string, leadName: string) => {
     if (resource) {
-      setResource({ ...resource, lead_id: leadId });
+      const updatedResource = {
+        ...resource, 
+        lead_id: leadId
+      };
+      setResource(updatedResource);
     }
   };
 
@@ -162,7 +179,11 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
       const imageUrl = await uploadResourceImage(file);
       
       if (imageUrl && resource) {
-        setResource({ ...resource, imagen_url: imageUrl });
+        const updatedResource = {
+          ...resource,
+          imagen_url: imageUrl
+        };
+        setResource(updatedResource);
       }
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -205,7 +226,11 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
 
   const handleDateChange = (name: string, date: Date | undefined) => {
     if (resource && date) {
-      setResource({ ...resource, [name]: date.toISOString() });
+      const updatedResource = {
+        ...resource,
+        [name]: date.toISOString()
+      };
+      setResource(updatedResource);
     }
   };
 

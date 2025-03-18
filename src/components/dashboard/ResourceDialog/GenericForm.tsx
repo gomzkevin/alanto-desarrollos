@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 import { AmenitiesSelector } from '../AmenitiesSelector';
 import { FieldDefinition, FormValues } from './types';
 import ImageUploader from '../ImageUploader';
@@ -55,9 +56,6 @@ const GenericForm = ({
   const [activeTab, setActiveTab] = useState<string>('general');
   const [tabs, setTabs] = useState<{ id: string; label: string }[]>([]);
   
-  console.log("GenericForm render with fields:", JSON.stringify(fields, null, 2));
-  console.log("GenericForm values:", values);
-
   // Function to check if options array has items
   const hasOptions = (options?: { label: string; value: string }[]) => {
     return Array.isArray(options) && options.length > 0;
@@ -98,13 +96,10 @@ const GenericForm = ({
   });
 
   useEffect(() => {
-    console.log("Resetting form with values:", values);
     form.reset(values as any);
   }, [form, values]);
 
   const onFormChange = (name: string, value: any) => {
-    console.log("Form change:", name, value);
-    
     // Create new object with just the changed field
     const updatedValues = { [name]: value };
     onChange(updatedValues);
@@ -199,7 +194,6 @@ const GenericForm = ({
                     value={formField.value?.toString() || ''}
                     disabled={field.readOnly}
                     onValueChange={(value) => {
-                      console.log(`Select change for ${field.name}:`, value);
                       formField.onChange(value);
                       if (!field.readOnly) {
                         onFormChange(field.name, value);
