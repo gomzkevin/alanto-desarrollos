@@ -5,6 +5,15 @@ import { supabase } from '@/integrations/supabase/client';
 import useDesarrolloImagenes from '@/hooks/useDesarrolloImagenes';
 import { ResourceType, FormValues, PrototipoResource, DesarrolloResource, LeadResource, CotizacionResource } from './types';
 
+interface ClientConfig {
+  isExistingClient: boolean;
+  newClientData: {
+    nombre: string;
+    email: string;
+    telefono: string;
+  };
+}
+
 export default function useResourceActions({
   resourceType,
   resourceId,
@@ -12,7 +21,8 @@ export default function useResourceActions({
   onClose,
   onSave,
   onSuccess,
-  selectedAmenities
+  selectedAmenities,
+  clientConfig
 }: {
   resourceType: ResourceType;
   resourceId?: string;
@@ -21,29 +31,27 @@ export default function useResourceActions({
   onSave?: () => void;
   onSuccess?: () => void;
   selectedAmenities: string[];
+  clientConfig?: ClientConfig;
 }) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const { uploadImage } = useDesarrolloImagenes(
+  const { uploadImage: desarrolloUploadImage } = useDesarrolloImagenes(
     resourceType === 'desarrollos' && resourceId ? resourceId : undefined
   );
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    
-    const file = files[0];
+  const handleImageUpload = async (file: File): Promise<string | null> => {
     setUploading(true);
     
     try {
       if (resourceType === 'desarrollos' && resourceId) {
-        await uploadImage(file);
+        await desarrolloUploadImage(file);
         toast({
           title: 'Imagen subida',
           description: 'La imagen ha sido subida exitosamente',
         });
+        return null; // No direct URL returned for desarrollo images
       } else {
         const fileName = `${Date.now()}-${file.name}`;
         const { data: uploadData, error: uploadError } = await supabase.storage

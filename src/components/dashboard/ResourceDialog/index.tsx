@@ -16,6 +16,10 @@ interface ResourceDialogProps {
   desarrolloId?: string;
   lead_id?: string;
   prototipo_id?: string;
+  // Added buttonText prop
+  buttonText?: string;
+  buttonIcon?: React.ReactNode;
+  buttonVariant?: string;
 }
 
 const ResourceDialog: React.FC<ResourceDialogProps> = ({
@@ -60,12 +64,16 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
   const fields = useResourceFields(resourceType, selectedStatus);
 
   // Custom hook for resource actions (save, delete)
-  const { saveResource, uploadImage } = useResourceActions({
+  const { saveResource, handleImageUpload: uploadImage } = useResourceActions({
     resourceType,
     resourceId,
     onSuccess,
-    isExistingClient,
-    newClientData
+    selectedAmenities,
+    // Pass isExistingClient and newClientData as part of a client config object
+    clientConfig: {
+      isExistingClient,
+      newClientData
+    }
   });
 
   useEffect(() => {

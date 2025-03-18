@@ -122,18 +122,16 @@ export interface UnidadResource extends FormValues {
   vendedor_nombre?: string;
 }
 
-export interface AdminResourceDialogProps {
+export interface ResourceDialogProps {
   open?: boolean;
   onClose?: () => void;
   resourceType: ResourceType;
   resourceId?: string;
-  onSave?: () => void;
-  buttonText?: string;
-  buttonIcon?: React.ReactNode;
-  buttonVariant?: string;
   onSuccess?: () => void;
   desarrolloId?: string;
   lead_id?: string;
   prototipo_id?: string;
-  defaultValues?: Record<string, any>;
+  buttonText?: string;
+  buttonIcon?: React.ReactNode;
+  buttonVariant?: string;
 }
