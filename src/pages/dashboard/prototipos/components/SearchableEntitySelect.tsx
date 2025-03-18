@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { Label } from "@/components/ui/label";
 import { 
   Command,
   CommandEmpty,
@@ -25,7 +24,7 @@ interface EntityOption {
 }
 
 interface SearchableEntitySelectProps {
-  label: string;
+  label?: string;
   value: string;
   onChange: (value: string, name?: string) => void;
   placeholder: string;
@@ -51,8 +50,7 @@ export const SearchableEntitySelect = ({
   const selectedOption = options.find(option => option.id === value);
   
   return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
+    <div>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button

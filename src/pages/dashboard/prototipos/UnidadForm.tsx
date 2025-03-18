@@ -78,23 +78,29 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
               {...register('precio_venta')}
             />
             
-            <SearchableEntitySelect
-              label="Comprador"
-              value={watch('comprador_id') || ''}
-              onChange={handleLeadChange}
-              placeholder="Buscar cliente..."
-              options={filteredLeads}
-              emptyMessage="No se encontraron clientes con ese nombre."
-            />
+            <div className="space-y-2">
+              <label className="font-medium text-sm">Comprador</label>
+              <SearchableEntitySelect
+                label="Comprador"
+                value={watch('comprador_id') || ''}
+                onChange={handleLeadChange}
+                placeholder="Buscar cliente..."
+                options={filteredLeads}
+                emptyMessage="No se encontraron clientes con ese nombre."
+              />
+            </div>
             
-            <SearchableEntitySelect
-              label="Vendedor"
-              value={watch('vendedor_id') || ''}
-              onChange={handleVendedorChange}
-              placeholder="Buscar vendedor..."
-              options={filteredVendedores}
-              emptyMessage="No se encontraron vendedores con ese nombre."
-            />
+            <div className="space-y-2">
+              <label className="font-medium text-sm">Vendedor</label>
+              <SearchableEntitySelect
+                label="Vendedor"
+                value={watch('vendedor_id') || ''}
+                onChange={handleVendedorChange}
+                placeholder="Buscar vendedor..."
+                options={filteredVendedores}
+                emptyMessage="No se encontraron vendedores con ese nombre."
+              />
+            </div>
             
             <DatePickerField
               label="Fecha de Venta/Apartado"
