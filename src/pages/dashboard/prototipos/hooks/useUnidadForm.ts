@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { formatCurrency } from '@/lib/utils';
 
 interface UseUnidadFormProps {
@@ -27,9 +27,11 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
   // State to track the formatted price display
   const [precioFormateado, setPrecioFormateado] = useState('');
   
-  // Initialize form with unidad data if editing
+  // Initialize form with unidad data if editing - with cleanup on unmount
   useEffect(() => {
-    if (unidad) {
+    let isMounted = true;
+    
+    if (unidad && isMounted) {
       // Set the raw form data
       setFormData({
         numero: unidad.numero || '',
@@ -44,14 +46,16 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
       });
       
       // Format the price for display
-      if (unidad.precio_venta) {
+      if (unidad.precio_venta && isMounted) {
         setPrecioFormateado(formatCurrency(unidad.precio_venta));
       }
     }
+    
+    return () => { isMounted = false; };
   }, [unidad]);
   
-  // Handle input changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  // Handle input changes with stable callback
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
     // Special handling for precio_venta field to format the display
@@ -92,13 +96,14 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
       ...prev,
       [name]: value
     }));
-  };
+  }, []);
   
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Handle form submission with stable callback
+  const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     onSubmit(formData);
-  };
+  }, [formData, onSubmit]);
   
   return {
     formData,

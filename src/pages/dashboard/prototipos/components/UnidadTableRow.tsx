@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { TableRow, TableCell } from "@/components/ui/table";
 import StatusBadge from './StatusBadge';
 import UnidadActions from './UnidadActions';
@@ -11,7 +11,7 @@ interface UnidadTableRowProps {
   onDelete: (unidad: any) => void;
 }
 
-export const UnidadTableRow = ({ unidad, onEdit, onDelete }: UnidadTableRowProps) => {
+export const UnidadTableRow = memo(({ unidad, onEdit, onDelete }: UnidadTableRowProps) => {
   return (
     <TableRow key={unidad.id}>
       <TableCell className="font-medium">{unidad.numero}</TableCell>
@@ -38,6 +38,8 @@ export const UnidadTableRow = ({ unidad, onEdit, onDelete }: UnidadTableRowProps
       </TableCell>
     </TableRow>
   );
-};
+});
+
+UnidadTableRow.displayName = 'UnidadTableRow';
 
 export default UnidadTableRow;

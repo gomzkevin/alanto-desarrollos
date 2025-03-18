@@ -34,8 +34,8 @@ export const UnidadForm = ({
     setFormData
   } = useUnidadForm({ unidad, onSubmit, onCancel });
   
-  // Handle lead selection
-  const handleLeadSelect = (lead: any) => {
+  // Handle lead selection - cleanup to prevent stale references
+  const handleLeadSelect = React.useCallback((lead: any) => {
     if (!lead) return;
     
     setFormData(prev => ({
@@ -43,10 +43,10 @@ export const UnidadForm = ({
       comprador_id: lead.id,
       comprador_nombre: lead.nombre
     }));
-  };
+  }, [setFormData]);
   
-  // Handle vendedor selection
-  const handleVendedorSelect = (vendedor: any) => {
+  // Handle vendedor selection - cleanup to prevent stale references
+  const handleVendedorSelect = React.useCallback((vendedor: any) => {
     if (!vendedor) return;
     
     setFormData(prev => ({
@@ -54,7 +54,7 @@ export const UnidadForm = ({
       vendedor_id: vendedor.id,
       vendedor_nombre: vendedor.nombre
     }));
-  };
+  }, [setFormData]);
   
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -128,7 +128,6 @@ export const UnidadForm = ({
           onChange={handleChange}
           placeholder="Ej. $1,500,000"
           className="font-medium"
-          formatCurrency
           disabled={isSubmitting}
         />
       </div>
@@ -185,7 +184,7 @@ export const UnidadForm = ({
           type="submit"
           disabled={!formData.numero || isSubmitting}
         >
-          {isSubmitting ? 'Guardando...' : (unidad ? 'Actualizar' : 'Crear')}
+          {isSubmitting ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
         </Button>
       </div>
     </form>
