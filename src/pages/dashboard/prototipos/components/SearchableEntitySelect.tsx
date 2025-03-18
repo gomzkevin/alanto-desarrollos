@@ -57,7 +57,7 @@ export const SearchableEntitySelect = ({
   // Update the search term when a value is selected externally
   useEffect(() => {
     if (selectedOption && !searchTerm) {
-      setSearchTerm(selectedOption.nombre);
+      setSearchTerm("");
     }
   }, [selectedOption, searchTerm]);
   
@@ -109,8 +109,8 @@ export const SearchableEntitySelect = ({
                     value={option.nombre}
                     onSelect={() => {
                       onChange(option.id, option.nombre);
+                      setSearchTerm("");
                       setOpen(false);
-                      setSearchTerm(option.nombre);
                     }}
                   >
                     <Check

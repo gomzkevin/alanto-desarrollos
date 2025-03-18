@@ -59,7 +59,8 @@ export const useUnidades = (params?: UseUnidadesParams) => {
     queryFn: fetchUnidades,
     enabled: !!prototipoId,
     staleTime: 1000, // Consider data stale after 1 second
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    refetchInterval: 3000  // Auto-refresh every 3 seconds
   });
 
   return {

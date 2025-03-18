@@ -29,6 +29,13 @@ export const createUnidad = async (unidadData: any) => {
 export const updateUnidad = async ({ id, ...unidadData }: { id: string; [key: string]: any }) => {
   console.log('Updating unidad:', id, 'with data:', unidadData);
   
+  // Format precio_venta if it's a string with currency formatting
+  if (typeof unidadData.precio_venta === 'string') {
+    if (unidadData.precio_venta.includes('$') || unidadData.precio_venta.includes(',')) {
+      unidadData.precio_venta = parseFloat(unidadData.precio_venta.replace(/[$,]/g, ''));
+    }
+  }
+  
   const { data, error } = await supabase
     .from('unidades')
     .update(unidadData)
@@ -153,25 +160,24 @@ export const useUpdateUnidad = (prototipoId?: string) => {
   
   return useMutation({
     mutationFn: updateUnidad,
-    onSuccess: (data) => {
+    onSuccess: () => {
       if (prototipoId) {
         console.log('Successfully updated unidad, invalidating queries');
         
-        // Invalidate all related queries - force refetch by passing exact: false
+        // Force refetch all related queries
         queryClient.invalidateQueries({ 
           queryKey: ['unidades', prototipoId],
-          exact: false,
-          refetchType: 'all'
+          refetchType: 'all' 
         });
         
         queryClient.invalidateQueries({ 
           queryKey: ['prototipo', prototipoId],
-          exact: false
+          refetchType: 'all'
         });
         
         queryClient.invalidateQueries({ 
           queryKey: ['prototipos'],
-          exact: false
+          refetchType: 'all'
         });
         
         // Update counts
@@ -193,21 +199,20 @@ export const useDeleteUnidad = (prototipoId?: string) => {
       if (prototipoId) {
         console.log('Successfully deleted unidad, invalidating queries');
         
-        // Invalidate all related queries
+        // Force refetch all related queries
         queryClient.invalidateQueries({ 
           queryKey: ['unidades', prototipoId],
-          exact: false,
           refetchType: 'all'
         });
         
         queryClient.invalidateQueries({ 
           queryKey: ['prototipo', prototipoId],
-          exact: false
+          refetchType: 'all'
         });
         
         queryClient.invalidateQueries({ 
           queryKey: ['prototipos'],
-          exact: false
+          refetchType: 'all'
         });
         
         // Update counts

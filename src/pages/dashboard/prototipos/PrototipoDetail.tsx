@@ -36,7 +36,7 @@ const PrototipoDetail = () => {
         console.log('Periodic refresh of unidades');
         refetchUnidades();
       }
-    }, 5000); // Refresh every 5 seconds
+    }, 3000); // Refresh every 3 seconds
     
     return () => clearInterval(intervalId);
   }, [id, refetchUnidades]);
@@ -44,8 +44,11 @@ const PrototipoDetail = () => {
   // Also trigger refetch when dialogs are closed
   useEffect(() => {
     if (!openAddUnidadDialog && !openEditDialog) {
-      refetchUnidades();
-      refetch();
+      setTimeout(() => {
+        console.log('Dialog closed, refreshing data');
+        refetchUnidades();
+        refetch();
+      }, 500);
     }
   }, [openAddUnidadDialog, openEditDialog, refetchUnidades, refetch]);
   
@@ -72,7 +75,9 @@ const PrototipoDetail = () => {
       });
       
       // Force refresh everything
-      handleRefresh();
+      setTimeout(() => {
+        handleRefresh();
+      }, 500);
     } catch (error) {
       console.error('Error al generar unidades:', error);
       toast({
@@ -163,9 +168,17 @@ const PrototipoDetail = () => {
         open={openEditDialog}
         onClose={() => {
           setOpenEditDialog(false);
-          setTimeout(handleRefresh, 500);
+          // Wait before refreshing
+          setTimeout(() => {
+            handleRefresh();
+          }, 500);
         }}
-        onSuccess={handleRefresh}
+        onSuccess={() => {
+          // Wait before refreshing
+          setTimeout(() => {
+            handleRefresh();
+          }, 500);
+        }}
       />
       
       <AdminResourceDialog 
@@ -173,9 +186,17 @@ const PrototipoDetail = () => {
         open={openAddUnidadDialog}
         onClose={() => {
           setOpenAddUnidadDialog(false);
-          setTimeout(handleRefresh, 500);
+          // Wait before refreshing
+          setTimeout(() => {
+            handleRefresh();
+          }, 500);
         }}
-        onSuccess={handleRefresh}
+        onSuccess={() => {
+          // Wait before refreshing
+          setTimeout(() => {
+            handleRefresh();
+          }, 500);
+        }}
         prototipo_id={id}
       />
     </DashboardLayout>

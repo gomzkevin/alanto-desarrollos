@@ -51,19 +51,26 @@ export const useUnidadTable = ({
     };
   }, []);
 
+  // Helper function to normalize price
+  const normalizePrice = (price: any): number | undefined => {
+    if (price === undefined || price === null) return undefined;
+    
+    if (typeof price === 'string') {
+      // Remove currency symbols and commas
+      return parseFloat(price.replace(/[$,]/g, ''));
+    }
+    
+    return Number(price);
+  };
+
   const handleAddUnidad = useCallback(async (data: any) => {
     try {
-      // Convert price from string to number if needed
-      const precioVenta = typeof data.precio_venta === 'string' && data.precio_venta.includes('$')
-        ? parseFloat(data.precio_venta.replace(/[$,]/g, ''))
-        : data.precio_venta;
-
       await createUnidad({
         prototipo_id: prototipo.id,
         numero: data.numero,
         estado: data.estado,
         nivel: data.nivel,
-        precio_venta: precioVenta,
+        precio_venta: normalizePrice(data.precio_venta),
         comprador_id: data.comprador_id,
         comprador_nombre: data.comprador_nombre,
         vendedor_id: data.vendedor_id,
@@ -71,13 +78,18 @@ export const useUnidadTable = ({
         fecha_venta: data.fecha_venta
       });
       
+      // First close the dialog
+      setIsAddDialogOpen(false);
+      
       toast({
         title: "Unidad creada",
         description: "La unidad ha sido creada exitosamente"
       });
       
-      setIsAddDialogOpen(false);
-      await refetch();
+      // Wait a moment before refreshing to avoid freezing
+      setTimeout(() => {
+        refetch();
+      }, 500);
     } catch (error: any) {
       console.error("Error creating unidad:", error);
       toast({
@@ -94,18 +106,15 @@ export const useUnidadTable = ({
     try {
       // Make sure we close the dialog first before potentially causing any state update issues
       setIsEditDialogOpen(false);
-      
-      // Convert price from string to number if needed
-      const precioVenta = typeof data.precio_venta === 'string' && data.precio_venta.includes('$')
-        ? parseFloat(data.precio_venta.replace(/[$,]/g, ''))
-        : data.precio_venta;
+      const unidadId = currentUnidad.id;
+      setCurrentUnidad(null);
       
       await updateUnidad({
-        id: currentUnidad.id,
+        id: unidadId,
         numero: data.numero,
         estado: data.estado,
         nivel: data.nivel,
-        precio_venta: precioVenta,
+        precio_venta: normalizePrice(data.precio_venta),
         comprador_id: data.comprador_id,
         comprador_nombre: data.comprador_nombre,
         vendedor_id: data.vendedor_id,
@@ -118,11 +127,10 @@ export const useUnidadTable = ({
         description: "La unidad ha sido actualizada exitosamente"
       });
       
-      setCurrentUnidad(null);
-      // Wait a brief moment before refreshing to avoid race conditions
+      // Wait a bit before refreshing to avoid race conditions
       setTimeout(() => {
         refetch();
-      }, 100);
+      }, 500);
     } catch (error: any) {
       console.error("Error updating unidad:", error);
       toast({
@@ -139,19 +147,20 @@ export const useUnidadTable = ({
     try {
       // Close dialog first
       setIsDeleteDialogOpen(false);
+      const unidadId = currentUnidad.id;
+      setCurrentUnidad(null);
       
-      await deleteUnidad(currentUnidad.id);
+      await deleteUnidad(unidadId);
       
       toast({
         title: "Unidad eliminada",
         description: "La unidad ha sido eliminada exitosamente"
       });
       
-      setCurrentUnidad(null);
-      // Wait a brief moment before refreshing
+      // Wait before refreshing
       setTimeout(() => {
         refetch();
-      }, 100);
+      }, 500);
     } catch (error: any) {
       console.error("Error deleting unidad:", error);
       toast({

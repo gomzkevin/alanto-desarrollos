@@ -31,6 +31,25 @@ export const UnidadDialogs = ({
   handleEditUnidad,
   handleDeleteUnidad
 }: UnidadDialogsProps) => {
+  // Handle form submission with a delay to avoid UI freezing
+  const handleAddSubmit = (data: any) => {
+    // Close dialog first
+    setIsAddDialogOpen(false);
+    // Process the data after a small delay
+    setTimeout(() => {
+      handleAddUnidad(data);
+    }, 100);
+  };
+  
+  const handleEditSubmit = (data: any) => {
+    // Close dialog first
+    closeEditDialog();
+    // Process the data after a small delay
+    setTimeout(() => {
+      handleEditUnidad(data);
+    }, 100);
+  };
+
   return (
     <>
       {/* Add Unidad Dialog */}
@@ -39,7 +58,7 @@ export const UnidadDialogs = ({
           <DialogTitle>Agregar Unidad</DialogTitle>
           <DialogDescription>Ingresa los datos de la nueva unidad</DialogDescription>
           <UnidadForm 
-            onSubmit={handleAddUnidad}
+            onSubmit={handleAddSubmit}
             onCancel={() => setIsAddDialogOpen(false)}
             leads={leads}
           />
@@ -54,7 +73,7 @@ export const UnidadDialogs = ({
           {currentUnidad && (
             <UnidadForm 
               unidad={currentUnidad}
-              onSubmit={handleEditUnidad}
+              onSubmit={handleEditSubmit}
               onCancel={closeEditDialog}
               leads={leads}
             />
