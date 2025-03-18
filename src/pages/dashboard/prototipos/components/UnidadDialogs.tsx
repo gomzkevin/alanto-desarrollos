@@ -31,23 +31,21 @@ export const UnidadDialogs = ({
   handleEditUnidad,
   handleDeleteUnidad
 }: UnidadDialogsProps) => {
-  // Handle form submission with a delay to avoid UI freezing
+  // Cerramos el diálogo antes de procesar los datos
   const handleAddSubmit = (data: any) => {
-    // Close dialog first
     setIsAddDialogOpen(false);
-    // Process the data after a small delay
+    // Pequeño retraso para asegurar que el diálogo se cierre primero
     setTimeout(() => {
       handleAddUnidad(data);
-    }, 100);
+    }, 300);
   };
   
   const handleEditSubmit = (data: any) => {
-    // Close dialog first
     closeEditDialog();
-    // Process the data after a small delay
+    // Pequeño retraso para asegurar que el diálogo se cierre primero
     setTimeout(() => {
       handleEditUnidad(data);
-    }, 100);
+    }, 300);
   };
 
   return (

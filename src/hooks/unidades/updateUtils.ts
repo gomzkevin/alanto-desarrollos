@@ -11,20 +11,43 @@ export const updatePrototipoUnitCounts = async (
   queryClient: QueryClient
 ) => {
   try {
+    console.log(`Updating counts for prototipo: ${prototipoId}`);
     const counts = await countUnidadesByStatus(prototipoId);
+    console.log(`Count results:`, counts);
 
-    await supabase
+    const { data, error } = await supabase
       .from('prototipos')
       .update({
         unidades_disponibles: counts.disponibles,
         unidades_vendidas: counts.vendidas,
         unidades_con_anticipo: counts.con_anticipo
       })
-      .eq('id', prototipoId);
+      .eq('id', prototipoId)
+      .select();
+
+    if (error) {
+      console.error('Error updating prototipo unit counts:', error);
+      throw error;
+    }
+
+    console.log(`Updated prototipo ${prototipoId} with counts:`, {
+      disponibles: counts.disponibles,
+      vendidas: counts.vendidas,
+      con_anticipo: counts.con_anticipo
+    });
 
     // After updating the prototipo, invalidate its cache
-    queryClient.invalidateQueries({ queryKey: ['prototipos'] });
-    queryClient.invalidateQueries({ queryKey: ['prototipo', prototipoId] });
+    setTimeout(() => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['prototipos'],
+        refetchType: 'all'
+      });
+      
+      queryClient.invalidateQueries({ 
+        queryKey: ['prototipo', prototipoId],
+        refetchType: 'all'
+      });
+    }, 300);
 
     // Also update the desarrollo unit counts
     const { data: prototipo } = await supabase
@@ -36,8 +59,11 @@ export const updatePrototipoUnitCounts = async (
     if (prototipo && prototipo.desarrollo_id) {
       await updateDesarrolloUnitCounts(prototipo.desarrollo_id, queryClient);
     }
+    
+    return data;
   } catch (error) {
     console.error('Error updating prototipo unit counts:', error);
+    throw error;
   }
 };
 
@@ -49,31 +75,69 @@ export const updateDesarrolloUnitCounts = async (
   queryClient: QueryClient
 ) => {
   try {
+    console.log(`Updating counts for desarrollo: ${desarrolloId}`);
+    
     // Get all prototipos for this desarrollo
-    const { data: prototipos } = await supabase
+    const { data: prototipos, error: prototiposError } = await supabase
       .from('prototipos')
       .select('unidades_disponibles, total_unidades')
       .eq('desarrollo_id', desarrolloId);
 
-    if (!prototipos) return;
+    if (prototiposError) {
+      console.error('Error fetching prototipos for desarrollo:', prototiposError);
+      throw prototiposError;
+    }
+
+    if (!prototipos || prototipos.length === 0) {
+      console.log(`No prototipos found for desarrollo ${desarrolloId}`);
+      return;
+    }
 
     // Calculate total and available units
     const totalUnidades = prototipos.reduce((sum, p) => sum + (p.total_unidades || 0), 0);
     const unidadesDisponibles = prototipos.reduce((sum, p) => sum + (p.unidades_disponibles || 0), 0);
+    
+    console.log(`Calculated for desarrollo ${desarrolloId}:`, {
+      totalUnidades,
+      unidadesDisponibles
+    });
 
     // Update the desarrollo
-    await supabase
+    const { data, error } = await supabase
       .from('desarrollos')
       .update({
         total_unidades: totalUnidades,
         unidades_disponibles: unidadesDisponibles
       })
-      .eq('id', desarrolloId);
+      .eq('id', desarrolloId)
+      .select();
+
+    if (error) {
+      console.error('Error updating desarrollo unit counts:', error);
+      throw error;
+    }
+
+    console.log(`Updated desarrollo ${desarrolloId} with counts:`, {
+      totalUnidades,
+      unidadesDisponibles
+    });
 
     // Invalidate desarrollo cache
-    queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
-    queryClient.invalidateQueries({ queryKey: ['desarrollo', desarrolloId] });
+    setTimeout(() => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['desarrollos'],
+        refetchType: 'all'
+      });
+      
+      queryClient.invalidateQueries({ 
+        queryKey: ['desarrollo', desarrolloId],
+        refetchType: 'all'
+      });
+    }, 300);
+    
+    return data;
   } catch (error) {
     console.error('Error updating desarrollo unit counts:', error);
+    throw error;
   }
 };

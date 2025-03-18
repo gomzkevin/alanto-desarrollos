@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -19,6 +19,7 @@ const PrototipoDetail = () => {
   const [openAddUnidadDialog, setOpenAddUnidadDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const { 
     unidades, 
@@ -29,14 +30,40 @@ const PrototipoDetail = () => {
   
   const unitCounts = useUnitCounts(unidades);
   
+  // Función para refrescar todos los datos
+  const handleRefresh = useCallback(() => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    console.log('Manual refresh triggered');
+    
+    // Primero refrescamos las unidades
+    refetchUnidades().then(() => {
+      // Luego refrescamos el prototipo
+      refetch().then(() => {
+        console.log('Data refresh completed');
+        setRefreshTrigger(prev => prev + 1);
+        setIsRefreshing(false);
+      }).catch(error => {
+        console.error('Error refreshing prototipo:', error);
+        setIsRefreshing(false);
+      });
+    }).catch(error => {
+      console.error('Error refreshing unidades:', error);
+      setIsRefreshing(false);
+    });
+  }, [refetch, refetchUnidades, isRefreshing]);
+  
   // Trigger refetch of unidades periodically if component is mounted
   useEffect(() => {
+    if (!id) return;
+    
     const intervalId = setInterval(() => {
-      if (id) {
-        console.log('Periodic refresh of unidades');
-        refetchUnidades();
-      }
-    }, 3000); // Refresh every 3 seconds
+      console.log('Periodic refresh of unidades');
+      refetchUnidades().catch(err => {
+        console.error('Error in periodic refresh:', err);
+      });
+    }, 5000); // Refresh every 5 seconds
     
     return () => clearInterval(intervalId);
   }, [id, refetchUnidades]);
@@ -46,18 +73,10 @@ const PrototipoDetail = () => {
     if (!openAddUnidadDialog && !openEditDialog) {
       setTimeout(() => {
         console.log('Dialog closed, refreshing data');
-        refetchUnidades();
-        refetch();
-      }, 500);
+        handleRefresh();
+      }, 800);
     }
-  }, [openAddUnidadDialog, openEditDialog, refetchUnidades, refetch]);
-  
-  const handleRefresh = () => {
-    console.log('Manual refresh triggered');
-    refetch();
-    refetchUnidades();
-    setRefreshTrigger(prev => prev + 1);
-  };
+  }, [openAddUnidadDialog, openEditDialog, handleRefresh]);
   
   const handleGenerarUnidades = async (cantidad: number, prefijo: string) => {
     if (!id || cantidad <= 0) return;
@@ -74,10 +93,10 @@ const PrototipoDetail = () => {
         description: `Se han generado ${cantidad} unidades exitosamente.`
       });
       
-      // Force refresh everything
+      // Force refresh everything after generating units
       setTimeout(() => {
         handleRefresh();
-      }, 500);
+      }, 800);
     } catch (error) {
       console.error('Error al generar unidades:', error);
       toast({
@@ -153,7 +172,7 @@ const PrototipoDetail = () => {
           <PrototipoUnidades 
             prototipo={prototipo}
             unidades={unidades}
-            unidadesLoading={unidadesLoading}
+            unidadesLoading={unidadesLoading || isRefreshing}
             unitCounts={unitCounts}
             onAddUnidad={() => setOpenAddUnidadDialog(true)}
             onGenerateUnidades={handleGenerarUnidades}
@@ -171,13 +190,13 @@ const PrototipoDetail = () => {
           // Wait before refreshing
           setTimeout(() => {
             handleRefresh();
-          }, 500);
+          }, 800);
         }}
         onSuccess={() => {
           // Wait before refreshing
           setTimeout(() => {
             handleRefresh();
-          }, 500);
+          }, 800);
         }}
       />
       
@@ -189,13 +208,13 @@ const PrototipoDetail = () => {
           // Wait before refreshing
           setTimeout(() => {
             handleRefresh();
-          }, 500);
+          }, 800);
         }}
         onSuccess={() => {
           // Wait before refreshing
           setTimeout(() => {
             handleRefresh();
-          }, 500);
+          }, 800);
         }}
         prototipo_id={id}
       />

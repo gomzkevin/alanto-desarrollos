@@ -25,21 +25,26 @@ export const useUnidades = (params?: UseUnidadesParams) => {
 
     console.log(`Fetching unidades for prototipo: ${prototipoId}`);
     
-    const { data, error } = await supabase
-      .from('unidades')
-      .select(`
-        *,
-        prototipo:prototipos(id, nombre, precio)
-      `)
-      .eq('prototipo_id', prototipoId);
+    try {
+      const { data, error } = await supabase
+        .from('unidades')
+        .select(`
+          *,
+          prototipo:prototipos(id, nombre, precio)
+        `)
+        .eq('prototipo_id', prototipoId);
 
-    if (error) {
-      console.error('Error fetching unidades:', error);
+      if (error) {
+        console.error('Error fetching unidades:', error);
+        throw error;
+      }
+
+      console.log(`Fetched ${data?.length || 0} unidades`);
+      return data as Unidad[] || [];
+    } catch (error) {
+      console.error('Error en fetchUnidades:', error);
       throw error;
     }
-
-    console.log(`Fetched ${data?.length || 0} unidades`);
-    return data as Unidad[] || [];
   };
 
   // CRUD operations hooks
@@ -60,7 +65,9 @@ export const useUnidades = (params?: UseUnidadesParams) => {
     enabled: !!prototipoId,
     staleTime: 1000, // Consider data stale after 1 second
     refetchOnWindowFocus: true,
-    refetchInterval: 3000  // Auto-refresh every 3 seconds
+    refetchInterval: 5000,  // Auto-refresh every 5 seconds to ensure updates are caught
+    retry: 3, // Retry failed requests up to 3 times
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000) // Exponential backoff
   });
 
   return {

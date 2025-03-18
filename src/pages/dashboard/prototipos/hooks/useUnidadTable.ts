@@ -40,6 +40,7 @@ export const useUnidadTable = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentUnidad, setCurrentUnidad] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   useEffect(() => {
     return () => {
@@ -48,6 +49,7 @@ export const useUnidadTable = ({
       setIsAddDialogOpen(false);
       setIsEditDialogOpen(false);
       setIsDeleteDialogOpen(false);
+      setIsProcessing(false);
     };
   }, []);
 
@@ -64,7 +66,12 @@ export const useUnidadTable = ({
   };
 
   const handleAddUnidad = useCallback(async (data: any) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    
     try {
+      console.log('Creando unidad con datos:', data);
+      
       await createUnidad({
         prototipo_id: prototipo.id,
         numero: data.numero,
@@ -78,9 +85,6 @@ export const useUnidadTable = ({
         fecha_venta: data.fecha_venta
       });
       
-      // First close the dialog
-      setIsAddDialogOpen(false);
-      
       toast({
         title: "Unidad creada",
         description: "La unidad ha sido creada exitosamente"
@@ -89,7 +93,8 @@ export const useUnidadTable = ({
       // Wait a moment before refreshing to avoid freezing
       setTimeout(() => {
         refetch();
-      }, 500);
+        setIsProcessing(false);
+      }, 800);
     } catch (error: any) {
       console.error("Error creating unidad:", error);
       toast({
@@ -97,17 +102,18 @@ export const useUnidadTable = ({
         description: `No se pudo crear la unidad: ${error.message}`,
         variant: "destructive"
       });
+      setIsProcessing(false);
     }
-  }, [prototipo.id, createUnidad, toast, refetch]);
+  }, [prototipo.id, createUnidad, toast, refetch, isProcessing]);
 
   const handleEditUnidad = useCallback(async (data: any) => {
-    if (!currentUnidad) return;
+    if (!currentUnidad || isProcessing) return;
+    setIsProcessing(true);
     
     try {
-      // Make sure we close the dialog first before potentially causing any state update issues
-      setIsEditDialogOpen(false);
       const unidadId = currentUnidad.id;
-      setCurrentUnidad(null);
+      
+      console.log('Actualizando unidad:', unidadId, 'con datos:', data);
       
       await updateUnidad({
         id: unidadId,
@@ -130,7 +136,8 @@ export const useUnidadTable = ({
       // Wait a bit before refreshing to avoid race conditions
       setTimeout(() => {
         refetch();
-      }, 500);
+        setIsProcessing(false);
+      }, 800);
     } catch (error: any) {
       console.error("Error updating unidad:", error);
       toast({
@@ -138,17 +145,17 @@ export const useUnidadTable = ({
         description: `No se pudo actualizar la unidad: ${error.message}`,
         variant: "destructive"
       });
+      setIsProcessing(false);
     }
-  }, [currentUnidad, updateUnidad, toast, refetch]);
+  }, [currentUnidad, updateUnidad, toast, refetch, isProcessing]);
 
   const handleDeleteUnidad = useCallback(async () => {
-    if (!currentUnidad) return;
+    if (!currentUnidad || isProcessing) return;
+    setIsProcessing(true);
     
     try {
-      // Close dialog first
-      setIsDeleteDialogOpen(false);
       const unidadId = currentUnidad.id;
-      setCurrentUnidad(null);
+      console.log('Eliminando unidad:', unidadId);
       
       await deleteUnidad(unidadId);
       
@@ -160,7 +167,8 @@ export const useUnidadTable = ({
       // Wait before refreshing
       setTimeout(() => {
         refetch();
-      }, 500);
+        setIsProcessing(false);
+      }, 800);
     } catch (error: any) {
       console.error("Error deleting unidad:", error);
       toast({
@@ -168,25 +176,28 @@ export const useUnidadTable = ({
         description: `No se pudo eliminar la unidad: ${error.message}`,
         variant: "destructive"
       });
+      setIsProcessing(false);
     }
-  }, [currentUnidad, deleteUnidad, toast, refetch]);
+  }, [currentUnidad, deleteUnidad, toast, refetch, isProcessing]);
 
   const openEditDialog = useCallback((unidad: any) => {
+    if (isProcessing) return;
     setCurrentUnidad(unidad);
     setIsEditDialogOpen(true);
-  }, []);
+  }, [isProcessing]);
 
   const openDeleteDialog = useCallback((unidad: any) => {
+    if (isProcessing) return;
     setCurrentUnidad(unidad);
     setIsDeleteDialogOpen(true);
-  }, []);
+  }, [isProcessing]);
 
   const closeEditDialog = useCallback(() => {
     setIsEditDialogOpen(false);
     // Wait a bit before clearing the current unidad to avoid UI flicker
     setTimeout(() => {
       setCurrentUnidad(null);
-    }, 100);
+    }, 300);
   }, []);
 
   const closeDeleteDialog = useCallback(() => {
@@ -194,7 +205,7 @@ export const useUnidadTable = ({
     // Wait a bit before clearing the current unidad to avoid UI flicker
     setTimeout(() => {
       setCurrentUnidad(null);
-    }, 100);
+    }, 300);
   }, []);
 
   return {
@@ -205,6 +216,7 @@ export const useUnidadTable = ({
     isEditDialogOpen,
     isDeleteDialogOpen,
     currentUnidad,
+    isProcessing,
     setIsAddDialogOpen,
     openEditDialog,
     openDeleteDialog,
