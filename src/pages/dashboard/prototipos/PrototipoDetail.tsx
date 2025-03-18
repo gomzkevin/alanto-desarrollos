@@ -23,14 +23,14 @@ const PrototipoDetail = () => {
   
   // Estados estables para las unidades
   const { 
-    unidades, 
+    unidades: fetchedUnidades, 
     isLoading: unidadesLoading, 
     refetch: refetchUnidades,
     createMultipleUnidades
   } = useUnidades({ prototipo_id: id });
   
   // Ensure unidades is always an array
-  const safeUnidades = Array.isArray(unidades) ? unidades : [];
+  const safeUnidades = Array.isArray(fetchedUnidades) ? fetchedUnidades : [];
   
   // Memoize unit counts for stability
   const unitCounts = useUnitCounts(safeUnidades);
