@@ -1,4 +1,3 @@
-
 export type FieldType = 
   | 'text' 
   | 'textarea' 
@@ -29,6 +28,7 @@ export interface FieldDefinition {
   folder?: string;
   readOnly?: boolean;
   description?: string;
+  placeholder?: string;
 }
 
 export type ResourceType = 

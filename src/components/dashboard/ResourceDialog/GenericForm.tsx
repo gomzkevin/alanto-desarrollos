@@ -163,6 +163,7 @@ const GenericForm = ({
                         onFormChange(field.name, e.target.value);
                       }
                     }}
+                    placeholder={field.placeholder}
                   />
                 ) : field.type === 'number' ? (
                   <Input
@@ -178,6 +179,7 @@ const GenericForm = ({
                         onFormChange(field.name, value);
                       }
                     }}
+                    placeholder={field.placeholder}
                   />
                 ) : field.type === 'textarea' ? (
                   <Textarea
@@ -190,6 +192,7 @@ const GenericForm = ({
                         onFormChange(field.name, e.target.value);
                       }
                     }}
+                    placeholder={field.placeholder}
                   />
                 ) : field.type === 'select' ? (
                   <Select
@@ -204,7 +207,7 @@ const GenericForm = ({
                     }}
                   >
                     <SelectTrigger className={field.readOnly ? "bg-gray-100" : ""}>
-                      <SelectValue placeholder={`Seleccionar ${field.label}...`} />
+                      <SelectValue placeholder={field.placeholder || `Seleccionar ${field.label}...`} />
                     </SelectTrigger>
                     <SelectContent className="z-50 bg-white">
                       {hasOptions(field.options) ? (
@@ -230,6 +233,7 @@ const GenericForm = ({
                         onFormChange(field.name, e.target.value);
                       }
                     }}
+                    placeholder={field.placeholder}
                   />
                 ) : field.type === 'switch' ? (
                   <div className="flex items-center space-x-2">
