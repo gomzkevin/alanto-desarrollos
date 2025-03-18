@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -90,8 +91,11 @@ const GenericForm = ({
   }, [form, values]);
 
   const onFormChange = (name: string, value: any) => {
-    onChange({ [name]: value });
+    // Create new object with just the changed field
+    const updatedValues = { [name]: value };
+    onChange(updatedValues);
     
+    // Call the appropriate handler based on field type
     if (onSelectChange && fields.some(field => field.name === name && (field.type === 'select' || field.type === 'select-lead'))) {
       onSelectChange(name, value as string);
     }
