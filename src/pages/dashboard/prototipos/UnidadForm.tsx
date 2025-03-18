@@ -1,13 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import SearchableEntitySelect from './components/SearchableEntitySelect';
 import useVendedores from './hooks/useVendedores';
-import FormInputs from './components/FormInputs';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatCurrency } from '@/lib/utils';
+import useUnidadForm from './hooks/useUnidadForm';
 
 interface UnidadFormProps {
   unidad?: any;
@@ -25,96 +24,15 @@ export const UnidadForm = ({
   isSubmitting = false
 }: UnidadFormProps) => {
   const { vendedores } = useVendedores();
-  const isEditing = !!unidad; // Check if we're editing an existing unit
   
-  // Form state
-  const [formData, setFormData] = useState({
-    numero: '',
-    nivel: '',
-    estado: 'disponible',
-    precio_venta: '',
-    comprador_id: '',
-    comprador_nombre: '',
-    vendedor_id: '',
-    vendedor_nombre: '',
-    fecha_venta: ''
-  });
-  
-  // State to track the formatted price display
-  const [precioFormateado, setPrecioFormateado] = useState('');
-  
-  // Initialize form with unidad data if editing
-  useEffect(() => {
-    if (unidad) {
-      // Set the raw form data
-      setFormData({
-        numero: unidad.numero || '',
-        nivel: unidad.nivel || '',
-        estado: unidad.estado || 'disponible',
-        precio_venta: unidad.precio_venta || '',
-        comprador_id: unidad.comprador_id || '',
-        comprador_nombre: unidad.comprador_nombre || '',
-        vendedor_id: unidad.vendedor_id || '',
-        vendedor_nombre: unidad.vendedor_nombre || '',
-        fecha_venta: unidad.fecha_venta || ''
-      });
-      
-      // Format the price for display
-      if (unidad.precio_venta) {
-        setPrecioFormateado(formatCurrency(unidad.precio_venta));
-      }
-    }
-  }, [unidad]);
-  
-  // Handle input changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    
-    // Special handling for precio_venta field to format the display
-    if (name === 'precio_venta') {
-      // Remove non-numeric characters for storing the raw value
-      const numericValue = value.replace(/[^0-9]/g, '');
-      
-      // Update the form data with the numeric value
-      setFormData(prev => ({
-        ...prev,
-        [name]: numericValue
-      }));
-      
-      // Format the value for display if it's not empty
-      if (numericValue) {
-        setPrecioFormateado(formatCurrency(Number(numericValue)));
-      } else {
-        setPrecioFormateado('');
-      }
-      return;
-    }
-    
-    // Special handling for estado field to reset related fields when changed to 'disponible'
-    if (name === 'estado' && value === 'disponible') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-        comprador_id: '',
-        comprador_nombre: '',
-        vendedor_id: '',
-        vendedor_nombre: '',
-        fecha_venta: ''
-      }));
-      return;
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-  
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    onSubmit(formData);
-  };
+  const {
+    formData,
+    precioFormateado,
+    isEditing,
+    handleChange,
+    handleSubmit,
+    setFormData
+  } = useUnidadForm({ unidad, onSubmit, onCancel });
   
   // Handle lead selection
   const handleLeadSelect = (lead: any) => {

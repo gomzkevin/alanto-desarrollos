@@ -3,6 +3,7 @@ import React from 'react';
 import { TableRow, TableCell } from "@/components/ui/table";
 import StatusBadge from './StatusBadge';
 import UnidadActions from './UnidadActions';
+import { formatCurrency } from '@/lib/utils';
 
 interface UnidadTableRowProps {
   unidad: any;
@@ -18,7 +19,7 @@ export const UnidadTableRow = ({ unidad, onEdit, onDelete }: UnidadTableRowProps
       <TableCell><StatusBadge estado={unidad.estado} /></TableCell>
       <TableCell>
         {unidad.precio_venta 
-          ? `$${unidad.precio_venta.toLocaleString('es-MX')}` 
+          ? formatCurrency(unidad.precio_venta) 
           : '-'}
       </TableCell>
       <TableCell>{unidad.comprador_nombre || '-'}</TableCell>

@@ -1,141 +1,113 @@
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
 import { formatCurrency } from '@/lib/utils';
 
-interface UnidadFormData {
-  numero: string;
-  nivel: string;
-  estado: string;
-  precio_venta: string | number;
-  comprador_id: string;
-  comprador_nombre: string;
-  vendedor_id: string;
-  vendedor_nombre: string;
-  fecha_venta: string;
-}
-
-interface UnidadFormHookProps {
+interface UseUnidadFormProps {
   unidad?: any;
-  leads: any[];
-  vendedores: any[];
+  onSubmit: (data: any) => void;
+  onCancel: () => void;
 }
 
-export const useUnidadForm = ({ unidad, leads, vendedores }: UnidadFormHookProps) => {
-  const [estado, setEstado] = useState(unidad?.estado || 'disponible');
-  const [fechaVenta, setFechaVenta] = useState<Date | undefined>(
-    unidad?.fecha_venta ? new Date(unidad.fecha_venta) : undefined
-  );
-  const [precioFormateado, setPrecioFormateado] = useState(
-    unidad?.precio_venta ? formatCurrency(unidad.precio_venta) : ''
-  );
+export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps) => {
+  const isEditing = !!unidad;
   
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<UnidadFormData>({
-    defaultValues: {
-      numero: unidad?.numero || '',
-      nivel: unidad?.nivel || '',
-      estado: unidad?.estado || 'disponible',
-      precio_venta: unidad?.precio_venta || '',
-      comprador_id: unidad?.comprador_id || '',
-      comprador_nombre: unidad?.comprador_nombre || '',
-      vendedor_id: unidad?.vendedor_id || '',
-      vendedor_nombre: unidad?.vendedor_nombre || '',
-      fecha_venta: unidad?.fecha_venta || ''
-    }
+  // Form state
+  const [formData, setFormData] = useState({
+    numero: '',
+    nivel: '',
+    estado: 'disponible',
+    precio_venta: '',
+    comprador_id: '',
+    comprador_nombre: '',
+    vendedor_id: '',
+    vendedor_nombre: '',
+    fecha_venta: ''
   });
   
-  // Handle precio change with formatting
-  const handlePrecioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Remove non-numeric characters
-    const numericValue = e.target.value.replace(/[^0-9]/g, '');
-    
-    // Set the numeric value in the form
-    setValue('precio_venta', numericValue ? parseInt(numericValue, 10) : '');
-    
-    // Set the formatted display value
-    setPrecioFormateado(numericValue ? formatCurrency(parseInt(numericValue, 10)) : '');
-  };
+  // State to track the formatted price display
+  const [precioFormateado, setPrecioFormateado] = useState('');
   
-  // Update form values when date changes
+  // Initialize form with unidad data if editing
   useEffect(() => {
-    if (fechaVenta) {
-      setValue('fecha_venta', fechaVenta.toISOString());
-    } else {
-      setValue('fecha_venta', '');
-    }
-  }, [fechaVenta, setValue]);
-  
-  // Update estado in form when it changes
-  useEffect(() => {
-    setValue('estado', estado);
-  }, [estado, setValue]);
-  
-  const handleLeadChange = (leadId: string, leadName?: string) => {
-    if (leadId) {
-      // If leadName is provided, use it
-      if (leadName) {
-        setValue('comprador_id', leadId);
-        setValue('comprador_nombre', leadName);
-      } else {
-        // Otherwise find the lead by ID
-        const selectedLead = leads.find(lead => lead.id === leadId);
-        if (selectedLead) {
-          setValue('comprador_id', selectedLead.id);
-          setValue('comprador_nombre', selectedLead.nombre);
-        }
+    if (unidad) {
+      // Set the raw form data
+      setFormData({
+        numero: unidad.numero || '',
+        nivel: unidad.nivel || '',
+        estado: unidad.estado || 'disponible',
+        precio_venta: unidad.precio_venta || '',
+        comprador_id: unidad.comprador_id || '',
+        comprador_nombre: unidad.comprador_nombre || '',
+        vendedor_id: unidad.vendedor_id || '',
+        vendedor_nombre: unidad.vendedor_nombre || '',
+        fecha_venta: unidad.fecha_venta || ''
+      });
+      
+      // Format the price for display
+      if (unidad.precio_venta) {
+        setPrecioFormateado(formatCurrency(unidad.precio_venta));
       }
-    } else {
-      setValue('comprador_id', '');
-      setValue('comprador_nombre', '');
     }
-  };
+  }, [unidad]);
   
-  const handleVendedorChange = (vendedorId: string, vendedorName?: string) => {
-    if (vendedorId) {
-      if (vendedorName) {
-        setValue('vendedor_id', vendedorId);
-        setValue('vendedor_nombre', vendedorName);
+  // Handle input changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    // Special handling for precio_venta field to format the display
+    if (name === 'precio_venta') {
+      // Remove non-numeric characters for storing the raw value
+      const numericValue = value.replace(/[^0-9]/g, '');
+      
+      // Update the form data with the numeric value
+      setFormData(prev => ({
+        ...prev,
+        [name]: numericValue
+      }));
+      
+      // Format the value for display if it's not empty
+      if (numericValue) {
+        setPrecioFormateado(formatCurrency(Number(numericValue)));
       } else {
-        const selectedVendedor = vendedores.find(v => v.id === vendedorId);
-        if (selectedVendedor) {
-          setValue('vendedor_id', selectedVendedor.id);
-          setValue('vendedor_nombre', selectedVendedor.nombre);
-        }
+        setPrecioFormateado('');
       }
-    } else {
-      setValue('vendedor_id', '');
-      setValue('vendedor_nombre', '');
+      return;
     }
+    
+    // Special handling for estado field to reset related fields when changed to 'disponible'
+    if (name === 'estado' && value === 'disponible') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        comprador_id: '',
+        comprador_nombre: '',
+        vendedor_id: '',
+        vendedor_nombre: '',
+        fecha_venta: ''
+      }));
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
   
-  const handleEstadoChange = (value: string) => {
-    setEstado(value);
-    setValue('estado', value);
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    onSubmit(formData);
   };
   
-  const prepareFormData = (data: UnidadFormData) => {
-    // Format data for submission
-    return {
-      ...data,
-      precio_venta: data.precio_venta ? parseFloat(data.precio_venta.toString()) : null,
-      fecha_venta: fechaVenta ? fechaVenta.toISOString() : null
-    };
-  };
-
   return {
-    estado,
-    fechaVenta,
-    setFechaVenta,
-    register,
-    handleSubmit,
-    watch,
-    errors,
-    handleLeadChange,
-    handleVendedorChange,
-    handleEstadoChange,
+    formData,
     precioFormateado,
-    handlePrecioChange,
-    prepareFormData
+    isEditing,
+    handleChange,
+    handleSubmit,
+    setPrecioFormateado,
+    setFormData
   };
 };
 
