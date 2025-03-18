@@ -54,7 +54,7 @@ const GenericForm = ({
   const [activeTab, setActiveTab] = useState<string>('general');
   const [tabs, setTabs] = useState<{ id: string; label: string }[]>([]);
   
-  console.log("GenericForm render with fields:", fields);
+  console.log("GenericForm render with fields:", JSON.stringify(fields, null, 2));
   console.log("GenericForm values:", values);
 
   const generateValidationSchema = () => {
@@ -195,12 +195,16 @@ const GenericForm = ({
                     <SelectTrigger className={field.readOnly ? "bg-gray-100" : ""}>
                       <SelectValue placeholder={`Seleccionar ${field.label}...`} />
                     </SelectTrigger>
-                    <SelectContent className="bg-white">
-                      {field.options.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
+                    <SelectContent className="z-[100] bg-white">
+                      {field.options && field.options.length > 0 ? (
+                        field.options.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-options" disabled>No hay opciones disponibles</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 ) : field.type === 'date' ? (

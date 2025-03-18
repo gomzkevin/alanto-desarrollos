@@ -12,7 +12,7 @@ import {
   FieldDefinition,
   FieldType
 } from './types';
-import useLeads from '@/hooks/useLeads';
+import useLeads, { LEAD_STATUS_OPTIONS, LEAD_SUBSTATUS_OPTIONS, LEAD_ORIGIN_OPTIONS } from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 
@@ -54,7 +54,7 @@ export default function useResourceData({
   const [fields, setFields] = useState<FieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { leads, statusOptions, getSubstatusOptions, originOptions } = useLeads();
+  const { leads } = useLeads();
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos({ 
     desarrolloId: selectedDesarrolloId 
@@ -164,10 +164,10 @@ export default function useResourceData({
       setIsLoading(false);
     };
 
-    console.log("Defining fields with status options:", statusOptions);
+    console.log("Status options from LEAD_STATUS_OPTIONS:", LEAD_STATUS_OPTIONS);
     console.log("Selected status:", selectedStatus);
-    console.log("Substatus options:", selectedStatus ? getSubstatusOptions(selectedStatus) : []);
-    console.log("Origin options:", originOptions);
+    console.log("Substatus options:", selectedStatus ? LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] || [] : []);
+    console.log("Origin options:", LEAD_ORIGIN_OPTIONS);
 
     const defineFields = () => {
       let fieldDefinitions: FieldDefinition[] = [];
@@ -228,19 +228,19 @@ export default function useResourceData({
               name: 'estado', 
               label: 'Estado', 
               type: 'select' as FieldType, 
-              options: statusOptions 
+              options: LEAD_STATUS_OPTIONS 
             },
             { 
               name: 'subestado', 
               label: 'Subestado', 
               type: 'select' as FieldType, 
-              options: selectedStatus ? getSubstatusOptions(selectedStatus) : [] 
+              options: selectedStatus ? LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] || [] : [] 
             },
             { 
               name: 'origen', 
               label: 'Origen', 
               type: 'select' as FieldType, 
-              options: originOptions 
+              options: LEAD_ORIGIN_OPTIONS 
             },
             { name: 'interes_en', label: 'Interés en', type: 'text' as FieldType },
             { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' as FieldType },
@@ -284,7 +284,7 @@ export default function useResourceData({
 
     fetchResource();
     defineFields();
-  }, [resourceId, resourceType, toast, leads, desarrollos, prototipos, usarFiniquito, desarrolloId, selectedDesarrolloId, lead_id, statusOptions, getSubstatusOptions, originOptions, selectedStatus, onStatusChange, onAmenitiesChange]);
+  }, [resourceId, resourceType, toast, leads, desarrollos, prototipos, usarFiniquito, desarrolloId, selectedDesarrolloId, lead_id, selectedStatus, onStatusChange, onAmenitiesChange]);
 
   return { resource, setResource, fields, isLoading };
 }
