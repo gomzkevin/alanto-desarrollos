@@ -1,129 +1,174 @@
 
-import React from 'react';
-import { 
-  FormField, 
-  EstadoSelect, 
-  DatePickerField, 
-  FormActions 
-} from './components/FormInputs';
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import SearchableEntitySelect from './components/SearchableEntitySelect';
-import useUnidadForm from './hooks/useUnidadForm';
 import useVendedores from './hooks/useVendedores';
-import { Input } from "@/components/ui/input";
+import FormInputs from './components/FormInputs';
 
 interface UnidadFormProps {
   unidad?: any;
   onSubmit: (data: any) => void;
   onCancel: () => void;
   leads: any[];
+  isSubmitting?: boolean;
 }
 
-export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProps) => {
+export const UnidadForm = ({ 
+  unidad, 
+  onSubmit, 
+  onCancel, 
+  leads,
+  isSubmitting = false
+}: UnidadFormProps) => {
   const { vendedores } = useVendedores();
   
-  const { 
-    estado, 
-    fechaVenta, 
-    setFechaVenta, 
-    register, 
-    handleSubmit, 
-    watch, 
-    errors, 
-    handleLeadChange, 
-    handleVendedorChange, 
-    handleEstadoChange,
-    precioFormateado,
-    handlePrecioChange,
-    prepareFormData 
-  } = useUnidadForm({ unidad, leads, vendedores });
+  // Form state
+  const [formData, setFormData] = useState({
+    numero: '',
+    nivel: '',
+    estado: 'disponible',
+    precio_venta: '',
+    comprador_id: '',
+    comprador_nombre: '',
+    vendedor_id: '',
+    vendedor_nombre: '',
+    fecha_venta: ''
+  });
   
-  const handleFormSubmit = (data: any) => {
-    const formattedData = prepareFormData(data);
-    onSubmit(formattedData);
+  // Initialize form with unidad data if editing
+  useEffect(() => {
+    if (unidad) {
+      setFormData({
+        numero: unidad.numero || '',
+        nivel: unidad.nivel || '',
+        estado: unidad.estado || 'disponible',
+        precio_venta: unidad.precio_venta || '',
+        comprador_id: unidad.comprador_id || '',
+        comprador_nombre: unidad.comprador_nombre || '',
+        vendedor_id: unidad.vendedor_id || '',
+        vendedor_nombre: unidad.vendedor_nombre || '',
+        fecha_venta: unidad.fecha_venta || ''
+      });
+    }
+  }, [unidad]);
+  
+  // Handle input changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    // Special handling for estado field to reset related fields when changed to 'disponible'
+    if (name === 'estado' && value === 'disponible') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        comprador_id: '',
+        comprador_nombre: '',
+        vendedor_id: '',
+        vendedor_nombre: '',
+        fecha_venta: ''
+      }));
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
-
-  // Filter out any empty or undefined options
-  const filteredLeads = leads.filter(lead => lead && lead.id);
-  const filteredVendedores = vendedores.filter(vendedor => vendedor && vendedor.id);
-
+  
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+  
+  // Handle lead selection
+  const handleLeadSelect = (lead: any) => {
+    if (!lead) return;
+    
+    setFormData(prev => ({
+      ...prev,
+      comprador_id: lead.id,
+      comprador_nombre: lead.nombre
+    }));
+  };
+  
+  // Handle vendedor selection
+  const handleVendedorSelect = (vendedor: any) => {
+    if (!vendedor) return;
+    
+    setFormData(prev => ({
+      ...prev,
+      vendedor_id: vendedor.id,
+      vendedor_nombre: vendedor.nombre
+    }));
+  };
+  
   return (
-    <div className="space-y-4">
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <FormInputs 
+        formData={formData}
+        onChange={handleChange}
+      />
+      
+      {formData.estado !== 'disponible' && (
+        <>
           <div className="space-y-2">
-            <label htmlFor="numero" className="font-medium text-sm">Número/Identificador *</label>
-            <input
-              id="numero"
-              className={`w-full px-3 py-2 border ${!!errors.numero ? 'border-red-500' : 'border-gray-300'} rounded-md bg-gray-100`}
-              placeholder="Ej. A101, Casa 5, etc."
-              {...register('numero', { required: true })}
-              readOnly={!!unidad}
+            <SearchableEntitySelect
+              label="Comprador"
+              entities={leads}
+              value={formData.comprador_id}
+              displayValue={formData.comprador_nombre}
+              onSelect={handleLeadSelect}
+              disabled={isSubmitting}
             />
-            {!!errors.numero && (
-              <p className="text-sm text-red-500">Este campo es requerido</p>
-            )}
           </div>
           
-          <FormField
-            label="Nivel/Piso"
-            id="nivel"
-            placeholder="Ej. 1, PB, etc."
-            {...register('nivel')}
-          />
-        </div>
-        
-        <EstadoSelect 
-          value={estado} 
-          onChange={handleEstadoChange} 
-        />
-        
-        {(estado === 'apartado' || estado === 'en_proceso' || estado === 'vendido') && (
-          <>
-            <div className="space-y-2">
-              <label htmlFor="precio_venta" className="font-medium text-sm">Precio de Venta</label>
-              <Input
-                id="precio_venta"
-                formatCurrency
-                value={precioFormateado}
-                onChange={handlePrecioChange}
-                placeholder="$0"
-                className="bg-white"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="font-medium text-sm">Comprador</label>
-              <SearchableEntitySelect
-                value={watch('comprador_id') || ''}
-                onChange={handleLeadChange}
-                placeholder="Buscar cliente..."
-                options={filteredLeads}
-                emptyMessage="No se encontraron clientes con ese nombre."
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="font-medium text-sm">Vendedor</label>
-              <SearchableEntitySelect
-                value={watch('vendedor_id') || ''}
-                onChange={handleVendedorChange}
-                placeholder="Buscar vendedor..."
-                options={filteredVendedores}
-                emptyMessage="No se encontraron vendedores con ese nombre."
-              />
-            </div>
-            
-            <DatePickerField
-              label="Fecha de Venta/Apartado"
-              date={fechaVenta}
-              onSelect={setFechaVenta}
+          <div className="space-y-2">
+            <SearchableEntitySelect
+              label="Vendedor"
+              entities={vendedores}
+              value={formData.vendedor_id}
+              displayValue={formData.vendedor_nombre}
+              onSelect={handleVendedorSelect}
+              disabled={isSubmitting}
             />
-          </>
-        )}
-        
-        <FormActions onCancel={onCancel} isEdit={!!unidad} />
-      </form>
-    </div>
+          </div>
+          
+          <div className="space-y-2">
+            <label className="block text-sm font-medium" htmlFor="fechaVenta">
+              Fecha de Venta
+            </label>
+            <input
+              type="date"
+              id="fechaVenta"
+              name="fecha_venta"
+              value={formData.fecha_venta ? formData.fecha_venta.slice(0, 10) : ''}
+              onChange={handleChange}
+              className="w-full p-2 border rounded-md"
+              disabled={isSubmitting}
+            />
+          </div>
+        </>
+      )}
+      
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
+          Cancelar
+        </Button>
+        <Button 
+          type="submit"
+          disabled={!formData.numero || isSubmitting}
+        >
+          {isSubmitting ? 'Guardando...' : (unidad ? 'Actualizar' : 'Crear')}
+        </Button>
+      </div>
+    </form>
   );
 };
 

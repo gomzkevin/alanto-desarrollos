@@ -1,5 +1,5 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { UseUnidadesParams, UnidadCount, Unidad } from './unidades/types';
 import { 
@@ -14,10 +14,11 @@ import {
 } from './unidades/unidadCrud';
 
 /**
- * Main hook for unidades management with improved stability
+ * Simplified hook for unidades management
  */
 export const useUnidades = (params?: UseUnidadesParams) => {
   const prototipoId = params?.prototipo_id;
+  const queryClient = useQueryClient();
 
   // Simplified function to fetch all unidades for a specific prototipo
   const fetchUnidades = async (): Promise<Unidad[]> => {
@@ -45,7 +46,7 @@ export const useUnidades = (params?: UseUnidadesParams) => {
   const deleteMutation = useDeleteUnidad(prototipoId);
   const createMultipleUnidades = useCreateMultipleUnidades();
 
-  // Use React Query with stable configuration
+  // Use React Query with stable configuration to prevent excessive rerenders
   const { 
     data: unidades = [], 
     isLoading, 
@@ -55,10 +56,17 @@ export const useUnidades = (params?: UseUnidadesParams) => {
     queryKey: ['unidades', prototipoId],
     queryFn: fetchUnidades,
     enabled: !!prototipoId,
-    staleTime: 10000, // Increased stale time to prevent frequent refetches
-    refetchOnWindowFocus: false,
-    refetchInterval: false
+    staleTime: 60000, // Cache data for 1 minute to prevent frequent refetches
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchInterval: false // Disable automatic refetching
   });
+
+  // Function to invalidate unidades cache
+  const invalidateUnidades = () => {
+    if (prototipoId) {
+      queryClient.invalidateQueries({ queryKey: ['unidades', prototipoId] });
+    }
+  };
 
   return {
     unidades,
@@ -69,6 +77,7 @@ export const useUnidades = (params?: UseUnidadesParams) => {
     deleteUnidad: deleteMutation.mutate,
     createMultipleUnidades,
     refetch,
+    invalidateUnidades,
     countUnidadesByStatus,
     countDesarrolloUnidadesByStatus
   };

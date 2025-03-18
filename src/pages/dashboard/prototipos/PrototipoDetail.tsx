@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
@@ -18,7 +17,6 @@ const PrototipoDetail = () => {
   const { id, prototipo, isLoading, error, refetch, handleBack, updatePrototipoImage } = usePrototipoDetail();
   const [openAddUnidadDialog, setOpenAddUnidadDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const { 
@@ -30,31 +28,24 @@ const PrototipoDetail = () => {
   
   const unitCounts = useUnitCounts(unidades);
   
-  // Función para refrescar todos los datos
   const handleRefresh = useCallback(() => {
     if (isRefreshing) return;
     
     setIsRefreshing(true);
     console.log('Manual refresh triggered');
     
-    // Primero refrescamos las unidades
-    refetchUnidades().then(() => {
-      // Luego refrescamos el prototipo
-      refetch().then(() => {
-        console.log('Data refresh completed');
-        setRefreshTrigger(prev => prev + 1);
-        setIsRefreshing(false);
-      }).catch(error => {
-        console.error('Error refreshing prototipo:', error);
-        setIsRefreshing(false);
-      });
+    Promise.all([
+      refetchUnidades(),
+      refetch()
+    ]).then(() => {
+      console.log('Data refresh completed');
+      setIsRefreshing(false);
     }).catch(error => {
-      console.error('Error refreshing unidades:', error);
+      console.error('Error refreshing data:', error);
       setIsRefreshing(false);
     });
   }, [refetch, refetchUnidades, isRefreshing]);
   
-  // Trigger refetch of unidades periodically if component is mounted
   useEffect(() => {
     if (!id) return;
     
@@ -63,18 +54,14 @@ const PrototipoDetail = () => {
       refetchUnidades().catch(err => {
         console.error('Error in periodic refresh:', err);
       });
-    }, 5000); // Refresh every 5 seconds
+    }, 30000); // Refresh every 30 seconds instead of 5 seconds
     
     return () => clearInterval(intervalId);
   }, [id, refetchUnidades]);
   
-  // Also trigger refetch when dialogs are closed
   useEffect(() => {
     if (!openAddUnidadDialog && !openEditDialog) {
-      setTimeout(() => {
-        console.log('Dialog closed, refreshing data');
-        handleRefresh();
-      }, 800);
+      handleRefresh();
     }
   }, [openAddUnidadDialog, openEditDialog, handleRefresh]);
   
@@ -93,10 +80,7 @@ const PrototipoDetail = () => {
         description: `Se han generado ${cantidad} unidades exitosamente.`
       });
       
-      // Force refresh everything after generating units
-      setTimeout(() => {
-        handleRefresh();
-      }, 800);
+      handleRefresh();
     } catch (error) {
       console.error('Error al generar unidades:', error);
       toast({
@@ -185,37 +169,15 @@ const PrototipoDetail = () => {
         resourceType="prototipos"
         resourceId={id}
         open={openEditDialog}
-        onClose={() => {
-          setOpenEditDialog(false);
-          // Wait before refreshing
-          setTimeout(() => {
-            handleRefresh();
-          }, 800);
-        }}
-        onSuccess={() => {
-          // Wait before refreshing
-          setTimeout(() => {
-            handleRefresh();
-          }, 800);
-        }}
+        onClose={() => setOpenEditDialog(false)}
+        onSuccess={handleRefresh}
       />
       
       <AdminResourceDialog 
         resourceType="unidades"
         open={openAddUnidadDialog}
-        onClose={() => {
-          setOpenAddUnidadDialog(false);
-          // Wait before refreshing
-          setTimeout(() => {
-            handleRefresh();
-          }, 800);
-        }}
-        onSuccess={() => {
-          // Wait before refreshing
-          setTimeout(() => {
-            handleRefresh();
-          }, 800);
-        }}
+        onClose={() => setOpenAddUnidadDialog(false)}
+        onSuccess={handleRefresh}
         prototipo_id={id}
       />
     </DashboardLayout>

@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useState, useMemo } from 'react';
 import { Building } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { UnidadTable } from '../UnidadTable';
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import UnidadTableActions from './UnidadTableActions';
@@ -26,8 +26,8 @@ interface PrototipoUnidadesProps {
 
 export const PrototipoUnidades = ({ 
   prototipo, 
-  unidades, 
-  unidadesLoading, 
+  unidades = [], 
+  unidadesLoading = false, 
   unitCounts,
   onAddUnidad, 
   onGenerateUnidades,
@@ -38,8 +38,8 @@ export const PrototipoUnidades = ({
   const [prefijo, setPrefijo] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   
-  // Filter units based on selected tab
-  const filteredUnidades = React.useMemo(() => {
+  // Memoize filtered units to prevent unnecessary re-renders
+  const filteredUnidades = useMemo(() => {
     if (currentTab === "todas") return unidades;
     if (currentTab === "disponibles") return unidades.filter(u => u.estado === 'disponible');
     if (currentTab === "apartadas") return unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso');
@@ -98,7 +98,7 @@ export const PrototipoUnidades = ({
           <TabsTrigger value="vendidas">Vendidas</TabsTrigger>
         </TabsList>
         
-        <TabsContent value={currentTab} forceMount>
+        <TabsContent value={currentTab}>
           <UnidadTable 
             prototipo={prototipo}
             unidades={filteredUnidades} 
