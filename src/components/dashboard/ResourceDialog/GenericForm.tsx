@@ -21,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AmenitiesSelector } from '../AmenitiesSelector';
 import { FieldDefinition, FormValues } from './types';
 import ImageUploader from '../ImageUploader';
+import { InterestSelector } from './components/InterestSelector';
 
 interface GenericFormProps {
   fields: FieldDefinition[];
@@ -57,6 +58,11 @@ const GenericForm = ({
   console.log("GenericForm render with fields:", JSON.stringify(fields, null, 2));
   console.log("GenericForm values:", values);
 
+  // Function to check if options array has items
+  const hasOptions = (options?: { label: string; value: string }[]) => {
+    return Array.isArray(options) && options.length > 0;
+  };
+
   const generateValidationSchema = () => {
     const schema: { [key: string]: any } = {};
     
@@ -74,6 +80,8 @@ const GenericForm = ({
       } else if (field.type === 'amenities') {
         schema[field.name] = z.array(z.string()).optional();
       } else if (field.type === 'image-upload' || field.type === 'upload') {
+        schema[field.name] = z.string().optional();
+      } else if (field.type === 'interest-selector') {
         schema[field.name] = z.string().optional();
       }
     });
@@ -139,6 +147,9 @@ const GenericForm = ({
           render={({ field: formField }) => (
             <FormItem className="mb-4">
               <FormLabel>{field.label}</FormLabel>
+              {field.description && (
+                <FormDescription>{field.description}</FormDescription>
+              )}
               <FormControl>
                 {field.type === 'text' || field.type === 'email' ? (
                   <Input
@@ -180,7 +191,7 @@ const GenericForm = ({
                       }
                     }}
                   />
-                ) : field.type === 'select' && field.options ? (
+                ) : field.type === 'select' ? (
                   <Select
                     value={formField.value?.toString() || ''}
                     disabled={field.readOnly}
@@ -195,9 +206,9 @@ const GenericForm = ({
                     <SelectTrigger className={field.readOnly ? "bg-gray-100" : ""}>
                       <SelectValue placeholder={`Seleccionar ${field.label}...`} />
                     </SelectTrigger>
-                    <SelectContent className="z-[100] bg-white">
-                      {field.options && field.options.length > 0 ? (
-                        field.options.map((option) => (
+                    <SelectContent className="z-50 bg-white">
+                      {hasOptions(field.options) ? (
+                        field.options!.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
@@ -254,9 +265,21 @@ const GenericForm = ({
                       }
                     }}
                   />
+                ) : field.type === 'interest-selector' ? (
+                  <InterestSelector
+                    value={formField.value as string}
+                    onChange={(value) => {
+                      formField.onChange(value);
+                      if (!field.readOnly) {
+                        onFormChange(field.name, value);
+                      }
+                    }}
+                    label=""
+                    description={field.description}
+                  />
                 ) : null}
               </FormControl>
-              {field.readOnly && (
+              {field.readOnly && !field.description && (
                 <p className="text-xs text-gray-500 mt-1">
                   Este campo se actualiza automáticamente basado en el estado de las unidades
                 </p>

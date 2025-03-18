@@ -1,8 +1,11 @@
+
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { FieldDefinition, ResourceType } from '../types';
 import useLeads, { LEAD_STATUS_OPTIONS, LEAD_SUBSTATUS_OPTIONS, LEAD_ORIGIN_OPTIONS } from '@/hooks/useLeads';
+import useDesarrollos from '@/hooks/useDesarrollos';
+import usePrototipos from '@/hooks/usePrototipos';
 
 const ESTADOS_UNIDAD = [
   { value: 'disponible', label: 'Disponible' },
@@ -21,9 +24,11 @@ const TIPOS_PROPIEDADES = [
   { value: 'otro', label: 'Otro' },
 ];
 
-export const useResourceFields = (resourceType: ResourceType) => {
+export const useResourceFields = (resourceType: ResourceType, selectedStatus?: string | null) => {
   const [fields, setFields] = useState<FieldDefinition[]>([]);
   const { leads } = useLeads();
+  const { desarrollos } = useDesarrollos();
+  const { prototipos } = usePrototipos();
   
   // Obtener la lista de vendedores desde la tabla de usuarios
   const { data: vendedores = [] } = useQuery({
@@ -149,10 +154,16 @@ export const useResourceFields = (resourceType: ResourceType) => {
             { name: 'imagen_url', label: 'Imagen', type: 'image-upload', bucket: 'prototipo-images', folder: 'prototipos' },
           ];
         case 'leads':
-          console.log("Setting lead fields with options:", {
-            status: LEAD_STATUS_OPTIONS,
-            origin: LEAD_ORIGIN_OPTIONS
-          });
+          console.log("Setting lead fields with status:", selectedStatus);
+          console.log("Status options:", LEAD_STATUS_OPTIONS);
+          console.log("Origin options:", LEAD_ORIGIN_OPTIONS);
+          
+          // Get substatus options based on the selected status
+          const substatusOptions = selectedStatus && LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
+            ? LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
+            : [];
+            
+          console.log("Substatus options for status", selectedStatus, ":", substatusOptions);
           
           return [
             { name: 'nombre', label: 'Nombre', type: 'text' },
@@ -169,7 +180,7 @@ export const useResourceFields = (resourceType: ResourceType) => {
               name: 'subestado', 
               label: 'Subestado', 
               type: 'select', 
-              options: [] // This will be populated dynamically based on selected estado
+              options: substatusOptions
             },
             { 
               name: 'origen', 
@@ -177,7 +188,12 @@ export const useResourceFields = (resourceType: ResourceType) => {
               type: 'select', 
               options: LEAD_ORIGIN_OPTIONS 
             },
-            { name: 'interes_en', label: 'Interés en', type: 'text' },
+            { 
+              name: 'interes_en', 
+              label: 'Interés en', 
+              type: 'interest-selector',
+              description: 'Selecciona un desarrollo o prototipo de interés'
+            },
             { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' },
             { name: 'notas', label: 'Notas', type: 'textarea' },
           ];
@@ -198,7 +214,7 @@ export const useResourceFields = (resourceType: ResourceType) => {
     };
 
     setFields(getFieldDefinitions());
-  }, [resourceType, leads, vendedores]);
+  }, [resourceType, leads, vendedores, selectedStatus]);
 
   return fields;
 };
