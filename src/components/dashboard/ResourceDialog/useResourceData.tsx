@@ -53,6 +53,7 @@ export default function useResourceData({
   const [resource, setResource] = useState<FormValues | null>(null);
   const [fields, setFields] = useState<FieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [initialFetchComplete, setInitialFetchComplete] = useState(false);
 
   const { leads } = useLeads();
   const { desarrollos } = useDesarrollos();
@@ -147,6 +148,8 @@ export default function useResourceData({
         } else if (resourceType === 'leads') {
           setResource({
             nombre: '',
+            email: '',
+            telefono: '',
             estado: 'nuevo',
             subestado: 'sin_contactar'
           } as LeadResource);
@@ -162,6 +165,7 @@ export default function useResourceData({
         }
       }
       setIsLoading(false);
+      setInitialFetchComplete(true);
     };
 
     console.log("Status options from LEAD_STATUS_OPTIONS:", LEAD_STATUS_OPTIONS);
@@ -312,6 +316,21 @@ export default function useResourceData({
     fetchResource();
     defineFields();
   }, [resourceId, resourceType, toast, leads, desarrollos, prototipos, usarFiniquito, desarrolloId, selectedDesarrolloId, lead_id, selectedStatus, onStatusChange, onAmenitiesChange]);
+
+  // Ensure we don't reset the resource when selectedStatus changes after initial load
+  useEffect(() => {
+    if (initialFetchComplete && resourceType === 'leads' && !resourceId && selectedStatus) {
+      // Only update the subestado field based on the new status, preserve other fields
+      setResource(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          estado: selectedStatus,
+          subestado: ''
+        };
+      });
+    }
+  }, [selectedStatus, initialFetchComplete, resourceType, resourceId]);
 
   return { resource, setResource, fields, isLoading };
 }
