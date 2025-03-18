@@ -48,7 +48,10 @@ export const PrototipoUnidades = React.memo(({
   }, [unidades, currentTab]);
   
   // Determine remaining units
-  const unidadesRestantes = (prototipo.total_unidades || 0) - unidades.length;
+  const unidadesRestantes = useMemo(() => 
+    (prototipo.total_unidades || 0) - unidades.length,
+    [prototipo.total_unidades, unidades.length]
+  );
   
   const handleGenerarUnidades = async () => {
     if (unidadesRestantes <= 0 || isGenerating) return;
@@ -90,7 +93,7 @@ export const PrototipoUnidades = React.memo(({
         />
       </div>
       
-      <Tabs defaultValue="todas" value={currentTab} onValueChange={setCurrentTab}>
+      <Tabs value={currentTab} onValueChange={setCurrentTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="todas">Todas</TabsTrigger>
           <TabsTrigger value="disponibles">Disponibles</TabsTrigger>
@@ -98,21 +101,55 @@ export const PrototipoUnidades = React.memo(({
           <TabsTrigger value="vendidas">Vendidas</TabsTrigger>
         </TabsList>
         
-        <TabsContent value={currentTab} forceMount>
-          {unidadesLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin h-10 w-10 rounded-full border-4 border-primary border-t-transparent"></div>
-              <span className="ml-3 text-lg text-slate-600">Cargando unidades...</span>
+        {unidadesLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin h-10 w-10 rounded-full border-4 border-primary border-t-transparent"></div>
+            <span className="ml-3 text-lg text-slate-600">Cargando unidades...</span>
+          </div>
+        ) : (
+          <TabsContent value={currentTab} forceMount>
+            <div style={{ display: currentTab === 'todas' ? 'block' : 'none' }}>
+              {currentTab === 'todas' && (
+                <UnidadTable 
+                  prototipo={prototipo}
+                  unidades={filteredUnidades} 
+                  isLoading={false} 
+                  onRefresh={onRefreshUnidades}
+                />
+              )}
             </div>
-          ) : (
-            <UnidadTable 
-              prototipo={prototipo}
-              unidades={filteredUnidades} 
-              isLoading={false} 
-              onRefresh={onRefreshUnidades}
-            />
-          )}
-        </TabsContent>
+            <div style={{ display: currentTab === 'disponibles' ? 'block' : 'none' }}>
+              {currentTab === 'disponibles' && (
+                <UnidadTable 
+                  prototipo={prototipo}
+                  unidades={filteredUnidades} 
+                  isLoading={false} 
+                  onRefresh={onRefreshUnidades}
+                />
+              )}
+            </div>
+            <div style={{ display: currentTab === 'apartadas' ? 'block' : 'none' }}>
+              {currentTab === 'apartadas' && (
+                <UnidadTable 
+                  prototipo={prototipo}
+                  unidades={filteredUnidades} 
+                  isLoading={false} 
+                  onRefresh={onRefreshUnidades}
+                />
+              )}
+            </div>
+            <div style={{ display: currentTab === 'vendidas' ? 'block' : 'none' }}>
+              {currentTab === 'vendidas' && (
+                <UnidadTable 
+                  prototipo={prototipo}
+                  unidades={filteredUnidades} 
+                  isLoading={false} 
+                  onRefresh={onRefreshUnidades}
+                />
+              )}
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
       
       <Dialog open={generarUnidadesModalOpen} onOpenChange={setGenerarUnidadesModalOpen}>

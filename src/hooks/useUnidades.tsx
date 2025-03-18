@@ -1,5 +1,5 @@
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useCallback } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { UseUnidadesParams, UnidadCount, Unidad } from './unidades/types';
 import { 
@@ -14,15 +14,17 @@ import {
 } from './unidades/unidadCrud';
 
 /**
- * Simplified hook for unidades management
+ * Simplified hook for unidades management with stable rendering
  */
 export const useUnidades = (params?: UseUnidadesParams) => {
   const prototipoId = params?.prototipo_id;
   const queryClient = useQueryClient();
 
-  // Simplified function to fetch all unidades for a specific prototipo
-  const fetchUnidades = async (): Promise<Unidad[]> => {
+  // Stable fetch function that doesn't change on rerenders
+  const fetchUnidades = useCallback(async (): Promise<Unidad[]> => {
     if (!prototipoId) return [];
+    
+    console.log(`Fetching unidades for prototipo ${prototipoId}`);
     
     const { data, error } = await supabase
       .from('unidades')
@@ -37,16 +39,11 @@ export const useUnidades = (params?: UseUnidadesParams) => {
       throw error;
     }
 
+    console.log(`Successfully fetched ${data?.length || 0} unidades`);
     return data as Unidad[] || [];
-  };
+  }, [prototipoId]);
 
-  // CRUD operations hooks
-  const createMutation = useCreateUnidad(prototipoId);
-  const updateMutation = useUpdateUnidad(prototipoId);
-  const deleteMutation = useDeleteUnidad(prototipoId);
-  const createMultipleUnidades = useCreateMultipleUnidades();
-
-  // Use React Query with stable configuration to prevent excessive rerenders
+  // Use React Query with extremely stable configuration to prevent rerenders
   const { 
     data: unidades = [], 
     isLoading, 
@@ -56,22 +53,28 @@ export const useUnidades = (params?: UseUnidadesParams) => {
     queryKey: ['unidades', prototipoId],
     queryFn: fetchUnidades,
     enabled: !!prototipoId,
-    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes to prevent frequent refetches
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    gcTime: 10 * 60 * 1000, // Keep inactive data for 10 minutes
-    refetchInterval: false, // Disable automatic refetching
-    retry: false // Don't retry on error
+    staleTime: 10 * 60 * 1000, // Cache data for 10 minutes to prevent frequent refetches
+    refetchOnWindowFocus: false, 
+    gcTime: 15 * 60 * 1000, // Keep inactive data for 15 minutes
+    refetchInterval: false,
+    retry: false
   });
 
+  // CRUD operations hooks with stable references
+  const createMutation = useCreateUnidad(prototipoId);
+  const updateMutation = useUpdateUnidad(prototipoId);
+  const deleteMutation = useDeleteUnidad(prototipoId);
+  const createMultipleUnidades = useCreateMultipleUnidades();
+
   // Function to invalidate unidades cache (but do not trigger immediate refetch)
-  const invalidateUnidades = () => {
+  const invalidateUnidades = useCallback(() => {
     if (prototipoId) {
       queryClient.invalidateQueries({ 
         queryKey: ['unidades', prototipoId],
         refetchType: 'none' // Important: don't trigger immediate refetch
       });
     }
-  };
+  }, [prototipoId, queryClient]);
 
   return {
     unidades,

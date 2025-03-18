@@ -19,17 +19,9 @@ const PrototipoDetail = () => {
   const [openAddUnidadDialog, setOpenAddUnidadDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const refreshTimerRef = useRef<number | null>(null);
+  const lastRefreshTimeRef = useRef(Date.now());
   
-  // Cancelar cualquier timer pendiente cuando el componente se desmonte
-  useEffect(() => {
-    return () => {
-      if (refreshTimerRef.current) {
-        clearInterval(refreshTimerRef.current);
-      }
-    };
-  }, []);
-  
+  // Estados estables para las unidades
   const { 
     unidades, 
     isLoading: unidadesLoading, 
@@ -37,58 +29,39 @@ const PrototipoDetail = () => {
     createMultipleUnidades
   } = useUnidades({ prototipo_id: id });
   
+  // Memoize unit counts for stability
   const unitCounts = useUnitCounts(unidades);
   
+  // Controlador de refresco con limitación de frecuencia
   const handleRefresh = useCallback(() => {
-    if (isRefreshing) return;
+    const now = Date.now();
+    const timeSinceLastRefresh = now - lastRefreshTimeRef.current;
     
-    setIsRefreshing(true);
-    console.log('Manual refresh triggered');
-    
-    Promise.all([
-      refetchUnidades(),
-      refetch()
-    ]).then(() => {
-      console.log('Data refresh completed');
-      setIsRefreshing(false);
-    }).catch(error => {
-      console.error('Error refreshing data:', error);
-      setIsRefreshing(false);
-    });
-  }, [refetch, refetchUnidades, isRefreshing]);
-  
-  // Configurar un refresco periódico más largo (2 minutos en vez de 30 segundos)
-  useEffect(() => {
-    if (!id) return;
-    
-    // Limpiamos cualquier intervalo existente
-    if (refreshTimerRef.current) {
-      clearInterval(refreshTimerRef.current);
+    // No permitir refrescos más frecuentes que cada 3 segundos
+    if (isRefreshing || timeSinceLastRefresh < 3000) {
+      console.log('Avoiding rapid refresh:', timeSinceLastRefresh, 'ms since last refresh');
+      return;
     }
     
-    // Establecemos un nuevo intervalo con un tiempo mucho más largo
-    refreshTimerRef.current = window.setInterval(() => {
-      console.log('Periodic refresh of unidades');
-      refetchUnidades().catch(err => {
-        console.error('Error in periodic refresh:', err);
-      });
-    }, 120000); // 2 minutos
+    setIsRefreshing(true);
+    console.log('Manual refresh triggered at', new Date().toISOString());
+    lastRefreshTimeRef.current = now;
     
-    return () => {
-      if (refreshTimerRef.current) {
-        clearInterval(refreshTimerRef.current);
-        refreshTimerRef.current = null;
-      }
-    };
-  }, [id, refetchUnidades]);
+    refetchUnidades().finally(() => {
+      // Retrasar para evitar parpadeos
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 800);
+    });
+  }, [refetchUnidades, isRefreshing]);
   
-  // Solo refrescar cuando realmente se necesite (después de cerrar diálogos)
+  // Efecto para refrescar cuando cambian los diálogos
   useEffect(() => {
     if (!openAddUnidadDialog && !openEditDialog) {
-      // Añadir un pequeño retraso para evitar refrescos inmediatos
+      // Añadir un retraso para refrescar solo después de cerrar diálogos
       const timeoutId = setTimeout(() => {
         handleRefresh();
-      }, 500);
+      }, 1000);
       return () => clearTimeout(timeoutId);
     }
   }, [openAddUnidadDialog, openEditDialog, handleRefresh]);
@@ -108,8 +81,8 @@ const PrototipoDetail = () => {
         description: `Se han generado ${cantidad} unidades exitosamente.`
       });
       
-      // Añadir un retraso antes del refresco
-      setTimeout(handleRefresh, 1000);
+      // Añadir un retraso largo antes del refresco
+      setTimeout(handleRefresh, 1500);
     } catch (error) {
       console.error('Error al generar unidades:', error);
       toast({
@@ -169,6 +142,9 @@ const PrototipoDetail = () => {
     );
   }
   
+  // Determinar el estado combinado de carga para evitar múltiples estados contradictorios
+  const combinedLoadingState = isRefreshing || unidadesLoading;
+  
   return (
     <DashboardLayout>
       <div className="space-y-6 p-6 pb-16">
@@ -185,7 +161,7 @@ const PrototipoDetail = () => {
           <PrototipoUnidades 
             prototipo={prototipo}
             unidades={unidades}
-            unidadesLoading={unidadesLoading || isRefreshing}
+            unidadesLoading={combinedLoadingState}
             unitCounts={unitCounts}
             onAddUnidad={() => setOpenAddUnidadDialog(true)}
             onGenerateUnidades={handleGenerarUnidades}

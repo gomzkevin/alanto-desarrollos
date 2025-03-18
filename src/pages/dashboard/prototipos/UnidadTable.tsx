@@ -1,6 +1,6 @@
 
-import React, { useState, useCallback } from 'react';
-import { Table, TableBody, TableHeader, TableRow, TableHead } from "@/components/ui/table";
+import React, { useState, useCallback, useMemo } from 'react';
+import { Table, TableBody, TableHeader, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import UnidadTableRow from './components/UnidadTableRow';
 import EmptyUnidadState from './components/EmptyUnidadState';
@@ -25,15 +25,14 @@ export const UnidadTable: React.FC<UnidadTableProps> = React.memo(({
   onRefresh
 }) => {
   const { toast } = useToast();
-  const { leads } = useLeads();
+  const { leads = [] } = useLeads();
   const { 
     createUnidad, 
     updateUnidad, 
-    deleteUnidad,
-    invalidateUnidades
+    deleteUnidad
   } = useUnidades({ prototipo_id: prototipo.id });
   
-  // Dialog state
+  // Dialog state - kept local to this component
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -51,7 +50,7 @@ export const UnidadTable: React.FC<UnidadTableProps> = React.memo(({
     return Number(price);
   };
 
-  // Handle add unidad
+  // Handle add unidad - simplified to prevent side effects
   const handleAddUnidad = async (data: any) => {
     if (isSubmitting) return;
     
@@ -77,10 +76,9 @@ export const UnidadTable: React.FC<UnidadTableProps> = React.memo(({
       
       setIsAddDialogOpen(false);
       
-      // Esperar antes de refrescar
-      setTimeout(() => {
-        if (onRefresh) onRefresh();
-      }, 1000);
+      if (onRefresh) {
+        setTimeout(onRefresh, 500);
+      }
     } catch (error: any) {
       console.error("Error creating unidad:", error);
       toast({
@@ -89,11 +87,11 @@ export const UnidadTable: React.FC<UnidadTableProps> = React.memo(({
         variant: "destructive"
       });
     } finally {
-      setIsSubmitting(false);
+      setTimeout(() => setIsSubmitting(false), 300);
     }
   };
 
-  // Handle edit unidad
+  // Handle edit unidad - simplified
   const handleEditUnidad = async (data: any) => {
     if (!currentUnidad || isSubmitting) return;
     
@@ -119,11 +117,12 @@ export const UnidadTable: React.FC<UnidadTableProps> = React.memo(({
       
       setIsEditDialogOpen(false);
       
-      // Esperar antes de refrescar y limpiar el unidad actual
-      setTimeout(() => {
-        setCurrentUnidad(null);
-        if (onRefresh) onRefresh();
-      }, 1000);
+      if (onRefresh) {
+        setTimeout(() => {
+          setCurrentUnidad(null);
+          onRefresh();
+        }, 500);
+      }
     } catch (error: any) {
       console.error("Error updating unidad:", error);
       toast({
@@ -132,11 +131,11 @@ export const UnidadTable: React.FC<UnidadTableProps> = React.memo(({
         variant: "destructive"
       });
     } finally {
-      setIsSubmitting(false);
+      setTimeout(() => setIsSubmitting(false), 300);
     }
   };
 
-  // Handle delete unidad
+  // Handle delete unidad - simplified
   const handleDeleteUnidad = async () => {
     if (!currentUnidad || isSubmitting) return;
     
@@ -151,11 +150,12 @@ export const UnidadTable: React.FC<UnidadTableProps> = React.memo(({
       
       setIsDeleteDialogOpen(false);
       
-      // Esperar antes de refrescar y limpiar el unidad actual
-      setTimeout(() => {
-        setCurrentUnidad(null);
-        if (onRefresh) onRefresh();
-      }, 1000);
+      if (onRefresh) {
+        setTimeout(() => {
+          setCurrentUnidad(null);
+          onRefresh();
+        }, 500);
+      }
     } catch (error: any) {
       console.error("Error deleting unidad:", error);
       toast({
@@ -164,11 +164,11 @@ export const UnidadTable: React.FC<UnidadTableProps> = React.memo(({
         variant: "destructive"
       });
     } finally {
-      setIsSubmitting(false);
+      setTimeout(() => setIsSubmitting(false), 300);
     }
   };
 
-  // Dialog open handlers
+  // Dialog open handlers with stable references
   const openEditDialog = useCallback((unidad: any) => {
     if (isSubmitting) return;
     setCurrentUnidad(unidad);
@@ -181,11 +181,20 @@ export const UnidadTable: React.FC<UnidadTableProps> = React.memo(({
     setIsDeleteDialogOpen(true);
   }, [isSubmitting]);
 
-  // Check for empty state
-  const hasUnidades = unidades && unidades.length > 0;
+  // Memoize empty state check to prevent re-renders
+  const hasUnidades = useMemo(() => 
+    unidades && unidades.length > 0, 
+    [unidades]
+  );
 
+  // Render loading state if explicitly requested
   if (isLoading) {
-    return null; // No renderizar nada si está cargando, el componente padre se encarga de esto
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="animate-spin h-8 w-8 rounded-full border-4 border-primary border-t-transparent"></div>
+        <span className="ml-3 text-slate-600">Cargando unidades...</span>
+      </div>
+    );
   }
 
   return (
@@ -221,7 +230,7 @@ export const UnidadTable: React.FC<UnidadTableProps> = React.memo(({
         </div>
       )}
       
-      {/* Botón agregar unidad - solo se muestra si no está cargando */}
+      {/* Botón agregar unidad */}
       <div className="flex justify-end">
         <button
           className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90"
@@ -233,51 +242,50 @@ export const UnidadTable: React.FC<UnidadTableProps> = React.memo(({
       </div>
       
       {/* Add Unidad Dialog */}
-      <Dialog 
-        open={isAddDialogOpen} 
-        onOpenChange={(open) => {
-          if (!open && !isSubmitting) setIsAddDialogOpen(false);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>Agregar Unidad</DialogTitle>
-          <DialogDescription>Ingresa los datos de la nueva unidad</DialogDescription>
-          {isAddDialogOpen && (
+      {isAddDialogOpen && (
+        <Dialog 
+          open={isAddDialogOpen} 
+          onOpenChange={(open) => {
+            if (!open && !isSubmitting) setIsAddDialogOpen(false);
+          }}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogTitle>Agregar Unidad</DialogTitle>
+            <DialogDescription>Ingresa los datos de la nueva unidad</DialogDescription>
             <UnidadForm 
               onSubmit={handleAddUnidad}
               onCancel={() => !isSubmitting && setIsAddDialogOpen(false)}
               isSubmitting={isSubmitting}
-              leads={leads || []}
+              leads={leads}
             />
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
       
       {/* Edit Unidad Dialog */}
-      <Dialog 
-        open={isEditDialogOpen} 
-        onOpenChange={(open) => {
-          if (!open && !isSubmitting) {
-            setIsEditDialogOpen(false);
-            // Esperar a que la transición de cierre termine antes de limpiar el unidad
-            setTimeout(() => setCurrentUnidad(null), 300);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>Editar Unidad</DialogTitle>
-          <DialogDescription>Modifica los datos de la unidad</DialogDescription>
-          {isEditDialogOpen && currentUnidad && (
+      {isEditDialogOpen && currentUnidad && (
+        <Dialog 
+          open={isEditDialogOpen} 
+          onOpenChange={(open) => {
+            if (!open && !isSubmitting) {
+              setIsEditDialogOpen(false);
+              setTimeout(() => setCurrentUnidad(null), 300);
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogTitle>Editar Unidad</DialogTitle>
+            <DialogDescription>Modifica los datos de la unidad</DialogDescription>
             <UnidadForm 
               unidad={currentUnidad}
               onSubmit={handleEditUnidad}
               onCancel={() => !isSubmitting && setIsEditDialogOpen(false)}
               isSubmitting={isSubmitting}
-              leads={leads || []}
+              leads={leads}
             />
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
       
       {/* Delete Confirmation Dialog */}
       <DeleteUnidadDialog

@@ -121,14 +121,8 @@ export const createMultipleUnidadesFunc = async (
 
     console.log(`Successfully created ${unidades.length} unidades`);
 
-    // Retrasar actualización de conteos para evitar sobrecarga
-    setTimeout(async () => {
-      try {
-        await updatePrototipoUnitCounts(prototipo_id, queryClient);
-      } catch (err) {
-        console.error("Error updating counts after multiple creation:", err);
-      }
-    }, 2000);
+    // Actualizar conteos después de crear múltiples unidades
+    updatePrototipoUnitCounts(prototipo_id, queryClient);
 
     return data;
   } catch (error) {
@@ -147,18 +141,13 @@ export const useCreateMultipleUnidades = () => {
     mutationFn: (params: CreateMultipleUnidadesParams) => 
       createMultipleUnidadesFunc(params, queryClient),
     onSuccess: (_, variables) => {
-      // Retrasar invalidación para evitar ciclos de refresco
-      setTimeout(() => {
-        if (variables.prototipo_id) {
-          console.log('Invalidating queries after creating multiple unidades');
-          
-          // Invalidar sin provocar refresco inmediato
-          queryClient.invalidateQueries({ 
-            queryKey: ['unidades', variables.prototipo_id],
-            refetchType: 'none'
-          });
-        }
-      }, 1500);
+      if (variables.prototipo_id) {
+        // Invalidar sin provocar refresco inmediato
+        queryClient.invalidateQueries({ 
+          queryKey: ['unidades', variables.prototipo_id],
+          refetchType: 'none'
+        });
+      }
     }
   });
 };
@@ -173,19 +162,14 @@ export const useCreateUnidad = (prototipoId?: string) => {
     mutationFn: createUnidad,
     onSuccess: () => {
       if (prototipoId) {
-        console.log('Successfully created unidad, invalidating queries');
+        // Invalidar sin provocar refresco inmediato
+        queryClient.invalidateQueries({ 
+          queryKey: ['unidades', prototipoId],
+          refetchType: 'none'
+        });
         
-        // Retrasar la invalidación y control de refresco
-        setTimeout(() => {
-          // Invalidar sin provocar refresco inmediato
-          queryClient.invalidateQueries({ 
-            queryKey: ['unidades', prototipoId],
-            refetchType: 'none'
-          });
-          
-          // Actualizar conteos después de la creación
-          updatePrototipoUnitCounts(prototipoId, queryClient);
-        }, 1000);
+        // Actualizar conteos 
+        updatePrototipoUnitCounts(prototipoId, queryClient);
       }
     },
     onError: (error) => {
@@ -204,21 +188,14 @@ export const useUpdateUnidad = (prototipoId?: string) => {
     mutationFn: updateUnidad,
     onSuccess: () => {
       if (prototipoId) {
-        console.log('Successfully updated unidad, invalidating queries');
+        // Invalidar sin provocar refresco inmediato
+        queryClient.invalidateQueries({ 
+          queryKey: ['unidades', prototipoId],
+          refetchType: 'none'
+        });
         
-        // Retrasar la invalidación y control de refresco
-        setTimeout(() => {
-          // Invalidar sin provocar refresco inmediato
-          queryClient.invalidateQueries({ 
-            queryKey: ['unidades', prototipoId],
-            refetchType: 'none'
-          });
-          
-          // Actualizar conteos después de la actualización
-          setTimeout(() => {
-            updatePrototipoUnitCounts(prototipoId, queryClient);
-          }, 1000);
-        }, 1000);
+        // Actualizar conteos
+        updatePrototipoUnitCounts(prototipoId, queryClient);
       }
     },
     onError: (error) => {
@@ -237,21 +214,14 @@ export const useDeleteUnidad = (prototipoId?: string) => {
     mutationFn: deleteUnidad,
     onSuccess: () => {
       if (prototipoId) {
-        console.log('Successfully deleted unidad, invalidating queries');
+        // Invalidar sin provocar refresco inmediato
+        queryClient.invalidateQueries({ 
+          queryKey: ['unidades', prototipoId],
+          refetchType: 'none'
+        });
         
-        // Retrasar la invalidación y control de refresco
-        setTimeout(() => {
-          // Invalidar sin provocar refresco inmediato
-          queryClient.invalidateQueries({ 
-            queryKey: ['unidades', prototipoId],
-            refetchType: 'none'
-          });
-          
-          // Actualizar conteos después de la eliminación
-          setTimeout(() => {
-            updatePrototipoUnitCounts(prototipoId, queryClient);
-          }, 1000);
-        }, 1000);
+        // Actualizar conteos
+        updatePrototipoUnitCounts(prototipoId, queryClient);
       }
     },
     onError: (error) => {
