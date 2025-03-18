@@ -24,6 +24,7 @@ export const UnidadForm = ({
   isSubmitting = false
 }: UnidadFormProps) => {
   const { vendedores } = useVendedores();
+  const isEditing = !!unidad; // Check if we're editing an existing unit
   
   // Form state
   const [formData, setFormData] = useState({
@@ -112,15 +113,27 @@ export const UnidadForm = ({
       {/* Basic Information Fields */}
       <div className="space-y-2">
         <Label htmlFor="numero">Número *</Label>
-        <Input
-          id="numero"
-          name="numero"
-          value={formData.numero}
-          onChange={handleChange}
-          placeholder="Ej. A101"
-          required
-          disabled={isSubmitting}
-        />
+        {isEditing ? (
+          // Read-only input for editing existing units
+          <Input
+            id="numero"
+            name="numero"
+            value={formData.numero}
+            readOnly
+            className="bg-gray-100 text-gray-800"
+          />
+        ) : (
+          // Editable input for new units
+          <Input
+            id="numero"
+            name="numero"
+            value={formData.numero}
+            onChange={handleChange}
+            placeholder="Ej. A101"
+            required
+            disabled={isSubmitting}
+          />
+        )}
       </div>
       
       <div className="space-y-2">

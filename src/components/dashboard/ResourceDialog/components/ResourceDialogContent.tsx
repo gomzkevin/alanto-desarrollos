@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DialogContent, DialogFooter } from '@/components/ui/dialog';
@@ -73,6 +72,13 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
 }) => {
   const [localResourceId, setLocalResourceId] = useState<string | undefined>(resourceId);
   const formId = `${resourceType}-form-${localResourceId || 'new'}`;
+  
+  const processedFields = fields.map(field => {
+    if (resourceId && resourceType === 'unidades' && field.name === 'numero') {
+      return { ...field, readOnly: true };
+    }
+    return field;
+  });
   
   useEffect(() => {
     setLocalResourceId(resourceId);
@@ -187,7 +193,7 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
           
           <GenericForm
             formId={formId}
-            fields={fields}
+            fields={processedFields}
             values={resource}
             onChange={handleChange}
             onSelectChange={handleSelectChange}
@@ -204,7 +210,10 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
             <Alert className="mt-4">
               <InfoCircledIcon className="h-4 w-4" />
               <AlertDescription>
-                Recuerda que puedes asignar un comprador a una unidad seleccionando un cliente existente.
+                {resourceId 
+                  ? "El identificador de la unidad no se puede modificar."
+                  : "Recuerda que puedes asignar un comprador a una unidad seleccionando un cliente existente."
+                }
               </AlertDescription>
             </Alert>
           )}
