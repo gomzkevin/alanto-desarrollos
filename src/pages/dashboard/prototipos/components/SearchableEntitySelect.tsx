@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Command,
   CommandEmpty,
@@ -41,12 +41,25 @@ export const SearchableEntitySelect = ({
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   
-  // Improved filtering logic to make it more permissive
-  const filteredOptions = options.filter(option => 
-    option.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // More flexible filtering logic to handle accents and case insensitivity
+  const normalizeString = (str: string) => 
+    str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  
+  const filteredOptions = options.filter(option => {
+    if (!searchTerm) return true;
+    const normalizedSearch = normalizeString(searchTerm);
+    const normalizedName = normalizeString(option.nombre);
+    return normalizedName.includes(normalizedSearch);
+  });
   
   const selectedOption = options.find(option => option.id === value);
+  
+  // Update the search term when a value is selected externally
+  useEffect(() => {
+    if (selectedOption && !searchTerm) {
+      setSearchTerm(selectedOption.nombre);
+    }
+  }, [selectedOption, searchTerm]);
   
   return (
     <div>
@@ -97,7 +110,7 @@ export const SearchableEntitySelect = ({
                     onSelect={() => {
                       onChange(option.id, option.nombre);
                       setOpen(false);
-                      setSearchTerm("");
+                      setSearchTerm(option.nombre);
                     }}
                   >
                     <Check

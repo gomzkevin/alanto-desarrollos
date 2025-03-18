@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -18,6 +18,7 @@ const PrototipoDetail = () => {
   const { id, prototipo, isLoading, error, refetch, handleBack, updatePrototipoImage } = usePrototipoDetail();
   const [openAddUnidadDialog, setOpenAddUnidadDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   const { 
     unidades, 
@@ -28,9 +29,31 @@ const PrototipoDetail = () => {
   
   const unitCounts = useUnitCounts(unidades);
   
+  // Trigger refetch of unidades periodically if component is mounted
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (id) {
+        console.log('Periodic refresh of unidades');
+        refetchUnidades();
+      }
+    }, 5000); // Refresh every 5 seconds
+    
+    return () => clearInterval(intervalId);
+  }, [id, refetchUnidades]);
+  
+  // Also trigger refetch when dialogs are closed
+  useEffect(() => {
+    if (!openAddUnidadDialog && !openEditDialog) {
+      refetchUnidades();
+      refetch();
+    }
+  }, [openAddUnidadDialog, openEditDialog, refetchUnidades, refetch]);
+  
   const handleRefresh = () => {
+    console.log('Manual refresh triggered');
     refetch();
     refetchUnidades();
+    setRefreshTrigger(prev => prev + 1);
   };
   
   const handleGenerarUnidades = async (cantidad: number, prefijo: string) => {
@@ -48,7 +71,8 @@ const PrototipoDetail = () => {
         description: `Se han generado ${cantidad} unidades exitosamente.`
       });
       
-      refetch();
+      // Force refresh everything
+      handleRefresh();
     } catch (error) {
       console.error('Error al generar unidades:', error);
       toast({
@@ -99,7 +123,7 @@ const PrototipoDetail = () => {
           <Button 
             variant="outline" 
             className="mt-4"
-            onClick={() => refetch()}
+            onClick={() => handleRefresh()}
           >
             Intentar de nuevo
           </Button>
@@ -128,7 +152,7 @@ const PrototipoDetail = () => {
             unitCounts={unitCounts}
             onAddUnidad={() => setOpenAddUnidadDialog(true)}
             onGenerateUnidades={handleGenerarUnidades}
-            onRefreshUnidades={refetchUnidades}
+            onRefreshUnidades={handleRefresh}
           />
         </div>
       </div>
@@ -137,15 +161,21 @@ const PrototipoDetail = () => {
         resourceType="prototipos"
         resourceId={id}
         open={openEditDialog}
-        onClose={() => setOpenEditDialog(false)}
+        onClose={() => {
+          setOpenEditDialog(false);
+          setTimeout(handleRefresh, 500);
+        }}
         onSuccess={handleRefresh}
       />
       
       <AdminResourceDialog 
         resourceType="unidades"
         open={openAddUnidadDialog}
-        onClose={() => setOpenAddUnidadDialog(false)}
-        onSuccess={refetchUnidades}
+        onClose={() => {
+          setOpenAddUnidadDialog(false);
+          setTimeout(handleRefresh, 500);
+        }}
+        onSuccess={handleRefresh}
         prototipo_id={id}
       />
     </DashboardLayout>

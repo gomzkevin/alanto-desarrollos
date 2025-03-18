@@ -23,6 +23,8 @@ export const useUnidades = (params?: UseUnidadesParams) => {
   const fetchUnidades = async (): Promise<Unidad[]> => {
     if (!prototipoId) return [];
 
+    console.log(`Fetching unidades for prototipo: ${prototipoId}`);
+    
     const { data, error } = await supabase
       .from('unidades')
       .select(`
@@ -36,6 +38,7 @@ export const useUnidades = (params?: UseUnidadesParams) => {
       throw error;
     }
 
+    console.log(`Fetched ${data?.length || 0} unidades`);
     return data as Unidad[] || [];
   };
 
@@ -45,11 +48,18 @@ export const useUnidades = (params?: UseUnidadesParams) => {
   const deleteMutation = useDeleteUnidad(prototipoId);
   const createMultipleUnidades = useCreateMultipleUnidades();
 
-  // Use React Query to fetch unidades
-  const { data: unidades = [], isLoading, error, refetch } = useQuery({
+  // Use React Query to fetch unidades with a shorter stale time to refresh more frequently
+  const { 
+    data: unidades = [], 
+    isLoading, 
+    error, 
+    refetch 
+  } = useQuery({
     queryKey: ['unidades', prototipoId],
     queryFn: fetchUnidades,
-    enabled: !!prototipoId
+    enabled: !!prototipoId,
+    staleTime: 1000, // Consider data stale after 1 second
+    refetchOnWindowFocus: true
   });
 
   return {

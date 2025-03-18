@@ -53,12 +53,17 @@ export const useUnidadTable = ({
 
   const handleAddUnidad = useCallback(async (data: any) => {
     try {
+      // Convert price from string to number if needed
+      const precioVenta = typeof data.precio_venta === 'string' && data.precio_venta.includes('$')
+        ? parseFloat(data.precio_venta.replace(/[$,]/g, ''))
+        : data.precio_venta;
+
       await createUnidad({
         prototipo_id: prototipo.id,
         numero: data.numero,
         estado: data.estado,
         nivel: data.nivel,
-        precio_venta: data.precio_venta,
+        precio_venta: precioVenta,
         comprador_id: data.comprador_id,
         comprador_nombre: data.comprador_nombre,
         vendedor_id: data.vendedor_id,
@@ -72,7 +77,7 @@ export const useUnidadTable = ({
       });
       
       setIsAddDialogOpen(false);
-      refetch();
+      await refetch();
     } catch (error: any) {
       console.error("Error creating unidad:", error);
       toast({
@@ -87,12 +92,20 @@ export const useUnidadTable = ({
     if (!currentUnidad) return;
     
     try {
+      // Make sure we close the dialog first before potentially causing any state update issues
+      setIsEditDialogOpen(false);
+      
+      // Convert price from string to number if needed
+      const precioVenta = typeof data.precio_venta === 'string' && data.precio_venta.includes('$')
+        ? parseFloat(data.precio_venta.replace(/[$,]/g, ''))
+        : data.precio_venta;
+      
       await updateUnidad({
         id: currentUnidad.id,
         numero: data.numero,
         estado: data.estado,
         nivel: data.nivel,
-        precio_venta: data.precio_venta,
+        precio_venta: precioVenta,
         comprador_id: data.comprador_id,
         comprador_nombre: data.comprador_nombre,
         vendedor_id: data.vendedor_id,
@@ -105,9 +118,11 @@ export const useUnidadTable = ({
         description: "La unidad ha sido actualizada exitosamente"
       });
       
-      setIsEditDialogOpen(false);
       setCurrentUnidad(null);
-      refetch();
+      // Wait a brief moment before refreshing to avoid race conditions
+      setTimeout(() => {
+        refetch();
+      }, 100);
     } catch (error: any) {
       console.error("Error updating unidad:", error);
       toast({
@@ -122,6 +137,9 @@ export const useUnidadTable = ({
     if (!currentUnidad) return;
     
     try {
+      // Close dialog first
+      setIsDeleteDialogOpen(false);
+      
       await deleteUnidad(currentUnidad.id);
       
       toast({
@@ -129,9 +147,11 @@ export const useUnidadTable = ({
         description: "La unidad ha sido eliminada exitosamente"
       });
       
-      setIsDeleteDialogOpen(false);
       setCurrentUnidad(null);
-      refetch();
+      // Wait a brief moment before refreshing
+      setTimeout(() => {
+        refetch();
+      }, 100);
     } catch (error: any) {
       console.error("Error deleting unidad:", error);
       toast({

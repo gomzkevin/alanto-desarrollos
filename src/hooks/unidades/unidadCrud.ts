@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { updatePrototipoUnitCounts } from './updateUtils';
@@ -7,6 +8,8 @@ import { CreateMultipleUnidadesParams } from './types';
  * Create a single unidad
  */
 export const createUnidad = async (unidadData: any) => {
+  console.log('Creating unidad with data:', unidadData);
+  
   const { data, error } = await supabase
     .from('unidades')
     .insert(unidadData)
@@ -24,6 +27,8 @@ export const createUnidad = async (unidadData: any) => {
  * Update a unidad
  */
 export const updateUnidad = async ({ id, ...unidadData }: { id: string; [key: string]: any }) => {
+  console.log('Updating unidad:', id, 'with data:', unidadData);
+  
   const { data, error } = await supabase
     .from('unidades')
     .update(unidadData)
@@ -35,6 +40,7 @@ export const updateUnidad = async ({ id, ...unidadData }: { id: string; [key: st
     throw error;
   }
 
+  console.log('Unidad updated successfully:', data);
   return data;
 };
 
@@ -42,6 +48,8 @@ export const updateUnidad = async ({ id, ...unidadData }: { id: string; [key: st
  * Delete a unidad
  */
 export const deleteUnidad = async (id: string) => {
+  console.log('Deleting unidad:', id);
+  
   const { error } = await supabase
     .from('unidades')
     .delete()
@@ -51,6 +59,8 @@ export const deleteUnidad = async (id: string) => {
     console.error('Error deleting unidad:', error);
     throw error;
   }
+  
+  console.log('Unidad deleted successfully');
 };
 
 /**
@@ -61,6 +71,8 @@ export const createMultipleUnidadesFunc = async (
   queryClient: QueryClient
 ) => {
   try {
+    console.log(`Creating ${cantidad} unidades with prefix "${prefijo}" for prototipo ${prototipo_id}`);
+    
     const unidades = [];
     for (let i = 0; i < cantidad; i++) {
       unidades.push({
@@ -76,6 +88,8 @@ export const createMultipleUnidadesFunc = async (
       .select();
 
     if (error) throw error;
+
+    console.log(`Successfully created ${unidades.length} unidades`);
 
     // After creating multiple unidades, update the prototipo's unit counts
     await updatePrototipoUnitCounts(prototipo_id, queryClient);
@@ -97,11 +111,13 @@ export const useCreateMultipleUnidades = () => {
     mutationFn: (params: CreateMultipleUnidadesParams) => 
       createMultipleUnidadesFunc(params, queryClient),
     onSuccess: (_, variables) => {
+      // Invalidate related queries to trigger refetches
       queryClient.invalidateQueries({ queryKey: ['unidades', variables.prototipo_id] });
       
       // Also invalidate the prototipo queries
       if (variables.prototipo_id) {
         queryClient.invalidateQueries({ queryKey: ['prototipo', variables.prototipo_id] });
+        queryClient.invalidateQueries({ queryKey: ['prototipos'] });
       }
     }
   });
@@ -117,7 +133,12 @@ export const useCreateUnidad = (prototipoId?: string) => {
     mutationFn: createUnidad,
     onSuccess: () => {
       if (prototipoId) {
+        // Invalidate all related queries
         queryClient.invalidateQueries({ queryKey: ['unidades', prototipoId] });
+        queryClient.invalidateQueries({ queryKey: ['prototipo', prototipoId] });
+        queryClient.invalidateQueries({ queryKey: ['prototipos'] });
+        
+        // Update counts
         updatePrototipoUnitCounts(prototipoId, queryClient);
       }
     }
@@ -132,9 +153,28 @@ export const useUpdateUnidad = (prototipoId?: string) => {
   
   return useMutation({
     mutationFn: updateUnidad,
-    onSuccess: () => {
+    onSuccess: (data) => {
       if (prototipoId) {
-        queryClient.invalidateQueries({ queryKey: ['unidades', prototipoId] });
+        console.log('Successfully updated unidad, invalidating queries');
+        
+        // Invalidate all related queries - force refetch by passing exact: false
+        queryClient.invalidateQueries({ 
+          queryKey: ['unidades', prototipoId],
+          exact: false,
+          refetchType: 'all'
+        });
+        
+        queryClient.invalidateQueries({ 
+          queryKey: ['prototipo', prototipoId],
+          exact: false
+        });
+        
+        queryClient.invalidateQueries({ 
+          queryKey: ['prototipos'],
+          exact: false
+        });
+        
+        // Update counts
         updatePrototipoUnitCounts(prototipoId, queryClient);
       }
     }
@@ -151,7 +191,26 @@ export const useDeleteUnidad = (prototipoId?: string) => {
     mutationFn: deleteUnidad,
     onSuccess: () => {
       if (prototipoId) {
-        queryClient.invalidateQueries({ queryKey: ['unidades', prototipoId] });
+        console.log('Successfully deleted unidad, invalidating queries');
+        
+        // Invalidate all related queries
+        queryClient.invalidateQueries({ 
+          queryKey: ['unidades', prototipoId],
+          exact: false,
+          refetchType: 'all'
+        });
+        
+        queryClient.invalidateQueries({ 
+          queryKey: ['prototipo', prototipoId],
+          exact: false
+        });
+        
+        queryClient.invalidateQueries({ 
+          queryKey: ['prototipos'],
+          exact: false
+        });
+        
+        // Update counts
         updatePrototipoUnitCounts(prototipoId, queryClient);
       }
     }
