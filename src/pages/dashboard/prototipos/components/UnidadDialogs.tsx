@@ -31,18 +31,22 @@ export const UnidadDialogs = ({
   handleEditUnidad,
   handleDeleteUnidad
 }: UnidadDialogsProps) => {
-  // Cerramos el diálogo antes de procesar los datos
+  // First close dialog then process the data
   const handleAddSubmit = (data: any) => {
+    // Close dialog first
     setIsAddDialogOpen(false);
-    // Pequeño retraso para asegurar que el diálogo se cierre primero
+    
+    // Process data with a delay to ensure dialog is closed
     setTimeout(() => {
       handleAddUnidad(data);
     }, 300);
   };
   
   const handleEditSubmit = (data: any) => {
+    // Close dialog first
     closeEditDialog();
-    // Pequeño retraso para asegurar que el diálogo se cierre primero
+    
+    // Process data with a delay to ensure dialog is closed
     setTimeout(() => {
       handleEditUnidad(data);
     }, 300);
@@ -51,24 +55,36 @@ export const UnidadDialogs = ({
   return (
     <>
       {/* Add Unidad Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <Dialog 
+        open={isAddDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) setIsAddDialogOpen(false);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogTitle>Agregar Unidad</DialogTitle>
           <DialogDescription>Ingresa los datos de la nueva unidad</DialogDescription>
-          <UnidadForm 
-            onSubmit={handleAddSubmit}
-            onCancel={() => setIsAddDialogOpen(false)}
-            leads={leads}
-          />
+          {isAddDialogOpen && (
+            <UnidadForm 
+              onSubmit={handleAddSubmit}
+              onCancel={() => setIsAddDialogOpen(false)}
+              leads={leads}
+            />
+          )}
         </DialogContent>
       </Dialog>
       
       {/* Edit Unidad Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={closeEditDialog}>
+      <Dialog 
+        open={isEditDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) closeEditDialog();
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogTitle>Editar Unidad</DialogTitle>
           <DialogDescription>Modifica los datos de la unidad</DialogDescription>
-          {currentUnidad && (
+          {isEditDialogOpen && currentUnidad && (
             <UnidadForm 
               unidad={currentUnidad}
               onSubmit={handleEditSubmit}
@@ -83,7 +99,12 @@ export const UnidadDialogs = ({
       <DeleteUnidadDialog
         isOpen={isDeleteDialogOpen}
         onClose={closeDeleteDialog}
-        onConfirm={handleDeleteUnidad}
+        onConfirm={() => {
+          closeDeleteDialog();
+          setTimeout(() => {
+            handleDeleteUnidad();
+          }, 300);
+        }}
       />
     </>
   );

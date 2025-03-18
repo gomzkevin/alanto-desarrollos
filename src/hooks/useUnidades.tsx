@@ -53,7 +53,7 @@ export const useUnidades = (params?: UseUnidadesParams) => {
   const deleteMutation = useDeleteUnidad(prototipoId);
   const createMultipleUnidades = useCreateMultipleUnidades();
 
-  // Use React Query to fetch unidades with a shorter stale time to refresh more frequently
+  // Use React Query to fetch unidades with optimized configuration
   const { 
     data: unidades = [], 
     isLoading, 
@@ -63,11 +63,11 @@ export const useUnidades = (params?: UseUnidadesParams) => {
     queryKey: ['unidades', prototipoId],
     queryFn: fetchUnidades,
     enabled: !!prototipoId,
-    staleTime: 1000, // Consider data stale after 1 second
+    staleTime: 10000, // Consider data stale after 10 seconds (reduced frequency)
     refetchOnWindowFocus: true,
-    refetchInterval: 5000,  // Auto-refresh every 5 seconds to ensure updates are caught
-    retry: 3, // Retry failed requests up to 3 times
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000) // Exponential backoff
+    refetchInterval: 30000,  // Less frequent auto-refresh (30 seconds)
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000)
   });
 
   return {

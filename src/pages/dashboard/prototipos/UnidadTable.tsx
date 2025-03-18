@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, TableBody } from "@/components/ui/table";
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import UnidadTableHeader from './components/UnidadTableHeader';
@@ -8,8 +7,6 @@ import EmptyUnidadState from './components/EmptyUnidadState';
 import UnidadDialogs from './components/UnidadDialogs';
 import useUnidadTable from './hooks/useUnidadTable';
 import UnidadTableActions from './components/UnidadTableActions';
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 
 export interface UnidadTableProps {
   prototipo: ExtendedPrototipo;
@@ -24,6 +21,14 @@ export const UnidadTable = ({
   isLoading: externalLoading, 
   onRefresh: externalRefresh 
 }: UnidadTableProps) => {
+  const [isMounted, setIsMounted] = useState(false);
+  const [showLoadingAfterOperation, setShowLoadingAfterOperation] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
+  
   const {
     unidades,
     isLoading,
@@ -32,6 +37,7 @@ export const UnidadTable = ({
     isEditDialogOpen,
     isDeleteDialogOpen,
     currentUnidad,
+    isProcessing,
     setIsAddDialogOpen,
     openEditDialog,
     openDeleteDialog,
@@ -46,8 +52,24 @@ export const UnidadTable = ({
     externalLoading,
     externalRefresh
   });
+  
+  useEffect(() => {
+    if (isProcessing && isMounted) {
+      setShowLoadingAfterOperation(true);
+    } else if (!isProcessing && isMounted) {
+      const timer = setTimeout(() => {
+        if (isMounted) {
+          setShowLoadingAfterOperation(false);
+        }
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isProcessing, isMounted]);
+  
+  const finalIsLoading = isLoading || showLoadingAfterOperation;
 
-  if (isLoading) {
+  if (finalIsLoading) {
     return <div className="text-center py-4">Cargando unidades...</div>;
   }
 
@@ -57,15 +79,15 @@ export const UnidadTable = ({
         <h2 className="text-xl font-bold">Unidades de {prototipo.nombre}</h2>
         
         <UnidadTableActions 
-          onAddClick={() => setIsAddDialogOpen(true)}
+          onAddClick={() => !isProcessing && setIsAddDialogOpen(true)}
           unidadesCount={unidades.length}
           totalUnidades={prototipo.total_unidades}
           showGenerateButton={false}
         />
       </div>
       
-      {unidades.length === 0 ? (
-        <EmptyUnidadState onAddClick={() => setIsAddDialogOpen(true)} />
+      {(!unidades || unidades.length === 0) ? (
+        <EmptyUnidadState onAddClick={() => !isProcessing && setIsAddDialogOpen(true)} />
       ) : (
         <div className="border rounded-md overflow-hidden">
           <Table>
