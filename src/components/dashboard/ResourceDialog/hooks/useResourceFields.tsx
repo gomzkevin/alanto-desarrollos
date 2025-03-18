@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -174,19 +173,22 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
               name: 'estado', 
               label: 'Estado', 
               type: 'select', 
-              options: LEAD_STATUS_OPTIONS 
+              options: LEAD_STATUS_OPTIONS,
+              placeholder: 'Seleccione un estado'
             },
             { 
               name: 'subestado', 
               label: 'Subestado', 
               type: 'select', 
-              options: substatusOptions
+              options: substatusOptions,
+              placeholder: 'Seleccione un subestado'
             },
             { 
               name: 'origen', 
               label: 'Origen', 
               type: 'select', 
-              options: LEAD_ORIGIN_OPTIONS 
+              options: LEAD_ORIGIN_OPTIONS,
+              placeholder: 'Seleccione un origen'
             },
             { 
               name: 'interes_en', 

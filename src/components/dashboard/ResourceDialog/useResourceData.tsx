@@ -320,9 +320,13 @@ export default function useResourceData({
   // Ensure we don't reset the resource when selectedStatus changes after initial load
   useEffect(() => {
     if (initialFetchComplete && resourceType === 'leads' && !resourceId && selectedStatus) {
-      // Only update the subestado field based on the new status, preserve other fields
+      // Only update the estado and subestado fields based on the new status, preserve other fields
       setResource(prev => {
         if (!prev) return prev;
+        
+        console.log("Preserving form data while updating status to:", selectedStatus);
+        console.log("Current form data:", prev);
+        
         return {
           ...prev,
           estado: selectedStatus,

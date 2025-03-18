@@ -103,12 +103,12 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     if (name === 'estado' && resourceType === 'leads') {
       setSelectedStatus(value);
       
-      // Mantener todos los valores existentes y solo actualizar el estado
+      // Preserve all existing values when changing status
       if (resource) {
         setResource({
           ...resource,
           estado: value,
-          // Solo reseteamos el subestado, que depende del estado seleccionado
+          // Only reset substatus which depends on selected status
           subestado: ''
         });
       }
@@ -122,7 +122,7 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
         });
       }
     } else if (resource) {
-      // Para cualquier otro campo, solo actualizar ese campo específico
+      // For any other field, just update that specific field
       setResource({
         ...resource,
         [name]: value
