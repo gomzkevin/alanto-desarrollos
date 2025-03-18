@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -91,33 +92,35 @@ export default function useResourceData({
             .single();
         }
         
-        const { data, error } = await query;
+        if (query) {
+          const { data, error } = await query;
 
-        if (error) {
-          console.error('Error fetching resource:', error);
-          toast({
-            title: 'Error',
-            description: `No se pudo cargar el recurso: ${error.message}`,
-            variant: 'destructive',
-          });
-        } else {
-          setResource(data as FormValues);
-          
-          if (resourceType === 'desarrollos' && data.amenidades) {
-            try {
-              const parsedAmenities = typeof data.amenidades === 'string' 
-                ? JSON.parse(data.amenidades) 
-                : data.amenidades || [];
-              onAmenitiesChange(parsedAmenities);
-            } catch (e) {
-              console.error('Error parsing amenities:', e);
-              onAmenitiesChange([]);
+          if (error) {
+            console.error('Error fetching resource:', error);
+            toast({
+              title: 'Error',
+              description: `No se pudo cargar el recurso: ${error.message}`,
+              variant: 'destructive',
+            });
+          } else {
+            setResource(data as FormValues);
+            
+            if (resourceType === 'desarrollos' && data.amenidades) {
+              try {
+                const parsedAmenities = typeof data.amenidades === 'string' 
+                  ? JSON.parse(data.amenidades) 
+                  : data.amenidades || [];
+                onAmenitiesChange(parsedAmenities);
+              } catch (e) {
+                console.error('Error parsing amenities:', e);
+                onAmenitiesChange([]);
+              }
             }
-          }
-          
-          if (resourceType === 'leads') {
-            if (data.estado) {
-              onStatusChange(data.estado);
+            
+            if (resourceType === 'leads') {
+              if (data.estado) {
+                onStatusChange(data.estado);
+              }
             }
           }
         }
@@ -160,6 +163,11 @@ export default function useResourceData({
       }
       setIsLoading(false);
     };
+
+    console.log("Defining fields with status options:", statusOptions);
+    console.log("Selected status:", selectedStatus);
+    console.log("Substatus options:", selectedStatus ? getSubstatusOptions(selectedStatus) : []);
+    console.log("Origin options:", originOptions);
 
     const defineFields = () => {
       let fieldDefinitions: FieldDefinition[] = [];
@@ -216,9 +224,24 @@ export default function useResourceData({
             { name: 'email', label: 'Email', type: 'email' as FieldType },
             { name: 'telefono', label: 'Teléfono', type: 'text' as FieldType },
             { name: 'agente', label: 'Agente', type: 'text' as FieldType },
-            { name: 'estado', label: 'Estado', type: 'select' as FieldType, options: statusOptions },
-            { name: 'subestado', label: 'Subestado', type: 'select' as FieldType, options: selectedStatus ? getSubstatusOptions(selectedStatus) : [] },
-            { name: 'origen', label: 'Origen', type: 'select' as FieldType, options: originOptions },
+            { 
+              name: 'estado', 
+              label: 'Estado', 
+              type: 'select' as FieldType, 
+              options: statusOptions 
+            },
+            { 
+              name: 'subestado', 
+              label: 'Subestado', 
+              type: 'select' as FieldType, 
+              options: selectedStatus ? getSubstatusOptions(selectedStatus) : [] 
+            },
+            { 
+              name: 'origen', 
+              label: 'Origen', 
+              type: 'select' as FieldType, 
+              options: originOptions 
+            },
             { name: 'interes_en', label: 'Interés en', type: 'text' as FieldType },
             { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' as FieldType },
             { name: 'notas', label: 'Notas', type: 'textarea' as FieldType },
@@ -255,6 +278,7 @@ export default function useResourceData({
           break;
       }
 
+      console.log("Fields defined for resourceType:", resourceType, fieldDefinitions);
       setFields(fieldDefinitions);
     };
 

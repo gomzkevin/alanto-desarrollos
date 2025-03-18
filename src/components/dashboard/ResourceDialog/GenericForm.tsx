@@ -53,6 +53,9 @@ const GenericForm = ({
 }: GenericFormProps) => {
   const [activeTab, setActiveTab] = useState<string>('general');
   const [tabs, setTabs] = useState<{ id: string; label: string }[]>([]);
+  
+  console.log("GenericForm render with fields:", fields);
+  console.log("GenericForm values:", values);
 
   const generateValidationSchema = () => {
     const schema: { [key: string]: any } = {};
@@ -87,10 +90,13 @@ const GenericForm = ({
   });
 
   useEffect(() => {
+    console.log("Resetting form with values:", values);
     form.reset(values as any);
   }, [form, values]);
 
   const onFormChange = (name: string, value: any) => {
+    console.log("Form change:", name, value);
+    
     // Create new object with just the changed field
     const updatedValues = { [name]: value };
     onChange(updatedValues);
@@ -179,6 +185,7 @@ const GenericForm = ({
                     value={formField.value?.toString() || ''}
                     disabled={field.readOnly}
                     onValueChange={(value) => {
+                      console.log(`Select change for ${field.name}:`, value);
                       formField.onChange(value);
                       if (!field.readOnly) {
                         onFormChange(field.name, value);
@@ -186,9 +193,9 @@ const GenericForm = ({
                     }}
                   >
                     <SelectTrigger className={field.readOnly ? "bg-gray-100" : ""}>
-                      <SelectValue placeholder="Seleccionar..." />
+                      <SelectValue placeholder={`Seleccionar ${field.label}...`} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white">
                       {field.options.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}

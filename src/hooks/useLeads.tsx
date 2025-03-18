@@ -70,6 +70,10 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos();
   
+  console.log("useLeads initialization with options:", options);
+  console.log("Lead status options:", LEAD_STATUS_OPTIONS);
+  console.log("Lead origin options:", LEAD_ORIGIN_OPTIONS);
+  
   // Function to fetch leads
   const fetchLeads = async () => {
     console.log('Fetching leads with options:', options);
@@ -168,7 +172,10 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
 
   // Function to get substatus options based on a status
   const getSubstatusOptions = (status: string) => {
-    return LEAD_SUBSTATUS_OPTIONS[status as keyof typeof LEAD_SUBSTATUS_OPTIONS] || [];
+    console.log("Getting substatus options for status:", status);
+    const options = LEAD_SUBSTATUS_OPTIONS[status as keyof typeof LEAD_SUBSTATUS_OPTIONS] || [];
+    console.log("Substatus options:", options);
+    return options;
   };
 
   // Function to find label for a given status value

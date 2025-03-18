@@ -32,6 +32,7 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
     let isMounted = true;
     
     if (unidad && isMounted) {
+      console.log("Setting form data from unidad:", unidad);
       // Set the raw form data
       setFormData({
         numero: unidad.numero || '',
@@ -57,6 +58,7 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
   // Handle input changes with stable callback
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    console.log("Unidad form change:", name, value);
     
     // Special handling for precio_venta field to format the display
     if (name === 'precio_venta') {
@@ -102,6 +104,7 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
   const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log("Submitting form data:", formData);
     
     // Prepare data to submit - handle empty date properly
     const dataToSubmit = {
