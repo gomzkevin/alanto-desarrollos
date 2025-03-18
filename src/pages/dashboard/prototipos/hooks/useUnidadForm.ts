@@ -102,7 +102,15 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
   const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    onSubmit(formData);
+    
+    // Prepare data to submit - handle empty date properly
+    const dataToSubmit = {
+      ...formData,
+      // If fecha_venta is empty string, set to null for database compatibility
+      fecha_venta: formData.fecha_venta || null
+    };
+    
+    onSubmit(dataToSubmit);
   }, [formData, onSubmit]);
   
   return {

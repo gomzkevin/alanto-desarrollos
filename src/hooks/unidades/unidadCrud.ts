@@ -18,6 +18,11 @@ export const createUnidad = async (unidadData: any) => {
       }
     }
     
+    // Handle empty date values
+    if (unidadData.fecha_venta === '') {
+      unidadData.fecha_venta = null;
+    }
+    
     const { data, error } = await supabase
       .from('unidades')
       .insert(unidadData)
@@ -48,6 +53,20 @@ export const updateUnidad = async ({ id, ...unidadData }: { id: string; [key: st
       if (unidadData.precio_venta.includes('$') || unidadData.precio_venta.includes(',')) {
         unidadData.precio_venta = parseFloat(unidadData.precio_venta.replace(/[$,]/g, ''));
       }
+    }
+    
+    // Handle empty date values - must be null for the database, not empty string
+    if (unidadData.fecha_venta === '') {
+      unidadData.fecha_venta = null;
+    }
+    
+    // Handle empty string IDs - must be null for the database
+    if (unidadData.vendedor_id === '') {
+      unidadData.vendedor_id = null;
+    }
+    
+    if (unidadData.comprador_id === '') {
+      unidadData.comprador_id = null;
     }
     
     const { data, error } = await supabase

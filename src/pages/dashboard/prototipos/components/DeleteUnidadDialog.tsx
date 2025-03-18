@@ -25,17 +25,18 @@ const DeleteUnidadDialog = ({ isOpen, onClose, onConfirm, isDeleting = false }: 
         <AlertDialogHeader>
           <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
           <AlertDialogDescription>
-            Esta acción no se puede deshacer. Eliminará permanentemente la unidad seleccionada.
+            Esta acción no se puede deshacer. Esto eliminará permanentemente la unidad
+            y eliminará sus datos de nuestros servidores.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction 
-            onClick={onConfirm}
+            onClick={onConfirm} 
+            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
             disabled={isDeleting}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            {isDeleting ? 'Eliminando...' : 'Eliminar unidad'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

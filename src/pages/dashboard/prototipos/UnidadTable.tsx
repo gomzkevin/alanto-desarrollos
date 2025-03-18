@@ -4,11 +4,9 @@ import { Table, TableBody, TableHeader, TableRow, TableHead } from "@/components
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import UnidadTableRow from './components/UnidadTableRow';
 import EmptyUnidadState from './components/EmptyUnidadState';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import DeleteUnidadDialog from './components/DeleteUnidadDialog';
-import { UnidadForm } from "./UnidadForm";
-import useLeads from "@/hooks/useLeads";
+import UnidadDialogs from './components/UnidadDialogs';
 import { useToast } from "@/hooks/use-toast";
+import useLeads from "@/hooks/useLeads";
 import useUnidades from '@/hooks/useUnidades';
 
 export interface UnidadTableProps {
@@ -278,53 +276,20 @@ export const UnidadTable = ({
         </button>
       </div>
       
-      {/* Add Unidad Dialog - Improve dialog management */}
-      <Dialog 
-        open={isAddDialogOpen} 
-        onOpenChange={(open) => {
-          if (!open && !isSubmitting) closeAddDialog();
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>Agregar Unidad</DialogTitle>
-          <DialogDescription>Ingresa los datos de la nueva unidad</DialogDescription>
-          <UnidadForm 
-            onSubmit={handleAddUnidad}
-            onCancel={closeAddDialog}
-            isSubmitting={isSubmitting}
-            leads={leads}
-          />
-        </DialogContent>
-      </Dialog>
-      
-      {/* Edit Unidad Dialog - Improve dialog management */}
-      <Dialog 
-        open={isEditDialogOpen} 
-        onOpenChange={(open) => {
-          if (!open && !isSubmitting) closeEditDialog();
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>Editar Unidad</DialogTitle>
-          <DialogDescription>Modifica los datos de la unidad</DialogDescription>
-          {currentUnidad && (
-            <UnidadForm 
-              unidad={currentUnidad}
-              onSubmit={handleEditUnidad}
-              onCancel={closeEditDialog}
-              isSubmitting={isSubmitting}
-              leads={leads}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-      
-      {/* Delete Confirmation Dialog - Improve dialog management */}
-      <DeleteUnidadDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={closeDeleteDialog}
-        onConfirm={handleDeleteUnidad}
-        isDeleting={isSubmitting}
+      {/* All dialogs extracted to a separate component */}
+      <UnidadDialogs
+        isAddDialogOpen={isAddDialogOpen}
+        isEditDialogOpen={isEditDialogOpen}
+        isDeleteDialogOpen={isDeleteDialogOpen}
+        isSubmitting={isSubmitting}
+        currentUnidad={currentUnidad}
+        leads={leads}
+        setIsAddDialogOpen={setIsAddDialogOpen}
+        closeEditDialog={closeEditDialog}
+        closeDeleteDialog={closeDeleteDialog}
+        handleAddUnidad={handleAddUnidad}
+        handleEditUnidad={handleEditUnidad}
+        handleDeleteUnidad={handleDeleteUnidad}
       />
     </div>
   );

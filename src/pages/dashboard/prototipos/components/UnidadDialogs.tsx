@@ -8,6 +8,7 @@ interface UnidadDialogsProps {
   isAddDialogOpen: boolean;
   isEditDialogOpen: boolean;
   isDeleteDialogOpen: boolean;
+  isSubmitting: boolean;
   currentUnidad: any;
   leads: any[];
   setIsAddDialogOpen: (open: boolean) => void;
@@ -22,6 +23,7 @@ export const UnidadDialogs = ({
   isAddDialogOpen,
   isEditDialogOpen,
   isDeleteDialogOpen,
+  isSubmitting,
   currentUnidad,
   leads,
   setIsAddDialogOpen,
@@ -37,19 +39,18 @@ export const UnidadDialogs = ({
       <Dialog 
         open={isAddDialogOpen} 
         onOpenChange={(open) => {
-          if (!open) setIsAddDialogOpen(false);
+          if (!open && !isSubmitting) setIsAddDialogOpen(false);
         }}
       >
         <DialogContent className="sm:max-w-md">
           <DialogTitle>Agregar Unidad</DialogTitle>
           <DialogDescription>Ingresa los datos de la nueva unidad</DialogDescription>
-          {isAddDialogOpen && (
-            <UnidadForm 
-              onSubmit={handleAddUnidad}
-              onCancel={() => setIsAddDialogOpen(false)}
-              leads={leads || []}
-            />
-          )}
+          <UnidadForm 
+            onSubmit={handleAddUnidad}
+            onCancel={() => setIsAddDialogOpen(false)}
+            leads={leads || []}
+            isSubmitting={isSubmitting}
+          />
         </DialogContent>
       </Dialog>
       
@@ -57,7 +58,7 @@ export const UnidadDialogs = ({
       <Dialog 
         open={isEditDialogOpen} 
         onOpenChange={(open) => {
-          if (!open) closeEditDialog();
+          if (!open && !isSubmitting) closeEditDialog();
         }}
       >
         <DialogContent className="sm:max-w-md">
@@ -69,6 +70,7 @@ export const UnidadDialogs = ({
               onSubmit={handleEditUnidad}
               onCancel={closeEditDialog}
               leads={leads || []}
+              isSubmitting={isSubmitting}
             />
           )}
         </DialogContent>
@@ -79,6 +81,7 @@ export const UnidadDialogs = ({
         isOpen={isDeleteDialogOpen}
         onClose={closeDeleteDialog}
         onConfirm={handleDeleteUnidad}
+        isDeleting={isSubmitting}
       />
     </>
   );
