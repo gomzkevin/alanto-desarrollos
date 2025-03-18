@@ -29,8 +29,11 @@ const PrototipoDetail = () => {
     createMultipleUnidades
   } = useUnidades({ prototipo_id: id });
   
+  // Ensure unidades is always an array
+  const safeUnidades = Array.isArray(unidades) ? unidades : [];
+  
   // Memoize unit counts for stability
-  const unitCounts = useUnitCounts(unidades);
+  const unitCounts = useUnitCounts(safeUnidades);
   
   // Controlador de refresco con limitación de frecuencia
   const handleRefresh = useCallback(() => {
@@ -160,7 +163,7 @@ const PrototipoDetail = () => {
           
           <PrototipoUnidades 
             prototipo={prototipo}
-            unidades={unidades}
+            unidades={safeUnidades}
             unidadesLoading={combinedLoadingState}
             unitCounts={unitCounts}
             onAddUnidad={() => setOpenAddUnidadDialog(true)}
