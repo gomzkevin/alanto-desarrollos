@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Table, TableBody, TableHeader, TableRow, TableHead } from "@/components/ui/table";
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import UnidadTableRow from './components/UnidadTableRow';
@@ -18,12 +18,12 @@ export interface UnidadTableProps {
   onRefresh?: () => void;
 }
 
-export const UnidadTable = ({ 
+export const UnidadTable: React.FC<UnidadTableProps> = React.memo(({ 
   prototipo, 
   unidades = [], 
   isLoading = false,
   onRefresh
-}: UnidadTableProps) => {
+}) => {
   const { toast } = useToast();
   const { leads } = useLeads();
   const { 
@@ -53,6 +53,8 @@ export const UnidadTable = ({
 
   // Handle add unidad
   const handleAddUnidad = async (data: any) => {
+    if (isSubmitting) return;
+    
     setIsSubmitting(true);
     try {
       await createUnidad({
@@ -75,11 +77,10 @@ export const UnidadTable = ({
       
       setIsAddDialogOpen(false);
       
-      // Wait before refreshing
+      // Esperar antes de refrescar
       setTimeout(() => {
         if (onRefresh) onRefresh();
-        invalidateUnidades();
-      }, 500);
+      }, 1000);
     } catch (error: any) {
       console.error("Error creating unidad:", error);
       toast({
@@ -94,7 +95,7 @@ export const UnidadTable = ({
 
   // Handle edit unidad
   const handleEditUnidad = async (data: any) => {
-    if (!currentUnidad) return;
+    if (!currentUnidad || isSubmitting) return;
     
     setIsSubmitting(true);
     try {
@@ -117,13 +118,12 @@ export const UnidadTable = ({
       });
       
       setIsEditDialogOpen(false);
-      setCurrentUnidad(null);
       
-      // Wait before refreshing
+      // Esperar antes de refrescar y limpiar el unidad actual
       setTimeout(() => {
+        setCurrentUnidad(null);
         if (onRefresh) onRefresh();
-        invalidateUnidades();
-      }, 500);
+      }, 1000);
     } catch (error: any) {
       console.error("Error updating unidad:", error);
       toast({
@@ -138,7 +138,7 @@ export const UnidadTable = ({
 
   // Handle delete unidad
   const handleDeleteUnidad = async () => {
-    if (!currentUnidad) return;
+    if (!currentUnidad || isSubmitting) return;
     
     setIsSubmitting(true);
     try {
@@ -150,13 +150,12 @@ export const UnidadTable = ({
       });
       
       setIsDeleteDialogOpen(false);
-      setCurrentUnidad(null);
       
-      // Wait before refreshing
+      // Esperar antes de refrescar y limpiar el unidad actual
       setTimeout(() => {
+        setCurrentUnidad(null);
         if (onRefresh) onRefresh();
-        invalidateUnidades();
-      }, 500);
+      }, 1000);
     } catch (error: any) {
       console.error("Error deleting unidad:", error);
       toast({
@@ -170,47 +169,27 @@ export const UnidadTable = ({
   };
 
   // Dialog open handlers
-  const openEditDialog = (unidad: any) => {
+  const openEditDialog = useCallback((unidad: any) => {
     if (isSubmitting) return;
     setCurrentUnidad(unidad);
     setIsEditDialogOpen(true);
-  };
+  }, [isSubmitting]);
 
-  const openDeleteDialog = (unidad: any) => {
+  const openDeleteDialog = useCallback((unidad: any) => {
     if (isSubmitting) return;
     setCurrentUnidad(unidad);
     setIsDeleteDialogOpen(true);
-  };
-
-  // Simple loading state display
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-        <span className="ml-2">Cargando unidades...</span>
-      </div>
-    );
-  }
+  }, [isSubmitting]);
 
   // Check for empty state
   const hasUnidades = unidades && unidades.length > 0;
 
+  if (isLoading) {
+    return null; // No renderizar nada si está cargando, el componente padre se encarga de esto
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">Unidades de {prototipo.nombre}</h2>
-        
-        <div className="flex space-x-2">
-          <button
-            className="bg-primary text-white px-3 py-2 rounded-md hover:bg-primary/90"
-            onClick={() => setIsAddDialogOpen(true)}
-            disabled={isSubmitting}
-          >
-            Agregar Unidad
-          </button>
-        </div>
-      </div>
-      
       {!hasUnidades ? (
         <EmptyUnidadState onAddClick={() => setIsAddDialogOpen(true)} />
       ) : (
@@ -242,6 +221,17 @@ export const UnidadTable = ({
         </div>
       )}
       
+      {/* Botón agregar unidad - solo se muestra si no está cargando */}
+      <div className="flex justify-end">
+        <button
+          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90"
+          onClick={() => setIsAddDialogOpen(true)}
+          disabled={isSubmitting}
+        >
+          Agregar Unidad
+        </button>
+      </div>
+      
       {/* Add Unidad Dialog */}
       <Dialog 
         open={isAddDialogOpen} 
@@ -255,7 +245,7 @@ export const UnidadTable = ({
           {isAddDialogOpen && (
             <UnidadForm 
               onSubmit={handleAddUnidad}
-              onCancel={() => setIsAddDialogOpen(false)}
+              onCancel={() => !isSubmitting && setIsAddDialogOpen(false)}
               isSubmitting={isSubmitting}
               leads={leads || []}
             />
@@ -269,6 +259,7 @@ export const UnidadTable = ({
         onOpenChange={(open) => {
           if (!open && !isSubmitting) {
             setIsEditDialogOpen(false);
+            // Esperar a que la transición de cierre termine antes de limpiar el unidad
             setTimeout(() => setCurrentUnidad(null), 300);
           }
         }}
@@ -280,7 +271,7 @@ export const UnidadTable = ({
             <UnidadForm 
               unidad={currentUnidad}
               onSubmit={handleEditUnidad}
-              onCancel={() => setIsEditDialogOpen(false)}
+              onCancel={() => !isSubmitting && setIsEditDialogOpen(false)}
               isSubmitting={isSubmitting}
               leads={leads || []}
             />
@@ -297,6 +288,8 @@ export const UnidadTable = ({
       />
     </div>
   );
-};
+});
+
+UnidadTable.displayName = 'UnidadTable';
 
 export default UnidadTable;

@@ -4,7 +4,7 @@ import { countUnidadesByStatus } from './countUtils';
 import { QueryClient } from '@tanstack/react-query';
 
 /**
- * Update prototipo unit counts
+ * Update prototipo unit counts with throttling
  */
 export const updatePrototipoUnitCounts = async (
   prototipoId: string,
@@ -36,20 +36,20 @@ export const updatePrototipoUnitCounts = async (
       con_anticipo: counts.con_anticipo
     });
 
-    // After updating the prototipo, invalidate its cache
+    // Invalidar de forma controlada sin causar refrescos inmediatos
     setTimeout(() => {
       queryClient.invalidateQueries({ 
         queryKey: ['prototipos'],
-        refetchType: 'all'
+        refetchType: 'none'
       });
       
       queryClient.invalidateQueries({ 
         queryKey: ['prototipo', prototipoId],
-        refetchType: 'all'
+        refetchType: 'none'
       });
-    }, 300);
+    }, 1000);
 
-    // Also update the desarrollo unit counts
+    // Also update the desarrollo unit counts with delay
     const { data: prototipo } = await supabase
       .from('prototipos')
       .select('desarrollo_id')
@@ -57,7 +57,10 @@ export const updatePrototipoUnitCounts = async (
       .single();
 
     if (prototipo && prototipo.desarrollo_id) {
-      await updateDesarrolloUnitCounts(prototipo.desarrollo_id, queryClient);
+      // Añadir retraso para evitar múltiples actualizaciones en cascada
+      setTimeout(() => {
+        updateDesarrolloUnitCounts(prototipo.desarrollo_id, queryClient);
+      }, 2000);
     }
     
     return data;
@@ -68,7 +71,7 @@ export const updatePrototipoUnitCounts = async (
 };
 
 /**
- * Update desarrollo unit counts
+ * Update desarrollo unit counts with throttling
  */
 export const updateDesarrolloUnitCounts = async (
   desarrolloId: string,
@@ -102,7 +105,7 @@ export const updateDesarrolloUnitCounts = async (
       unidadesDisponibles
     });
 
-    // Update the desarrollo
+    // Update the desarrollo with throttling
     const { data, error } = await supabase
       .from('desarrollos')
       .update({
@@ -122,18 +125,18 @@ export const updateDesarrolloUnitCounts = async (
       unidadesDisponibles
     });
 
-    // Invalidate desarrollo cache
+    // Invalidar cache de forma controlada sin causar refrescos inmediatos
     setTimeout(() => {
       queryClient.invalidateQueries({ 
         queryKey: ['desarrollos'],
-        refetchType: 'all'
+        refetchType: 'none'
       });
       
       queryClient.invalidateQueries({ 
         queryKey: ['desarrollo', desarrolloId],
-        refetchType: 'all'
+        refetchType: 'none'
       });
-    }, 300);
+    }, 1500);
     
     return data;
   } catch (error) {

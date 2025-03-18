@@ -56,15 +56,20 @@ export const useUnidades = (params?: UseUnidadesParams) => {
     queryKey: ['unidades', prototipoId],
     queryFn: fetchUnidades,
     enabled: !!prototipoId,
-    staleTime: 60000, // Cache data for 1 minute to prevent frequent refetches
+    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes to prevent frequent refetches
     refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchInterval: false // Disable automatic refetching
+    gcTime: 10 * 60 * 1000, // Keep inactive data for 10 minutes
+    refetchInterval: false, // Disable automatic refetching
+    retry: false // Don't retry on error
   });
 
-  // Function to invalidate unidades cache
+  // Function to invalidate unidades cache (but do not trigger immediate refetch)
   const invalidateUnidades = () => {
     if (prototipoId) {
-      queryClient.invalidateQueries({ queryKey: ['unidades', prototipoId] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['unidades', prototipoId],
+        refetchType: 'none' // Important: don't trigger immediate refetch
+      });
     }
   };
 

@@ -121,8 +121,14 @@ export const createMultipleUnidadesFunc = async (
 
     console.log(`Successfully created ${unidades.length} unidades`);
 
-    // After creating multiple unidades, update the prototipo's unit counts
-    await updatePrototipoUnitCounts(prototipo_id, queryClient);
+    // Retrasar actualización de conteos para evitar sobrecarga
+    setTimeout(async () => {
+      try {
+        await updatePrototipoUnitCounts(prototipo_id, queryClient);
+      } catch (err) {
+        console.error("Error updating counts after multiple creation:", err);
+      }
+    }, 2000);
 
     return data;
   } catch (error) {
@@ -141,26 +147,18 @@ export const useCreateMultipleUnidades = () => {
     mutationFn: (params: CreateMultipleUnidadesParams) => 
       createMultipleUnidadesFunc(params, queryClient),
     onSuccess: (_, variables) => {
-      // Invalidate related queries to trigger refetches
-      if (variables.prototipo_id) {
-        console.log('Invalidating queries after creating multiple unidades');
-        
-        // Force refetch all related queries
-        queryClient.invalidateQueries({ 
-          queryKey: ['unidades', variables.prototipo_id],
-          refetchType: 'all'
-        });
-        
-        queryClient.invalidateQueries({ 
-          queryKey: ['prototipo', variables.prototipo_id],
-          refetchType: 'all'
-        });
-        
-        queryClient.invalidateQueries({ 
-          queryKey: ['prototipos'],
-          refetchType: 'all'
-        });
-      }
+      // Retrasar invalidación para evitar ciclos de refresco
+      setTimeout(() => {
+        if (variables.prototipo_id) {
+          console.log('Invalidating queries after creating multiple unidades');
+          
+          // Invalidar sin provocar refresco inmediato
+          queryClient.invalidateQueries({ 
+            queryKey: ['unidades', variables.prototipo_id],
+            refetchType: 'none'
+          });
+        }
+      }, 1500);
     }
   });
 };
@@ -177,24 +175,17 @@ export const useCreateUnidad = (prototipoId?: string) => {
       if (prototipoId) {
         console.log('Successfully created unidad, invalidating queries');
         
-        // Force refetch all related queries
-        queryClient.invalidateQueries({ 
-          queryKey: ['unidades', prototipoId],
-          refetchType: 'all'
-        });
-        
-        queryClient.invalidateQueries({ 
-          queryKey: ['prototipo', prototipoId],
-          refetchType: 'all'
-        });
-        
-        queryClient.invalidateQueries({ 
-          queryKey: ['prototipos'],
-          refetchType: 'all'
-        });
-        
-        // Update counts
-        updatePrototipoUnitCounts(prototipoId, queryClient);
+        // Retrasar la invalidación y control de refresco
+        setTimeout(() => {
+          // Invalidar sin provocar refresco inmediato
+          queryClient.invalidateQueries({ 
+            queryKey: ['unidades', prototipoId],
+            refetchType: 'none'
+          });
+          
+          // Actualizar conteos después de la creación
+          updatePrototipoUnitCounts(prototipoId, queryClient);
+        }, 1000);
       }
     },
     onError: (error) => {
@@ -215,26 +206,19 @@ export const useUpdateUnidad = (prototipoId?: string) => {
       if (prototipoId) {
         console.log('Successfully updated unidad, invalidating queries');
         
-        // Force refetch all related queries
+        // Retrasar la invalidación y control de refresco
         setTimeout(() => {
+          // Invalidar sin provocar refresco inmediato
           queryClient.invalidateQueries({ 
             queryKey: ['unidades', prototipoId],
-            refetchType: 'all'
+            refetchType: 'none'
           });
           
-          queryClient.invalidateQueries({ 
-            queryKey: ['prototipo', prototipoId],
-            refetchType: 'all'
-          });
-          
-          queryClient.invalidateQueries({ 
-            queryKey: ['prototipos'],
-            refetchType: 'all'
-          });
-          
-          // Update counts
-          updatePrototipoUnitCounts(prototipoId, queryClient);
-        }, 500);
+          // Actualizar conteos después de la actualización
+          setTimeout(() => {
+            updatePrototipoUnitCounts(prototipoId, queryClient);
+          }, 1000);
+        }, 1000);
       }
     },
     onError: (error) => {
@@ -255,26 +239,19 @@ export const useDeleteUnidad = (prototipoId?: string) => {
       if (prototipoId) {
         console.log('Successfully deleted unidad, invalidating queries');
         
-        // Force refetch all related queries
+        // Retrasar la invalidación y control de refresco
         setTimeout(() => {
+          // Invalidar sin provocar refresco inmediato
           queryClient.invalidateQueries({ 
             queryKey: ['unidades', prototipoId],
-            refetchType: 'all'
+            refetchType: 'none'
           });
           
-          queryClient.invalidateQueries({ 
-            queryKey: ['prototipo', prototipoId],
-            refetchType: 'all'
-          });
-          
-          queryClient.invalidateQueries({ 
-            queryKey: ['prototipos'],
-            refetchType: 'all'
-          });
-          
-          // Update counts
-          updatePrototipoUnitCounts(prototipoId, queryClient);
-        }, 500);
+          // Actualizar conteos después de la eliminación
+          setTimeout(() => {
+            updatePrototipoUnitCounts(prototipoId, queryClient);
+          }, 1000);
+        }, 1000);
       }
     },
     onError: (error) => {

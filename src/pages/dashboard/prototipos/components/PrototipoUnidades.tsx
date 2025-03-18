@@ -24,7 +24,7 @@ interface PrototipoUnidadesProps {
   onRefreshUnidades: () => void;
 }
 
-export const PrototipoUnidades = ({ 
+export const PrototipoUnidades = React.memo(({ 
   prototipo, 
   unidades = [], 
   unidadesLoading = false, 
@@ -98,13 +98,20 @@ export const PrototipoUnidades = ({
           <TabsTrigger value="vendidas">Vendidas</TabsTrigger>
         </TabsList>
         
-        <TabsContent value={currentTab}>
-          <UnidadTable 
-            prototipo={prototipo}
-            unidades={filteredUnidades} 
-            isLoading={unidadesLoading} 
-            onRefresh={onRefreshUnidades}
-          />
+        <TabsContent value={currentTab} forceMount>
+          {unidadesLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin h-10 w-10 rounded-full border-4 border-primary border-t-transparent"></div>
+              <span className="ml-3 text-lg text-slate-600">Cargando unidades...</span>
+            </div>
+          ) : (
+            <UnidadTable 
+              prototipo={prototipo}
+              unidades={filteredUnidades} 
+              isLoading={false} 
+              onRefresh={onRefreshUnidades}
+            />
+          )}
         </TabsContent>
       </Tabs>
       
@@ -163,6 +170,8 @@ export const PrototipoUnidades = ({
       </Dialog>
     </div>
   );
-};
+});
+
+PrototipoUnidades.displayName = 'PrototipoUnidades';
 
 export default PrototipoUnidades;

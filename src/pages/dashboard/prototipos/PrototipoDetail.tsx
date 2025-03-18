@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -18,6 +19,16 @@ const PrototipoDetail = () => {
   const [openAddUnidadDialog, setOpenAddUnidadDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshTimerRef = useRef<number | null>(null);
+  
+  // Cancelar cualquier timer pendiente cuando el componente se desmonte
+  useEffect(() => {
+    return () => {
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current);
+      }
+    };
+  }, []);
   
   const { 
     unidades, 
@@ -46,22 +57,39 @@ const PrototipoDetail = () => {
     });
   }, [refetch, refetchUnidades, isRefreshing]);
   
+  // Configurar un refresco periódico más largo (2 minutos en vez de 30 segundos)
   useEffect(() => {
     if (!id) return;
     
-    const intervalId = setInterval(() => {
+    // Limpiamos cualquier intervalo existente
+    if (refreshTimerRef.current) {
+      clearInterval(refreshTimerRef.current);
+    }
+    
+    // Establecemos un nuevo intervalo con un tiempo mucho más largo
+    refreshTimerRef.current = window.setInterval(() => {
       console.log('Periodic refresh of unidades');
       refetchUnidades().catch(err => {
         console.error('Error in periodic refresh:', err);
       });
-    }, 30000); // Refresh every 30 seconds instead of 5 seconds
+    }, 120000); // 2 minutos
     
-    return () => clearInterval(intervalId);
+    return () => {
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+    };
   }, [id, refetchUnidades]);
   
+  // Solo refrescar cuando realmente se necesite (después de cerrar diálogos)
   useEffect(() => {
     if (!openAddUnidadDialog && !openEditDialog) {
-      handleRefresh();
+      // Añadir un pequeño retraso para evitar refrescos inmediatos
+      const timeoutId = setTimeout(() => {
+        handleRefresh();
+      }, 500);
+      return () => clearTimeout(timeoutId);
     }
   }, [openAddUnidadDialog, openEditDialog, handleRefresh]);
   
@@ -80,7 +108,8 @@ const PrototipoDetail = () => {
         description: `Se han generado ${cantidad} unidades exitosamente.`
       });
       
-      handleRefresh();
+      // Añadir un retraso antes del refresco
+      setTimeout(handleRefresh, 1000);
     } catch (error) {
       console.error('Error al generar unidades:', error);
       toast({
