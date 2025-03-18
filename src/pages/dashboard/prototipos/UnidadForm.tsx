@@ -81,7 +81,7 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
             <SearchableEntitySelect
               label="Comprador"
               value={watch('comprador_id') || ''}
-              onChange={(leadId, leadName) => handleLeadChange(leadId, leadName)}
+              onChange={handleLeadChange}
               placeholder="Buscar cliente..."
               options={filteredLeads}
               emptyMessage="No se encontraron clientes con ese nombre."
@@ -90,7 +90,7 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
             <SearchableEntitySelect
               label="Vendedor"
               value={watch('vendedor_id') || ''}
-              onChange={(vendedorId, vendedorName) => handleVendedorChange(vendedorId, vendedorName)}
+              onChange={handleVendedorChange}
               placeholder="Buscar vendedor..."
               options={filteredVendedores}
               emptyMessage="No se encontraron vendedores con ese nombre."
