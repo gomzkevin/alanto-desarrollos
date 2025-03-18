@@ -24,7 +24,6 @@ interface EntityOption {
 }
 
 interface SearchableEntitySelectProps {
-  label?: string;
   value: string;
   onChange: (value: string, name?: string) => void;
   placeholder: string;
@@ -33,7 +32,6 @@ interface SearchableEntitySelectProps {
 }
 
 export const SearchableEntitySelect = ({
-  label,
   value,
   onChange,
   placeholder,

@@ -47,13 +47,19 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
     <div className="space-y-4">
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            label="Número/Identificador *"
-            id="numero"
-            placeholder="Ej. A101, Casa 5, etc."
-            {...register('numero', { required: true })}
-            error={!!errors.numero}
-          />
+          <div className="space-y-2">
+            <label htmlFor="numero" className="font-medium text-sm">Número/Identificador *</label>
+            <input
+              id="numero"
+              className={`w-full px-3 py-2 border ${!!errors.numero ? 'border-red-500' : 'border-gray-300'} rounded-md bg-gray-100`}
+              placeholder="Ej. A101, Casa 5, etc."
+              {...register('numero', { required: true })}
+              readOnly={!!unidad}
+            />
+            {!!errors.numero && (
+              <p className="text-sm text-red-500">Este campo es requerido</p>
+            )}
+          </div>
           
           <FormField
             label="Nivel/Piso"
@@ -81,7 +87,6 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
             <div className="space-y-2">
               <label className="font-medium text-sm">Comprador</label>
               <SearchableEntitySelect
-                label="Comprador"
                 value={watch('comprador_id') || ''}
                 onChange={handleLeadChange}
                 placeholder="Buscar cliente..."
@@ -93,7 +98,6 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
             <div className="space-y-2">
               <label className="font-medium text-sm">Vendedor</label>
               <SearchableEntitySelect
-                label="Vendedor"
                 value={watch('vendedor_id') || ''}
                 onChange={handleVendedorChange}
                 placeholder="Buscar vendedor..."
