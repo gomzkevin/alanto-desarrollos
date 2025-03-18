@@ -1,8 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import useResourceData from '../useResourceData';
-import useResourceActions from '../useResourceActions';
 import { ResourceType, FormValues } from '../types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -31,39 +29,22 @@ export const useResourceForm = ({
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [resource, setResource] = useState<FormValues | null>(null);
   const [isResourceFetched, setIsResourceFetched] = useState(false);
-  
-  const { 
-    fetchResourceById, 
-    isLoading: isLoadingResource,
-    formatValuesForDisplay
-  } = useResourceData({
-    resourceType,
-    resourceId
-  });
-  
-  const {
-    isSubmitting,
-    uploading,
-    handleImageUpload,
-    saveResource: saveResourceAction
-  } = useResourceActions({
-    resourceType,
-    resourceId,
-    desarrolloId,
-    onSuccess,
-    onSave,
-    selectedAmenities
-  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   
   useEffect(() => {
     const loadResource = async () => {
+      setIsLoading(true);
       try {
         if (resourceId) {
           // Fetch existing resource by ID
           const fetchedResource = await fetchResourceById();
           
           if (fetchedResource) {
-            setResource(formatValuesForDisplay(fetchedResource));
+            // Format values for display
+            const formattedResource = formatValuesForDisplay(fetchedResource);
+            setResource(formattedResource);
             
             if (resourceType === 'desarrollos' && fetchedResource.amenidades) {
               try {
@@ -170,6 +151,8 @@ export const useResourceForm = ({
           description: 'No se pudo cargar el recurso',
           variant: 'destructive',
         });
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -181,6 +164,78 @@ export const useResourceForm = ({
       setIsResourceFetched(false);
     };
   }, [resourceId, resourceType]);
+
+  // Fetch resource by ID
+  const fetchResourceById = async (): Promise<FormValues | null> => {
+    try {
+      let query;
+      
+      if (resourceType === 'desarrollos') {
+        query = supabase
+          .from('desarrollos')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      } else if (resourceType === 'prototipos') {
+        query = supabase
+          .from('prototipos')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      } else if (resourceType === 'leads') {
+        query = supabase
+          .from('leads')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      } else if (resourceType === 'cotizaciones') {
+        query = supabase
+          .from('cotizaciones')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      } else if (resourceType === 'unidades') {
+        query = supabase
+          .from('unidades')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching resource:', error);
+        toast({
+          title: 'Error',
+          description: `No se pudo cargar el recurso: ${error.message}`,
+          variant: 'destructive',
+        });
+        return null;
+      }
+      
+      return data as FormValues;
+    } catch (error) {
+      console.error('Error in fetchResourceById:', error);
+      return null;
+    }
+  };
+  
+  // Format resource values for display
+  const formatValuesForDisplay = (resource: FormValues): FormValues => {
+    if (!resource) return {};
+    
+    const formattedResource = { ...resource };
+    
+    // Handle specific formatting based on resource type
+    if (resourceType === 'desarrollos') {
+      // Format any values needed for desarrollos
+    } else if (resourceType === 'prototipos') {
+      // Format any values needed for prototipos
+    }
+    
+    return formattedResource;
+  };
 
   const handleChange = (values: FormValues) => {
     if (!resource) return;
@@ -236,17 +291,164 @@ export const useResourceForm = ({
     });
   };
   
+  const handleImageUpload = async (file: File, bucket: string, folder: string, fieldName: string): Promise<string | null> => {
+    if (!file) return null;
+    
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const filePath = `${folder}/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file);
+      
+      if (uploadError) {
+        throw uploadError;
+      }
+      
+      const { data } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+      
+      const publicUrl = data.publicUrl;
+      
+      // Update resource with new image URL
+      if (resource) {
+        setResource({
+          ...resource,
+          [fieldName]: publicUrl
+        });
+      }
+      
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo subir la imagen',
+        variant: 'destructive',
+      });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+  
   const saveResource = async (updatedResource?: FormValues): Promise<boolean> => {
     if (!resource && !updatedResource) return false;
     
     const resourceToSave = updatedResource || resource;
     if (!resourceToSave) return false;
     
-    return await saveResourceAction(resourceToSave);
+    setIsSubmitting(true);
+    try {
+      let query;
+      const dataToSave = { ...resourceToSave };
+      
+      // Handle special cases by resource type
+      if (resourceType === 'desarrollos') {
+        // Convert amenities array to JSON string for storage
+        if (selectedAmenities.length > 0) {
+          dataToSave.amenidades = selectedAmenities;
+        }
+      }
+      
+      if (resourceId) {
+        // Update existing resource
+        if (resourceType === 'desarrollos') {
+          query = supabase
+            .from('desarrollos')
+            .update(dataToSave)
+            .eq('id', resourceId);
+        } else if (resourceType === 'prototipos') {
+          query = supabase
+            .from('prototipos')
+            .update(dataToSave)
+            .eq('id', resourceId);
+        } else if (resourceType === 'leads') {
+          query = supabase
+            .from('leads')
+            .update(dataToSave)
+            .eq('id', resourceId);
+        } else if (resourceType === 'cotizaciones') {
+          query = supabase
+            .from('cotizaciones')
+            .update(dataToSave)
+            .eq('id', resourceId);
+        } else if (resourceType === 'unidades') {
+          query = supabase
+            .from('unidades')
+            .update(dataToSave)
+            .eq('id', resourceId);
+        }
+      } else {
+        // Insert new resource
+        if (resourceType === 'desarrollos') {
+          query = supabase
+            .from('desarrollos')
+            .insert(dataToSave);
+        } else if (resourceType === 'prototipos') {
+          query = supabase
+            .from('prototipos')
+            .insert(dataToSave);
+        } else if (resourceType === 'leads') {
+          query = supabase
+            .from('leads')
+            .insert(dataToSave);
+        } else if (resourceType === 'cotizaciones') {
+          query = supabase
+            .from('cotizaciones')
+            .insert(dataToSave);
+        } else if (resourceType === 'unidades') {
+          query = supabase
+            .from('unidades')
+            .insert(dataToSave);
+        }
+      }
+      
+      const { error } = await query;
+      
+      if (error) {
+        console.error('Error saving resource:', error);
+        toast({
+          title: 'Error',
+          description: `No se pudo guardar el recurso: ${error.message}`,
+          variant: 'destructive',
+        });
+        return false;
+      }
+      
+      toast({
+        title: 'Éxito',
+        description: `${resourceId ? 'Actualizado' : 'Creado'} correctamente`,
+      });
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+      
+      if (onSave) {
+        onSave();
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error in saveResource:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar el recurso',
+        variant: 'destructive',
+      });
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return {
-    isLoading: isLoadingResource && !isResourceFetched,
+    isLoading,
     isSubmitting,
     resource,
     selectedAmenities,
