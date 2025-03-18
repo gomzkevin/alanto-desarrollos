@@ -1,8 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
-import { Table, TableBody } from "@/components/ui/table";
+import React from 'react';
+import { Table, TableBody, TableHeader, TableRow, TableHead } from "@/components/ui/table";
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
-import UnidadTableHeader from './components/UnidadTableHeader';
 import UnidadTableRow from './components/UnidadTableRow';
 import EmptyUnidadState from './components/EmptyUnidadState';
 import UnidadDialogs from './components/UnidadDialogs';
@@ -18,37 +17,17 @@ export interface UnidadTableProps {
 
 export const UnidadTable = ({ 
   prototipo, 
-  unidades: externalUnidades, 
-  isLoading: externalLoading, 
-  onRefresh: externalRefresh 
+  unidades, 
+  isLoading,
+  onRefresh
 }: UnidadTableProps) => {
-  const [isMounted, setIsMounted] = useState(false);
-  const [localLoading, setLocalLoading] = useState(false);
-  
-  // Use a ref to store the current unidades to prevent unnecessary re-renders
-  const [stableUnidades, setStableUnidades] = useState([]);
-  
-  useEffect(() => {
-    setIsMounted(true);
-    return () => setIsMounted(false);
-  }, []);
-  
-  // Update stable unidades only when externalUnidades changes
-  useEffect(() => {
-    if (externalUnidades && Array.isArray(externalUnidades)) {
-      setStableUnidades(externalUnidades);
-    }
-  }, [externalUnidades]);
-  
+  // Use a simplified version of the unidad table hook
   const {
-    unidades,
-    isLoading,
     leads,
     isAddDialogOpen,
     isEditDialogOpen,
     isDeleteDialogOpen,
     currentUnidad,
-    isProcessing,
     setIsAddDialogOpen,
     openEditDialog,
     openDeleteDialog,
@@ -59,30 +38,13 @@ export const UnidadTable = ({
     handleDeleteUnidad
   } = useUnidadTable({
     prototipo,
-    externalUnidades: stableUnidades,
-    externalLoading,
-    externalRefresh
+    externalUnidades: unidades,
+    externalLoading: isLoading,
+    externalRefresh: onRefresh
   });
   
-  // Handle loading state more effectively
-  useEffect(() => {
-    if (isProcessing && isMounted) {
-      setLocalLoading(true);
-    } else if (!isProcessing && isMounted) {
-      const timer = setTimeout(() => {
-        if (isMounted) {
-          setLocalLoading(false);
-        }
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isProcessing, isMounted]);
-  
-  const finalIsLoading = externalLoading || localLoading;
-
   // Simple loading state display
-  if (finalIsLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -91,9 +53,8 @@ export const UnidadTable = ({
     );
   }
 
-  // Ensure we're rendering a stable array of units
-  const displayUnidades = Array.isArray(unidades) ? unidades : [];
-  const hasUnidades = displayUnidades.length > 0;
+  // Check for empty state
+  const hasUnidades = unidades && unidades.length > 0;
 
   return (
     <div className="space-y-4">
@@ -101,21 +62,32 @@ export const UnidadTable = ({
         <h2 className="text-xl font-bold">Unidades de {prototipo.nombre}</h2>
         
         <UnidadTableActions 
-          onAddClick={() => !isProcessing && setIsAddDialogOpen(true)}
-          unidadesCount={displayUnidades.length}
+          onAddClick={() => setIsAddDialogOpen(true)}
+          unidadesCount={unidades?.length || 0}
           totalUnidades={prototipo.total_unidades}
           showGenerateButton={false}
         />
       </div>
       
       {!hasUnidades ? (
-        <EmptyUnidadState onAddClick={() => !isProcessing && setIsAddDialogOpen(true)} />
+        <EmptyUnidadState onAddClick={() => setIsAddDialogOpen(true)} />
       ) : (
         <div className="border rounded-md overflow-hidden">
           <Table>
-            <UnidadTableHeader />
+            <TableHeader>
+              <TableRow>
+                <TableHead>Número</TableHead>
+                <TableHead>Nivel</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Precio Venta</TableHead>
+                <TableHead>Comprador</TableHead>
+                <TableHead>Vendedor</TableHead>
+                <TableHead>Fecha Venta</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
-              {displayUnidades.map((unidad) => (
+              {unidades.map((unidad) => (
                 <UnidadTableRow 
                   key={unidad.id}
                   unidad={unidad}

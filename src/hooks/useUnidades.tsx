@@ -14,37 +14,29 @@ import {
 } from './unidades/unidadCrud';
 
 /**
- * Main hook for unidades management
+ * Main hook for unidades management with improved stability
  */
 export const useUnidades = (params?: UseUnidadesParams) => {
   const prototipoId = params?.prototipo_id;
 
-  // Function to fetch all unidades for a specific prototipo
+  // Simplified function to fetch all unidades for a specific prototipo
   const fetchUnidades = async (): Promise<Unidad[]> => {
     if (!prototipoId) return [];
-
-    console.log(`Fetching unidades for prototipo: ${prototipoId}`);
     
-    try {
-      const { data, error } = await supabase
-        .from('unidades')
-        .select(`
-          *,
-          prototipo:prototipos(id, nombre, precio)
-        `)
-        .eq('prototipo_id', prototipoId);
+    const { data, error } = await supabase
+      .from('unidades')
+      .select(`
+        *,
+        prototipo:prototipos(id, nombre, precio)
+      `)
+      .eq('prototipo_id', prototipoId);
 
-      if (error) {
-        console.error('Error fetching unidades:', error);
-        throw error;
-      }
-
-      console.log(`Fetched ${data?.length || 0} unidades`);
-      return data as Unidad[] || [];
-    } catch (error) {
-      console.error('Error en fetchUnidades:', error);
+    if (error) {
+      console.error('Error fetching unidades:', error);
       throw error;
     }
+
+    return data as Unidad[] || [];
   };
 
   // CRUD operations hooks
@@ -53,7 +45,7 @@ export const useUnidades = (params?: UseUnidadesParams) => {
   const deleteMutation = useDeleteUnidad(prototipoId);
   const createMultipleUnidades = useCreateMultipleUnidades();
 
-  // Use React Query to fetch unidades with optimized configuration
+  // Use React Query with stable configuration
   const { 
     data: unidades = [], 
     isLoading, 
@@ -63,12 +55,9 @@ export const useUnidades = (params?: UseUnidadesParams) => {
     queryKey: ['unidades', prototipoId],
     queryFn: fetchUnidades,
     enabled: !!prototipoId,
-    staleTime: 3000, // Reduced stale time to improve data freshness
-    gcTime: 5 * 60 * 1000, // Keep cache for 5 minutes
-    refetchOnWindowFocus: false, // Prevent excessive refetches on focus
-    refetchInterval: false, // Disable auto refresh to reduce render cycles
-    retry: 1, // Reduced retries to avoid cascading failures
-    retryDelay: 1000 // Simple 1 second delay between retries
+    staleTime: 10000, // Increased stale time to prevent frequent refetches
+    refetchOnWindowFocus: false,
+    refetchInterval: false
   });
 
   return {

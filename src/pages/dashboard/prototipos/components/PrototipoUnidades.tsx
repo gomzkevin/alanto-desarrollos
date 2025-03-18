@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Building } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -38,28 +38,19 @@ export const PrototipoUnidades = ({
   const [prefijo, setPrefijo] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   
-  // Memoize the filtered unidades
-  const disponibles = React.useMemo(() => 
-    unidades.filter(u => u.estado === 'disponible'),
-    [unidades]
-  );
+  // Filter units based on selected tab
+  const filteredUnidades = React.useMemo(() => {
+    if (currentTab === "todas") return unidades;
+    if (currentTab === "disponibles") return unidades.filter(u => u.estado === 'disponible');
+    if (currentTab === "apartadas") return unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso');
+    if (currentTab === "vendidas") return unidades.filter(u => u.estado === 'vendido');
+    return unidades;
+  }, [unidades, currentTab]);
   
-  const apartadas = React.useMemo(() => 
-    unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso'),
-    [unidades]
-  );
-  
-  const vendidas = React.useMemo(() => 
-    unidades.filter(u => u.estado === 'vendido'),
-    [unidades]
-  );
-  
-  // Determinar la cantidad total de unidades que se deben generar
+  // Determine remaining units
   const unidadesRestantes = (prototipo.total_unidades || 0) - unidades.length;
-  const noHayUnidades = unidades.length === 0;
   
   const handleGenerarUnidades = async () => {
-    // Si no hay unidades restantes, no hacer nada
     if (unidadesRestantes <= 0 || isGenerating) return;
     
     setIsGenerating(true);
@@ -73,11 +64,6 @@ export const PrototipoUnidades = ({
       setIsGenerating(false);
     }
   };
-  
-  // Handler for tab changes
-  const handleTabChange = useCallback((value: string) => {
-    setCurrentTab(value);
-  }, []);
   
   return (
     <div className="bg-slate-50 p-6 rounded-lg">
@@ -104,7 +90,7 @@ export const PrototipoUnidades = ({
         />
       </div>
       
-      <Tabs defaultValue="todas" value={currentTab} onValueChange={handleTabChange}>
+      <Tabs defaultValue="todas" value={currentTab} onValueChange={setCurrentTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="todas">Todas</TabsTrigger>
           <TabsTrigger value="disponibles">Disponibles</TabsTrigger>
@@ -112,49 +98,14 @@ export const PrototipoUnidades = ({
           <TabsTrigger value="vendidas">Vendidas</TabsTrigger>
         </TabsList>
         
-        {currentTab === "todas" && (
-          <TabsContent value="todas" forceMount>
-            <UnidadTable 
-              prototipo={prototipo}
-              unidades={unidades} 
-              isLoading={unidadesLoading} 
-              onRefresh={onRefreshUnidades}
-            />
-          </TabsContent>
-        )}
-        
-        {currentTab === "disponibles" && (
-          <TabsContent value="disponibles" forceMount>
-            <UnidadTable 
-              prototipo={prototipo}
-              unidades={disponibles} 
-              isLoading={unidadesLoading} 
-              onRefresh={onRefreshUnidades}
-            />
-          </TabsContent>
-        )}
-        
-        {currentTab === "apartadas" && (
-          <TabsContent value="apartadas" forceMount>
-            <UnidadTable 
-              prototipo={prototipo}
-              unidades={apartadas} 
-              isLoading={unidadesLoading} 
-              onRefresh={onRefreshUnidades}
-            />
-          </TabsContent>
-        )}
-        
-        {currentTab === "vendidas" && (
-          <TabsContent value="vendidas" forceMount>
-            <UnidadTable 
-              prototipo={prototipo}
-              unidades={vendidas} 
-              isLoading={unidadesLoading} 
-              onRefresh={onRefreshUnidades}
-            />
-          </TabsContent>
-        )}
+        <TabsContent value={currentTab} forceMount>
+          <UnidadTable 
+            prototipo={prototipo}
+            unidades={filteredUnidades} 
+            isLoading={unidadesLoading} 
+            onRefresh={onRefreshUnidades}
+          />
+        </TabsContent>
       </Tabs>
       
       <Dialog open={generarUnidadesModalOpen} onOpenChange={setGenerarUnidadesModalOpen}>
