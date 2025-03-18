@@ -1,9 +1,8 @@
 
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import useDesarrolloImagenes from '@/hooks/useDesarrolloImagenes';
-import { ResourceType, FormValues, PrototipoResource, DesarrolloResource, LeadResource, CotizacionResource } from './types';
+import { ResourceType, FormValues } from './types';
+import { useToast } from '@/hooks/use-toast';
 
 interface ClientConfig {
   isExistingClient: boolean;
@@ -14,70 +13,58 @@ interface ClientConfig {
   };
 }
 
-export default function useResourceActions({
-  resourceType,
-  resourceId,
-  desarrolloId,
-  onClose,
-  onSave,
-  onSuccess,
-  selectedAmenities,
-  clientConfig
-}: {
+interface UseResourceActionsProps {
   resourceType: ResourceType;
   resourceId?: string;
-  desarrolloId?: string;
-  onClose?: () => void;
-  onSave?: () => void;
   onSuccess?: () => void;
-  selectedAmenities: string[];
+  selectedAmenities?: string[];
   clientConfig?: ClientConfig;
-}) {
+}
+
+const useResourceActions = ({
+  resourceType,
+  resourceId,
+  onSuccess,
+  selectedAmenities = [],
+  clientConfig = {
+    isExistingClient: true,
+    newClientData: { nombre: '', email: '', telefono: '' }
+  }
+}: UseResourceActionsProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const { uploadImage: desarrolloUploadImage } = useDesarrolloImagenes(
-    resourceType === 'desarrollos' && resourceId ? resourceId : undefined
-  );
-
+  // Handle image upload
   const handleImageUpload = async (file: File): Promise<string | null> => {
-    setUploading(true);
+    if (!file) return null;
     
+    setUploading(true);
     try {
-      if (resourceType === 'desarrollos' && resourceId) {
-        await desarrolloUploadImage(file);
-        toast({
-          title: 'Imagen subida',
-          description: 'La imagen ha sido subida exitosamente',
-        });
-        return null; // No direct URL returned for desarrollo images
-      } else {
-        const fileName = `${Date.now()}-${file.name}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('desarrollo-images')
-          .upload(fileName, file);
-        
-        if (uploadError) {
-          console.error('Error uploading file:', uploadError);
-          throw uploadError;
-        }
-        
-        const { data: publicUrlData } = supabase.storage
-          .from('desarrollo-images')
-          .getPublicUrl(fileName);
-        
-        toast({
-          title: 'Imagen subida',
-          description: 'La imagen ha sido subida exitosamente',
-        });
-        
-        return publicUrlData.publicUrl;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${resourceType}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const bucket = resourceType === 'desarrollos' ? 'desarrollo-images' : 'prototipo-images';
+      const folder = resourceType === 'desarrollos' ? 'desarrollos' : 'prototipos';
+      const filePath = `${folder}/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file);
+      
+      if (uploadError) {
+        throw uploadError;
       }
-    } catch (error: any) {
+      
+      const { data } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+      
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
       toast({
         title: 'Error',
-        description: `Error al subir la imagen: ${error.message}`,
+        description: 'No se pudo subir la imagen',
         variant: 'destructive',
       });
       return null;
@@ -86,238 +73,81 @@ export default function useResourceActions({
     }
   };
 
-  const saveResource = async (values: FormValues) => {
+  // Save resource
+  const saveResource = async (values: FormValues): Promise<boolean> => {
     setIsSubmitting(true);
-    
     try {
-      let result;
+      let query;
       
-      const dataToSave = { ...values };
-      
-      if (resourceType === 'prototipos') {
-        const prototipoData = dataToSave as PrototipoResource;
-        
-        if (desarrolloId && !resourceId) {
-          prototipoData.desarrollo_id = desarrolloId;
-        }
-        
-        if (prototipoData.total_unidades !== undefined) {
-          const total = Number(prototipoData.total_unidades) || 0;
-          const vendidas = Number(prototipoData.unidades_vendidas) || 0;
-          const anticipos = Number(prototipoData.unidades_con_anticipo) || 0;
-          prototipoData.unidades_disponibles = total - vendidas - anticipos;
-        }
-        
-        const { unidades_vendidas, unidades_con_anticipo, ...dataToModify } = prototipoData;
-        
-        if (!resourceId) {
-          result = await supabase
-            .from('prototipos')
-            .insert({
-              nombre: dataToModify.nombre,
-              tipo: dataToModify.tipo,
-              precio: dataToModify.precio,
-              superficie: dataToModify.superficie,
-              habitaciones: dataToModify.habitaciones,
-              baños: dataToModify.baños,
-              estacionamientos: dataToModify.estacionamientos,
-              total_unidades: dataToModify.total_unidades,
-              unidades_disponibles: dataToModify.unidades_disponibles,
-              desarrollo_id: dataToModify.desarrollo_id,
-              descripcion: dataToModify.descripcion,
-              imagen_url: dataToModify.imagen_url
-            });
-        } else {
-          result = await supabase
-            .from('prototipos')
-            .update({
-              nombre: dataToModify.nombre,
-              tipo: dataToModify.tipo,
-              precio: dataToModify.precio,
-              superficie: dataToModify.superficie,
-              habitaciones: dataToModify.habitaciones,
-              baños: dataToModify.baños,
-              estacionamientos: dataToModify.estacionamientos,
-              total_unidades: dataToModify.total_unidades,
-              unidades_disponibles: dataToModify.unidades_disponibles,
-              desarrollo_id: dataToModify.desarrollo_id,
-              descripcion: dataToModify.descripcion,
-              imagen_url: dataToModify.imagen_url
-            })
-            .eq('id', resourceId);
-        }
-      } else if (resourceType === 'desarrollos') {
-        const desarrolloData = dataToSave as DesarrolloResource;
-        
-        if (desarrolloData.amenidades === undefined) {
-          desarrolloData.amenidades = selectedAmenities;
-        }
-        
-        console.log('Saving desarrollo with amenities:', selectedAmenities);
-        
-        const amenidadesJson = JSON.stringify(selectedAmenities);
-        
-        if (!resourceId) {
-          result = await supabase
-            .from('desarrollos')
-            .insert({
-              nombre: desarrolloData.nombre,
-              ubicacion: desarrolloData.ubicacion,
-              total_unidades: desarrolloData.total_unidades,
-              unidades_disponibles: desarrolloData.unidades_disponibles,
-              avance_porcentaje: desarrolloData.avance_porcentaje,
-              fecha_inicio: desarrolloData.fecha_inicio,
-              fecha_entrega: desarrolloData.fecha_entrega,
-              descripcion: desarrolloData.descripcion,
-              imagen_url: desarrolloData.imagen_url,
-              moneda: desarrolloData.moneda,
-              comision_operador: desarrolloData.comision_operador,
-              mantenimiento_valor: desarrolloData.mantenimiento_valor,
-              es_mantenimiento_porcentaje: desarrolloData.es_mantenimiento_porcentaje,
-              gastos_fijos: desarrolloData.gastos_fijos,
-              es_gastos_fijos_porcentaje: desarrolloData.es_gastos_fijos_porcentaje,
-              gastos_variables: desarrolloData.gastos_variables,
-              es_gastos_variables_porcentaje: desarrolloData.es_gastos_variables_porcentaje,
-              impuestos: desarrolloData.impuestos,
-              es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje,
-              adr_base: desarrolloData.adr_base,
-              ocupacion_anual: desarrolloData.ocupacion_anual,
-              amenidades: amenidadesJson,
-            });
-        } else {
-          result = await supabase
-            .from('desarrollos')
-            .update({
-              nombre: desarrolloData.nombre,
-              ubicacion: desarrolloData.ubicacion,
-              total_unidades: desarrolloData.total_unidades,
-              unidades_disponibles: desarrolloData.unidades_disponibles,
-              avance_porcentaje: desarrolloData.avance_porcentaje,
-              fecha_inicio: desarrolloData.fecha_inicio,
-              fecha_entrega: desarrolloData.fecha_entrega,
-              descripcion: desarrolloData.descripcion,
-              imagen_url: desarrolloData.imagen_url,
-              moneda: desarrolloData.moneda,
-              comision_operador: desarrolloData.comision_operador,
-              mantenimiento_valor: desarrolloData.mantenimiento_valor,
-              es_mantenimiento_porcentaje: desarrolloData.es_mantenimiento_porcentaje,
-              gastos_fijos: desarrolloData.gastos_fijos,
-              es_gastos_fijos_porcentaje: desarrolloData.es_gastos_fijos_porcentaje,
-              gastos_variables: desarrolloData.gastos_variables,
-              es_gastos_variables_porcentaje: desarrolloData.es_gastos_variables_porcentaje,
-              impuestos: desarrolloData.impuestos,
-              es_impuestos_porcentaje: desarrolloData.es_impuestos_porcentaje,
-              adr_base: desarrolloData.adr_base,
-              ocupacion_anual: desarrolloData.ocupacion_anual,
-              amenidades: amenidadesJson,
-            })
-            .eq('id', resourceId);
-        }
-        
-        if (selectedAmenities.length > 0 && resourceId) {
-          try {
-            const { updateAmenities } = useDesarrolloImagenes(resourceId);
-            updateAmenities(selectedAmenities);
-          } catch (e) {
-            console.error('Error updating amenities:', e);
-          }
-        }
-      } else if (resourceType === 'leads') {
-        const leadData = dataToSave as LeadResource;
-        
-        if (!resourceId) {
-          result = await supabase
-            .from('leads')
-            .insert({
-              nombre: leadData.nombre,
-              email: leadData.email,
-              telefono: leadData.telefono,
-              interes_en: leadData.interes_en,
-              origen: leadData.origen,
-              estado: leadData.estado,
-              subestado: leadData.subestado,
-              agente: leadData.agente,
-              notas: leadData.notas,
-              ultimo_contacto: leadData.ultimo_contacto
-            });
-        } else {
-          result = await supabase
-            .from('leads')
-            .update({
-              nombre: leadData.nombre,
-              email: leadData.email,
-              telefono: leadData.telefono,
-              interes_en: leadData.interes_en,
-              origen: leadData.origen,
-              estado: leadData.estado,
-              subestado: leadData.subestado,
-              agente: leadData.agente,
-              notas: leadData.notas,
-              ultimo_contacto: leadData.ultimo_contacto
-            })
-            .eq('id', resourceId);
-        }
-      } else if (resourceType === 'cotizaciones') {
-        const cotizacionData = dataToSave as CotizacionResource;
-        
-        if (!resourceId) {
-          result = await supabase
-            .from('cotizaciones')
-            .insert({
-              lead_id: cotizacionData.lead_id,
-              desarrollo_id: cotizacionData.desarrollo_id,
-              prototipo_id: cotizacionData.prototipo_id,
-              monto_anticipo: cotizacionData.monto_anticipo,
-              numero_pagos: cotizacionData.numero_pagos,
-              usar_finiquito: cotizacionData.usar_finiquito,
-              monto_finiquito: cotizacionData.monto_finiquito,
-              notas: cotizacionData.notas
-            });
-        } else {
-          result = await supabase
-            .from('cotizaciones')
-            .update({
-              lead_id: cotizacionData.lead_id,
-              desarrollo_id: cotizacionData.desarrollo_id,
-              prototipo_id: cotizacionData.prototipo_id,
-              monto_anticipo: cotizacionData.monto_anticipo,
-              numero_pagos: cotizacionData.numero_pagos,
-              usar_finiquito: cotizacionData.usar_finiquito,
-              monto_finiquito: cotizacionData.monto_finiquito,
-              notas: cotizacionData.notas
-            })
-            .eq('id', resourceId);
-        }
+      // Handle amenities for desarrollos
+      if (resourceType === 'desarrollos' && selectedAmenities.length > 0) {
+        values.amenidades = selectedAmenities;
       }
       
-      const { error } = result || { error: null };
+      // Create new lead if needed for cotizaciones
+      if (resourceType === 'cotizaciones' && !resourceId && !clientConfig.isExistingClient && !values.lead_id) {
+        if (!clientConfig.newClientData.nombre) {
+          toast({
+            title: 'Error',
+            description: 'El nombre del cliente es requerido',
+            variant: 'destructive',
+          });
+          return false;
+        }
+        
+        const { data: newLead, error: leadError } = await supabase
+          .from('leads')
+          .insert({
+            nombre: clientConfig.newClientData.nombre,
+            email: clientConfig.newClientData.email,
+            telefono: clientConfig.newClientData.telefono,
+            estado: 'nuevo',
+            subestado: 'sin_contactar'
+          })
+          .select('id')
+          .single();
+        
+        if (leadError) {
+          throw leadError;
+        }
+        
+        values.lead_id = newLead.id;
+      }
+      
+      if (resourceId) {
+        // Update existing
+        query = supabase
+          .from(resourceType)
+          .update(values)
+          .eq('id', resourceId);
+      } else {
+        // Create new
+        query = supabase
+          .from(resourceType)
+          .insert(values);
+      }
+      
+      const { error } = await query;
       
       if (error) {
-        console.error('Error saving resource:', error);
-        toast({
-          title: 'Error',
-          description: `No se pudo guardar: ${error.message}`,
-          variant: 'destructive',
-        });
-        return false;
-      } else {
-        toast({
-          title: 'Éxito',
-          description: resourceId 
-            ? 'El recurso ha sido actualizado correctamente'
-            : 'El recurso ha sido creado correctamente',
-        });
-        
-        if (onClose) onClose();
-        if (onSave) onSave();
-        if (onSuccess) onSuccess();
-        return true;
+        throw error;
       }
-    } catch (error: any) {
+      
+      toast({
+        title: 'Éxito',
+        description: `${resourceId ? 'Actualizado' : 'Creado'} correctamente`,
+      });
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+      
+      return true;
+    } catch (error) {
       console.error('Error in saveResource:', error);
       toast({
         title: 'Error',
-        description: `Ha ocurrido un error al guardar el recurso: ${error.message}`,
+        description: 'No se pudo guardar el recurso',
         variant: 'destructive',
       });
       return false;
@@ -327,9 +157,11 @@ export default function useResourceActions({
   };
 
   return {
+    saveResource,
+    handleImageUpload, // Necesario asegurarse de exportar esto
     isSubmitting,
-    uploading,
-    handleImageUpload,
-    saveResource
+    uploading
   };
-}
+};
+
+export default useResourceActions;

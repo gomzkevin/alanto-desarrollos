@@ -64,7 +64,7 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
   const fields = useResourceFields(resourceType, selectedStatus);
 
   // Custom hook for resource actions (save, delete)
-  const { saveResource, handleImageUpload: uploadImage } = useResourceActions({
+  const { saveResource, handleImageUpload } = useResourceActions({
     resourceType,
     resourceId,
     onSuccess,
@@ -102,8 +102,31 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     
     if (name === 'estado' && resourceType === 'leads') {
       setSelectedStatus(value);
+      
+      // También actualizar el estado en el recurso, pero SIN resetear los demás valores
+      if (resource) {
+        setResource({
+          ...resource,
+          estado: value,
+          // Reseteamos solo el subestado, ya que depende del estado
+          subestado: ''
+        });
+      }
     } else if (name === 'desarrollo_id' && resourceType === 'cotizaciones') {
       setSelectedDesarrolloId(value);
+      
+      if (resource) {
+        setResource({
+          ...resource,
+          [name]: value
+        });
+      }
+    } else if (resource) {
+      // Para cualquier otro campo, solo actualizar ese campo específico
+      setResource({
+        ...resource,
+        [name]: value
+      });
     }
   };
 
@@ -111,6 +134,13 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
   const handleSwitchChange = (name: string, checked: boolean) => {
     if (name === 'usar_finiquito') {
       setUsarFiniquito(checked);
+    }
+    
+    if (resource) {
+      setResource({
+        ...resource,
+        [name]: checked
+      });
     }
   };
 
