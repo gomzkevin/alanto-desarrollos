@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { EditIcon } from 'lucide-react';
 import { useUserRole } from '@/hooks';
 import { Tables } from '@/integrations/supabase/types';
-import AdminResourceDialog from './AdminResourceDialog';
+import AdminResourceDialog from './ResourceDialog';
 
 type Desarrollo = Tables<"desarrollos">;
 
@@ -21,7 +21,7 @@ const DesarrolloEditButton = ({ desarrollo, onSuccess }: DesarrolloEditButtonPro
   
   return (
     <AdminResourceDialog 
-      resourceType="desarrollos" 
+      resourceType="desarrollos"
       buttonText="Editar desarrollo" 
       buttonIcon={<EditIcon className="h-4 w-4 mr-2" />}
       buttonVariant="outline"

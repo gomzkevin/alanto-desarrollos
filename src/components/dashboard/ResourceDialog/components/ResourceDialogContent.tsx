@@ -74,21 +74,29 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
   const [localResourceId, setLocalResourceId] = useState<string | undefined>(resourceId);
   const formId = `${resourceType}-form-${localResourceId || 'new'}`;
   
+  // Define explicitly which fields should be read-only based on field name and resource type
   const processedFields = fields.map(field => {
-    // Make specific fields read-only
-    if (resourceType === 'desarrollos' && (field.name === 'unidades_disponibles' || field.name === 'avance_porcentaje')) {
+    // Special case for desarrollo fields that should always be read-only
+    if (resourceType === 'desarrollos' && 
+        (field.name === 'unidades_disponibles' || 
+         field.name === 'avance_porcentaje')) {
       return { ...field, readOnly: true };
     }
     
-    if (resourceType === 'prototipos' && (field.name === 'unidades_vendidas' || field.name === 'unidades_con_anticipo')) {
+    // Special case for prototipo fields that should always be read-only
+    if (resourceType === 'prototipos' && 
+        (field.name === 'unidades_vendidas' || 
+         field.name === 'unidades_con_anticipo')) {
       return { ...field, readOnly: true };
     }
     
+    // For existing records, specific fields like numero should be read-only
     if (resourceId && resourceType === 'unidades' && field.name === 'numero') {
       return { ...field, readOnly: true };
     }
     
-    return field;
+    // All other fields should NOT be read-only by default
+    return { ...field, readOnly: field.readOnly === true };
   });
   
   useEffect(() => {

@@ -3,7 +3,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import DeleteUnidadDialog from './DeleteUnidadDialog';
 import { UnidadForm } from "../UnidadForm";
-import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 
 interface UnidadDialogsProps {
   isAddDialogOpen: boolean;
