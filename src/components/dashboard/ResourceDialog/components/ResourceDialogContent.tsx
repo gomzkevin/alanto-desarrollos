@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DialogContent, DialogFooter } from '@/components/ui/dialog';
@@ -74,9 +75,19 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
   const formId = `${resourceType}-form-${localResourceId || 'new'}`;
   
   const processedFields = fields.map(field => {
+    // Make specific fields read-only
+    if (resourceType === 'desarrollos' && (field.name === 'unidades_disponibles' || field.name === 'avance_porcentaje')) {
+      return { ...field, readOnly: true };
+    }
+    
+    if (resourceType === 'prototipos' && (field.name === 'unidades_vendidas' || field.name === 'unidades_con_anticipo')) {
+      return { ...field, readOnly: true };
+    }
+    
     if (resourceId && resourceType === 'unidades' && field.name === 'numero') {
       return { ...field, readOnly: true };
     }
+    
     return field;
   });
   
@@ -214,6 +225,15 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
                   ? "El identificador de la unidad no se puede modificar."
                   : "Recuerda que puedes asignar un comprador a una unidad seleccionando un cliente existente."
                 }
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {resourceType === 'desarrollos' && (
+            <Alert className="mt-4">
+              <InfoCircledIcon className="h-4 w-4" />
+              <AlertDescription>
+                Los campos "Unidades Disponibles" y "Avance Comercial (%)" son calculados automáticamente y no pueden ser editados manualmente.
               </AlertDescription>
             </Alert>
           )}

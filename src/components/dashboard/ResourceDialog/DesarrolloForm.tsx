@@ -1,3 +1,4 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DesarrolloResource } from './types';
 import { Input } from '@/components/ui/input';

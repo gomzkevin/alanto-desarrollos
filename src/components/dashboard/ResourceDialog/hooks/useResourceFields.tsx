@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -110,8 +111,8 @@ export const useResourceFields = (resourceType: ResourceType) => {
             { name: 'nombre', label: 'Nombre', type: 'text' },
             { name: 'ubicacion', label: 'Ubicación', type: 'text' },
             { name: 'total_unidades', label: 'Total Unidades', type: 'number' },
-            { name: 'unidades_disponibles', label: 'Unidades Disponibles', type: 'number' },
-            { name: 'avance_porcentaje', label: 'Avance (%)', type: 'number' },
+            { name: 'unidades_disponibles', label: 'Unidades Disponibles', type: 'number', readOnly: true },
+            { name: 'avance_porcentaje', label: 'Avance (%)', type: 'number', readOnly: true },
             { name: 'fecha_inicio', label: 'Fecha Inicio', type: 'date' },
             { name: 'fecha_entrega', label: 'Fecha Entrega', type: 'date' },
             { name: 'descripcion', label: 'Descripción', type: 'textarea' },
