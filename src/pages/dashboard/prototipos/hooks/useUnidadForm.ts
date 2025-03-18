@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { formatCurrency } from '@/lib/utils';
 
 interface UnidadFormData {
   numero: string;
@@ -25,6 +26,9 @@ export const useUnidadForm = ({ unidad, leads, vendedores }: UnidadFormHookProps
   const [fechaVenta, setFechaVenta] = useState<Date | undefined>(
     unidad?.fecha_venta ? new Date(unidad.fecha_venta) : undefined
   );
+  const [precioFormateado, setPrecioFormateado] = useState(
+    unidad?.precio_venta ? formatCurrency(unidad.precio_venta) : ''
+  );
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<UnidadFormData>({
     defaultValues: {
@@ -39,6 +43,18 @@ export const useUnidadForm = ({ unidad, leads, vendedores }: UnidadFormHookProps
       fecha_venta: unidad?.fecha_venta || ''
     }
   });
+  
+  // Handle precio change with formatting
+  const handlePrecioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove non-numeric characters
+    const numericValue = e.target.value.replace(/[^0-9]/g, '');
+    
+    // Set the numeric value in the form
+    setValue('precio_venta', numericValue ? parseInt(numericValue, 10) : '');
+    
+    // Set the formatted display value
+    setPrecioFormateado(numericValue ? formatCurrency(parseInt(numericValue, 10)) : '');
+  };
   
   // Update form values when date changes
   useEffect(() => {
@@ -117,6 +133,8 @@ export const useUnidadForm = ({ unidad, leads, vendedores }: UnidadFormHookProps
     handleLeadChange,
     handleVendedorChange,
     handleEstadoChange,
+    precioFormateado,
+    handlePrecioChange,
     prepareFormData
   };
 };

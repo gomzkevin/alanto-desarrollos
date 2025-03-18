@@ -9,8 +9,9 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, formatCurrency, value, ...props }, ref) => {
-    const displayValue = formatCurrency && typeof value === 'number' 
-      ? formatCurrencyUtil(value)
+    // Format value as currency if requested
+    const displayValue = formatCurrency && value !== undefined && value !== null 
+      ? (typeof value === 'number' ? formatCurrencyUtil(value) : value)
       : value;
 
     return (

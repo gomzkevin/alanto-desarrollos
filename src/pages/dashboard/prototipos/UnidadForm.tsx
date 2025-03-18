@@ -9,6 +9,7 @@ import {
 import SearchableEntitySelect from './components/SearchableEntitySelect';
 import useUnidadForm from './hooks/useUnidadForm';
 import useVendedores from './hooks/useVendedores';
+import { Input } from "@/components/ui/input";
 
 interface UnidadFormProps {
   unidad?: any;
@@ -30,7 +31,9 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
     errors, 
     handleLeadChange, 
     handleVendedorChange, 
-    handleEstadoChange, 
+    handleEstadoChange,
+    precioFormateado,
+    handlePrecioChange,
     prepareFormData 
   } = useUnidadForm({ unidad, leads, vendedores });
   
@@ -76,13 +79,17 @@ export const UnidadForm = ({ unidad, onSubmit, onCancel, leads }: UnidadFormProp
         
         {(estado === 'apartado' || estado === 'en_proceso' || estado === 'vendido') && (
           <>
-            <FormField
-              label="Precio de Venta"
-              id="precio_venta"
-              type="number"
-              placeholder="0.00"
-              {...register('precio_venta')}
-            />
+            <div className="space-y-2">
+              <label htmlFor="precio_venta" className="font-medium text-sm">Precio de Venta</label>
+              <Input
+                id="precio_venta"
+                formatCurrency
+                value={precioFormateado}
+                onChange={handlePrecioChange}
+                placeholder="$0"
+                className="bg-white"
+              />
+            </div>
             
             <div className="space-y-2">
               <label className="font-medium text-sm">Comprador</label>

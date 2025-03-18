@@ -41,6 +41,7 @@ export const SearchableEntitySelect = ({
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   
+  // Improved filtering logic to make it more permissive
   const filteredOptions = options.filter(option => 
     option.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -73,6 +74,7 @@ export const SearchableEntitySelect = ({
               placeholder="Buscar..." 
               value={searchTerm}
               onValueChange={setSearchTerm}
+              className="h-9"
             />
             <CommandList>
               <CommandEmpty>{emptyMessage}</CommandEmpty>
@@ -83,6 +85,7 @@ export const SearchableEntitySelect = ({
                   onSelect={() => {
                     onChange("", "");
                     setOpen(false);
+                    setSearchTerm("");
                   }}
                 >
                   <span>Sin asignar</span>
@@ -90,10 +93,11 @@ export const SearchableEntitySelect = ({
                 {filteredOptions.map(option => (
                   <CommandItem
                     key={option.id}
-                    value={option.id}
+                    value={option.nombre}
                     onSelect={() => {
                       onChange(option.id, option.nombre);
                       setOpen(false);
+                      setSearchTerm("");
                     }}
                   >
                     <Check
