@@ -135,3 +135,8 @@ export interface ResourceDialogProps {
   buttonIcon?: React.ReactNode;
   buttonVariant?: string;
 }
+
+export interface AdminResourceDialogProps extends ResourceDialogProps {
+  onSave?: () => void;
+  defaultValues?: Record<string, any>;
+}
