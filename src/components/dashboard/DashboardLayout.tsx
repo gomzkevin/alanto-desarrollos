@@ -58,7 +58,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     <SidebarProvider>
       <div className="flex h-screen bg-slate-50 w-full">
         <Sidebar>
-          <SidebarContent></SidebarContent>
+          <SidebarContent>
+            {/* Sidebar navigation content goes here */}
+          </SidebarContent>
           <SidebarFooter className="p-4">
             <UserMenu />
           </SidebarFooter>
