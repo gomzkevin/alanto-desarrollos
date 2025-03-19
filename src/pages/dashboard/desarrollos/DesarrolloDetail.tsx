@@ -372,7 +372,7 @@ const DesarrolloDetailPage = () => {
                 </div>
                 <AdminResourceDialog 
                   resourceType="prototipos" 
-                  buttonText="+ Nuevo prototipo" 
+                  buttonText="Nuevo prototipo" 
                   buttonIcon={<PlusCircle className="h-4 w-4 mr-2" />}
                   buttonVariant="default"
                   onSuccess={refetchPrototipos}
@@ -386,7 +386,7 @@ const DesarrolloDetailPage = () => {
                   <p className="text-slate-700 mb-4">No hay prototipos registrados en este desarrollo</p>
                   <AdminResourceDialog 
                     resourceType="prototipos" 
-                    buttonText="+ Agregar prototipo" 
+                    buttonText="Nuevo prototipo" 
                     buttonIcon={<PlusCircle className="h-4 w-4 mr-2" />}
                     buttonVariant="default"
                     onSuccess={refetchPrototipos}
