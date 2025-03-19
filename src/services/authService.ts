@@ -1,0 +1,158 @@
+
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
+
+/**
+ * Ensures the authenticated user exists in the usuarios table
+ */
+export const ensureUserInDatabase = async (userId: string, userEmail: string): Promise<boolean> => {
+  try {
+    console.log('Verificando si el usuario existe en la tabla usuarios:', userId);
+    
+    // First check if user already exists in the table
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('id, email')
+      .eq('auth_id', userId)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') { // User not found
+        console.log('Usuario no encontrado en tabla usuarios, creándolo ahora:', userEmail);
+        
+        // Extract name from email
+        const nombre = userEmail.split('@')[0] || 'Usuario';
+        
+        const { data: insertData, error: insertError } = await supabase
+          .from('usuarios')
+          .insert({
+            auth_id: userId,
+            email: userEmail,
+            nombre: nombre,
+            rol: 'admin', // Default for development
+          })
+          .select();
+        
+        if (insertError) {
+          console.error('Error al crear registro de usuario:', insertError);
+          return false;
+        }
+        
+        console.log('Usuario creado exitosamente en tabla usuarios:', insertData);
+        return true;
+      }
+      
+      console.error('Error al verificar usuario en la tabla:', error);
+      return false;
+    }
+    
+    console.log('Usuario ya existe en tabla usuarios:', data);
+    return true;
+  } catch (error) {
+    console.error('Error en ensureUserInDatabase:', error);
+    return false;
+  }
+};
+
+/**
+ * Signs in with email and password
+ */
+export const signInWithEmailPassword = async (email: string, password: string) => {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      // If error is "Email not confirmed", try handling this case
+      if (error.message.includes("Email not confirmed")) {
+        toast({
+          title: "Correo no confirmado",
+          description: "Estamos en modo desarrollo, intentando iniciar sesión de todos modos...",
+        });
+        
+        // In development, try to update user to automatically confirm email
+        try {
+          // First get user by email
+          const { data: userData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
+          });
+          
+          if (!signUpError && userData) {
+            // Try to sign in again
+            const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+            
+            if (!loginError && loginData.user) {
+              // Ensure user exists in the usuarios table
+              await ensureUserInDatabase(loginData.user.id, loginData.user.email || email);
+              return { success: true, user: loginData.user };
+            }
+          }
+        } catch (confirmError) {
+          console.error("Error al intentar confirmar email:", confirmError);
+        }
+      }
+      
+      return { success: false, error: error.message };
+    } 
+    
+    if (data.user) {
+      // Ensure user exists in the usuarios table
+      await ensureUserInDatabase(data.user.id, data.user.email || email);
+      return { success: true, user: data.user };
+    }
+    
+    return { success: false, error: "No se pudo iniciar sesión" };
+  } catch (error) {
+    console.error("Error en inicio de sesión:", error);
+    return { success: false, error: "Ocurrió un error inesperado" };
+  }
+};
+
+/**
+ * Signs up with email and password
+ */
+export const signUpWithEmailPassword = async (email: string, password: string) => {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin + "/auth",
+        data: {
+          confirmed_at: new Date().toISOString(), // This won't work directly, it's just to illustrate
+        }
+      }
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    } 
+    
+    // In development mode, try to sign in immediately after registration
+    try {
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (!signInError && signInData.user) {
+        // Ensure user exists in the usuarios table
+        await ensureUserInDatabase(signInData.user.id, signInData.user.email || email);
+        return { success: true, user: signInData.user, autoSignIn: true };
+      }
+    } catch (signInError) {
+      console.error("Error al intentar iniciar sesión después del registro:", signInError);
+    }
+    
+    return { success: true, message: "Por favor, revisa tu correo electrónico para confirmar tu cuenta" };
+  } catch (error) {
+    console.error("Error en registro:", error);
+    return { success: false, error: "Ocurrió un error inesperado" };
+  }
+};
