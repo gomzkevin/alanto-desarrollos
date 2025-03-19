@@ -200,7 +200,7 @@ export function SubscriptionPlans() {
           Elige el plan que mejor se adapte a tus necesidades.
           {currentSubscription && (
             <div className="mt-2">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <Badge variant="success" className="bg-green-50 text-green-700 border-green-200">
                 Plan activo: {currentSubscription.subscription_plans.name}
               </Badge>
               <p className="text-sm mt-1">
