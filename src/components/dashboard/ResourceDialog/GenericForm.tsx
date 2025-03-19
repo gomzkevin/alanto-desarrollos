@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { AmenitiesSelector } from '../AmenitiesSelector';
@@ -34,7 +33,6 @@ interface GenericFormProps {
   onDateChange?: (name: string, date: Date | undefined) => void;
   onAmenitiesChange?: (amenities: string[]) => void;
   isSubmitting?: boolean;
-  onSubmit?: () => void;
   formId: string;
   selectedAmenities?: string[];
 }
@@ -50,7 +48,6 @@ const GenericForm = ({
   onAmenitiesChange,
   formId,
   isSubmitting = false,
-  onSubmit,
   selectedAmenities = []
 }: GenericFormProps) => {
   const [activeTab, setActiveTab] = useState<string>('general');
@@ -292,8 +289,8 @@ const GenericForm = ({
   };
 
   return (
-    <Form {...form}>
-      <form id={formId} onSubmit={form.handleSubmit(onSubmit || (() => {}))}>
+    <div>
+      <Form {...form}>
         {tabs.length > 1 ? (
           <Tabs defaultValue={tabs[0].id} value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
@@ -313,8 +310,8 @@ const GenericForm = ({
             {fields.map(renderField)}
           </div>
         )}
-      </form>
-    </Form>
+      </Form>
+    </div>
   );
 };
 

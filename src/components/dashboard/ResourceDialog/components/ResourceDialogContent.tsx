@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { DialogContent, DialogFooter } from '@/components/ui/dialog';
@@ -98,9 +97,12 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
     setLocalResourceId(resourceId);
   }, [resourceId]);
   
-  const handleFormSubmit = async () => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
+      console.log("Attempting to save resource...");
       const success = await saveResource();
+      console.log("Save result:", success);
       if (success) {
         onClose();
       }
@@ -205,64 +207,65 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
             </div>
           )}
           
-          <GenericForm
-            formId={formId}
-            fields={processedFields}
-            values={resource}
-            onChange={handleChange}
-            onSelectChange={handleSelectChange}
-            onSwitchChange={handleSwitchChange}
-            onLeadSelect={handleLeadSelect}
-            onDateChange={handleDateChange}
-            onAmenitiesChange={handleAmenitiesChange}
-            isSubmitting={isSubmitting}
-            onSubmit={handleFormSubmit}
-            selectedAmenities={selectedAmenities}
-          />
-          
-          {resourceType === 'unidades' && (
-            <Alert className="mt-4">
-              <InfoCircledIcon className="h-4 w-4" />
-              <AlertDescription>
-                {resourceId 
-                  ? "El identificador de la unidad no se puede modificar."
-                  : "Recuerda que puedes asignar un comprador a una unidad seleccionando un cliente existente."
-                }
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {resourceType === 'desarrollos' && (
-            <Alert className="mt-4">
-              <InfoCircledIcon className="h-4 w-4" />
-              <AlertDescription>
-                Los campos "Unidades Disponibles" y "Avance Comercial (%)" son calculados automáticamente y no pueden ser editados manualmente.
-              </AlertDescription>
-            </Alert>
-          )}
+          <form id={formId} onSubmit={handleFormSubmit}>
+            <GenericForm
+              formId={formId}
+              fields={processedFields}
+              values={resource}
+              onChange={handleChange}
+              onSelectChange={handleSelectChange}
+              onSwitchChange={handleSwitchChange}
+              onLeadSelect={handleLeadSelect}
+              onDateChange={handleDateChange}
+              onAmenitiesChange={handleAmenitiesChange}
+              isSubmitting={isSubmitting}
+              selectedAmenities={selectedAmenities}
+            />
+            
+            {resourceType === 'unidades' && (
+              <Alert className="mt-4">
+                <InfoCircledIcon className="h-4 w-4" />
+                <AlertDescription>
+                  {resourceId 
+                    ? "El identificador de la unidad no se puede modificar."
+                    : "Recuerda que puedes asignar un comprador a una unidad seleccionando un cliente existente."
+                  }
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {resourceType === 'desarrollos' && (
+              <Alert className="mt-4">
+                <InfoCircledIcon className="h-4 w-4" />
+                <AlertDescription>
+                  Los campos "Unidades Disponibles" y "Avance Comercial (%)" son calculados automáticamente y no pueden ser editados manualmente.
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            <DialogFooter className="mt-4">
+              <Button 
+                variant="outline" 
+                onClick={onClose}
+                disabled={isSubmitting}
+                type="button"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || isLoading || !resource}
+              >
+                {isSubmitting ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </DialogFooter>
+          </form>
         </>
       ) : (
         <div className="py-6">
           <p className="text-center text-gray-500">No se pudo cargar la información</p>
         </div>
       )}
-      
-      <DialogFooter>
-        <Button 
-          variant="outline" 
-          onClick={onClose}
-          disabled={isSubmitting}
-        >
-          Cancelar
-        </Button>
-        <Button
-          type="submit"
-          form={formId}
-          disabled={isSubmitting || isLoading || !resource}
-        >
-          {isSubmitting ? 'Guardando...' : 'Guardar'}
-        </Button>
-      </DialogFooter>
     </DialogContent>
   );
 };

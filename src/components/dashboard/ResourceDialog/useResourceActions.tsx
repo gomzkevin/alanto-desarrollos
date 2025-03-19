@@ -28,6 +28,7 @@ export default function useResourceActions({
   // Save resource function
   const saveResource = async (values: FormValues) => {
     setIsLoading(true);
+    console.log('Starting saveResource with:', values);
 
     try {
       console.log('Saving resource:', resourceType, values);
@@ -63,7 +64,7 @@ export default function useResourceActions({
             variant: 'destructive',
           });
           setIsLoading(false);
-          return;
+          return false;
         }
         
         // Update the cotizacion with the new lead_id
@@ -73,6 +74,7 @@ export default function useResourceActions({
       // Handle update or insert based on resourceId
       if (resourceId) {
         // Update existing resource
+        console.log('Updating existing resource with id:', resourceId);
         const { error } = await supabase
           .from(resourceType)
           .update(data as any)
@@ -86,7 +88,7 @@ export default function useResourceActions({
             variant: 'destructive',
           });
           setIsLoading(false);
-          return;
+          return false;
         }
         
         toast({
@@ -95,6 +97,7 @@ export default function useResourceActions({
         });
       } else {
         // Create new resource
+        console.log('Creating new resource');
         const { error } = await supabase
           .from(resourceType)
           .insert(data as any);
@@ -107,7 +110,7 @@ export default function useResourceActions({
             variant: 'destructive',
           });
           setIsLoading(false);
-          return;
+          return false;
         }
         
         toast({
@@ -120,6 +123,8 @@ export default function useResourceActions({
       if (onSuccess) {
         onSuccess();
       }
+      
+      return true;
     } catch (error) {
       console.error('Error in saveResource:', error);
       toast({
@@ -127,6 +132,7 @@ export default function useResourceActions({
         description: 'Ha ocurrido un error inesperado',
         variant: 'destructive',
       });
+      return false;
     } finally {
       setIsLoading(false);
     }

@@ -194,16 +194,17 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
 
   // Handle form submission
   const handleSaveResource = async () => {
+    console.log("handleSaveResource called with resource:", resource);
     if (!resource) return false;
     
     setIsSubmitting(true);
     
     try {
-      await saveResource(resource);
-      if (onSuccess) {
+      const success = await saveResource(resource);
+      if (success && onSuccess) {
         onSuccess();
       }
-      return true;
+      return success;
     } catch (error) {
       console.error('Error saving resource:', error);
       return false;
