@@ -1,16 +1,28 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 type UserRole = 'admin' | 'vendedor' | null;
 
+export interface UserData {
+  id: string;
+  role: UserRole;
+  name: string;
+  email: string;
+  empresaId: number | null;
+  empresaNombre: string | null;
+}
+
 export const useUserRole = () => {
-  const [role, setRole] = useState<UserRole>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserRole = async () => {
+    const fetchUserData = async () => {
       try {
         setIsLoading(true);
         
@@ -18,56 +30,85 @@ export const useUserRole = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          setRole(null);
+          console.log('No session, redirecting to login');
+          setUserData(null);
+          setIsAuthenticated(false);
           setIsLoading(false);
           return;
         }
         
-        setUserId(session.user.id);
+        setIsAuthenticated(true);
         
-        // Fetch user role from usuarios table
+        // Fetch user data from usuarios table
         const { data, error } = await supabase
           .from('usuarios')
-          .select('rol')
+          .select(`
+            id,
+            nombre,
+            email,
+            rol,
+            empresa_id,
+            empresa_info:empresa_id (
+              id,
+              nombre
+            )
+          `)
           .eq('auth_id', session.user.id)
           .single();
         
         if (error) {
-          console.error('Error fetching user role:', error);
-          setRole(null);
+          console.error('Error fetching user data:', error);
+          toast({
+            title: 'Error',
+            description: 'No se pudo cargar información del usuario',
+            variant: 'destructive',
+          });
+          setUserData(null);
+        } else if (!data) {
+          console.log('User not found in usuarios table');
+          setUserData(null);
         } else {
-          setRole(data?.rol as UserRole || null);
+          setUserData({
+            id: data.id,
+            role: data.rol as UserRole,
+            name: data.nombre,
+            email: data.email,
+            empresaId: data.empresa_id,
+            empresaNombre: data.empresa_info?.nombre || null
+          });
         }
       } catch (error) {
         console.error('Error in useUserRole hook:', error);
-        setRole(null);
+        setUserData(null);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchUserRole();
+    fetchUserData();
     
     // Also listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setUserId(session.user.id);
-        fetchUserRole();
-      } else {
-        setUserId(null);
-        setRole(null);
-        setIsLoading(false);
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
+      if (event === 'SIGNED_OUT') {
+        setUserData(null);
+        setIsAuthenticated(false);
+        navigate('/');
+      } else if (session) {
+        setIsAuthenticated(true);
+        fetchUserData();
       }
     });
     
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
   
   // Helper functions to check permissions
-  const isAdmin = () => role === 'admin';
-  const isVendedor = () => role === 'vendedor';
+  const isAdmin = () => userData?.role === 'admin';
+  const isVendedor = () => userData?.role === 'vendedor';
   const canCreateResource = (resourceType: 'desarrollo' | 'prototipo' | 'propiedad' | 'lead' | 'cotizacion') => {
     if (resourceType === 'desarrollo' || resourceType === 'prototipo' || resourceType === 'propiedad') {
       return isAdmin();
@@ -76,9 +117,9 @@ export const useUserRole = () => {
   };
   
   return {
-    role,
+    userData,
     isLoading,
-    userId,
+    isAuthenticated,
     isAdmin,
     isVendedor,
     canCreateResource
