@@ -3,19 +3,10 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ResourceType, FormValues } from './types';
 import { useToast } from '@/hooks/use-toast';
+import { Tables } from '@/integrations/supabase/types';
 
 // Define a type for the tables that exist in Supabase
-type SupabaseTable = 
-  | 'desarrollos' 
-  | 'prototipos' 
-  | 'leads' 
-  | 'cotizaciones'
-  | 'unidades'
-  | 'usuarios'
-  | 'empresa_info'
-  | 'desarrollo_imagenes'
-  | 'propiedades'
-  | 'configuracion_financiera';
+type SupabaseTable = keyof Tables;
 
 // A mapping of ResourceType to actual table names
 const resourceTableMap: Record<ResourceType, SupabaseTable> = {
@@ -109,28 +100,57 @@ export default function useResourceActions({
       const tableName = resourceTableMap[resourceType];
       
       if (resourceId) {
-        // Update existing resource
-        const { data, error } = await supabase
-          .from(tableName)
-          .update({
+        // For desarrollos, we need to handle the amenidades field specially
+        if (resourceType === 'desarrollos') {
+          // Create a full resource object with all required fields
+          const updateData = {
             ...formValues,
-            ...(resourceType === 'desarrollos' && { amenidades: selectedAmenities })
-          })
-          .eq('id', resourceId)
-          .select();
+            amenidades: selectedAmenities,
+          };
           
-        result = { data, error };
+          // Update existing resource
+          const { data, error } = await supabase
+            .from(tableName)
+            .update(updateData)
+            .eq('id', resourceId)
+            .select();
+            
+          result = { data, error };
+        } else {
+          // Update existing resource for other resource types
+          const { data, error } = await supabase
+            .from(tableName)
+            .update(formValues)
+            .eq('id', resourceId)
+            .select();
+            
+          result = { data, error };
+        }
       } else {
-        // Create new resource
-        const { data, error } = await supabase
-          .from(tableName)
-          .insert({
+        // Insert new resource
+        if (resourceType === 'desarrollos') {
+          // Create a full resource object with all required fields
+          const insertData = {
             ...formValues,
-            ...(resourceType === 'desarrollos' && { amenidades: selectedAmenities })
-          })
-          .select();
+            amenidades: selectedAmenities,
+          };
           
-        result = { data, error };
+          // Insert new resource
+          const { data, error } = await supabase
+            .from(tableName)
+            .insert(insertData)
+            .select();
+            
+          result = { data, error };
+        } else {
+          // Insert new resource for other resource types
+          const { data, error } = await supabase
+            .from(tableName)
+            .insert(formValues)
+            .select();
+            
+          result = { data, error };
+        }
       }
       
       if (result.error) {

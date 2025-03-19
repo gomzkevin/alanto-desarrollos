@@ -3,14 +3,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import useDesarrollos from '@/hooks/useDesarrollos';
+import useDesarrollos, { Desarrollo } from '@/hooks/useDesarrollos';
 import DesarrolloCard from '@/components/dashboard/DesarrolloCard';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import useUserRole from '@/hooks/useUserRole';
-import { Tables } from '@/integrations/supabase/types';
 import useUnidades from '@/hooks/useUnidades';
-
-type Desarrollo = Tables<"desarrollos">;
 
 const DesarrollosPage = () => {
   const navigate = useNavigate();
@@ -84,7 +81,7 @@ const DesarrollosPage = () => {
   // Use real counts when available, otherwise use normalized desarrollos
   const displayDesarrollos = desarrollosWithRealCounts.length > 0 
     ? normalizeDesarrollos(desarrollosWithRealCounts)
-    : normalizeDesarrollos(desarrollos as Desarrollo[]);
+    : normalizeDesarrollos(desarrollos);
 
   return (
     <DashboardLayout>
@@ -107,7 +104,10 @@ const DesarrollosPage = () => {
           <AdminResourceDialog 
             resourceType="desarrollos" 
             buttonText="Nuevo desarrollo" 
-            onSuccess={refetch}
+            onSuccess={() => {
+              refetch();
+              setOpenDialog(false);
+            }}
             open={openDialog}
             onClose={() => setOpenDialog(false)}
           />

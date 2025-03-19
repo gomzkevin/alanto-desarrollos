@@ -16,19 +16,20 @@ export interface Desarrollo {
   fecha_inicio: string | null;
   fecha_entrega: string | null;
   empresa_id?: number | null;
-  // Adding other fields to match the expected type
-  adr_base?: number;
+  // Financial fields
+  adr_base?: number | null;
   amenidades?: Json | null;
-  comision_operador?: number;
-  es_gastos_fijos_porcentaje?: boolean;
-  es_gastos_variables_porcentaje?: boolean;
-  es_impuestos_porcentaje?: boolean;
-  es_mantenimiento_porcentaje?: boolean;
-  gastos_fijos?: number;
-  gastos_variables?: number;
-  impuestos?: number;
-  moneda?: string;
-  ocupacion_anual?: number;
+  comision_operador?: number | null;
+  es_gastos_fijos_porcentaje?: boolean | null;
+  es_gastos_variables_porcentaje?: boolean | null;
+  es_impuestos_porcentaje?: boolean | null;
+  es_mantenimiento_porcentaje?: boolean | null;
+  gastos_fijos?: number | null;
+  gastos_variables?: number | null;
+  impuestos?: number | null;
+  mantenimiento_valor?: number | null;
+  moneda?: string | null;
+  ocupacion_anual?: number | null;
 }
 
 export const useDesarrollos = () => {
@@ -47,7 +48,7 @@ export const useDesarrollos = () => {
       
       let query = supabase.from('desarrollos').select('*');
       
-      // Add empresa_id filter if the column exists and user has an empresa_id
+      // Add empresa_id filter if the column exists and user has an empresaId
       if (hasEmpresaIdColumn && userData?.empresaId) {
         query = query.eq('empresa_id', userData.empresaId);
       }

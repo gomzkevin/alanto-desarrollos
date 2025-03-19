@@ -1,168 +1,108 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useUser } from '@supabase/auth-helpers-react';
 
-type UserRole = 'admin' | 'vendedor' | null;
-
-export interface UserData {
+interface UserData {
   id: string;
-  role: UserRole;
-  name: string;
+  rol: string;
+  nombre: string;
   email: string;
   empresaId: number | null;
-  empresaNombre: string | null;
+}
+
+interface Permissions {
+  canCreateResource: boolean;
+  canEditResource: boolean;
+  canDeleteResource: boolean;
+  canSeeFinancials: boolean;
+  isAdmin: boolean;
 }
 
 export const useUserRole = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const [permissions, setPermissions] = useState<Permissions>({
+    canCreateResource: false,
+    canEditResource: false,
+    canDeleteResource: false,
+    canSeeFinancials: false,
+    isAdmin: false,
+  });
+
+  const user = useUser();
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Get current session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          console.log('No session, redirecting to login');
-          setUserData(null);
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          return;
-        }
-        
-        setIsAuthenticated(true);
-        
-        // First check if the empresa_id column exists in the usuarios table
-        const { data: hasEmpresaColumn, error: columnCheckError } = await supabase
-          .rpc('has_column', { table_name: 'usuarios', column_name: 'empresa_id' });
-        
-        if (columnCheckError) {
-          console.error('Error checking for empresa_id column:', columnCheckError);
-          toast({
-            title: 'Error',
-            description: 'Error al verificar la estructura de la base de datos',
-            variant: 'destructive',
-          });
-          setIsLoading(false);
-          return;
-        }
-        
-        // Fetch user data from usuarios table
-        const selectQuery = hasEmpresaColumn ? 
-          'id, nombre, email, rol, empresa_id' : 
-          'id, nombre, email, rol';
-          
-        let { data, error } = await supabase
-          .from('usuarios')
-          .select(selectQuery)
-          .eq('auth_id', session.user.id)
-          .single();
-        
-        if (error) {
-          console.error('Error fetching user data:', error);
-          toast({
-            title: 'Error',
-            description: 'No se pudo cargar información del usuario',
-            variant: 'destructive',
-          });
-          setUserData(null);
-          setIsLoading(false);
-          return;
-        }
-        
-        if (!data) {
-          console.log('User not found in usuarios table');
-          setUserData(null);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Get empresa info if empresa_id exists
-        let empresaId: number | null = null;
-        let empresaNombre: string | null = null;
-        
-        if (hasEmpresaColumn && data && typeof data === 'object') {
-          // Using optional chaining to safely access empresa_id
-          empresaId = data?.empresa_id || null;
-          
-          // Get empresa name
-          if (empresaId) {
-            const { data: empresa, error: empresaNameError } = await supabase
-              .from('empresa_info')
-              .select('nombre')
-              .eq('id', empresaId)
-              .single();
-              
-            if (!empresaNameError && empresa) {
-              empresaNombre = empresa.nombre;
-            }
-          }
-        }
-        
-        if (data && typeof data === 'object') {
-          setUserData({
-            id: data?.id || '',
-            role: data?.rol as UserRole || null,
-            name: data?.nombre || '',
-            email: data?.email || '',
-            empresaId,
-            empresaNombre
-          });
-        }
-      } catch (error) {
-        console.error('Error in useUserRole hook:', error);
+    const fetchRole = async () => {
+      if (user?.id) {
+        const fetchedUserData = await fetchUserData(user.id);
+        setUserData(fetchedUserData);
+      } else {
         setUserData(null);
-      } finally {
-        setIsLoading(false);
+        setPermissions({
+          canCreateResource: false,
+          canEditResource: false,
+          canDeleteResource: false,
+          canSeeFinancials: false,
+          isAdmin: false,
+        });
       }
     };
-    
-    fetchUserData();
-    
-    // Also listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
+
+    fetchRole();
+  }, [user]);
+
+  const fetchUserData = async (userId: string): Promise<UserData | null> => {
+    try {
+      // First get the user info from usuarios table
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('auth_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user data:', error);
+        return null;
+      }
+
+      // Make sure all userData properties are safely accessed with null checks
+      const empresaId = data?.empresa_id || null;
+      const rolValue = data?.rol || 'vendedor';
       
-      if (event === 'SIGNED_OUT') {
-        setUserData(null);
-        setIsAuthenticated(false);
-        navigate('/');
-      } else if (session) {
-        setIsAuthenticated(true);
-        fetchUserData();
-      }
-    });
-    
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [navigate, toast]);
-  
-  // Helper functions to check permissions
-  const isAdmin = () => userData?.role === 'admin';
-  const isVendedor = () => userData?.role === 'vendedor';
-  const canCreateResource = (resourceType: 'desarrollo' | 'prototipo' | 'propiedad' | 'lead' | 'cotizacion') => {
-    if (resourceType === 'desarrollo' || resourceType === 'prototipo' || resourceType === 'propiedad') {
-      return isAdmin();
+      // Create user data object with safe null checks
+      const userData: UserData = {
+        id: data?.id || '',
+        rol: data?.rol || 'vendedor',
+        nombre: data?.nombre || '',
+        email: data?.email || '',
+        empresaId: empresaId,
+      };
+
+      // Set permissions based on role
+      const updatedPermissions: Permissions = {
+        canCreateResource: ['admin', 'gerente'].includes(rolValue),
+        canEditResource: ['admin', 'gerente', 'vendedor'].includes(rolValue),
+        canDeleteResource: ['admin'].includes(rolValue),
+        canSeeFinancials: ['admin', 'gerente'].includes(rolValue),
+        isAdmin: rolValue === 'admin',
+      };
+
+      setPermissions(updatedPermissions);
+      
+      return userData;
+    } catch (error) {
+      console.error('Error in fetchUserData:', error);
+      return null;
     }
-    return isAdmin() || isVendedor();
   };
-  
+
   return {
     userData,
-    isLoading,
-    isAuthenticated,
-    isAdmin,
-    isVendedor,
-    canCreateResource
+    permissions,
+    canCreateResource: permissions.canCreateResource,
+    canEditResource: permissions.canEditResource,
+    canDeleteResource: permissions.canDeleteResource,
+    canSeeFinancials: permissions.canSeeFinancials,
+    isAdmin: permissions.isAdmin,
   };
 };
 

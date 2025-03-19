@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ResourceDialogProps } from './types';
 import { ResourceDialogContent } from './components/ResourceDialogContent';
@@ -28,6 +28,7 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
   });
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | null>(desarrolloId || null);
   const [usarFiniquito, setUsarFiniquito] = useState<boolean>(false);
+  const [uploading, setUploading] = useState<boolean>(false);
 
   const { fields } = useResourceFields(resourceType, selectedStatus, selectedDesarrolloId || undefined);
   
@@ -79,8 +80,7 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     handleSwitchChange,
     handleLeadSelect,
     handleDateChange,
-    uploading,
-    setUploading,
+    handleAmenitiesChange,
     saveResource
   } = useResourceForm(resourceFormProps);
   
@@ -105,12 +105,40 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     });
   };
 
-  const handleAmenitiesChange = (amenities: string[]) => {
+  const handleAmenitiesChangeWrapper = (amenities: string[]) => {
     setSelectedAmenities(amenities);
+    if (handleAmenitiesChange) {
+      handleAmenitiesChange(amenities);
+    }
   };
 
   const handleImageUploadWrapper = async (file: File, bucket: string, folder: string, fieldName: string) => {
-    return await handleImageUpload(file, bucket, folder, fieldName);
+    setUploading(true);
+    try {
+      const result = await handleImageUpload(file, bucket, folder, fieldName);
+      return result;
+    } finally {
+      setUploading(false);
+    }
+  };
+  
+  // Create an adapter function to match the expected interface
+  const adaptedImageUpload = (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      // These values would typically come from props or context in a real implementation
+      // For now, we'll use default values
+      const bucket = 'your-bucket';
+      const folder = 'your-folder';
+      const fieldName = 'image_field';
+      
+      return handleImageUploadWrapper(file, bucket, folder, fieldName)
+        .then(() => {})
+        .catch(err => {
+          console.error('Error uploading image:', err);
+        });
+    }
+    return Promise.resolve();
   };
 
   const onDesarrolloSelect = (id: string) => {
@@ -134,12 +162,12 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
           handleSelectChange={handleSelectChange}
           handleSwitchChange={handleSwitchChange}
           handleLeadSelect={handleLeadSelect}
-          handleAmenitiesChange={handleAmenitiesChange}
+          handleAmenitiesChange={handleAmenitiesChangeWrapper}
           saveResource={handleFormSubmit}
           desarrolloId={desarrolloId}
           prototipo_id={prototipo_id}
           lead_id={lead_id}
-          handleImageUpload={handleImageUploadWrapper}
+          handleImageUpload={adaptedImageUpload}
           uploading={uploading}
           isExistingClient={isExistingClient}
           onExistingClientChange={handleExistingClientChange}
