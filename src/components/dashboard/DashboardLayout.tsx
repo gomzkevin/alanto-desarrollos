@@ -1,7 +1,7 @@
 
 import { useEffect, ReactNode } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { Sidebar, SidebarProvider } from '@/components/ui/sidebar';
+import { Sidebar, SidebarProvider, SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,15 +20,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log('Checking dashboard auth...');
         const { data } = await supabase.auth.getSession();
         if (!data.session) {
-          console.log('No session found, redirecting to login');
+          console.log('No session found in dashboard, redirecting to login');
           navigate('/auth/login');
         } else {
-          console.log('Session found:', data.session.user.email);
+          console.log('Dashboard session found:', data.session.user.email);
         }
       } catch (error) {
-        console.error('Error checking auth:', error);
+        console.error('Error checking auth in dashboard:', error);
         toast({
           title: "Error de autenticación",
           description: "Hubo un problema al verificar tu sesión",
@@ -55,13 +56,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-slate-50">
+      <div className="flex h-screen bg-slate-50 w-full">
         <Sidebar>
-          <div className="absolute top-4 right-4">
+          <SidebarContent></SidebarContent>
+          <SidebarFooter className="p-4">
             <UserMenu />
-          </div>
+          </SidebarFooter>
         </Sidebar>
-        <main className="pl-16 md:pl-64 pr-4 py-6">
+        <main className="flex-1 overflow-auto pl-16 md:pl-64 p-6">
           {children || <Outlet />}
         </main>
       </div>
