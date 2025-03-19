@@ -1,9 +1,9 @@
 
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Building2, Users, BarChart3, Calculator, Briefcase, 
-  Settings, LogOut, Menu, X, ChevronDown, Home
+  Settings, Menu, X, ChevronDown, Home
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useUserRole } from '@/hooks/useUserRole';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from "@/components/ui/use-toast";
+import LogoutButton from './LogoutButton';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -23,6 +27,35 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isLoading, userId } = useUserRole();
+  
+  // Verificar si el usuario está autenticado
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        toast({
+          title: "Sesión expirada",
+          description: "Por favor inicia sesión para continuar",
+        });
+        navigate('/auth');
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
+  
+  // Si está cargando, mostrar un indicador de carga
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center">Cargando...</div>;
+  }
+  
+  // Si no hay userId después de cargar, redirigir a la página de autenticación
+  if (!isLoading && !userId) {
+    navigate('/auth');
+    return null;
+  }
   
   // Cerrar el sidebar en versión móvil cuando cambia la ruta
   useEffect(() => {
@@ -166,14 +199,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Configuración</span>
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard/configuracion">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Configuración</span>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Cerrar sesión</span>
-                  </DropdownMenuItem>
+                  <LogoutButton />
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
