@@ -59,7 +59,14 @@ export function SubscriptionPlans() {
           throw plansError;
         }
 
-        setPlans(plansData || []);
+        // Convert string interval to our union type
+        const typedPlans = plansData?.map(plan => ({
+          ...plan,
+          interval: plan.interval === 'year' ? 'year' : 'month' as 'month' | 'year',
+          features: plan.features || {}
+        })) || [];
+
+        setPlans(typedPlans);
 
         // Fetch current subscription
         const { data: subData, error: subError } = await supabase
@@ -73,7 +80,21 @@ export function SubscriptionPlans() {
           throw subError;
         }
 
-        setCurrentSubscription(subData);
+        // If we have subscription data, properly type it
+        if (subData) {
+          const typedSubscription = {
+            ...subData,
+            subscription_plans: {
+              ...subData.subscription_plans,
+              interval: subData.subscription_plans.interval === 'year' 
+                ? 'year' 
+                : 'month' as 'month' | 'year',
+              features: subData.subscription_plans.features || {}
+            }
+          };
+          
+          setCurrentSubscription(typedSubscription);
+        }
       } catch (error) {
         console.error("Error fetching subscription data:", error);
         toast({
@@ -129,7 +150,19 @@ export function SubscriptionPlans() {
       if (subscriptionError) throw subscriptionError;
       
       if (subscriptionData && subscriptionData.length > 0) {
-        setCurrentSubscription(subscriptionData[0]);
+        // Properly type the subscription data 
+        const typedSubscription = {
+          ...subscriptionData[0],
+          subscription_plans: {
+            ...subscriptionData[0].subscription_plans,
+            interval: subscriptionData[0].subscription_plans.interval === 'year' 
+              ? 'year' 
+              : 'month' as 'month' | 'year',
+            features: subscriptionData[0].subscription_plans.features || {}
+          }
+        };
+        
+        setCurrentSubscription(typedSubscription);
       }
       
       toast({
