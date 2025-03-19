@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 type UserRole = 'admin' | 'vendedor' | null;
 
 export const useUserRole = () => {
-  const [role, setRole] = useState<UserRole>(null);
+  const [role, setRole] = useState<UserRole>('admin'); // Set default to admin for development
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -18,8 +18,9 @@ export const useUserRole = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          setRole(null);
-          setIsLoading(false);
+          // For development, use admin role even if not authenticated
+          console.log('No session, using default admin role for development');
+          setUserId('dev-user-id');
           return;
         }
         
@@ -34,13 +35,13 @@ export const useUserRole = () => {
         
         if (error) {
           console.error('Error fetching user role:', error);
-          setRole(null);
+          console.log('Using default admin role for development');
         } else {
-          setRole(data?.rol as UserRole || null);
+          setRole(data?.rol as UserRole || 'admin'); // Default to admin if role not found
         }
       } catch (error) {
         console.error('Error in useUserRole hook:', error);
-        setRole(null);
+        console.log('Using default admin role for development');
       } finally {
         setIsLoading(false);
       }
@@ -54,8 +55,9 @@ export const useUserRole = () => {
         setUserId(session.user.id);
         fetchUserRole();
       } else {
-        setUserId(null);
-        setRole(null);
+        // For development, use admin role even if not authenticated
+        console.log('Auth state changed to no session, using default admin role');
+        setUserId('dev-user-id');
         setIsLoading(false);
       }
     });
