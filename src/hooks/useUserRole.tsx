@@ -25,13 +25,17 @@ export const useUserRole = () => {
           return;
         }
         
-        setUserId(session.user.id);
+        const authUserId = session.user.id;
+        setUserId(authUserId);
+        
+        console.log('Current user auth ID:', authUserId);
+        console.log('User email:', session.user.email);
         
         // Fetch user role from usuarios table
         const { data, error } = await supabase
           .from('usuarios')
           .select('rol, nombre, email')
-          .eq('auth_id', session.user.id)
+          .eq('auth_id', authUserId)
           .single();
         
         if (error) {
@@ -43,15 +47,22 @@ export const useUserRole = () => {
               const email = session.user.email;
               const nombre = email?.split('@')[0] || 'Usuario';
               
+              console.log('Creating new user record with:', {
+                auth_id: authUserId,
+                email,
+                nombre
+              });
+              
               // Create a new user record
-              const { error: insertError } = await supabase
+              const { data: insertData, error: insertError } = await supabase
                 .from('usuarios')
                 .insert({
-                  auth_id: session.user.id,
+                  auth_id: authUserId,
                   email,
                   nombre,
                   rol: 'admin', // Default role for development
-                });
+                })
+                .select();
               
               if (insertError) {
                 console.error('Error creating user record:', insertError);
@@ -62,7 +73,7 @@ export const useUserRole = () => {
                 });
                 setRole('admin'); // Default para desarrollo
               } else {
-                console.log('Created new user record for:', email);
+                console.log('Created new user record:', insertData);
                 toast({
                   title: 'Usuario creado',
                   description: 'Se ha creado tu perfil de usuario.',
@@ -78,6 +89,7 @@ export const useUserRole = () => {
             setRole('admin');
           }
         } else {
+          console.log('User role found:', data?.rol);
           setRole(data?.rol as UserRole || 'admin');
         }
       } catch (error) {
@@ -92,6 +104,8 @@ export const useUserRole = () => {
     
     // También escuchar cambios en el estado de autenticación
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
       if (session) {
         setUserId(session.user.id);
         fetchUserRole();
