@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -358,14 +357,6 @@ const DesarrolloDetailPage = () => {
                     {puedeCrearPrototipos() && (
                       <div className="flex items-center text-indigo-600 gap-2">
                         <span>(Aún puedes crear prototipos para {unidadesDisponiblesParaPrototipos()} unidades más)</span>
-                        <AdminResourceDialog 
-                          resourceType="prototipos" 
-                          buttonText="Crear prototipo" 
-                          buttonIcon={<PlusCircle className="h-4 w-4 mr-1" />}
-                          buttonVariant="default"
-                          onSuccess={refetchPrototipos}
-                          desarrolloId={id}
-                        />
                       </div>
                     )}
                   </div>
