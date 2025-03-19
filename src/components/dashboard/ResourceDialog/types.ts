@@ -1,4 +1,3 @@
-
 export type FieldType = 
   | 'text' 
   | 'textarea' 
@@ -30,6 +29,7 @@ export interface FieldDefinition {
   readOnly?: boolean;
   description?: string;
   placeholder?: string;
+  formatCurrency?: boolean;
 }
 
 export type ResourceType = 

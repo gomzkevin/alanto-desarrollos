@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -182,6 +183,7 @@ const GenericForm = ({
                     readOnly={field.readOnly}
                     className={field.readOnly ? "bg-gray-100" : ""}
                     value={formField.value === undefined ? '' : formField.value}
+                    formatCurrency={field.formatCurrency}
                     onChange={(e) => {
                       const value = e.target.value === '' ? null : Number(e.target.value);
                       formField.onChange(value);

@@ -145,7 +145,7 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
           return [
             { name: 'nombre', label: 'Nombre', type: 'text' },
             { name: 'tipo', label: 'Tipo', type: 'select', options: TIPOS_PROPIEDADES, placeholder: 'Seleccionar tipo...' },
-            { name: 'precio', label: 'Precio', type: 'number' },
+            { name: 'precio', label: 'Precio', type: 'number', formatCurrency: true },
             { name: 'superficie', label: 'Superficie (m²)', type: 'number' },
             { name: 'habitaciones', label: 'Habitaciones', type: 'number' },
             { name: 'baños', label: 'Baños', type: 'number' },
