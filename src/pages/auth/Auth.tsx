@@ -31,13 +31,63 @@ export function Auth() {
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Función para asegurarse de que el usuario exista en la tabla usuarios
+  const ensureUserInDatabase = async (userId: string, userEmail: string) => {
+    try {
+      console.log('Verificando si el usuario existe en la tabla usuarios:', userId);
+      
+      // Primero verificamos si el usuario ya existe en la tabla
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('id, email')
+        .eq('auth_id', userId)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') { // No se encontró el usuario
+          console.log('Usuario no encontrado en tabla usuarios, creándolo ahora:', userEmail);
+          
+          // Extraer nombre del email
+          const nombre = userEmail.split('@')[0] || 'Usuario';
+          
+          const { data: insertData, error: insertError } = await supabase
+            .from('usuarios')
+            .insert({
+              auth_id: userId,
+              email: userEmail,
+              nombre: nombre,
+              rol: 'admin', // Default para desarrollo
+            })
+            .select();
+          
+          if (insertError) {
+            console.error('Error al crear registro de usuario:', insertError);
+            return false;
+          }
+          
+          console.log('Usuario creado exitosamente en tabla usuarios:', insertData);
+          return true;
+        }
+        
+        console.error('Error al verificar usuario en la tabla:', error);
+        return false;
+      }
+      
+      console.log('Usuario ya existe en tabla usuarios:', data);
+      return true;
+    } catch (error) {
+      console.error('Error en ensureUserInDatabase:', error);
+      return false;
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
       
       // Intentar iniciar sesión directamente con email/password
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -60,12 +110,15 @@ export function Auth() {
             
             if (!signUpError && userData) {
               // Intentar iniciar sesión nuevamente
-              const { error: loginError } = await supabase.auth.signInWithPassword({
+              const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
                 email,
                 password,
               });
               
-              if (!loginError) {
+              if (!loginError && loginData.user) {
+                // Asegurar que el usuario existe en la tabla usuarios
+                await ensureUserInDatabase(loginData.user.id, loginData.user.email || email);
+                
                 toast({
                   title: "Inicio de sesión exitoso",
                   description: "Has iniciado sesión correctamente en modo desarrollo",
@@ -84,7 +137,10 @@ export function Auth() {
           description: error.message,
           variant: "destructive",
         });
-      } else {
+      } else if (data.user) {
+        // Asegurar que el usuario existe en la tabla usuarios
+        await ensureUserInDatabase(data.user.id, data.user.email || email);
+        
         toast({
           title: "Inicio de sesión exitoso",
           description: "Bienvenido de nuevo",
@@ -130,12 +186,15 @@ export function Auth() {
       } else {
         // En modo desarrollo, intentar iniciar sesión inmediatamente después del registro
         try {
-          const { error: signInError } = await supabase.auth.signInWithPassword({
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
             email,
             password,
           });
           
-          if (!signInError) {
+          if (!signInError && signInData.user) {
+            // Asegurar que el usuario existe en la tabla usuarios
+            await ensureUserInDatabase(signInData.user.id, signInData.user.email || email);
+            
             toast({
               title: "Registro e inicio de sesión exitosos",
               description: "Has sido registrado e iniciado sesión automáticamente (modo desarrollo)",
