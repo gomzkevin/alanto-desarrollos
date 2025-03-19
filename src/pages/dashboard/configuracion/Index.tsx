@@ -16,19 +16,16 @@ export function ConfiguracionPage() {
   const { isAdmin, userName, userEmail, isLoading: userLoading, userId } = useUserRole();
   const { toast } = useToast();
 
-  console.log("ConfiguracionPage - userId:", userId);
-  console.log("ConfiguracionPage - Admin status:", isAdmin());
-  console.log("ConfiguracionPage - userLoading:", userLoading);
-
   // Set default tab based on user role
   useEffect(() => {
-    console.log("Setting default tab based on admin status:", isAdmin());
-    if (isAdmin()) {
-      setActiveTab("perfil");
-    } else {
-      setActiveTab("cuenta");
+    if (!userLoading) {
+      if (isAdmin()) {
+        setActiveTab("perfil");
+      } else {
+        setActiveTab("cuenta");
+      }
     }
-  }, [isAdmin]);
+  }, [isAdmin, userLoading]);
 
   // Handle tab change
   const handleTabChange = (value: string) => {
@@ -105,7 +102,6 @@ export function ConfiguracionPage() {
         </div>
 
         <Tabs 
-          defaultValue={activeTab}
           value={activeTab}
           onValueChange={handleTabChange}
           className="space-y-6"
