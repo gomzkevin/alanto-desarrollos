@@ -34,7 +34,14 @@ import './App.css';
 import { Toaster } from './components/ui/toaster';
 
 // Crear una instancia del cliente de consulta
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   // Check authentication status on app load

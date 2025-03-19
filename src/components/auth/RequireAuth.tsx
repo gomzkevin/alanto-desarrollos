@@ -18,10 +18,15 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log('Checking authentication...');
         const { data: { session } } = await supabase.auth.getSession();
-        setAuthenticated(!!session);
         
-        if (!session) {
+        if (session) {
+          console.log('User is authenticated:', session.user.email);
+          setAuthenticated(true);
+        } else {
+          console.log('No session found');
+          setAuthenticated(false);
           toast({
             title: "Sesión expirada",
             description: "Por favor inicia sesión para continuar",
@@ -44,6 +49,7 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
     checkAuth();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed, event:', _event);
       setAuthenticated(!!session);
       setLoading(false);
     });
@@ -63,9 +69,11 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
 
   if (!authenticated) {
     // Redirect to login page but remember where they were trying to go
+    console.log('Not authenticated, redirecting to login');
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
+  console.log('User is authenticated, rendering children');
   return children;
 };
 

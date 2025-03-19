@@ -19,18 +19,31 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // Check user authentication status
   useEffect(() => {
     const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        navigate('/auth/login');
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          console.log('No session found, redirecting to login');
+          navigate('/auth/login');
+        } else {
+          console.log('Session found:', data.session.user.email);
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        toast({
+          title: "Error de autenticación",
+          description: "Hubo un problema al verificar tu sesión",
+          variant: "destructive"
+        });
       }
     };
 
     checkAuth();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   // Redirect to login if user is not authenticated after loading
   useEffect(() => {
     if (!isLoading && !role) {
+      console.log('No role found after loading, redirecting to login');
       toast({
         title: "Sesión no válida",
         description: "Por favor inicia sesión para acceder al dashboard",
@@ -41,16 +54,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }, [isLoading, role, navigate, toast]);
 
   return (
-    <SidebarProvider>
-      <main className="min-h-screen">
-        <Sidebar>
-          <div className="absolute top-4 right-4">
-            <UserMenu />
-          </div>
-        </Sidebar>
+    <div className="min-h-screen bg-slate-50">
+      <Sidebar>
+        <div className="absolute top-4 right-4">
+          <UserMenu />
+        </div>
+      </Sidebar>
+      <main className="pl-16 md:pl-64 pr-4 py-6">
         {children || <Outlet />}
       </main>
-    </SidebarProvider>
+    </div>
   );
 };
 
