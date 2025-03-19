@@ -51,6 +51,11 @@ const AdminResourceDialog = ({
 
   const fields = useResourceFields(resourceType);
 
+  // Filter out the image-upload field for prototipos
+  const filteredFields = resourceType === 'prototipos' ? 
+    fields.filter(field => field.type !== 'image-upload') : 
+    fields;
+
   const { data: desarrolloStats } = useDesarrolloStats(
     resourceType === 'desarrollos' && resourceId ? resourceId : undefined
   );
@@ -206,6 +211,9 @@ const AdminResourceDialog = ({
         const success = await saveResource(resource);
         if (success) {
           handleOpenChange(false);
+          if (onSuccess) {
+            onSuccess();
+          }
         }
         return success;
       }
@@ -299,7 +307,7 @@ const AdminResourceDialog = ({
           isLoading={isLoading}
           isSubmitting={isSubmitting}
           resource={resource}
-          fields={fields}
+          fields={filteredFields}
           selectedAmenities={selectedAmenities}
           handleChange={handleChange}
           handleSelectChange={handleSelectChange}

@@ -98,11 +98,16 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
     setLocalResourceId(resourceId);
   }, [resourceId]);
   
-  const handleFormSubmit = async () => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
+      console.log("Form submitted, saving resource...");
       const success = await saveResource();
       if (success) {
+        console.log("Resource saved successfully, closing dialog");
         onClose();
+      } else {
+        console.log("Failed to save resource");
       }
       return success;
     } catch (error) {
@@ -141,7 +146,7 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
           <p className="text-center text-gray-500">Cargando...</p>
         </div>
       ) : resource ? (
-        <>
+        <form id={formId} onSubmit={handleFormSubmit}>
           {resourceType === 'cotizaciones' && !resourceId && (
             <div className="space-y-4 py-2">
               <fieldset className="space-y-4">
@@ -240,29 +245,29 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
               </AlertDescription>
             </Alert>
           )}
-        </>
+          
+          <DialogFooter className="mt-6">
+            <Button 
+              type="button"
+              variant="outline" 
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting || isLoading}
+            >
+              {isSubmitting ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </DialogFooter>
+        </form>
       ) : (
         <div className="py-6">
           <p className="text-center text-gray-500">No se pudo cargar la información</p>
         </div>
       )}
-      
-      <DialogFooter>
-        <Button 
-          variant="outline" 
-          onClick={onClose}
-          disabled={isSubmitting}
-        >
-          Cancelar
-        </Button>
-        <Button
-          type="submit"
-          form={formId}
-          disabled={isSubmitting || isLoading || !resource}
-        >
-          {isSubmitting ? 'Guardando...' : 'Guardar'}
-        </Button>
-      </DialogFooter>
     </DialogContent>
   );
 };

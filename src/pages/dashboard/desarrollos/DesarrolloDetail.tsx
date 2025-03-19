@@ -1,371 +1,263 @@
+
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { 
-  ChevronLeft, 
-  Home, 
-  MapPin, 
-  Clock, 
-  CalendarClock, 
-  ImageIcon, 
-  Package,
-  Bath, 
-  Dumbbell, 
-  Flame, 
-  ParkingSquare, 
-  Utensils, 
-  Wifi, 
-  Baby, 
-  Lock, 
-  Car, 
-  Trees, 
-  Waves, 
-  GlassWater, 
-  Check 
-} from 'lucide-react';
-import PrototipoCard from '@/components/dashboard/PrototipoCard';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { ExtendedDesarrollo } from '@/hooks/useDesarrollos';
+import { useDesarrolloStats, useDesarrolloImagenes } from '@/hooks';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { ChevronLeft, Plus, PlusCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { DesarrolloCard } from '@/components/dashboard/DesarrolloCard';
+import { DesarrolloEditButton } from '@/components/dashboard/DesarrolloEditButton';
+import { DesarrolloImageCarousel } from '@/components/dashboard/DesarrolloImageCarousel';
+import { PrototipoCard } from '@/components/dashboard/PrototipoCard';
+import { useToast } from '@/hooks/use-toast';
 import usePrototipos from '@/hooks/usePrototipos';
-import { Tables } from '@/integrations/supabase/types';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
-import DesarrolloImageCarousel from '@/components/dashboard/DesarrolloImageCarousel';
-import DesarrolloEditButton from '@/components/dashboard/DesarrolloEditButton';
-import { useUserRole } from '@/hooks';
-import { Badge } from '@/components/ui/badge';
-import useUnidades from '@/hooks/useUnidades';
-import { Progress } from '@/components/ui/progress';
-import useDesarrolloStats from '@/hooks/useDesarrolloStats';
 
-type Desarrollo = Tables<"desarrollos"> & {
-  amenidades?: string[] | string;
-};
-
-const fetchDesarrolloById = async (id: string) => {
-  console.log('Fetching desarrollo with ID:', id);
-  const { data, error } = await supabase
-    .from('desarrollos')
-    .select('*')
-    .eq('id', id)
-    .single();
-  
-  if (error) {
-    console.error('Error fetching desarrollo:', error);
-    throw new Error(error.message);
-  }
-  
-  console.log('Desarrollo fetched:', data);
-  return data as Desarrollo;
-};
-
-const getDesarrolloStatus = (desarrollo: Desarrollo) => {
-  if (desarrollo.avance_porcentaje === 0) {
-    return { label: 'Pre-venta', color: 'bg-blue-100 text-blue-800' };
-  } else if (desarrollo.avance_porcentaje && desarrollo.avance_porcentaje < 100) {
-    return { label: 'En venta', color: 'bg-yellow-100 text-yellow-800' };
-  } else {
-    return { label: 'Vendido', color: 'bg-green-100 text-green-800' };
-  }
-};
-
-const getAmenityIcon = (amenityId: string) => {
-  const amenityMap: Record<string, { icon: React.ReactNode, label: string }> = {
-    "pool": { icon: <Waves className="h-3.5 w-3.5 mr-1" />, label: "Alberca" },
-    "gym": { icon: <Dumbbell className="h-3.5 w-3.5 mr-1" />, label: "Gimnasio" },
-    "spa": { icon: <Bath className="h-3.5 w-3.5 mr-1" />, label: "Spa" },
-    "bbq": { icon: <Flame className="h-3.5 w-3.5 mr-1" />, label: "Área de BBQ" },
-    "playground": { icon: <Baby className="h-3.5 w-3.5 mr-1" />, label: "Área infantil" },
-    "security": { icon: <Lock className="h-3.5 w-3.5 mr-1" />, label: "Seguridad 24/7" },
-    "parking": { icon: <ParkingSquare className="h-3.5 w-3.5 mr-1" />, label: "Estacionamiento" },
-    "garden": { icon: <Trees className="h-3.5 w-3.5 mr-1" />, label: "Jardín" },
-    "beach": { icon: <Waves className="h-3.5 w-3.5 mr-1" />, label: "Playa" },
-    "restaurant": { icon: <Utensils className="h-3.5 w-3.5 mr-1" />, label: "Restaurante" },
-    "bar": { icon: <GlassWater className="h-3.5 w-3.5 mr-1" />, label: "Bar" },
-    "wifi": { icon: <Wifi className="h-3.5 w-3.5 mr-1" />, label: "WiFi" }
-  };
-
-  return amenityMap[amenityId] || { icon: <Check className="h-3.5 w-3.5 mr-1" />, label: amenityId };
-};
-
-const parseAmenidades = (amenidades: string[] | string | undefined): string[] => {
-  if (!amenidades) return [];
-  
-  if (Array.isArray(amenidades)) {
-    return amenidades;
-  }
-  
-  try {
-    return typeof amenidades === 'string' ? JSON.parse(amenidades) : [];
-  } catch (e) {
-    console.error('Error parsing amenidades:', e);
-    return [];
-  }
-};
-
-const DesarrolloDetailPage = () => {
-  const { id } = useParams<{ id: string }>();
+function DesarrolloDetail() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const { isAdmin } = useUserRole();
-  const { countDesarrolloUnidadesByStatus } = useUnidades();
+  const { toast } = useToast();
+  const [openAddPrototipoDialog, setOpenAddPrototipoDialog] = useState(false);
   
+  // Fetch desarrollo data
   const { 
     data: desarrollo, 
-    isLoading: isLoadingDesarrollo,
-    error: errorDesarrollo,
+    isLoading, 
+    error,
     refetch: refetchDesarrollo 
   } = useQuery({
     queryKey: ['desarrollo', id],
-    queryFn: () => fetchDesarrolloById(id as string),
-    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('desarrollos')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      return data as ExtendedDesarrollo;
+    },
   });
-  
+
+  // Get desarrollo images
   const { 
-    prototipos = [], 
-    isLoading: isLoadingPrototipos,
-    error: errorPrototipos,
-    refetch: refetchPrototipos
-  } = usePrototipos({
-    desarrolloId: id,
-  });
-  
+    imagenes, 
+    isLoading: imagesLoading,
+    principal,
+    error: imagesError, 
+    refetch: refetchImages,
+    handleUploadImage
+  } = useDesarrolloImagenes(id);
+
+  // Get estadísticas del desarrollo
   const { 
-    data: desarrolloStats, 
-    isLoading: isLoadingStats 
+    data: stats,
+    isLoading: statsLoading,
+    error: statsError,
+    refetch: refetchStats
   } = useDesarrolloStats(id);
-  
-  const { 
-    data: unitCounts,
-    isLoading: isLoadingUnitCounts
-  } = useQuery({
-    queryKey: ['desarrollo-unit-counts', id],
-    queryFn: () => countDesarrolloUnidadesByStatus(id as string),
-    enabled: !!id,
-  });
-  
-  const handleVolver = () => {
+
+  // Get prototipos for this desarrollo
+  const {
+    prototipos,
+    isLoading: prototiposLoading,
+    error: prototiposError,
+    refetch: refetchPrototipos
+  } = usePrototipos({ desarrolloId: id, withDesarrollo: false });
+
+  const handleBack = () => {
     navigate('/dashboard/desarrollos');
   };
-  
+
   const handleRefresh = () => {
     refetchDesarrollo();
+    refetchImages();
+    refetchStats();
     refetchPrototipos();
   };
-  
-  const handlePrototipoClick = (prototipoId: string) => {
-    navigate(`/dashboard/prototipos/${prototipoId}`);
+
+  const handlePrototipoSuccess = () => {
+    refetchPrototipos();
+    refetchStats();
+    refetchDesarrollo();
+    setOpenAddPrototipoDialog(false);
   };
-  
-  const isLoading = isLoadingDesarrollo || isLoadingPrototipos || isLoadingUnitCounts || isLoadingStats;
-  const hasError = errorDesarrollo || errorPrototipos;
-  
-  const calculateComercialProgress = () => {
-    if (desarrolloStats) {
-      return desarrolloStats.avanceComercial;
-    }
-    
-    if (!unitCounts) return 0;
-    
-    const totalUnits = unitCounts.total || 0;
-    const soldOrReserved = (unitCounts.vendidas || 0) + (unitCounts.con_anticipo || 0);
-    
-    if (totalUnits === 0) return 0;
-    
-    return Math.round((soldOrReserved / totalUnits) * 100);
-  };
-  
-  const getUnitCountDisplay = () => {
-    if (desarrolloStats) {
-      return `${desarrolloStats.unidadesDisponibles}/${desarrolloStats.totalUnidades} disponibles`;
-    }
-    
-    if (!unitCounts) return "0/0 disponibles";
-    
-    const availableUnits = unitCounts.disponibles || 0;
-    const totalUnits = unitCounts.total || 0;
-    
-    return `${availableUnits}/${totalUnits} disponibles`;
-  };
-  
-  return (
-    <DashboardLayout>
-      <div className="space-y-6 p-6 pb-16">
-        <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={handleVolver}>
+
+  // Calculate total units from prototipos
+  const totalUnitasEnPrototipos = React.useMemo(() => {
+    if (!prototipos) return 0;
+    return prototipos.reduce((sum, prototipo) => sum + (prototipo.total_unidades || 0), 0);
+  }, [prototipos]);
+
+  // Check if we can add more prototipos
+  const canAddPrototipo = React.useMemo(() => {
+    if (!desarrollo || !desarrollo.total_unidades) return false;
+    return totalUnitasEnPrototipos < desarrollo.total_unidades;
+  }, [desarrollo, totalUnitasEnPrototipos]);
+
+  // Calculate remaining units
+  const unidadesDisponiblesParaPrototipos = React.useMemo(() => {
+    if (!desarrollo || !desarrollo.total_unidades) return 0;
+    return desarrollo.total_unidades - totalUnitasEnPrototipos;
+  }, [desarrollo, totalUnitasEnPrototipos]);
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 space-y-6">
+          <div className="flex items-center">
+            <Button variant="outline" size="sm" onClick={handleBack}>
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Volver
+            </Button>
+          </div>
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-slate-200 rounded w-1/3"></div>
+            <div className="h-32 bg-slate-200 rounded"></div>
+            <div className="h-64 bg-slate-200 rounded"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error || !desarrollo) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <Button variant="outline" size="sm" onClick={handleBack}>
             <ChevronLeft className="mr-1 h-4 w-4" />
             Volver
           </Button>
           
-          {desarrollo && <DesarrolloEditButton desarrollo={desarrollo} onSuccess={handleRefresh} />}
+          <Alert variant="destructive" className="mt-6">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              No se pudo cargar la información del desarrollo.
+              {error && <p className="mt-2">{(error as Error).message}</p>}
+            </AlertDescription>
+          </Alert>
+          
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={handleRefresh}
+          >
+            Intentar de nuevo
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="p-6 space-y-6 pb-24">
+        {/* Header with actions */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <Button variant="outline" size="sm" onClick={handleBack}>
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Volver
+          </Button>
+          
+          <div className="flex items-center gap-2">
+            <DesarrolloEditButton 
+              desarrolloId={id} 
+              onSuccess={handleRefresh} 
+            />
+          </div>
         </div>
         
-        {isLoading ? (
-          <div className="space-y-6">
-            <div className="h-24 bg-slate-100 animate-pulse rounded-xl" />
-            <div className="h-48 bg-slate-100 animate-pulse rounded-xl" />
-          </div>
-        ) : hasError ? (
-          <div className="text-center py-10">
-            <p className="text-red-500">Error al cargar los datos del desarrollo</p>
-            <Button 
-              variant="outline" 
-              className="mt-4"
-              onClick={handleRefresh}
-            >
-              Intentar de nuevo
-            </Button>
-          </div>
-        ) : desarrollo ? (
-          <>
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-                <div className="space-y-1">
-                  <h1 className="text-3xl font-bold text-slate-800">{desarrollo.nombre}</h1>
-                  <div className="flex items-center text-slate-600">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    <span>{desarrollo.ubicacion}</span>
-                  </div>
-                </div>
-                <div className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${
-                  getDesarrolloStatus(desarrollo).color
-                }`}>
-                  {getDesarrolloStatus(desarrollo).label}
-                </div>
-              </div>
-              
-              <div className="mt-6">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-xl font-semibold flex items-center">
-                    <ImageIcon className="h-5 w-5 mr-2 text-indigo-600" />
-                    Imágenes del desarrollo
-                  </h2>
-                </div>
-                <DesarrolloImageCarousel desarrolloId={id as string} editable={isAdmin()} />
-              </div>
-              
-              {desarrollo.descripcion && (
-                <p className="text-slate-700 mt-4">{desarrollo.descripcion}</p>
-              )}
-              
-              {desarrollo.amenidades && parseAmenidades(desarrollo.amenidades).length > 0 && (
-                <div className="mt-6">
-                  <h2 className="text-xl font-semibold flex items-center mb-4">
-                    <Package className="h-5 w-5 mr-2 text-indigo-600" />
-                    Amenidades
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
-                    {parseAmenidades(desarrollo.amenidades).map((amenidadId, index) => {
-                      const { icon, label } = getAmenityIcon(amenidadId);
-                      return (
-                        <Badge key={index} variant="amenity" className="flex items-center py-1">
-                          {icon}
-                          <span>{label}</span>
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg mt-6">
-                <div className="space-y-1">
-                  <div className="flex items-center text-slate-500 text-sm">
-                    <Home className="h-4 w-4 mr-1" />
-                    <span>Unidades</span>
-                  </div>
-                  <p className="font-semibold">
-                    {getUnitCountDisplay()}
-                  </p>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="flex items-center text-slate-500 text-sm">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span>Inicio</span>
-                  </div>
-                  <p className="font-semibold">
-                    {desarrollo.fecha_inicio 
-                      ? new Date(desarrollo.fecha_inicio).toLocaleDateString('es-MX', {
-                          month: 'short',
-                          year: 'numeric'
-                        })
-                      : 'N/A'
-                    }
-                  </p>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="flex items-center text-slate-500 text-sm">
-                    <CalendarClock className="h-4 w-4 mr-1" />
-                    <span>Entrega</span>
-                  </div>
-                  <p className="font-semibold">
-                    {desarrollo.fecha_entrega 
-                      ? new Date(desarrollo.fecha_entrega).toLocaleDateString('es-MX', {
-                          month: 'short',
-                          year: 'numeric'
-                        })
-                      : 'Por definir'
-                    }
-                  </p>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="flex items-center text-slate-500 text-sm">
-                    <span className="h-4 w-4 mr-1 flex items-center justify-center font-bold">%</span>
-                    <span>Avance Comercial</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold mb-1">{calculateComercialProgress()}%</p>
-                    <Progress value={calculateComercialProgress()} className="h-2" />
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Main content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left column */}
+          <div className="lg:col-span-2 space-y-6">
+            <DesarrolloCard 
+              desarrollo={desarrollo} 
+              stats={stats} 
+              showAddRoomsButton={false}
+            />
             
-            <div className="mt-8 space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-                <div className="space-y-1">
-                  <h2 className="text-2xl font-bold text-slate-800">Prototipos disponibles</h2>
-                  <p className="text-slate-600">
-                    {prototipos.length} {prototipos.length === 1 ? 'prototipo' : 'prototipos'} en este desarrollo
-                  </p>
-                </div>
-                <AdminResourceDialog 
-                  resourceType="prototipos" 
-                  buttonText="Nuevo prototipo" 
-                  onSuccess={refetchPrototipos}
-                  desarrolloId={id}
-                />
-              </div>
-              
-              {prototipos.length === 0 ? (
-                <div className="text-center py-10 bg-slate-50 rounded-lg">
-                  <Home className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                  <p className="text-slate-700 mb-4">No hay prototipos registrados en este desarrollo</p>
-                  <AdminResourceDialog 
-                    resourceType="prototipos" 
-                    buttonText="Agregar prototipo" 
-                    onSuccess={refetchPrototipos}
-                    desarrolloId={id}
-                  />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {prototipos.map((prototipo) => (
-                    <PrototipoCard 
-                      key={prototipo.id} 
-                      prototipo={prototipo}
-                      onViewDetails={handlePrototipoClick}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
-        ) : null}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Prototipos disponibles</CardTitle>
+                {canAddPrototipo && (
+                  <Button 
+                    onClick={() => setOpenAddPrototipoDialog(true)}
+                    variant="outline" 
+                    size="sm"
+                  >
+                    <PlusCircle className="mr-1 h-4 w-4" />
+                    Añadir prototipo {unidadesDisponiblesParaPrototipos > 0 && `(${unidadesDisponiblesParaPrototipos} unidades disponibles)`}
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                {prototiposLoading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin h-10 w-10 rounded-full border-4 border-primary border-t-transparent"></div>
+                    <span className="ml-3 text-lg text-slate-600">Cargando prototipos...</span>
+                  </div>
+                ) : prototipos && prototipos.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {prototipos.map((prototipo) => (
+                      <PrototipoCard 
+                        key={prototipo.id} 
+                        prototipo={prototipo} 
+                        onSuccess={handleRefresh} 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center">
+                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-4">
+                      <Plus className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-lg font-medium">No hay prototipos registrados</h3>
+                    <p className="text-sm text-muted-foreground mt-2 mb-4">
+                      Añade prototipos para este desarrollo para crear unidades.
+                    </p>
+                    {canAddPrototipo && (
+                      <Button onClick={() => setOpenAddPrototipoDialog(true)}>
+                        <Plus className="mr-2 h-4 w-4" /> Añadir prototipo
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Right column */}
+          <div className="space-y-6">
+            <DesarrolloImageCarousel 
+              images={imagenes} 
+              mainImage={principal}
+              isLoading={imagesLoading}
+              onUpload={handleUploadImage}
+              onSuccess={refetchImages}
+            />
+            
+            {/* Additional info or components can go here */}
+          </div>
+        </div>
       </div>
+      
+      {/* Add Prototipo Dialog */}
+      <AdminResourceDialog
+        resourceType="prototipos"
+        open={openAddPrototipoDialog}
+        onClose={() => setOpenAddPrototipoDialog(false)}
+        onSuccess={handlePrototipoSuccess}
+        desarrolloId={id}
+      />
     </DashboardLayout>
   );
-};
+}
 
-export default DesarrolloDetailPage;
+export default DesarrolloDetail;

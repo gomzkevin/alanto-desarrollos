@@ -1,45 +1,39 @@
 
-import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import React, { useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { AmenitiesSelector } from '../AmenitiesSelector';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
 import { FieldDefinition, FormValues } from './types';
-import ImageUploader from '../ImageUploader';
+import { ClientSearch } from './components/ClientSearch';
+import { AmenitiesSelector } from '@/components/dashboard/AmenitiesSelector';
+import { ImageUploader } from '@/components/dashboard/ImageUploader';
 import { InterestSelector } from './components/InterestSelector';
+import { cn } from '@/lib/utils';
 
 interface GenericFormProps {
+  formId: string;
   fields: FieldDefinition[];
   values: FormValues;
   onChange: (values: FormValues) => void;
-  onSelectChange?: (name: string, value: string) => void;
-  onSwitchChange?: (name: string, checked: boolean) => void;
-  onLeadSelect?: (leadId: string, leadName: string) => void;
-  onDateChange?: (name: string, date: Date | undefined) => void;
+  onSelectChange: (name: string, value: string) => void;
+  onSwitchChange: (name: string, checked: boolean) => void;
+  onLeadSelect: (leadId: string, leadName: string) => void;
+  onDateChange: (name: string, date: Date | undefined) => void;
   onAmenitiesChange?: (amenities: string[]) => void;
-  isSubmitting?: boolean;
-  onSubmit?: () => void;
-  formId: string;
   selectedAmenities?: string[];
+  isSubmitting?: boolean;
+  onSubmit: (e: React.FormEvent) => Promise<boolean>;
 }
 
-const GenericForm = ({
+const GenericForm: React.FC<GenericFormProps> = ({
+  formId,
   fields,
   values,
   onChange,
@@ -48,273 +42,243 @@ const GenericForm = ({
   onLeadSelect,
   onDateChange,
   onAmenitiesChange,
-  formId,
+  selectedAmenities = [],
   isSubmitting = false,
-  onSubmit,
-  selectedAmenities = []
-}: GenericFormProps) => {
-  const [activeTab, setActiveTab] = useState<string>('general');
-  const [tabs, setTabs] = useState<{ id: string; label: string }[]>([]);
+  onSubmit
+}) => {
+  // Group fields by tab
+  const groupedFields = fields.reduce<Record<string, FieldDefinition[]>>((groups, field) => {
+    const tab = field.tab || 'general';
+    if (!groups[tab]) {
+      groups[tab] = [];
+    }
+    groups[tab].push(field);
+    return groups;
+  }, {});
+
+  const tabs = Object.keys(groupedFields);
   
-  // Function to check if options array has items
-  const hasOptions = (options?: { label: string; value: string }[]) => {
-    return Array.isArray(options) && options.length > 0;
+  // Handle field change
+  const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    
+    let processedValue: any = value;
+    
+    // Convert value types based on field
+    if (type === 'number') {
+      processedValue = value === '' ? null : Number(value);
+    }
+    
+    onChange({ [name]: processedValue });
   };
-
-  const generateValidationSchema = () => {
-    const schema: { [key: string]: any } = {};
-    
-    fields.forEach((field) => {
-      if (field.type === 'text' || field.type === 'textarea' || field.type === 'email') {
-        schema[field.name] = z.string().optional();
-      } else if (field.type === 'number') {
-        schema[field.name] = z.number().optional();
-      } else if (field.type === 'select') {
-        schema[field.name] = z.string().optional();
-      } else if (field.type === 'date') {
-        schema[field.name] = z.string().optional();
-      } else if (field.type === 'switch') {
-        schema[field.name] = z.boolean().optional();
-      } else if (field.type === 'amenities') {
-        schema[field.name] = z.array(z.string()).optional();
-      } else if (field.type === 'image-upload' || field.type === 'upload') {
-        schema[field.name] = z.string().optional();
-      } else if (field.type === 'interest-selector') {
-        schema[field.name] = z.string().optional();
-      }
-    });
-    
-    return z.object(schema);
+  
+  const handleSelectFieldChange = (name: string, value: string) => {
+    onSelectChange(name, value);
   };
-
-  const validationSchema = generateValidationSchema();
-  type ValidationSchema = z.infer<typeof validationSchema>;
-
-  const form = useForm<ValidationSchema>({
-    resolver: zodResolver(validationSchema),
-    defaultValues: values as any,
-  });
-
-  useEffect(() => {
-    form.reset(values as any);
-  }, [form, values]);
-
-  const onFormChange = (name: string, value: any) => {
-    // Create new object with just the changed field
-    const updatedValues = { [name]: value };
-    onChange(updatedValues);
-    
-    // Call the appropriate handler based on field type
-    if (onSelectChange && fields.some(field => field.name === name && (field.type === 'select' || field.type === 'select-lead'))) {
-      onSelectChange(name, value as string);
-    }
-    
-    if (onSwitchChange && fields.some(field => field.name === name && field.type === 'switch')) {
-      onSwitchChange(name, value as boolean);
-    }
-    
-    if (onDateChange && fields.some(field => field.name === name && field.type === 'date')) {
-      onDateChange(name, value as Date | undefined);
-    }
-  };
-
-  useEffect(() => {
-    const uniqueTabs = fields
-      .filter(field => field.tab)
-      .map(field => field.tab as string)
-      .filter((value, index, self) => self.indexOf(value) === index)
-      .map(tab => ({ id: tab, label: tab.charAt(0).toUpperCase() + tab.slice(1) }));
-    
-    if (uniqueTabs.length > 0) {
-      setTabs(uniqueTabs);
-    } else {
-      setTabs([{ id: 'general', label: 'General' }]);
-    }
-  }, [fields]);
-
+  
   const renderField = (field: FieldDefinition) => {
-    if (!field.tab || field.tab === activeTab) {
-      return (
-        <FormField
-          key={field.name}
-          control={form.control}
-          name={field.name as any}
-          render={({ field: formField }) => (
-            <FormItem className="mb-4">
-              <FormLabel>{field.label}</FormLabel>
-              {field.description && (
-                <FormDescription>{field.description}</FormDescription>
-              )}
-              <FormControl>
-                {field.type === 'text' || field.type === 'email' ? (
-                  <Input
-                    type={field.type}
-                    {...formField}
-                    readOnly={field.readOnly}
-                    className={field.readOnly ? "bg-gray-100" : ""}
-                    onChange={(e) => {
-                      formField.onChange(e);
-                      if (!field.readOnly) {
-                        onFormChange(field.name, e.target.value);
-                      }
-                    }}
-                    placeholder={field.placeholder}
-                  />
-                ) : field.type === 'number' ? (
-                  <Input
-                    type="number"
-                    {...formField}
-                    readOnly={field.readOnly}
-                    className={field.readOnly ? "bg-gray-100" : ""}
-                    value={formField.value === undefined ? '' : formField.value}
-                    onChange={(e) => {
-                      const value = e.target.value === '' ? null : Number(e.target.value);
-                      formField.onChange(value);
-                      if (!field.readOnly) {
-                        onFormChange(field.name, value);
-                      }
-                    }}
-                    placeholder={field.placeholder}
-                  />
-                ) : field.type === 'textarea' ? (
-                  <Textarea
-                    {...formField}
-                    readOnly={field.readOnly}
-                    className={field.readOnly ? "bg-gray-100" : ""}
-                    onChange={(e) => {
-                      formField.onChange(e);
-                      if (!field.readOnly) {
-                        onFormChange(field.name, e.target.value);
-                      }
-                    }}
-                    placeholder={field.placeholder}
-                  />
-                ) : field.type === 'select' ? (
-                  <Select
-                    value={formField.value?.toString() || ''}
-                    disabled={field.readOnly}
-                    onValueChange={(value) => {
-                      formField.onChange(value);
-                      if (!field.readOnly) {
-                        onFormChange(field.name, value);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className={field.readOnly ? "bg-gray-100" : ""}>
-                      <SelectValue placeholder={field.placeholder || `Seleccionar ${field.label}...`} />
-                    </SelectTrigger>
-                    <SelectContent className="z-50 bg-white">
-                      {hasOptions(field.options) ? (
-                        field.options!.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="no-options" disabled>No hay opciones disponibles</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                ) : field.type === 'date' ? (
-                  <Input
-                    type="date"
-                    {...formField}
-                    readOnly={field.readOnly}
-                    className={field.readOnly ? "bg-gray-100" : ""}
-                    onChange={(e) => {
-                      formField.onChange(e);
-                      if (!field.readOnly) {
-                        onFormChange(field.name, e.target.value);
-                      }
-                    }}
-                    placeholder={field.placeholder}
-                  />
-                ) : field.type === 'switch' ? (
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={formField.value || false}
-                      disabled={field.readOnly}
-                      onCheckedChange={(checked) => {
-                        formField.onChange(checked);
-                        if (!field.readOnly) {
-                          onFormChange(field.name, checked);
-                        }
-                      }}
-                    />
-                    <span className="text-sm text-gray-500">
-                      {formField.value ? 'Activado' : 'Desactivado'}
-                    </span>
-                  </div>
-                ) : field.type === 'amenities' ? (
-                  <AmenitiesSelector
-                    selectedAmenities={selectedAmenities}
-                    onChange={onAmenitiesChange || (() => {})}
-                  />
-                ) : field.type === 'image-upload' ? (
-                  <ImageUploader
-                    entityId={values.id || 'new'}
-                    bucketName={field.bucket || 'prototipo-images'}
-                    folderPath={field.folder || 'general'}
-                    currentImageUrl={formField.value as string}
-                    onImageUploaded={(imageUrl) => {
-                      formField.onChange(imageUrl);
-                      if (!field.readOnly) {
-                        onFormChange(field.name, imageUrl);
-                      }
-                    }}
-                  />
-                ) : field.type === 'interest-selector' ? (
-                  <InterestSelector
-                    value={formField.value as string}
-                    onChange={(value) => {
-                      formField.onChange(value);
-                      if (!field.readOnly) {
-                        onFormChange(field.name, value);
-                      }
-                    }}
-                    label=""
-                    description={field.description}
-                  />
-                ) : null}
-              </FormControl>
-              {field.readOnly && !field.description && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Este campo se actualiza automáticamente basado en el estado de las unidades
-                </p>
-              )}
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      );
-    }
-    return null;
-  };
-
-  return (
-    <Form {...form}>
-      <form id={formId} onSubmit={form.handleSubmit(onSubmit || (() => {}))}>
-        {tabs.length > 1 ? (
-          <Tabs defaultValue={tabs[0].id} value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
-              {tabs.map((tab) => (
-                <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>
-              ))}
-            </TabsList>
-            
-            {tabs.map((tab) => (
-              <TabsContent key={tab.id} value={tab.id} className="py-4">
-                {fields.filter(field => field.tab === tab.id).map(renderField)}
-              </TabsContent>
-            ))}
-          </Tabs>
-        ) : (
-          <div className="space-y-4 py-2">
-            {fields.map(renderField)}
+    const { name, label, type, options = [], required, readOnly, placeholder } = field;
+    const fieldValue = values[name] !== undefined ? values[name] : '';
+    
+    switch (type) {
+      case 'text':
+      case 'email':
+      case 'number':
+        return (
+          <div className="grid gap-2" key={name}>
+            <Label htmlFor={name} className="flex">
+              {label} {required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <Input
+              id={name}
+              name={name}
+              type={type}
+              value={fieldValue}
+              onChange={handleFieldChange}
+              disabled={isSubmitting || readOnly}
+              required={required}
+              placeholder={placeholder}
+              className={readOnly ? 'bg-gray-100' : ''}
+              min={type === 'number' ? 0 : undefined}
+            />
           </div>
-        )}
-      </form>
-    </Form>
+        );
+        
+      case 'textarea':
+        return (
+          <div className="grid gap-2" key={name}>
+            <Label htmlFor={name} className="flex">
+              {label} {required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <Textarea
+              id={name}
+              name={name}
+              value={fieldValue}
+              onChange={handleFieldChange}
+              disabled={isSubmitting || readOnly}
+              required={required}
+              placeholder={placeholder}
+              className={readOnly ? 'bg-gray-100' : ''}
+            />
+          </div>
+        );
+        
+      case 'select':
+        return (
+          <div className="grid gap-2" key={name}>
+            <Label htmlFor={name} className="flex">
+              {label} {required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <Select
+              value={fieldValue}
+              onValueChange={(value) => handleSelectFieldChange(name, value)}
+              disabled={isSubmitting || readOnly}
+            >
+              <SelectTrigger id={name} className={readOnly ? 'bg-gray-100' : ''}>
+                <SelectValue placeholder={placeholder || `Seleccionar ${label.toLowerCase()}`} />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+        
+      case 'switch':
+        return (
+          <div className="flex items-center justify-between gap-2" key={name}>
+            <Label htmlFor={name} className="flex">
+              {label} {required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <Switch
+              id={name}
+              checked={!!fieldValue}
+              onCheckedChange={(checked) => onSwitchChange(name, checked)}
+              disabled={isSubmitting || readOnly}
+            />
+          </div>
+        );
+        
+      case 'date':
+        return (
+          <div className="grid gap-2" key={name}>
+            <Label htmlFor={name} className="flex">
+              {label} {required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  id={name}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !fieldValue && "text-muted-foreground",
+                    readOnly && "bg-gray-100"
+                  )}
+                  disabled={isSubmitting || readOnly}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {fieldValue ? format(new Date(fieldValue as string), "PPP") : <span>Seleccionar fecha</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={fieldValue ? new Date(fieldValue as string) : undefined}
+                  onSelect={(date) => onDateChange(name, date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        );
+
+      case 'select-lead':
+        return (
+          <div className="grid gap-2" key={name}>
+            <Label htmlFor={name} className="flex">
+              {label} {required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <ClientSearch
+              value={fieldValue}
+              onClientSelect={onLeadSelect}
+              disabled={isSubmitting || readOnly}
+            />
+          </div>
+        );
+      
+      case 'amenities':
+        if (!onAmenitiesChange) return null;
+        return (
+          <div className="grid gap-2" key={name}>
+            <Label htmlFor={name} className="flex">
+              {label} {required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <AmenitiesSelector
+              selectedAmenities={selectedAmenities}
+              onChange={onAmenitiesChange}
+              disabled={isSubmitting || readOnly}
+            />
+          </div>
+        );
+      
+      case 'image-upload':
+        return (
+          <div className="grid gap-2" key={name}>
+            <Label htmlFor={name} className="flex">
+              {label} {required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <ImageUploader 
+              imageUrl={fieldValue} 
+              bucket={field.bucket || 'prototipo-images'} 
+              folder={field.folder || 'prototipos'} 
+              onImageUpload={(url) => onChange({ [name]: url })}
+              disabled={isSubmitting || readOnly}
+            />
+          </div>
+        );
+
+      case 'interest-selector':
+        return (
+          <div className="grid gap-2" key={name}>
+            <Label htmlFor={name} className="flex">
+              {label} {required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <InterestSelector
+              value={fieldValue}
+              onChange={(value) => onChange({ [name]: value })}
+              disabled={isSubmitting || readOnly}
+            />
+          </div>
+        );
+        
+      default:
+        return null;
+    }
+  };
+  
+  return (
+    <div className="py-4">
+      {tabs.length <= 1 ? (
+        <div className="space-y-4">
+          {fields.map(renderField)}
+        </div>
+      ) : (
+        <div>
+          {/* Hidden submit button at top to ensure form can be submitted with enter key */}
+          <Button 
+            type="submit" 
+            className="hidden" 
+            form={formId}
+            disabled={isSubmitting}
+          />
+        </div>
+      )}
+    </div>
   );
 };
 
