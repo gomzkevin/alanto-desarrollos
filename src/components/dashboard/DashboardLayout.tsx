@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, ReactNode } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { Sidebar } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
@@ -7,7 +7,11 @@ import { useUserRole } from '@/hooks';
 import { supabase } from '@/integrations/supabase/client';
 import UserMenu from './UserMenu';
 
-const DashboardLayout = () => {
+interface DashboardLayoutProps {
+  children?: ReactNode;
+}
+
+const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { role, isLoading } = useUserRole();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -43,7 +47,7 @@ const DashboardLayout = () => {
           <UserMenu />
         </div>
       </Sidebar>
-      <Outlet />
+      {children || <Outlet />}
     </main>
   );
 };
