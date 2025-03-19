@@ -32,8 +32,8 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       
       // Filter by user ID if provided
       if (userId) {
-        // Explicitly use String constructor to avoid type issues
-        query = query.eq('user_id', String(userId));
+        // Using optional chaining and null check to avoid type issues
+        query = query.eq('user_id', userId);
       }
       
       // Apply limit if provided
