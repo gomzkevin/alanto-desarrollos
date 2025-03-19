@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,6 +21,7 @@ import { AmenitiesSelector } from '../AmenitiesSelector';
 import { FieldDefinition, FormValues } from './types';
 import ImageUploader from '../ImageUploader';
 import { InterestSelector } from './components/InterestSelector';
+import { formatCurrency } from '@/lib/utils';
 
 interface GenericFormProps {
   fields: FieldDefinition[];
@@ -182,7 +182,7 @@ const GenericForm = ({
                     {...formField}
                     readOnly={field.readOnly}
                     className={field.readOnly ? "bg-gray-100" : ""}
-                    value={formField.value === undefined ? '' : formField.value}
+                    value={formField.value === undefined || formField.value === null ? '' : formField.value}
                     formatCurrency={field.formatCurrency}
                     onChange={(e) => {
                       const value = e.target.value === '' ? null : Number(e.target.value);
@@ -191,7 +191,7 @@ const GenericForm = ({
                         onFormChange(field.name, value);
                       }
                     }}
-                    placeholder={field.placeholder}
+                    placeholder={field.placeholder || (field.formatCurrency ? '$0.00' : '0')}
                   />
                 ) : field.type === 'textarea' ? (
                   <Textarea
