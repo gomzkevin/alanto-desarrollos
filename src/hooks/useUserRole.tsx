@@ -111,14 +111,25 @@ export const useUserRole = () => {
     };
   }, []);
 
+  // Helper methods
+  const isUserAdmin = () => {
+    return isAdmin;
+  };
+
+  const canCreateResource = () => {
+    return isAdmin || userRole === 'vendedor';
+  };
+
   return {
     userId,
     userEmail,
     userRole,
     userName,
-    isAdmin,
+    isAdmin: isUserAdmin,
+    canCreateResource,
     empresaId,
-    isLoading
+    isLoading,
+    role: userRole // Alias for compatibility
   };
 };
 

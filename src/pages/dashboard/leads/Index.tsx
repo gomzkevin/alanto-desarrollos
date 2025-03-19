@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -25,6 +24,7 @@ import { format } from 'date-fns';
 import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
+import { useUserRole } from '@/hooks';
 
 const getBadgeVariant = (estado: string) => {
   switch (estado?.toLowerCase()) {
@@ -33,7 +33,7 @@ const getBadgeVariant = (estado: string) => {
     case 'seguimiento':
       return 'outline';
     case 'convertido':
-      return 'secondary'; // Changed from 'success' to 'secondary' since 'success' is not a valid variant
+      return 'secondary';
     case 'perdido':
       return 'destructive';
     default:
@@ -78,7 +78,6 @@ const LeadsPage = () => {
     setOpen(true);
   };
 
-  // Función para mostrar el interés de forma amigable
   const formatInterest = (interesEn: string | null) => {
     if (!interesEn) return <span className="text-gray-400">-</span>;
     
