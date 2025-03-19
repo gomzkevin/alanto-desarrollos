@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -260,7 +259,6 @@ const NuevaCotizacion = () => {
                     formatCurrency
                     value={anticipoAmount}
                     onChange={(e) => {
-                      // Remove non-numeric characters for storing the raw value
                       const numericValue = e.target.value.replace(/[^0-9]/g, '');
                       setAnticipoAmount(Number(numericValue));
                     }}
@@ -323,7 +321,6 @@ const NuevaCotizacion = () => {
                       formatCurrency
                       value={finiquitoAmount}
                       onChange={(e) => {
-                        // Remove non-numeric characters for storing the raw value
                         const numericValue = e.target.value.replace(/[^0-9]/g, '');
                         setFiniquitoAmount(Number(numericValue));
                       }}

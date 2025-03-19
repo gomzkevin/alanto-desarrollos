@@ -456,9 +456,12 @@ const CotizacionesPage = () => {
                             <FormLabel>Monto de anticipo</FormLabel>
                             <FormControl>
                               <Input 
-                                {...field} 
-                                type="number" 
-                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                formatCurrency
+                                value={field.value}
+                                onChange={(e) => {
+                                  const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                                  field.onChange(parseFloat(numericValue) || 0);
+                                }}
                               />
                             </FormControl>
                           </FormItem>
@@ -475,7 +478,7 @@ const CotizacionesPage = () => {
                               <Input 
                                 {...field} 
                                 type="number" 
-                                onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                               />
                             </FormControl>
                           </FormItem>
@@ -555,9 +558,12 @@ const CotizacionesPage = () => {
                               <FormLabel>Monto de finiquito</FormLabel>
                               <FormControl>
                                 <Input 
-                                  {...field} 
-                                  type="number" 
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                  formatCurrency
+                                  value={field.value}
+                                  onChange={(e) => {
+                                    const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                                    field.onChange(parseFloat(numericValue) || 0);
+                                  }}
                                 />
                               </FormControl>
                             </FormItem>
