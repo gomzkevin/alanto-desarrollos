@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,6 +34,17 @@ interface GenericFormProps {
   isSubmitting?: boolean;
   formId: string;
   selectedAmenities?: string[];
+  resourceType?: string;
+  desarrolloId?: string;
+  prototipo_id?: string;
+  lead_id?: string;
+  onImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  uploading?: boolean;
+  isExistingClient?: boolean;
+  onExistingClientChange?: (isExisting: boolean) => void;
+  newClientData?: { nombre: string; email: string; telefono: string };
+  onNewClientDataChange?: (field: string, value: string) => void;
+  onDesarrolloSelect?: (desarrolloId: string) => void;
 }
 
 const GenericForm = ({
@@ -48,12 +58,22 @@ const GenericForm = ({
   onAmenitiesChange,
   formId,
   isSubmitting = false,
-  selectedAmenities = []
+  selectedAmenities = [],
+  resourceType,
+  desarrolloId,
+  prototipo_id,
+  lead_id,
+  onImageUpload,
+  uploading = false,
+  isExistingClient = false,
+  onExistingClientChange,
+  newClientData,
+  onNewClientDataChange,
+  onDesarrolloSelect,
 }: GenericFormProps) => {
   const [activeTab, setActiveTab] = useState<string>('general');
   const [tabs, setTabs] = useState<{ id: string; label: string }[]>([]);
   
-  // Function to check if options array has items
   const hasOptions = (options?: { label: string; value: string }[]) => {
     return Array.isArray(options) && options.length > 0;
   };
@@ -97,11 +117,9 @@ const GenericForm = ({
   }, [form, values]);
 
   const onFormChange = (name: string, value: any) => {
-    // Create new object with just the changed field
     const updatedValues = { [name]: value };
     onChange(updatedValues);
     
-    // Call the appropriate handler based on field type
     if (onSelectChange && fields.some(field => field.name === name && (field.type === 'select' || field.type === 'select-lead'))) {
       onSelectChange(name, value as string);
     }

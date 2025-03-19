@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DialogContent } from '@/components/ui/dialog';
 import { DialogHeader } from './DialogHeader';
@@ -5,7 +6,7 @@ import { DialogFooter } from './DialogFooter';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { FormValues, ResourceType, FieldDefinition } from '../types';
-import { GenericForm } from '../GenericForm';
+import GenericForm from '../GenericForm';
 
 interface ResourceDialogContentProps {
   isOpen: boolean;
@@ -86,6 +87,28 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
     }
   };
 
+  const getResourceDescription = () => {
+    if (resourceId) {
+      switch (resourceType) {
+        case 'desarrollos': return 'Actualizar información del desarrollo';
+        case 'prototipos': return 'Actualizar información del prototipo';
+        case 'leads': return 'Actualizar información del lead';
+        case 'cotizaciones': return 'Actualizar información de la cotización';
+        case 'unidades': return 'Actualizar información de la unidad';
+        default: return 'Actualizar información del recurso';
+      }
+    } else {
+      switch (resourceType) {
+        case 'desarrollos': return 'Crear un nuevo desarrollo';
+        case 'prototipos': return 'Crear un nuevo prototipo';
+        case 'leads': return 'Registrar un nuevo lead';
+        case 'cotizaciones': return 'Crear una nueva cotización';
+        case 'unidades': return 'Registrar una nueva unidad';
+        default: return 'Crear un nuevo recurso';
+      }
+    }
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Form submitted, calling saveResource');
@@ -95,7 +118,10 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
   return (
     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
       <form onSubmit={handleFormSubmit}>
-        <DialogHeader title={getResourceTitle()} />
+        <DialogHeader 
+          title={getResourceTitle()} 
+          description={getResourceDescription()} 
+        />
         
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
@@ -125,24 +151,18 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
             onNewClientDataChange={onNewClientDataChange}
             onDesarrolloSelect={onDesarrolloSelect}
             onDateChange={handleDateChange}
+            formId="resource-form"
           />
         )}
         
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isSubmitting || !resource}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Guardando...
-              </>
-            ) : (
-              'Guardar'
-            )}
-          </Button>
-        </DialogFooter>
+        <DialogFooter 
+          onClose={onClose}
+          onSave={async () => {
+            console.log('DialogFooter save button clicked');
+            await saveResource();
+          }}
+          isSubmitting={isSubmitting}
+        />
       </form>
     </DialogContent>
   );
