@@ -26,9 +26,13 @@ const TIPOS_PROPIEDADES = [
 
 export const useResourceFields = (resourceType: ResourceType, selectedStatus?: string | null) => {
   const [fields, setFields] = useState<FieldDefinition[]>([]);
-  const { leads } = useLeads();
-  const { desarrollos } = useDesarrollos();
-  const { prototipos } = usePrototipos();
+  const { data: leadsData = [] } = useLeads();
+  const { data: desarrollosData = [] } = useDesarrollos();
+  const { data: prototipesData = [] } = usePrototipos();
+  
+  const leads = leadsData || [];
+  const desarrollos = desarrollosData || [];
+  const prototipos = prototipesData || [];
   
   // Obtener la lista de vendedores desde la tabla de usuarios
   const { data: vendedores = [] } = useQuery({

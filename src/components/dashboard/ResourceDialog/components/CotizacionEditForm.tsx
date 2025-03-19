@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DialogHeader } from './DialogHeader';
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
@@ -42,11 +41,15 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
     cotizacion.fecha_finiquito ? parseISO(cotizacion.fecha_finiquito) : undefined
   );
 
-  const { leads } = useLeads({ limit: 100 });
-  const { desarrollos } = useDesarrollos();
-  const { prototipos } = usePrototipos({ 
+  const { data: leadsData = [] } = useLeads({ limit: 100 });
+  const { data: desarrollosData = [] } = useDesarrollos();
+  const { data: prototipesData = [] } = usePrototipos({ 
     desarrolloId: cotizacion.desarrollo_id 
   });
+  
+  const leads = leadsData || [];
+  const desarrollos = desarrollosData || [];
+  const prototipos = prototipesData || [];
 
   // Update the form with additional fields for new client
   const form = useForm({

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
-import { generateCotizacionPDF } from '@/utils/quotationPDF';
+import { generateQuotationPDF } from '@/utils/quotationPDF';
 
 interface ExportPDFButtonProps {
   cotizacionId: string;
@@ -12,6 +12,12 @@ interface ExportPDFButtonProps {
   desarrolloNombre: string;
   prototipoNombre: string;
   disabled?: boolean;
+  variant?: string;
+  buttonText?: string;
+  resourceName?: string;
+  elementId?: string;
+  fileName?: string;
+  className?: string;
 }
 
 const ExportPDFButton: React.FC<ExportPDFButtonProps> = ({
@@ -19,7 +25,10 @@ const ExportPDFButton: React.FC<ExportPDFButtonProps> = ({
   leadName,
   desarrolloNombre,
   prototipoNombre,
-  disabled = false
+  disabled = false,
+  variant = "outline",
+  buttonText = "Exportar PDF",
+  className = ""
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { userData } = useUserRole();
@@ -32,7 +41,7 @@ const ExportPDFButton: React.FC<ExportPDFButtonProps> = ({
       // Get company name from userData
       const companyName = userData?.empresaNombre || 'AirbnbInvest';
       
-      await generateCotizacionPDF({
+      await generateQuotationPDF({
         cotizacionId,
         leadName,
         desarrolloNombre,
@@ -58,12 +67,13 @@ const ExportPDFButton: React.FC<ExportPDFButtonProps> = ({
 
   return (
     <Button 
-      variant="outline" 
+      variant={variant as any}
       size="sm" 
       onClick={handleExport}
       disabled={disabled || isGenerating}
+      className={className}
     >
-      {isGenerating ? "Generando..." : <>Exportar PDF <Download className="ml-2 h-4 w-4" /></>}
+      {isGenerating ? "Generando..." : <>{buttonText} <Download className="ml-2 h-4 w-4" /></>}
     </Button>
   );
 };

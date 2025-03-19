@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,10 +8,9 @@ import {
   PrototipoResource, 
   LeadResource, 
   CotizacionResource, 
-  FieldDefinition,
-  FieldType
+  FieldDefinition
 } from './types';
-import useLeads, { LEAD_STATUS_OPTIONS, LEAD_SUBSTATUS_OPTIONS, LEAD_ORIGIN_OPTIONS } from '@/hooks/useLeads';
+import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 
@@ -46,11 +44,15 @@ export default function useResourceData({
   const [initialFetchComplete, setInitialFetchComplete] = useState(false);
   const [prevStatus, setPrevStatus] = useState<string | null>(null);
 
-  const { leads } = useLeads();
-  const { desarrollos } = useDesarrollos();
-  const { prototipos } = usePrototipos({ 
+  const { data: leadsData } = useLeads();
+  const { data: desarrollosData } = useDesarrollos();
+  const { data: prototipesData } = usePrototipos({ 
     desarrolloId: selectedDesarrolloId 
   });
+  
+  const leads = leadsData || [];
+  const desarrollos = desarrollosData || [];
+  const prototipos = prototipesData || [];
 
   // Fetch resource data on initial load
   useEffect(() => {

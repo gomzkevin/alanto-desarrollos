@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from './useUserRole';
 
-interface Desarrollo {
+export interface Desarrollo {
   id: string;
   nombre: string;
   ubicacion: string;
@@ -52,11 +52,16 @@ export const useDesarrollos = () => {
     }
   };
   
-  return useQuery({
+  const result = useQuery({
     queryKey: ['desarrollos', userData?.empresaId],
     queryFn: fetchDesarrollos,
     enabled: !!userData,
   });
+  
+  return {
+    ...result,
+    desarrollos: result.data || []
+  };
 };
 
 export default useDesarrollos;

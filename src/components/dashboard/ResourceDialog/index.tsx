@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { ResourceType, FormValues } from './types';
 import { ResourceDialogContent } from './components/ResourceDialogContent';
 import useResourceData from './useResourceData';
-import useResourceActions from './useResourceActions';
+import { useResourceActions } from './useResourceActions';
 import { useResourceFields } from './hooks/useResourceFields';
 
 interface ResourceDialogProps {

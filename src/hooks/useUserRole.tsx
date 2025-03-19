@@ -55,29 +55,16 @@ export const useUserRole = () => {
         }
         
         // Fetch user data from usuarios table
-        let query = supabase
-          .from('usuarios')
-          .select(`
-            id,
-            nombre,
-            email,
-            rol
-          `);
-          
+        let query = supabase.from('usuarios');
+        
         // Add empresa_id to the selection if the column exists
         if (hasEmpresaColumn) {
-          query = query.select(`
-            id,
-            nombre,
-            email,
-            rol,
-            empresa_id
-          `);
+          query = query.select('id, nombre, email, rol, empresa_id');
+        } else {
+          query = query.select('id, nombre, email, rol');
         }
         
-        const { data, error } = await query
-          .eq('auth_id', session.user.id)
-          .single();
+        const { data, error } = await query.eq('auth_id', session.user.id).single();
         
         if (error) {
           console.error('Error fetching user data:', error);
