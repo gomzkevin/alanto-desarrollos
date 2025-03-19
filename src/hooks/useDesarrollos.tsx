@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, Json } from '@/integrations/supabase/types';
@@ -28,10 +29,11 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       // Build the select query
       let query = supabase.from('desarrollos').select('*');
       
-      // Filter by user ID if provided - Fixed the infinite type instantiation issue
+      // Filter by user ID if provided
       if (userId) {
         // Cast userId to string explicitly to avoid type instantiation issues
-        query = query.eq('user_id', userId as string);
+        const userIdString = userId.toString();
+        query = query.eq('user_id', userIdString);
       }
       
       // Apply limit if provided

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 type UserRole = 'admin' | 'vendedor' | null;
 
@@ -29,14 +30,53 @@ export const useUserRole = () => {
         // Fetch user role from usuarios table
         const { data, error } = await supabase
           .from('usuarios')
-          .select('rol')
+          .select('rol, nombre, email')
           .eq('auth_id', session.user.id)
           .single();
         
         if (error) {
           console.error('Error fetching user role:', error);
-          // Default a admin si no hay rol (para desarrollo)
-          setRole('admin');
+          
+          // If user exists in auth but not in usuarios table, create the record
+          if (error.code === 'PGRST116') { // No rows returned error
+            try {
+              const email = session.user.email;
+              const nombre = email?.split('@')[0] || 'Usuario';
+              
+              // Create a new user record
+              const { error: insertError } = await supabase
+                .from('usuarios')
+                .insert({
+                  auth_id: session.user.id,
+                  email,
+                  nombre,
+                  rol: 'admin', // Default role for development
+                });
+              
+              if (insertError) {
+                console.error('Error creating user record:', insertError);
+                toast({
+                  title: 'Error',
+                  description: 'No se pudo crear el registro de usuario en la base de datos.',
+                  variant: 'destructive',
+                });
+                setRole('admin'); // Default para desarrollo
+              } else {
+                console.log('Created new user record for:', email);
+                toast({
+                  title: 'Usuario creado',
+                  description: 'Se ha creado tu perfil de usuario.',
+                });
+                setRole('admin'); // Default para desarrollo
+              }
+            } catch (insertErr) {
+              console.error('Error in user creation process:', insertErr);
+              setRole('admin'); // Default para desarrollo
+            }
+          } else {
+            // Default admin if not found (for development)
+            setRole('admin');
+          }
         } else {
           setRole(data?.rol as UserRole || 'admin');
         }
