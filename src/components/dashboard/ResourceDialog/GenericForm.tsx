@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -180,19 +179,11 @@ const GenericForm = ({
                   <Input
                     type="number"
                     {...formField}
-                    formatCurrency={field.formatCurrency}
                     readOnly={field.readOnly}
                     className={field.readOnly ? "bg-gray-100" : ""}
                     value={formField.value === undefined ? '' : formField.value}
                     onChange={(e) => {
-                      let value;
-                      if (field.formatCurrency) {
-                        // Extract numeric value from formatted string
-                        const numericValue = e.target.value.replace(/[^0-9]/g, '');
-                        value = numericValue === '' ? null : Number(numericValue);
-                      } else {
-                        value = e.target.value === '' ? null : Number(e.target.value);
-                      }
+                      const value = e.target.value === '' ? null : Number(e.target.value);
                       formField.onChange(value);
                       if (!field.readOnly) {
                         onFormChange(field.name, value);
