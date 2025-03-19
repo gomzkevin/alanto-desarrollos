@@ -8,24 +8,13 @@ import {
   DesarrolloResource, 
   PrototipoResource, 
   LeadResource, 
-  CotizacionResource
+  CotizacionResource, 
+  FieldDefinition,
+  FieldType
 } from './types';
-import useLeads from '@/hooks/useLeads';
+import useLeads, { LEAD_STATUS_OPTIONS, LEAD_SUBSTATUS_OPTIONS, LEAD_ORIGIN_OPTIONS } from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
-
-interface UseResourceDataProps {
-  resourceType: ResourceType;
-  resourceId?: string;
-  desarrolloId?: string;
-  lead_id?: string;
-  selectedDesarrolloId: string | null;
-  selectedStatus: string | null;
-  usarFiniquito: boolean;
-  selectedAmenities: string[];
-  onStatusChange: (status: string) => void;
-  onAmenitiesChange: (amenities: string[]) => void;
-}
 
 export default function useResourceData({
   resourceType,
@@ -38,23 +27,30 @@ export default function useResourceData({
   selectedAmenities,
   onStatusChange,
   onAmenitiesChange
-}: UseResourceDataProps) {
+}: {
+  resourceType: ResourceType;
+  resourceId?: string;
+  desarrolloId?: string;
+  lead_id?: string;
+  selectedDesarrolloId: string | null;
+  selectedStatus: string | null;
+  usarFiniquito: boolean;
+  selectedAmenities: string[];
+  onStatusChange: (status: string) => void;
+  onAmenitiesChange: (amenities: string[]) => void;
+}) {
   const { toast } = useToast();
   const [resource, setResource] = useState<FormValues | null>(null);
-  const [fields, setFields] = useState<any[]>([]);
+  const [fields, setFields] = useState<FieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [initialFetchComplete, setInitialFetchComplete] = useState(false);
   const [prevStatus, setPrevStatus] = useState<string | null>(null);
 
-  const leadsResult = useLeads();
-  const desarrollosResult = useDesarrollos();
-  const prototipesResult = usePrototipos({ 
+  const { leads } = useLeads();
+  const { desarrollos } = useDesarrollos();
+  const { prototipos } = usePrototipos({ 
     desarrolloId: selectedDesarrolloId 
   });
-  
-  const leads = leadsResult.leads || [];
-  const desarrollos = desarrollosResult.desarrollos || [];
-  const prototipos = prototipesResult.prototipos || [];
 
   // Fetch resource data on initial load
   useEffect(() => {

@@ -1,13 +1,15 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import useDesarrollos, { Desarrollo } from '@/hooks/useDesarrollos';
+import useDesarrollos from '@/hooks/useDesarrollos';
 import DesarrolloCard from '@/components/dashboard/DesarrolloCard';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import useUserRole from '@/hooks/useUserRole';
+import { Tables } from '@/integrations/supabase/types';
 import useUnidades from '@/hooks/useUnidades';
+
+type Desarrollo = Tables<"desarrollos">;
 
 const DesarrollosPage = () => {
   const navigate = useNavigate();
@@ -19,7 +21,7 @@ const DesarrollosPage = () => {
     isLoading, 
     error,
     refetch 
-  } = useDesarrollos();
+  } = useDesarrollos({ withPrototipos: true });
   
   const { countDesarrolloUnidadesByStatus } = useUnidades();
 
@@ -58,7 +60,7 @@ const DesarrollosPage = () => {
   const normalizeDesarrollos = (desarrollos: Desarrollo[]): Desarrollo[] => {
     return desarrollos.map(desarrollo => {
       // Ensure unidades_disponibles is not greater than total_unidades
-      const normalizedDesarrollo: Desarrollo = {
+      const normalizedDesarrollo = {
         ...desarrollo,
         unidades_disponibles: Math.min(
           desarrollo.unidades_disponibles || 0,
@@ -81,7 +83,7 @@ const DesarrollosPage = () => {
   // Use real counts when available, otherwise use normalized desarrollos
   const displayDesarrollos = desarrollosWithRealCounts.length > 0 
     ? normalizeDesarrollos(desarrollosWithRealCounts)
-    : normalizeDesarrollos(desarrollos);
+    : normalizeDesarrollos(desarrollos as Desarrollo[]);
 
   return (
     <DashboardLayout>
@@ -104,10 +106,7 @@ const DesarrollosPage = () => {
           <AdminResourceDialog 
             resourceType="desarrollos" 
             buttonText="Nuevo desarrollo" 
-            onSuccess={() => {
-              refetch();
-              setOpenDialog(false);
-            }}
+            onSuccess={refetch}
             open={openDialog}
             onClose={() => setOpenDialog(false)}
           />
@@ -135,7 +134,7 @@ const DesarrollosPage = () => {
             {displayDesarrollos.map((desarrollo) => (
               <DesarrolloCard 
                 key={desarrollo.id} 
-                desarrollo={desarrollo as any}
+                desarrollo={desarrollo}
                 onViewDetails={handleDesarrolloClick}
               />
             ))}

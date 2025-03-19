@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
@@ -60,14 +61,10 @@ export const ProyeccionResults = ({
 
         <div className="flex justify-end p-6 pt-0">
           <ExportPDFButton
-            cotizacionId="placeholder"
-            leadName="Proyección"
-            desarrolloNombre="Desarrollo"
-            prototipoNombre="Análisis"
             buttonText="Exportar PDF"
-            resourceName="proyección"
-            fileName={`Proyeccion_${new Date().toLocaleDateString('es-MX').replace(/\//g, '-')}`}
-            className="ml-2"
+            resourceName="proyeccion"
+            fileName={fileName}
+            className="flex items-center gap-2"
           />
         </div>
       </CardContent>

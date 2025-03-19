@@ -537,9 +537,6 @@ const CotizacionDetailDialog = ({
             <ExportPDFButton
               variant="default"
               cotizacionId={cotizacion.id}
-              leadName={cotizacion.lead?.nombre || 'Cliente'}
-              desarrolloNombre={cotizacion.desarrollo?.nombre || 'Desarrollo'}
-              prototipoNombre={cotizacion.prototipo?.nombre || 'Prototipo'}
               buttonText="Exportar PDF"
               resourceName="cotización"
               elementId="cotizacion-detail-content"

@@ -1,126 +1,87 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUser } from '@supabase/auth-helpers-react';
 
-interface UserData {
-  id: string;
-  rol: string;
-  nombre: string;
-  email: string;
-  empresaId: number | null;
-  // Add name and empresaNombre properties needed in DashboardLayout
-  name: string;
-  empresaNombre: string;
-}
-
-interface Permissions {
-  canCreateResource: boolean;
-  canEditResource: boolean;
-  canDeleteResource: boolean;
-  canSeeFinancials: boolean;
-  isAdmin: boolean;
-}
+type UserRole = 'admin' | 'vendedor' | null;
 
 export const useUserRole = () => {
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const [role, setRole] = useState<UserRole>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [permissions, setPermissions] = useState<Permissions>({
-    canCreateResource: false,
-    canEditResource: false,
-    canDeleteResource: false,
-    canSeeFinancials: false,
-    isAdmin: false,
-  });
-
-  const user = useUser();
-  const isAuthenticated = !!user;
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchRole = async () => {
-      setIsLoading(true);
-      if (user?.id) {
-        const fetchedUserData = await fetchUserData(user.id);
-        setUserData(fetchedUserData);
-      } else {
-        setUserData(null);
-        setPermissions({
-          canCreateResource: false,
-          canEditResource: false,
-          canDeleteResource: false,
-          canSeeFinancials: false,
-          isAdmin: false,
-        });
+    const fetchUserRole = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get current session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          setRole(null);
+          setIsLoading(false);
+          return;
+        }
+        
+        setUserId(session.user.id);
+        
+        // Fetch user role from usuarios table
+        const { data, error } = await supabase
+          .from('usuarios')
+          .select('rol')
+          .eq('auth_id', session.user.id)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching user role:', error);
+          setRole(null);
+        } else {
+          setRole(data?.rol as UserRole || null);
+        }
+      } catch (error) {
+        console.error('Error in useUserRole hook:', error);
+        setRole(null);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
-
-    fetchRole();
-  }, [user]);
-
-  const fetchUserData = async (userId: string): Promise<UserData | null> => {
-    try {
-      // First get the user info from usuarios table
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('*, empresa_info(nombre)')
-        .eq('auth_id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user data:', error);
-        return null;
+    
+    fetchUserRole();
+    
+    // Also listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setUserId(session.user.id);
+        fetchUserRole();
+      } else {
+        setUserId(null);
+        setRole(null);
+        setIsLoading(false);
       }
-
-      if (!data) {
-        return null;
-      }
-
-      // Make sure all userData properties are safely accessed with null checks
-      const empresaId = data?.empresa_id || null;
-      const rolValue = data?.rol || 'vendedor';
-      const empresaNombre = data?.empresa_info?.nombre || 'AirbnbInvest';
-      
-      // Create user data object with safe null checks
-      const userData: UserData = {
-        id: data?.id || '',
-        rol: data?.rol || 'vendedor',
-        nombre: data?.nombre || '',
-        email: data?.email || '',
-        empresaId: empresaId,
-        // Map nombre to name for DashboardLayout compatibility
-        name: data?.nombre || '',
-        empresaNombre: empresaNombre,
-      };
-
-      // Set permissions based on role
-      const updatedPermissions: Permissions = {
-        canCreateResource: ['admin', 'gerente'].includes(rolValue),
-        canEditResource: ['admin', 'gerente', 'vendedor'].includes(rolValue),
-        canDeleteResource: ['admin'].includes(rolValue),
-        canSeeFinancials: ['admin', 'gerente'].includes(rolValue),
-        isAdmin: rolValue === 'admin',
-      };
-
-      setPermissions(updatedPermissions);
-      
-      return userData;
-    } catch (error) {
-      console.error('Error in fetchUserData:', error);
-      return null;
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+  
+  // Helper functions to check permissions
+  const isAdmin = () => role === 'admin';
+  const isVendedor = () => role === 'vendedor';
+  const canCreateResource = (resourceType: 'desarrollo' | 'prototipo' | 'propiedad' | 'lead' | 'cotizacion') => {
+    if (resourceType === 'desarrollo' || resourceType === 'prototipo' || resourceType === 'propiedad') {
+      return isAdmin();
     }
+    return isAdmin() || isVendedor();
   };
-
+  
   return {
-    userData,
-    permissions,
-    canCreateResource: permissions.canCreateResource,
-    canEditResource: permissions.canEditResource,
-    canDeleteResource: permissions.canDeleteResource,
-    canSeeFinancials: permissions.canSeeFinancials,
-    isAdmin: permissions.isAdmin,
+    role,
     isLoading,
-    isAuthenticated
+    userId,
+    isAdmin,
+    isVendedor,
+    canCreateResource
   };
 };
 

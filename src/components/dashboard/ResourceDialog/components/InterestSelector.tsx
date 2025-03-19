@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,9 +24,13 @@ export const InterestSelector: React.FC<InterestSelectorProps> = ({
     value?.startsWith('desarrollo:') ? 'desarrollo' : 'prototipo'
   );
   
+  // Fetch data
   const { desarrollos } = useDesarrollos();
-  const { prototipos } = usePrototipos();
+  const { prototipos } = usePrototipos({
+    desarrolloId: selectedDesarrolloId || undefined
+  });
   
+  // Parse the initial value and set the correct state
   useEffect(() => {
     if (value) {
       if (value.startsWith('desarrollo:')) {
@@ -43,14 +48,18 @@ export const InterestSelector: React.FC<InterestSelectorProps> = ({
         }
       }
     } else {
+      // Reset if value is empty
       setSelectedDesarrolloId('');
       setSelectedPrototipoId('');
     }
   }, [value, prototipos]);
 
+  // Handle desarrollo selection
   const handleDesarrolloSelect = (desarrolloId: string) => {
     setSelectedDesarrolloId(desarrolloId);
-    setSelectedPrototipoId('');
+    setSelectedPrototipoId(''); // Reset prototipo selection when desarrollo changes
+    
+    // Update interest type based on whether a prototipo is selected
     if (selectedPrototipoId) {
       setInterestType('prototipo');
     } else {
@@ -59,23 +68,28 @@ export const InterestSelector: React.FC<InterestSelectorProps> = ({
     }
   };
 
+  // Handle prototipo selection
   const handlePrototipoSelect = (prototipoId: string) => {
     setSelectedPrototipoId(prototipoId);
     setInterestType('prototipo');
     onChange(`prototipo:${prototipoId}`);
   };
 
+  // Handle interest type change
   const handleInterestTypeChange = (newType: 'desarrollo' | 'prototipo') => {
     setInterestType(newType);
+    
+    // Update the value based on the new type and current selections
     if (newType === 'desarrollo' && selectedDesarrolloId) {
       onChange(`desarrollo:${selectedDesarrolloId}`);
     } else if (newType === 'prototipo' && selectedPrototipoId) {
       onChange(`prototipo:${selectedPrototipoId}`);
     } else {
-      onChange('');
+      onChange(''); // Reset if there's no valid selection
     }
   };
 
+  // When a prototipo is selected, automatically set the interest type to prototipo
   useEffect(() => {
     if (selectedPrototipoId) {
       setInterestType('prototipo');

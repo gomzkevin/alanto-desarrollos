@@ -2,61 +2,88 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-interface DesarrolloStats {
-  unidadesDisponibles: number;
-  avanceComercial: number;
-  totalUnidades: number;
-  ingresos_estimados?: number;
-  ingresos_recibidos?: number;
-}
-
-export const useDesarrolloStats = (desarrolloId: string) => {
-  const fetchDesarrolloStats = async (): Promise<DesarrolloStats> => {
-    try {
-      // Get the desarrollo details
-      const { data: desarrollo, error: desarrolloError } = await supabase
-        .from('desarrollos')
-        .select('total_unidades, unidades_disponibles, avance_porcentaje')
-        .eq('id', desarrolloId)
-        .single();
-        
-      if (desarrolloError) {
-        console.error('Error fetching desarrollo stats:', desarrolloError);
-        throw desarrolloError;
+/**
+ * Hook to get statistics for a desarrollo based on units status
+ */
+export function useDesarrolloStats(desarrolloId?: string) {
+  return useQuery({
+    queryKey: ['desarrollo-stats', desarrolloId],
+    queryFn: async () => {
+      if (!desarrolloId) {
+        return { 
+          unidadesDisponibles: 0, 
+          avanceComercial: 0,
+          totalUnidades: 0
+        };
       }
+
+      // Get all prototipos for this desarrollo
+      const { data: prototipos, error: prototiposError } = await supabase
+        .from('prototipos')
+        .select('id, total_unidades')
+        .eq('desarrollo_id', desarrolloId);
+
+      if (prototiposError) {
+        console.error('Error fetching prototipos:', prototiposError);
+        throw prototiposError;
+      }
+
+      // If no prototipos, return default values
+      if (!prototipos || prototipos.length === 0) {
+        return { 
+          unidadesDisponibles: 0, 
+          avanceComercial: 0,
+          totalUnidades: 0 
+        };
+      }
+
+      // Get all unidades with their status
+      let totalUnidades = 0;
+      let unidadesDisponibles = 0;
+
+      // Calculate total units from prototipos
+      totalUnidades = prototipos.reduce((sum, prototipo) => sum + (prototipo.total_unidades || 0), 0);
+
+      // For each prototipo, get units with "disponible" status
+      const allUnits = await Promise.all(
+        prototipos.map(async (prototipo) => {
+          const { data: unidades, error: unidadesError } = await supabase
+            .from('unidades')
+            .select('estado')
+            .eq('prototipo_id', prototipo.id);
+
+          if (unidadesError) {
+            console.error('Error fetching unidades:', unidadesError);
+            return [];
+          }
+
+          return unidades || [];
+        })
+      );
+
+      // Flatten units array
+      const allUnidades = allUnits.flat();
       
-      // Calculate some basic stats
-      const unidadesDisponibles = desarrollo?.unidades_disponibles || 0;
-      const totalUnidades = desarrollo?.total_unidades || 0;
-      const unidadesVendidas = totalUnidades - unidadesDisponibles;
-      const avanceComercial = totalUnidades > 0 ? (unidadesVendidas / totalUnidades) * 100 : 0;
-      
-      // You could add more complex calculations here
-      // For example, financial projections based on sales data
-      
+      // Count units with "disponible" status
+      unidadesDisponibles = allUnidades.filter(unidad => 
+        unidad.estado === 'disponible'
+      ).length;
+
+      // Calculate commercial progress percentage
+      let avanceComercial = 0;
+      if (totalUnidades > 0) {
+        const unidadesNoDisponibles = totalUnidades - unidadesDisponibles;
+        avanceComercial = Math.round((unidadesNoDisponibles / totalUnidades) * 100);
+      }
+
       return {
         unidadesDisponibles,
         avanceComercial,
-        totalUnidades,
-        ingresos_estimados: 0, // Replace with actual calculations
-        ingresos_recibidos: 0, // Replace with actual calculations
+        totalUnidades
       };
-    } catch (error) {
-      console.error('Error in fetchDesarrolloStats:', error);
-      throw error;
-    }
-  };
-  
-  const query = useQuery({
-    queryKey: ['desarrollo-stats', desarrolloId],
-    queryFn: fetchDesarrolloStats,
-    enabled: !!desarrolloId,
+    },
+    enabled: !!desarrolloId
   });
-  
-  return {
-    ...query,
-    stats: query.data,
-  };
-};
+}
 
 export default useDesarrolloStats;

@@ -1,22 +1,57 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
-import { DesarrolloImagen } from '@/types/desarrolloImagen';
+import { useToast } from './use-toast';
+import { Json } from '@/integrations/supabase/types';
 
-export const useDesarrolloImagenes = (desarrolloId: string) => {
+export type DesarrolloImagen = {
+  id: string;
+  desarrollo_id: string;
+  url: string;
+  es_principal: boolean;
+  orden: number;
+  created_at: string;
+};
+
+interface Desarrollo {
+  id: string;
+  nombre: string;
+  ubicacion: string;
+  total_unidades: number;
+  unidades_disponibles: number;
+  avance_porcentaje?: number;
+  fecha_inicio?: string;
+  fecha_entrega?: string;
+  descripcion?: string;
+  imagen_url?: string;
+  moneda?: string;
+  comision_operador?: number;
+  mantenimiento_valor?: number;
+  es_mantenimiento_porcentaje?: boolean;
+  gastos_fijos?: number;
+  es_gastos_fijos_porcentaje?: boolean;
+  gastos_variables?: number;
+  es_gastos_variables_porcentaje?: boolean;
+  impuestos?: number;
+  es_impuestos_porcentaje?: boolean;
+  adr_base?: number;
+  ocupacion_anual?: number;
+  amenidades?: string[] | null;
+}
+
+export const useDesarrolloImagenes = (desarrolloId?: string) => {
+  const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   
-  const fetchDesarrolloImagenes = async (): Promise<DesarrolloImagen[]> => {
+  const fetchImages = async (): Promise<DesarrolloImagen[]> => {
+    if (!desarrolloId) return [];
+    
     const { data, error } = await supabase
       .from('desarrollo_imagenes')
       .select('*')
       .eq('desarrollo_id', desarrolloId)
-      .order('orden', { ascending: true });
-      
+      .order('orden');
+    
     if (error) {
       console.error('Error fetching desarrollo images:', error);
       throw new Error(error.message);
@@ -25,182 +60,280 @@ export const useDesarrolloImagenes = (desarrolloId: string) => {
     return data as DesarrolloImagen[];
   };
   
-  const deleteImage = async (imageId: string): Promise<boolean> => {
-    setIsDeleting(true);
-    try {
-      const { error } = await supabase
+  const imagesQuery = useQuery({
+    queryKey: ['desarrollo-imagenes', desarrolloId],
+    queryFn: fetchImages,
+    enabled: !!desarrolloId,
+  });
+  
+  const uploadImageMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!desarrolloId) throw new Error('Desarrollo ID is required');
+      
+      const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+      
+      try {
+        console.log('Uploading file to bucket: desarrollo-images');
+        
+        // Upload to storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('desarrollo-images')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (uploadError) {
+          console.error('Error uploading file:', uploadError);
+          throw uploadError;
+        }
+        
+        console.log('File uploaded successfully:', uploadData);
+        
+        // Get the public URL
+        const { data: publicUrlData } = supabase.storage
+          .from('desarrollo-images')
+          .getPublicUrl(fileName);
+        
+        const url = publicUrlData.publicUrl;
+        console.log('Got public URL:', url);
+        
+        // Save to database
+        const nextOrder = (imagesQuery.data?.length || 0) + 1;
+        console.log('Adding image to database with order:', nextOrder);
+        
+        const { data: imageData, error: imageError } = await supabase
+          .from('desarrollo_imagenes')
+          .insert([{
+            desarrollo_id: desarrolloId,
+            url,
+            es_principal: false,
+            orden: nextOrder,
+          }])
+          .select()
+          .single();
+        
+        if (imageError) {
+          console.error('Error saving image data:', imageError);
+          throw imageError;
+        }
+        
+        console.log('Image data saved successfully:', imageData);
+        return imageData;
+      } catch (error) {
+        console.error('Error in uploadImageMutation:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Imagen subida",
+        description: "La imagen se ha guardado correctamente.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['desarrollo-imagenes', desarrolloId] });
+    },
+    onError: (error) => {
+      console.error('Upload image error:', error);
+      toast({
+        title: "Error al subir imagen",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  const deleteImageMutation = useMutation({
+    mutationFn: async (imageId: string) => {
+      const { data: image, error: getError } = await supabase
+        .from('desarrollo_imagenes')
+        .select('url')
+        .eq('id', imageId)
+        .single();
+        
+      if (getError) {
+        console.error('Error getting image:', getError);
+        throw getError;
+      }
+      
+      // Extract filename from URL
+      const url = image.url;
+      const fileName = url.split('/').pop();
+      
+      // Delete from database first
+      const { error: deleteError } = await supabase
         .from('desarrollo_imagenes')
         .delete()
         .eq('id', imageId);
-        
-      if (error) {
-        console.error('Error deleting image:', error);
-        toast({
-          title: 'Error',
-          description: 'No se pudo eliminar la imagen',
-          variant: 'destructive',
-        });
-        return false;
+      
+      if (deleteError) {
+        console.error('Error deleting image:', deleteError);
+        throw deleteError;
       }
       
-      toast({
-        title: 'Éxito',
-        description: 'Imagen eliminada correctamente',
-      });
+      // Then try to delete from storage (best effort)
+      try {
+        const { error: storageError } = await supabase.storage
+          .from('desarrollo-images')
+          .remove([fileName]);
+          
+        if (storageError) {
+          console.error('Error deleting image from storage:', storageError);
+          // We don't throw here as the database deletion succeeded
+        }
+      } catch (e) {
+        console.error('Error trying to delete from storage:', e);
+      }
       
-      return true;
-    } catch (error) {
-      console.error('Error in deleteImage:', error);
+      return { id: imageId };
+    },
+    onSuccess: () => {
       toast({
-        title: 'Error',
-        description: 'No se pudo eliminar la imagen',
-        variant: 'destructive',
+        title: "Imagen eliminada",
+        description: "La imagen se ha eliminado correctamente.",
       });
-      return false;
-    } finally {
-      setIsDeleting(false);
+      queryClient.invalidateQueries({ queryKey: ['desarrollo-imagenes', desarrolloId] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al eliminar imagen",
+        description: error.message,
+        variant: "destructive",
+      });
     }
-  };
-
-  const uploadImage = async (file: File): Promise<boolean> => {
-    setIsUploading(true);
-    
-    try {
-      // 1. Upload the file to storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `desarrollos/${desarrolloId}/${Date.now()}.${fileExt}`;
+  });
+  
+  const setMainImageMutation = useMutation({
+    mutationFn: async (imageId: string) => {
+      if (!desarrolloId) throw new Error('Desarrollo ID is required');
       
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-      
-      if (uploadError) {
-        console.error('Error uploading file:', uploadError);
-        throw uploadError;
-      }
-      
-      // 2. Get the public URL
-      const { data: urlData } = supabase.storage
-        .from('images')
-        .getPublicUrl(fileName);
-      
-      if (!urlData || !urlData.publicUrl) {
-        throw new Error('Failed to get public URL');
-      }
-      
-      // 3. Get the max order value for the current development
-      const { data: orderData, error: orderError } = await supabase
-        .from('desarrollo_imagenes')
-        .select('orden')
-        .eq('desarrollo_id', desarrolloId)
-        .order('orden', { ascending: false })
-        .limit(1);
-      
-      if (orderError) {
-        console.error('Error getting max order:', orderError);
-        throw orderError;
-      }
-      
-      const newOrder = orderData && orderData.length > 0 ? (orderData[0].orden || 0) + 1 : 0;
-      
-      // 4. Insert the record into the database
-      const { error: insertError } = await supabase
-        .from('desarrollo_imagenes')
-        .insert({
-          desarrollo_id: desarrolloId,
-          url: urlData.publicUrl,
-          orden: newOrder,
-          es_principal: false
-        });
-      
-      if (insertError) {
-        console.error('Error inserting image record:', insertError);
-        throw insertError;
-      }
-      
-      toast({
-        title: 'Éxito',
-        description: 'Imagen subida correctamente',
-      });
-      
-      return true;
-    } catch (error: any) {
-      console.error('Error uploading image:', error);
-      toast({
-        title: 'Error',
-        description: `No se pudo subir la imagen: ${error.message}`,
-        variant: 'destructive',
-      });
-      return false;
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const setMainImage = async (imageId: string): Promise<boolean> => {
-    try {
-      // 1. Update all images for this desarrollo to es_principal = false
-      const { error: resetError } = await supabase
+      // First, unset all images as principal
+      const { error: unsetError } = await supabase
         .from('desarrollo_imagenes')
         .update({ es_principal: false })
         .eq('desarrollo_id', desarrolloId);
       
-      if (resetError) {
-        console.error('Error resetting main images:', resetError);
-        throw resetError;
+      if (unsetError) {
+        console.error('Error unsetting main images:', unsetError);
+        throw unsetError;
       }
       
-      // 2. Set the selected image as main
-      const { error: updateError } = await supabase
+      // Then set the selected image as principal
+      const { data, error } = await supabase
         .from('desarrollo_imagenes')
         .update({ es_principal: true })
-        .eq('id', imageId);
+        .eq('id', imageId)
+        .select()
+        .single();
       
-      if (updateError) {
-        console.error('Error setting main image:', updateError);
-        throw updateError;
+      if (error) {
+        console.error('Error setting main image:', error);
+        throw error;
       }
       
+      return data;
+    },
+    onSuccess: () => {
       toast({
-        title: 'Éxito',
-        description: 'Imagen principal actualizada',
+        title: "Imagen principal actualizada",
+        description: "Se ha establecido la imagen principal.",
       });
-      
-      return true;
-    } catch (error: any) {
-      console.error('Error setting main image:', error);
+      queryClient.invalidateQueries({ queryKey: ['desarrollo-imagenes', desarrolloId] });
+    },
+    onError: (error) => {
       toast({
-        title: 'Error',
-        description: `No se pudo actualizar la imagen principal: ${error.message}`,
-        variant: 'destructive',
+        title: "Error al establecer imagen principal",
+        description: error.message,
+        variant: "destructive",
       });
-      return false;
     }
-  };
-
-  const query = useQuery({
-    queryKey: ['desarrollo-imagenes', desarrolloId],
-    queryFn: fetchDesarrolloImagenes,
-    enabled: !!desarrolloId,
   });
-
+  
+  const reorderImagesMutation = useMutation({
+    mutationFn: async (imageIds: string[]) => {
+      if (!desarrolloId) throw new Error('Desarrollo ID is required');
+      
+      const updates = imageIds.map((id, index) => ({
+        id,
+        orden: index + 1
+      }));
+      
+      const promises = updates.map(update => 
+        supabase
+          .from('desarrollo_imagenes')
+          .update({ orden: update.orden })
+          .eq('id', update.id)
+      );
+      
+      await Promise.all(promises);
+      
+      return { success: true };
+    },
+    onSuccess: () => {
+      toast({
+        title: "Orden actualizado",
+        description: "Se ha actualizado el orden de las imágenes.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['desarrollo-imagenes', desarrolloId] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al reordenar imágenes",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  const updateAmenitiesMutation = useMutation({
+    mutationFn: async (amenities: string[]) => {
+      if (!desarrolloId) throw new Error('Desarrollo ID is required');
+      
+      console.log('Updating amenities to:', amenities);
+      
+      const { data, error } = await supabase
+        .from('desarrollos')
+        .update({ 
+          amenidades: amenities
+        })
+        .eq('id', desarrolloId)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error updating amenities:', error);
+        throw error;
+      }
+      
+      return data as Desarrollo;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Amenidades actualizadas",
+        description: "Las amenidades se han actualizado correctamente.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al actualizar amenidades",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
   return {
-    images: query.data || [],
-    isLoading: query.isLoading,
-    error: query.error,
-    refetch: query.refetch,
-    isSuccess: query.isSuccess,
-    isFetching: query.isFetching,
-    isRefetching: query.isRefetching,
-    isError: query.isError,
-    deleteImage,
-    isDeleting,
-    uploadImage,
-    isUploading,
-    setMainImage,
+    images: imagesQuery.data || [],
+    isLoading: imagesQuery.isLoading,
+    error: imagesQuery.error,
+    refetch: imagesQuery.refetch,
+    uploadImage: uploadImageMutation.mutate,
+    deleteImage: deleteImageMutation.mutate,
+    setMainImage: setMainImageMutation.mutate,
+    reorderImages: reorderImagesMutation.mutate,
+    updateAmenities: updateAmenitiesMutation.mutate,
+    isUploading: uploadImageMutation.isPending,
+    isDeleting: deleteImageMutation.isPending,
   };
 };
 

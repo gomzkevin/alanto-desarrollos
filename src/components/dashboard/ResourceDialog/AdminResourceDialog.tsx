@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import ResourceDialog from './ResourceDialog';
+import ResourceDialog from './index';
 import { ResourceType } from './types';
 
 interface AdminResourceDialogProps {
@@ -13,9 +13,7 @@ interface AdminResourceDialogProps {
   desarrolloId?: string;
   prototipo_id?: string;
   lead_id?: string;
-  resourceId?: string;
-  open?: boolean;
-  onClose?: () => void;
+  resourceId?: string; // Added resourceId prop
 }
 
 const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
@@ -27,28 +25,16 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
   desarrolloId,
   prototipo_id,
   lead_id,
-  resourceId,
-  open,
-  onClose
+  resourceId // Added resourceId param
 }) => {
-  const [isOpen, setIsOpen] = React.useState(open || false);
-
-  // Update internal state when open prop changes
-  React.useEffect(() => {
-    if (open !== undefined) {
-      setIsOpen(open);
-    }
-  }, [open]);
+  const [open, setOpen] = React.useState(false);
 
   const handleOpen = () => {
-    setIsOpen(true);
+    setOpen(true);
   };
 
   const handleClose = () => {
-    setIsOpen(false);
-    if (onClose) {
-      onClose();
-    }
+    setOpen(false);
   };
 
   const handleSuccess = () => {
@@ -60,26 +46,23 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
 
   return (
     <>
-      {/* Only show button if open/onClose aren't provided as props */}
-      {open === undefined && (
-        <Button 
-          variant={buttonVariant} 
-          onClick={handleOpen}
-        >
-          {buttonIcon}
-          {buttonText || `Nuevo ${resourceType.slice(0, -1)}`}
-        </Button>
-      )}
+      <Button 
+        variant={buttonVariant} 
+        onClick={handleOpen}
+      >
+        {buttonIcon}
+        {buttonText || `Nuevo ${resourceType.slice(0, -1)}`}
+      </Button>
 
       <ResourceDialog
-        open={isOpen}
+        open={open}
         onClose={handleClose}
         resourceType={resourceType}
         onSuccess={handleSuccess}
         desarrolloId={desarrolloId}
         prototipo_id={prototipo_id}
         lead_id={lead_id}
-        resourceId={resourceId}
+        resourceId={resourceId} // Pass resourceId to ResourceDialog
       />
     </>
   );

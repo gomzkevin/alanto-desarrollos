@@ -1,8 +1,9 @@
+
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { FieldDefinition, ResourceType } from '../types';
-import useLeads from '@/hooks/useLeads';
+import useLeads, { LEAD_STATUS_OPTIONS, LEAD_SUBSTATUS_OPTIONS, LEAD_ORIGIN_OPTIONS } from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 
@@ -12,59 +13,6 @@ const ESTADOS_UNIDAD = [
   { value: 'en_proceso', label: 'En Proceso' },
   { value: 'vendido', label: 'Vendido' }
 ];
-
-const LEAD_STATUS_OPTIONS = [
-  { value: 'nuevo', label: 'Nuevo' },
-  { value: 'contactado', label: 'Contactado' },
-  { value: 'interesado', label: 'Interesado' },
-  { value: 'calificado', label: 'Calificado' },
-  { value: 'negociacion', label: 'En Negociación' },
-  { value: 'ganado', label: 'Ganado' },
-  { value: 'perdido', label: 'Perdido' }
-];
-
-const LEAD_ORIGIN_OPTIONS = [
-  { value: 'web', label: 'Sitio Web' },
-  { value: 'referido', label: 'Referido' },
-  { value: 'redes_sociales', label: 'Redes Sociales' },
-  { value: 'evento', label: 'Evento' },
-  { value: 'llamada', label: 'Llamada' },
-  { value: 'otro', label: 'Otro' }
-];
-
-const LEAD_SUBSTATUS_OPTIONS: Record<string, { value: string; label: string }[]> = {
-  nuevo: [
-    { value: 'sin_contactar', label: 'Sin Contactar' },
-    { value: 'en_espera', label: 'En Espera' }
-  ],
-  contactado: [
-    { value: 'pendiente_respuesta', label: 'Pendiente de Respuesta' },
-    { value: 'no_interesado', label: 'No Interesado' },
-    { value: 'seguimiento', label: 'Seguimiento' }
-  ],
-  interesado: [
-    { value: 'evaluando', label: 'Evaluando' },
-    { value: 'solicitando_informacion', label: 'Solicitando Información' }
-  ],
-  calificado: [
-    { value: 'visitando_propiedad', label: 'Visitando Propiedad' },
-    { value: 'analizando_propuesta', label: 'Analizando Propuesta' }
-  ],
-  negociacion: [
-    { value: 'negociando_terminos', label: 'Negociando Términos' },
-    { value: 'en_aprobacion', label: 'En Aprobación' }
-  ],
-  ganado: [
-    { value: 'contrato_firmado', label: 'Contrato Firmado' },
-    { value: 'esperando_pago', label: 'Esperando Pago' },
-    { value: 'completado', label: 'Completado' }
-  ],
-  perdido: [
-    { value: 'sin_respuesta', label: 'Sin Respuesta' },
-    { value: 'desistio', label: 'Desistió' },
-    { value: 'eligio_competencia', label: 'Eligió Competencia' }
-  ]
-};
 
 const TIPOS_PROPIEDADES = [
   { value: 'apartamento', label: 'Apartamento' },
@@ -76,13 +24,11 @@ const TIPOS_PROPIEDADES = [
   { value: 'otro', label: 'Otro' },
 ];
 
-export const useResourceFields = (resourceType: ResourceType, selectedStatus?: string | null, selectedDesarrolloId?: string) => {
+export const useResourceFields = (resourceType: ResourceType, selectedStatus?: string | null) => {
   const [fields, setFields] = useState<FieldDefinition[]>([]);
   const { leads } = useLeads();
   const { desarrollos } = useDesarrollos();
-  const { prototipos } = usePrototipos({
-    desarrolloId: selectedDesarrolloId
-  });
+  const { prototipos } = usePrototipos();
   
   // Obtener la lista de vendedores desde la tabla de usuarios
   const { data: vendedores = [] } = useQuery({
@@ -212,8 +158,8 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
           ];
         case 'leads':
           // Get substatus options based on the selected status
-          const substatusOptions = selectedStatus && LEAD_SUBSTATUS_OPTIONS[selectedStatus] 
-            ? LEAD_SUBSTATUS_OPTIONS[selectedStatus] 
+          const substatusOptions = selectedStatus && LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
+            ? LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
             : [];
           
           return [
@@ -291,5 +237,5 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
     setFields(getFieldDefinitions());
   }, [resourceType, leads, vendedores, selectedStatus, desarrollos, prototipos]);
 
-  return { fields, selectedStatus };
+  return fields;
 };

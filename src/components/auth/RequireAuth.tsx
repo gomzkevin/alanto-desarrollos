@@ -1,35 +1,81 @@
 
-import { ReactNode, useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useEffect, useState } from 'react';
+import { Navigate, useLocation, useParams } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface RequireAuthProps {
-  children: ReactNode;
+  children: JSX.Element;
 }
 
 const RequireAuth = ({ children }: RequireAuthProps) => {
-  const { isAuthenticated, isLoading } = useUserRole();
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
   const location = useLocation();
+  const { toast } = useToast();
+  const params = useParams();
 
   useEffect(() => {
-    console.log('RequireAuth - Auth status:', { isAuthenticated, isLoading, path: location.pathname });
-  }, [isAuthenticated, isLoading, location.pathname]);
+    const checkAuth = async () => {
+      try {
+        console.log('Checking authentication in RequireAuth...', location.pathname, params);
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          console.log('RequireAuth: User is authenticated:', session.user.email);
+          setAuthenticated(true);
+        } else {
+          console.log('RequireAuth: No session found');
+          setAuthenticated(false);
+          toast({
+            title: "Sesión expirada",
+            description: "Por favor inicia sesión para continuar",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error('Error checking authentication in RequireAuth:', error);
+        setAuthenticated(false);
+        toast({
+          title: "Error de autenticación",
+          description: "Hubo un problema al verificar tu sesión",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (isLoading) {
+    checkAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed in RequireAuth, event:', _event);
+      setAuthenticated(!!session);
+      setLoading(false);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [toast, location.pathname]);
+
+  if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-        <span className="ml-2 text-lg text-indigo-600">Cargando...</span>
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!authenticated) {
+    // Redirect to login page but remember where they were trying to go
+    console.log('Not authenticated in RequireAuth, redirecting to login');
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  return <>{children}</>;
+  console.log('RequireAuth: User is authenticated, rendering children');
+  return children;
 };
 
 export default RequireAuth;

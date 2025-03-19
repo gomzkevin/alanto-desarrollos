@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DialogHeader } from './DialogHeader';
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
@@ -46,7 +47,8 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
   const { prototipos } = usePrototipos({ 
     desarrolloId: cotizacion.desarrollo_id 
   });
-  
+
+  // Update the form with additional fields for new client
   const form = useForm({
     defaultValues: {
       isExistingClient: true,
@@ -58,12 +60,14 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
       usar_finiquito: cotizacion.usar_finiquito,
       monto_finiquito: cotizacion.monto_finiquito || 0,
       notas: cotizacion.notas || '',
+      // Add fields for new client
       nombre: '',
       email: '',
       telefono: ''
     }
   });
 
+  // Initialize the selectedLead from the cotizacion data
   useEffect(() => {
     if (cotizacion.lead && cotizacion.lead.id) {
       setSelectedLead(cotizacion.lead);
@@ -161,6 +165,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                           setSearchLeadTerm(e.target.value);
                           setShowLeadsDropdown(true);
                           
+                          // Filter leads based on search term
                           if (e.target.value.trim() !== '') {
                             const filtered = leads.filter(lead => 
                               lead.nombre.toLowerCase().includes(e.target.value.toLowerCase()) ||
@@ -325,6 +330,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                             formatCurrency 
                             value={field.value}
                             onChange={(e) => {
+                              // Remove non-numeric characters for the actual value
                               const numericValue = e.target.value.replace(/[^0-9]/g, '');
                               field.onChange(parseFloat(numericValue) || 0);
                             }}
@@ -412,6 +418,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                               formatCurrency 
                               value={field.value}
                               onChange={(e) => {
+                                // Remove non-numeric characters for the actual value
                                 const numericValue = e.target.value.replace(/[^0-9]/g, '');
                                 field.onChange(parseFloat(numericValue) || 0);
                               }}
