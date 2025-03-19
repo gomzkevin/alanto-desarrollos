@@ -2,10 +2,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
+import { isAuthenticated } from '@/lib/supabase';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,6 +18,23 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const auth = await isAuthenticated();
+      setIsLoggedIn(auth);
+    };
+    checkAuth();
+
+    // Suscribirse a cambios de autenticación
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   return (
     <header className={`fixed top-0 left-0 right-0 z-30 transition-all duration-300 ${
       isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm' : 'bg-transparent'
@@ -24,7 +43,7 @@ const Header = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex items-center">
-            <span className="text-xl font-bold text-indigo-600">AirbnbInvest</span>
+            <Link to="/" className="text-xl font-bold text-indigo-600">AirbnbInvest</Link>
           </div>
 
           {/* Desktop navigation */}
@@ -33,9 +52,15 @@ const Header = () => {
             <a href="#features" className="text-slate-700 hover:text-indigo-600 transition-colors">Características</a>
             <a href="#properties" className="text-slate-700 hover:text-indigo-600 transition-colors">Propiedades</a>
             <a href="#calculator" className="text-slate-700 hover:text-indigo-600 transition-colors">Calculadora</a>
-            <Link to="/dashboard">
-              <Button>Acceder</Button>
-            </Link>
+            {isLoggedIn ? (
+              <Link to="/dashboard">
+                <Button>Dashboard</Button>
+              </Link>
+            ) : (
+              <Link to="/auth">
+                <Button>Acceder</Button>
+              </Link>
+            )}
           </nav>
 
           {/* Mobile menu button */}
@@ -86,14 +111,25 @@ const Header = () => {
             >
               Calculadora
             </a>
-            <Link to="/dashboard" className="block px-3 py-2">
-              <Button 
-                className="w-full"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Acceder
-              </Button>
-            </Link>
+            {isLoggedIn ? (
+              <Link to="/dashboard" className="block px-3 py-2">
+                <Button 
+                  className="w-full"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/auth" className="block px-3 py-2">
+                <Button 
+                  className="w-full"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Acceder
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       )}

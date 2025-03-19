@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 type UserRole = 'admin' | 'vendedor' | null;
 
 export const useUserRole = () => {
-  const [role, setRole] = useState<UserRole>('admin'); // Set default to admin for development
+  const [role, setRole] = useState<UserRole>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -18,9 +18,9 @@ export const useUserRole = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          // For development, use admin role even if not authenticated
-          console.log('No session, using default admin role for development');
-          setUserId('dev-user-id');
+          setRole(null);
+          setUserId(null);
+          setIsLoading(false);
           return;
         }
         
@@ -35,13 +35,14 @@ export const useUserRole = () => {
         
         if (error) {
           console.error('Error fetching user role:', error);
-          console.log('Using default admin role for development');
+          // Default a admin si no hay rol (para desarrollo)
+          setRole('admin');
         } else {
-          setRole(data?.rol as UserRole || 'admin'); // Default to admin if role not found
+          setRole(data?.rol as UserRole || 'admin');
         }
       } catch (error) {
         console.error('Error in useUserRole hook:', error);
-        console.log('Using default admin role for development');
+        setRole('admin'); // Para desarrollo
       } finally {
         setIsLoading(false);
       }
@@ -49,15 +50,14 @@ export const useUserRole = () => {
     
     fetchUserRole();
     
-    // Also listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    // También escuchar cambios en el estado de autenticación
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         setUserId(session.user.id);
         fetchUserRole();
       } else {
-        // For development, use admin role even if not authenticated
-        console.log('Auth state changed to no session, using default admin role');
-        setUserId('dev-user-id');
+        setUserId(null);
+        setRole(null);
         setIsLoading(false);
       }
     });
