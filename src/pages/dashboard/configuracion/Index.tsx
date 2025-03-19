@@ -9,14 +9,20 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 export function ConfiguracionPage() {
   const [activeTab, setActiveTab] = useState("perfil");
-  const { isAdmin, userName, userEmail, isLoading: userLoading } = useUserRole();
+  const { isAdmin, userName, userEmail, isLoading: userLoading, userId } = useUserRole();
   const { toast } = useToast();
+
+  console.log("ConfiguracionPage - userId:", userId);
+  console.log("ConfiguracionPage - Admin status:", isAdmin());
+  console.log("ConfiguracionPage - userLoading:", userLoading);
 
   // Set default tab based on user role
   useEffect(() => {
+    console.log("Setting default tab based on admin status:", isAdmin());
     if (isAdmin()) {
       setActiveTab("perfil");
     } else {
@@ -71,10 +77,16 @@ export function ConfiguracionPage() {
             <h1 className="text-2xl font-bold text-slate-900">Configuración</h1>
             <p className="text-slate-600 mt-1">Cargando configuración...</p>
           </div>
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
         </div>
       </DashboardLayout>
     );
   }
+
+  const adminStatus = isAdmin();
+  console.log("Rendering configuration with admin status:", adminStatus);
 
   return (
     <DashboardLayout>
@@ -84,11 +96,14 @@ export function ConfiguracionPage() {
           <p className="text-slate-600 mt-1">
             Administra la configuración de tu cuenta y empresa
           </p>
+          <p className="text-xs text-slate-500 mt-1">
+            Estado admin: {adminStatus ? "Sí" : "No"}
+          </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="mb-6">
-            {isAdmin() && (
+            {adminStatus && (
               <>
                 <TabsTrigger value="perfil">Perfil de Empresa</TabsTrigger>
                 <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
@@ -98,7 +113,7 @@ export function ConfiguracionPage() {
             <TabsTrigger value="cuenta">Mi Cuenta</TabsTrigger>
           </TabsList>
 
-          {isAdmin() && (
+          {adminStatus && (
             <>
               <TabsContent value="perfil" className="space-y-6">
                 <CompanyProfileForm />

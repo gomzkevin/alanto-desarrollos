@@ -36,12 +36,14 @@ export const useUserRole = () => {
         }
         
         if (!user) {
+          console.log('No authenticated user found');
           setIsLoading(false);
           return;
         }
         
         setUserId(user.id);
         setUserEmail(user.email);
+        console.log('Auth user found:', user.id, user.email);
         
         // Get the user's role from the usuarios table
         const { data: userData, error: userError } = await supabase
@@ -52,6 +54,7 @@ export const useUserRole = () => {
         
         if (userError) {
           console.error('Error fetching user data:', userError);
+          // If this is the first login, we may need to create the user record
           setIsLoading(false);
           return;
         }
@@ -60,8 +63,15 @@ export const useUserRole = () => {
           console.log('User data loaded:', userData);
           setUserRole(userData.rol);
           setUserName(userData.nombre);
-          setIsAdmin(userData.is_company_admin || userData.rol === 'admin');
+          
+          // Set isAdmin based on is_company_admin flag or role being 'admin'
+          const adminStatus = userData.is_company_admin || userData.rol === 'admin';
+          console.log('Admin status:', adminStatus);
+          setIsAdmin(adminStatus);
+          
           setEmpresaId(userData.empresa_id);
+        } else {
+          console.log('No user data found in usuarios table');
         }
       } catch (error) {
         console.error('Error in fetchUserData:', error);
@@ -96,7 +106,12 @@ export const useUserRole = () => {
           console.log('User data from auth change:', data);
           setUserRole(data.rol);
           setUserName(data.nombre);
-          setIsAdmin(data.is_company_admin || data.rol === 'admin');
+          
+          // Set isAdmin based on is_company_admin flag or role being 'admin'
+          const adminStatus = data.is_company_admin || data.rol === 'admin';
+          console.log('Admin status after auth change:', adminStatus);
+          setIsAdmin(adminStatus);
+          
           setEmpresaId(data.empresa_id);
         }
       } else if (event === 'SIGNED_OUT') {

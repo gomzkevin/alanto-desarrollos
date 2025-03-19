@@ -27,26 +27,20 @@ const companyFormSchema = z.object({
   telefono: z.string().optional(),
   email: z.string().email({
     message: "Ingrese un correo electrónico válido.",
-  }).optional(),
-  sitio_web: z.string().optional().transform(val => {
-    // If empty, return as is
-    if (!val) return val;
-    
-    // If it doesn't start with http:// or https://, add https://
-    if (!val.match(/^https?:\/\//i)) {
-      return `https://${val}`;
-    }
-    return val;
-  }),
+  }).optional().or(z.literal('')),
+  sitio_web: z.string().optional().or(z.literal('')),
 });
 
 type CompanyFormValues = z.infer<typeof companyFormSchema>;
 
 export function CompanyProfileForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const { isAdmin, empresaId } = useUserRole();
-  const [hasSubscription, setHasSubscription] = useState(true); // Default to true for testing
+  const { isAdmin, empresaId, userId } = useUserRole();
   const [companyInfo, setCompanyInfo] = useState<CompanyFormValues | null>(null);
+
+  console.log("CompanyProfileForm - Admin status:", isAdmin());
+  console.log("CompanyProfileForm - empresa_id:", empresaId);
+  console.log("CompanyProfileForm - userId:", userId);
 
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
@@ -59,41 +53,6 @@ export function CompanyProfileForm() {
       sitio_web: "",
     },
   });
-
-  // Check if user has an active subscription
-  useEffect(() => {
-    const checkSubscription = async () => {
-      try {
-        console.log("Checking subscription status...");
-        const { data: authData } = await supabase.auth.getSession();
-        if (!authData.session) {
-          console.log("No active session found");
-          return;
-        }
-
-        const { data: subscription, error } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', authData.session.user.id)
-          .eq('status', 'active')
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          console.error("Error checking subscription:", error);
-        }
-
-        // For development, we'll assume there's a subscription if none exists
-        setHasSubscription(true); // Set to true for now to enable saving
-        console.log("Subscription status:", subscription ? "Active" : "None, but enabling anyway for development");
-      } catch (error) {
-        console.error("Error checking subscription:", error);
-        // For development, default to true
-        setHasSubscription(true);
-      }
-    };
-    
-    checkSubscription();
-  }, []);
 
   // Fetch company information
   useEffect(() => {
@@ -135,13 +94,12 @@ export function CompanyProfileForm() {
       }
     };
 
-    if (isAdmin()) {
-      fetchCompanyInfo();
-    }
-  }, [form, isAdmin, empresaId]);
+    fetchCompanyInfo();
+  }, [form, empresaId]);
 
   async function onSubmit(values: CompanyFormValues) {
     if (!isAdmin()) {
+      console.error("Access denied: User is not an admin");
       toast({
         title: "Acceso denegado",
         description: "Solo los administradores pueden actualizar la información de la empresa.",
@@ -150,15 +108,10 @@ export function CompanyProfileForm() {
       return;
     }
 
-    // For development, we'll skip the subscription check
-    // if (!hasSubscription) {
-    //   toast({
-    //     title: "Suscripción requerida",
-    //     description: "Necesita una suscripción activa para actualizar la información de la empresa.",
-    //     variant: "destructive",
-    //   });
-    //   return;
-    // }
+    // Clean up sitio_web value - add https:// if missing and not empty
+    if (values.sitio_web && !values.sitio_web.match(/^https?:\/\//i)) {
+      values.sitio_web = `https://${values.sitio_web}`;
+    }
 
     try {
       setIsLoading(true);
@@ -192,19 +145,6 @@ export function CompanyProfileForm() {
     } finally {
       setIsLoading(false);
     }
-  }
-
-  if (!isAdmin()) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Perfil de Empresa</CardTitle>
-          <CardDescription>
-            No tienes permisos para gestionar el perfil de la empresa.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
   }
 
   return (
