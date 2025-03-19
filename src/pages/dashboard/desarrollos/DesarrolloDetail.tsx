@@ -353,8 +353,16 @@ const DesarrolloDetailPage = () => {
                   <p className="text-slate-600">
                     {prototipos.length} {prototipos.length === 1 ? 'prototipo' : 'prototipos'} en este desarrollo
                     {puedeCrearPrototipos() && (
-                      <span className="ml-1 text-indigo-600">
+                      <span className="ml-1 text-indigo-600 flex items-center mt-1">
                         (Aún puedes crear prototipos para {unidadesDisponiblesParaPrototipos()} unidades más)
+                        <AdminResourceDialog 
+                          resourceType="prototipos" 
+                          buttonText="Crear" 
+                          buttonIcon={<PlusCircle className="h-3 w-3" />}
+                          buttonVariant="link"
+                          onSuccess={refetchPrototipos}
+                          desarrolloId={id}
+                        />
                       </span>
                     )}
                   </p>
