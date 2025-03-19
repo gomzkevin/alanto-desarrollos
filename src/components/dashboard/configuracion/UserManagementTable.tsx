@@ -45,6 +45,7 @@ import { MoreHorizontal, Plus, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { signUpWithEmailPassword } from "@/services/authService";
 
 type User = {
   id: string;
@@ -53,6 +54,7 @@ type User = {
   rol: string;
   activo: boolean;
   fecha_creacion: string;
+  empresa_id?: number;
 };
 
 export function UserManagementTable() {
@@ -67,7 +69,7 @@ export function UserManagementTable() {
   });
   const [activeSubscription, setActiveSubscription] = useState<any>(null);
   const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(true);
-  const { isAdmin, userId } = useUserRole();
+  const { isAdmin, userId, empresaId } = useUserRole();
 
   // Fetch subscription status
   useEffect(() => {
@@ -98,20 +100,32 @@ export function UserManagementTable() {
     checkSubscription();
   }, [userId]);
 
-  // Load users
+  // Load users from the same empresa as the current user
   useEffect(() => {
     const fetchUsers = async () => {
+      if (!userId) return;
+      
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
+        console.log("Fetching users for empresa_id:", empresaId);
+        
+        let query = supabase
           .from('usuarios')
           .select('*')
           .order('fecha_creacion', { ascending: false });
+          
+        // If empresaId exists, filter by it
+        if (empresaId) {
+          query = query.eq('empresa_id', empresaId);
+        }
+        
+        const { data, error } = await query;
 
         if (error) {
           throw error;
         }
 
+        console.log("Users fetched:", data?.length);
         setUsers(data || []);
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -125,8 +139,10 @@ export function UserManagementTable() {
       }
     };
 
-    fetchUsers();
-  }, []);
+    if (userId) {
+      fetchUsers();
+    }
+  }, [userId, empresaId]);
 
   const handleNewUserChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -165,31 +181,59 @@ export function UserManagementTable() {
     try {
       setIsLoading(true);
 
-      // First create the auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // First, try to register the user using our auth service
+      console.log("Creating user with email:", newUser.email);
+      const authResult = await signUpWithEmailPassword(newUser.email, newUser.password);
+
+      if (!authResult.success) {
+        throw new Error(authResult.error || "No se pudo crear el usuario");
+      }
+
+      let authUserId;
+      
+      if (authResult.user) {
+        authUserId = authResult.user.id;
+        console.log("User created with auth ID:", authUserId);
+      } else if (authResult.autoSignIn) {
+        // User was auto-signed in (development)
+        const { data } = await supabase.auth.getUser();
+        authUserId = data.user?.id;
+        console.log("User auto-signed in with ID:", authUserId);
+      } else {
+        // For development, try to get the user ID by email
+        const { data: userData, error: userError } = await supabase
+          .from('usuarios')
+          .select('auth_id')
+          .eq('email', newUser.email)
+          .maybeSingle();
+          
+        if (!userError && userData?.auth_id) {
+          authUserId = userData.auth_id;
+          console.log("Found existing user with email:", authUserId);
+        } else {
+          console.log("Could not find user ID, but will continue with user creation");
+        }
+      }
+      
+      // Then create or update the user record in our usuarios table
+      const userData = {
+        auth_id: authUserId,
+        nombre: newUser.nombre,
         email: newUser.email,
-        password: newUser.password,
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
-      if (!authData.user) {
-        throw new Error("No se pudo crear el usuario en el sistema de autenticación");
-      }
-
-      // Then create the user record in our usuarios table
+        rol: newUser.rol,
+        empresa_id: empresaId,
+      };
+      
+      console.log("Creating user record with data:", userData);
+      
       const { error: userError } = await supabase
         .from('usuarios')
-        .insert({
-          auth_id: authData.user.id,
-          nombre: newUser.nombre,
-          email: newUser.email,
-          rol: newUser.rol,
-        });
+        .upsert(userData)
+        .select()
+        .single();
 
       if (userError) {
+        console.error("Error creating user record:", userError);
         throw userError;
       }
 
@@ -285,7 +329,7 @@ export function UserManagementTable() {
 
   const canAddMoreUsers = () => {
     if (!activeSubscription?.subscription_plans?.features?.max_vendedores) {
-      return false;
+      return true; // Si no hay límite establecido, permitir agregar
     }
     
     const vendedorCount = users.filter(u => u.rol === 'vendedor').length;
@@ -318,7 +362,7 @@ export function UserManagementTable() {
           <DialogTrigger asChild>
             <Button
               size="sm"
-              disabled={isLoading || !activeSubscription || !canAddMoreUsers()}
+              disabled={isLoading || (activeSubscription?.subscription_plans?.features?.max_vendedores && !canAddMoreUsers())}
             >
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Usuario
@@ -453,7 +497,6 @@ export function UserManagementTable() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem 
                             onClick={() => toggleUserStatus(user.id, user.activo)}
-                            disabled={!activeSubscription}
                           >
                             {user.activo ? 'Desactivar' : 'Activar'} Usuario
                           </DropdownMenuItem>

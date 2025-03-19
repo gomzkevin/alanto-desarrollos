@@ -57,6 +57,7 @@ export const useUserRole = () => {
         }
         
         if (userData) {
+          console.log('User data loaded:', userData);
           setUserRole(userData.rol);
           setUserName(userData.nombre);
           setIsAdmin(userData.is_company_admin || userData.rol === 'admin');
@@ -78,6 +79,8 @@ export const useUserRole = () => {
     
     // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
       if (event === 'SIGNED_IN' && session?.user) {
         // User signed in, fetch their data
         setUserId(session.user.id);
@@ -90,6 +93,7 @@ export const useUserRole = () => {
           .single();
         
         if (!error && data) {
+          console.log('User data from auth change:', data);
           setUserRole(data.rol);
           setUserName(data.nombre);
           setIsAdmin(data.is_company_admin || data.rol === 'admin');

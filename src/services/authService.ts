@@ -5,14 +5,14 @@ import { toast } from "@/components/ui/use-toast";
 /**
  * Ensures the authenticated user exists in the usuarios table
  */
-export const ensureUserInDatabase = async (userId: string, userEmail: string): Promise<boolean> => {
+export const ensureUserInDatabase = async (userId: string, userEmail: string, empresaId?: number): Promise<boolean> => {
   try {
     console.log('Verificando si el usuario existe en la tabla usuarios:', userId);
     
     // First check if user already exists in the table
     const { data, error } = await supabase
       .from('usuarios')
-      .select('id, email')
+      .select('id, email, empresa_id')
       .eq('auth_id', userId)
       .single();
     
@@ -30,6 +30,7 @@ export const ensureUserInDatabase = async (userId: string, userEmail: string): P
             email: userEmail,
             nombre: nombre,
             rol: 'admin', // Default for development
+            empresa_id: empresaId || null
           })
           .select();
         
@@ -44,6 +45,20 @@ export const ensureUserInDatabase = async (userId: string, userEmail: string): P
       
       console.error('Error al verificar usuario en la tabla:', error);
       return false;
+    }
+    
+    // If user exists but doesn't have empresa_id and we have one, update it
+    if (data && empresaId && !data.empresa_id) {
+      const { error: updateError } = await supabase
+        .from('usuarios')
+        .update({ empresa_id: empresaId })
+        .eq('auth_id', userId);
+        
+      if (updateError) {
+        console.error('Error al actualizar empresa_id del usuario:', updateError);
+      } else {
+        console.log('Empresa_id actualizado para el usuario:', userId);
+      }
     }
     
     console.log('Usuario ya existe en tabla usuarios:', data);
@@ -117,8 +132,10 @@ export const signInWithEmailPassword = async (email: string, password: string) =
 /**
  * Signs up with email and password
  */
-export const signUpWithEmailPassword = async (email: string, password: string) => {
+export const signUpWithEmailPassword = async (email: string, password: string, empresaId?: number) => {
   try {
+    console.log("Iniciando registro con email:", email);
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -131,19 +148,28 @@ export const signUpWithEmailPassword = async (email: string, password: string) =
     });
 
     if (error) {
+      console.error("Error en registro:", error);
       return { success: false, error: error.message };
     } 
     
-    // In development mode, try to sign in immediately after registration
+    console.log("Usuario registrado en auth:", data.user?.id);
+    
+    // En modo desarrollo, intentar iniciar sesión inmediatamente después del registro
     try {
+      if (data.user) {
+        // Ensure user exists in the usuarios table with empresa_id
+        await ensureUserInDatabase(data.user.id, data.user.email || email, empresaId);
+        return { success: true, user: data.user };
+      }
+      
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (!signInError && signInData.user) {
-        // Ensure user exists in the usuarios table
-        await ensureUserInDatabase(signInData.user.id, signInData.user.email || email);
+        // Ensure user exists in the usuarios table with empresa_id
+        await ensureUserInDatabase(signInData.user.id, signInData.user.email || email, empresaId);
         return { success: true, user: signInData.user, autoSignIn: true };
       }
     } catch (signInError) {
