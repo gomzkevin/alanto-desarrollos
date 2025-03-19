@@ -46,21 +46,25 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     checkAuth();
   }, [navigate]);
   
-  // Si está cargando, mostrar un indicador de carga
-  if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Cargando...</div>;
-  }
-  
-  // Si no hay userId después de cargar, redirigir a la página de autenticación
-  if (!isLoading && !userId) {
-    navigate('/auth');
-    return null;
-  }
-  
   // Cerrar el sidebar en versión móvil cuando cambia la ruta
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [location.pathname]);
+
+  // Importante: Mover esta lógica fuera de la renderización condicional
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center">Cargando...</div>;
+  }
+  
+  // Importante: Mover esta lógica fuera de la renderización condicional
+  if (!userId) {
+    // useEffect para redirigir al usuario
+    useEffect(() => {
+      navigate('/auth');
+    }, [navigate]);
+    
+    return <div className="flex h-screen items-center justify-center">Redirigiendo...</div>;
+  }
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3, current: location.pathname === '/dashboard' },
