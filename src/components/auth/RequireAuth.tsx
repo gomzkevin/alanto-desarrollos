@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface RequireAuthProps {
   children: JSX.Element;
@@ -12,15 +13,29 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const location = useLocation();
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setAuthenticated(!!session);
+        
+        if (!session) {
+          toast({
+            title: "Sesión expirada",
+            description: "Por favor inicia sesión para continuar",
+            variant: "destructive"
+          });
+        }
       } catch (error) {
         console.error('Error checking authentication:', error);
         setAuthenticated(false);
+        toast({
+          title: "Error de autenticación",
+          description: "Hubo un problema al verificar tu sesión",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
@@ -36,7 +51,7 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [toast]);
 
   if (loading) {
     return (

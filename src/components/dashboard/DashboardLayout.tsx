@@ -1,7 +1,7 @@
 
 import { useEffect, ReactNode } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { Sidebar } from '@/components/ui/sidebar';
+import { Sidebar, SidebarProvider } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,14 +41,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }, [isLoading, role, navigate, toast]);
 
   return (
-    <main className="min-h-screen">
-      <Sidebar>
-        <div className="absolute top-4 right-4">
-          <UserMenu />
-        </div>
-      </Sidebar>
-      {children || <Outlet />}
-    </main>
+    <SidebarProvider>
+      <main className="min-h-screen">
+        <Sidebar>
+          <div className="absolute top-4 right-4">
+            <UserMenu />
+          </div>
+        </Sidebar>
+        {children || <Outlet />}
+      </main>
+    </SidebarProvider>
   );
 };
 

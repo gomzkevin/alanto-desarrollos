@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import RequireAuth from './components/auth/RequireAuth';
 
 // Public pages
@@ -32,6 +33,9 @@ import ProfilePage from './pages/dashboard/profile/Index';
 import './App.css';
 import { Toaster } from './components/ui/toaster';
 
+// Crear una instancia del cliente de consulta
+const queryClient = new QueryClient();
+
 function App() {
   // Check authentication status on app load
   useEffect(() => {
@@ -44,47 +48,49 @@ function App() {
   }, []);
 
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<IndexPage />} />
-          
-          {/* Auth routes */}
-          <Route path="/auth" element={<AuthIndex />} />
-          <Route path="/auth/login" element={<Login />} />
-          <Route path="/auth/signup" element={<Signup />} />
-          <Route path="/auth/reset-password" element={<ResetPassword />} />
-          <Route path="/auth/update-password" element={<UpdatePassword />} />
-          
-          {/* Protected dashboard routes */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <RequireAuth>
-                <DashboardLayout />
-              </RequireAuth>
-            }
-          >
-            <Route index element={<DashboardIndex />} />
-            <Route path="desarrollos" element={<DesarrollosIndex />} />
-            <Route path="desarrollos/:id" element={<DesarrolloDetail />} />
-            <Route path="prototipos/:id" element={<PrototiposIndex />} />
-            <Route path="propiedades" element={<PropiedadesIndex />} />
-            <Route path="leads" element={<LeadsIndex />} />
-            <Route path="cotizaciones" element={<CotizacionesIndex />} />
-            <Route path="cotizaciones/nueva" element={<NuevaCotizacion />} />
-            <Route path="configuracion" element={<ConfiguracionIndex />} />
-            <Route path="proyecciones" element={<ProyeccionesIndex />} />
-            <Route path="profile" element={<ProfilePage />} />
-          </Route>
-          
-          {/* 404 route */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-        <Toaster />
-      </Router>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<IndexPage />} />
+            
+            {/* Auth routes */}
+            <Route path="/auth" element={<AuthIndex />} />
+            <Route path="/auth/login" element={<Login />} />
+            <Route path="/auth/signup" element={<Signup />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
+            <Route path="/auth/update-password" element={<UpdatePassword />} />
+            
+            {/* Protected dashboard routes */}
+            <Route 
+              path="/dashboard" 
+              element={
+                <RequireAuth>
+                  <DashboardLayout />
+                </RequireAuth>
+              }
+            >
+              <Route index element={<DashboardIndex />} />
+              <Route path="desarrollos" element={<DesarrollosIndex />} />
+              <Route path="desarrollos/:id" element={<DesarrolloDetail />} />
+              <Route path="prototipos/:id" element={<PrototiposIndex />} />
+              <Route path="propiedades" element={<PropiedadesIndex />} />
+              <Route path="leads" element={<LeadsIndex />} />
+              <Route path="cotizaciones" element={<CotizacionesIndex />} />
+              <Route path="cotizaciones/nueva" element={<NuevaCotizacion />} />
+              <Route path="configuracion" element={<ConfiguracionIndex />} />
+              <Route path="proyecciones" element={<ProyeccionesIndex />} />
+              <Route path="profile" element={<ProfilePage />} />
+            </Route>
+            
+            {/* 404 route */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+          <Toaster />
+        </Router>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
