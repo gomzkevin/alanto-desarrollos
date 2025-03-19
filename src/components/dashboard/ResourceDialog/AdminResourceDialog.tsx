@@ -13,7 +13,10 @@ interface AdminResourceDialogProps {
   desarrolloId?: string;
   prototipo_id?: string;
   lead_id?: string;
-  resourceId?: string; // Added resourceId prop
+  resourceId?: string;
+  open?: boolean;
+  onClose?: () => void;
+  defaultValues?: Record<string, any>; // Added defaultValues prop
 }
 
 const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
@@ -25,16 +28,22 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
   desarrolloId,
   prototipo_id,
   lead_id,
-  resourceId // Added resourceId param
+  resourceId,
+  open,
+  onClose,
+  defaultValues
 }) => {
-  const [open, setOpen] = React.useState(false);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
 
   const handleOpen = () => {
-    setOpen(true);
+    setDialogOpen(true);
   };
 
   const handleClose = () => {
-    setOpen(false);
+    setDialogOpen(false);
+    if (onClose) {
+      onClose();
+    }
   };
 
   const handleSuccess = () => {
@@ -44,25 +53,32 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
     handleClose();
   };
 
+  // Use provided open state if it exists, otherwise use internal state
+  const isOpen = open !== undefined ? open : dialogOpen;
+
   return (
     <>
-      <Button 
-        variant={buttonVariant} 
-        onClick={handleOpen}
-      >
-        {buttonIcon}
-        {buttonText || `Nuevo ${resourceType.slice(0, -1)}`}
-      </Button>
+      {/* Only render button if open is not controlled externally */}
+      {open === undefined && (
+        <Button 
+          variant={buttonVariant} 
+          onClick={handleOpen}
+        >
+          {buttonIcon}
+          {buttonText || `Nuevo ${resourceType.slice(0, -1)}`}
+        </Button>
+      )}
 
       <ResourceDialog
-        open={open}
+        open={isOpen}
         onClose={handleClose}
         resourceType={resourceType}
         onSuccess={handleSuccess}
         desarrolloId={desarrolloId}
         prototipo_id={prototipo_id}
         lead_id={lead_id}
-        resourceId={resourceId} // Pass resourceId to ResourceDialog
+        resourceId={resourceId}
+        defaultValues={defaultValues} // Pass defaultValues to ResourceDialog
       />
     </>
   );

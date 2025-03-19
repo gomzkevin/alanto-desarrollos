@@ -1,22 +1,24 @@
-
 import { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  ResourceType, 
-  FormValues, 
-  DesarrolloResource, 
-  PrototipoResource, 
-  LeadResource, 
-  CotizacionResource, 
-  FieldDefinition,
-  FieldType
-} from './types';
-import useLeads, { LEAD_STATUS_OPTIONS, LEAD_SUBSTATUS_OPTIONS, LEAD_ORIGIN_OPTIONS } from '@/hooks/useLeads';
-import useDesarrollos from '@/hooks/useDesarrollos';
-import usePrototipos from '@/hooks/usePrototipos';
+import { ResourceType, FormValues } from './types';
+import { useToast } from '@/hooks/use-toast';
+import { Json } from '@/integrations/supabase/types';
 
-export default function useResourceData({
+interface UseResourceDataProps {
+  resourceType: ResourceType;
+  resourceId?: string;
+  desarrolloId?: string;
+  lead_id?: string;
+  selectedDesarrolloId?: string | null;
+  selectedStatus?: string | null;
+  usarFiniquito?: boolean;
+  selectedAmenities?: string[];
+  onStatusChange?: (status: string) => void;
+  onAmenitiesChange?: (amenities: string[]) => void;
+  defaultValues?: Record<string, any>; // Add defaultValues prop
+}
+
+const useResourceData = ({
   resourceType,
   resourceId,
   desarrolloId,
@@ -24,165 +26,209 @@ export default function useResourceData({
   selectedDesarrolloId,
   selectedStatus,
   usarFiniquito,
-  selectedAmenities,
+  selectedAmenities = [],
   onStatusChange,
-  onAmenitiesChange
-}: {
-  resourceType: ResourceType;
-  resourceId?: string;
-  desarrolloId?: string;
-  lead_id?: string;
-  selectedDesarrolloId: string | null;
-  selectedStatus: string | null;
-  usarFiniquito: boolean;
-  selectedAmenities: string[];
-  onStatusChange: (status: string) => void;
-  onAmenitiesChange: (amenities: string[]) => void;
-}) {
+  onAmenitiesChange,
+  defaultValues = {} // Initialize with empty object
+}: UseResourceDataProps) => {
   const { toast } = useToast();
   const [resource, setResource] = useState<FormValues | null>(null);
-  const [fields, setFields] = useState<FieldDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [initialFetchComplete, setInitialFetchComplete] = useState(false);
-  const [prevStatus, setPrevStatus] = useState<string | null>(null);
+  const [isUsarFiniquito, setUsarFiniquito] = useState(false);
 
-  const { leads } = useLeads();
-  const { desarrollos } = useDesarrollos();
-  const { prototipos } = usePrototipos({ 
-    desarrolloId: selectedDesarrolloId 
-  });
-
-  // Fetch resource data on initial load
   useEffect(() => {
-    const fetchResource = async () => {
+    const loadResource = async () => {
       setIsLoading(true);
-      if (resourceId) {
-        let query;
-        
-        if (resourceType === 'desarrollos') {
-          query = supabase
-            .from('desarrollos')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-        } else if (resourceType === 'prototipos') {
-          query = supabase
-            .from('prototipos')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-        } else if (resourceType === 'leads') {
-          query = supabase
-            .from('leads')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-        } else if (resourceType === 'cotizaciones') {
-          query = supabase
-            .from('cotizaciones')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-        }
-        
-        if (query) {
-          const { data, error } = await query;
-
+      
+      try {
+        if (resourceId) {
+          // Fetch existing resource
+          const { data, error } = await fetchResource();
+          
           if (error) {
-            console.error('Error fetching resource:', error);
+            console.error('Error loading resource:', error);
             toast({
               title: 'Error',
-              description: `No se pudo cargar el recurso: ${error.message}`,
+              description: 'No se pudo cargar el recurso',
               variant: 'destructive',
             });
-          } else {
-            setResource(data as FormValues);
+            return;
+          }
+          
+          if (data) {
+            const resource = data;
+            setResource(resource);
             
-            if (resourceType === 'desarrollos' && data.amenidades) {
+            // Handle specific resource type setup
+            if (resourceType === 'leads' && resource.estado) {
+              if (onStatusChange) {
+                onStatusChange(resource.estado);
+              }
+            } else if (resourceType === 'desarrollos' && resource.amenidades) {
               try {
-                const parsedAmenities = typeof data.amenidades === 'string' 
-                  ? JSON.parse(data.amenidades) 
-                  : data.amenidades || [];
-                onAmenitiesChange(parsedAmenities);
-              } catch (e) {
-                console.error('Error parsing amenities:', e);
-                onAmenitiesChange([]);
+                let amenidades = [];
+                if (typeof resource.amenidades === 'string') {
+                  amenidades = JSON.parse(resource.amenidades);
+                } else if (Array.isArray(resource.amenidades)) {
+                  amenidades = resource.amenidades;
+                } else if (typeof resource.amenidades === 'object' && resource.amenidades !== null) {
+                  const jsonObj = resource.amenidades as Json;
+                  amenidades = Object.values(jsonObj).map(val => String(val));
+                }
+                
+                if (onAmenitiesChange) {
+                  onAmenitiesChange(amenidades);
+                }
+              } catch (error) {
+                console.error('Error parsing amenidades:', error);
+              }
+            } else if (resourceType === 'cotizaciones') {
+              if (resource.usar_finiquito !== undefined) {
+                setUsarFiniquito(resource.usar_finiquito);
               }
             }
-            
-            if (resourceType === 'leads' && data.estado) {
-              onStatusChange(data.estado);
-              setPrevStatus(data.estado);
-            }
           }
+        } else {
+          // Create new empty resource with default values
+          const initialValues = getInitialValues();
+          
+          // Merge with provided defaultValues
+          const mergedValues = {
+            ...initialValues,
+            ...defaultValues // Apply defaultValues over initial values
+          };
+          
+          setResource(mergedValues);
         }
-      } else {
-        if (resourceType === 'prototipos' && desarrolloId) {
-          setResource({
-            desarrollo_id: desarrolloId,
-            nombre: '',
-            tipo: '',
-            precio: 0,
-            total_unidades: 0,
-            unidades_disponibles: 0,
-            unidades_vendidas: 0,
-            unidades_con_anticipo: 0
-          } as PrototipoResource);
-        } else if (resourceType === 'desarrollos') {
-          setResource({
-            nombre: '',
-            ubicacion: '',
-            total_unidades: 0,
-            unidades_disponibles: 0,
-            amenidades: []
-          } as DesarrolloResource);
-        } else if (resourceType === 'leads') {
-          setResource({
-            nombre: '',
-            email: '',
-            telefono: '',
-            estado: 'nuevo',
-            subestado: 'sin_contactar'
-          } as LeadResource);
-          onStatusChange('nuevo');
-          setPrevStatus('nuevo');
-        } else if (resourceType === 'cotizaciones') {
-          setResource({
-            lead_id: lead_id || '',
-            desarrollo_id: selectedDesarrolloId || '',
-            prototipo_id: '',
-            monto_anticipo: 0,
-            numero_pagos: 0
-          } as CotizacionResource);
-        }
+      } catch (error) {
+        console.error('Error in loadResource:', error);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-      setInitialFetchComplete(true);
     };
+    
+    loadResource();
+  }, [resourceId, resourceType, desarrolloId, lead_id]);
 
-    fetchResource();
-  }, [resourceId, resourceType, toast, desarrolloId, selectedDesarrolloId, lead_id, onStatusChange, onAmenitiesChange]);
-
-  // Handle changes to status for leads
-  useEffect(() => {
-    if (initialFetchComplete && resourceType === 'leads' && selectedStatus && prevStatus !== selectedStatus) {
-      setPrevStatus(selectedStatus);
-      
-      setResource(prev => {
-        if (!prev) return prev;
-        
-        console.log("Updating status from", prevStatus, "to", selectedStatus);
-        console.log("Current resource data:", prev);
-        
-        // Preserve all existing form data, only update estado and reset subestado
-        return {
-          ...prev,
-          estado: selectedStatus,
-          subestado: '' // Reset subestado when estado changes
+  // Function to get initial values for a new resource
+  const getInitialValues = () => {
+    let initialValues: FormValues = {};
+    
+    switch (resourceType) {
+      case 'desarrollos':
+        initialValues = {
+          nombre: '',
+          ubicacion: '',
+          total_unidades: 0,
+          unidades_disponibles: 0,
+          avance_porcentaje: 0,
+          descripcion: '',
+          moneda: 'MXN',
         };
-      });
+        break;
+      case 'prototipos':
+        initialValues = {
+          nombre: '',
+          desarrollo_id: desarrolloId || '',
+          tipo: '',
+          precio: 0,
+          superficie: 0,
+          habitaciones: 1,
+          baños: 1,
+          estacionamientos: 1,
+          total_unidades: 0,
+          unidades_disponibles: 0,
+          descripcion: '',
+        };
+        break;
+      case 'leads':
+        initialValues = {
+          nombre: '',
+          email: '',
+          telefono: '',
+          estado: selectedStatus || 'nuevo',
+          subestado: 'sin_contactar',
+          origen: '',
+          interes_en: '',
+          notas: '',
+        };
+        break;
+      case 'cotizaciones':
+        initialValues = {
+          desarrollo_id: desarrolloId || selectedDesarrolloId || '',
+          lead_id: lead_id || '',
+          prototipo_id: '',
+          monto_anticipo: 0,
+          usar_finiquito: usarFiniquito,
+          numero_pagos: 12,
+          notas: '',
+        };
+        break;
+      case 'unidades':
+        initialValues = {
+          prototipo_id: '',
+          numero: '',
+          estado: 'disponible',
+          nivel: '',
+        };
+        break;
+      default:
+        break;
     }
-  }, [selectedStatus, initialFetchComplete, resourceType, prevStatus]);
+    
+    return initialValues;
+  };
 
-  return { resource, setResource, fields, isLoading };
-}
+  // Function to fetch resource by ID
+  const fetchResource = async () => {
+    try {
+      let query;
+      
+      if (resourceType === 'desarrollos') {
+        query = supabase
+          .from('desarrollos')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      } else if (resourceType === 'prototipos') {
+        query = supabase
+          .from('prototipos')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      } else if (resourceType === 'leads') {
+        query = supabase
+          .from('leads')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      } else if (resourceType === 'cotizaciones') {
+        query = supabase
+          .from('cotizaciones')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      } else if (resourceType === 'unidades') {
+        query = supabase
+          .from('unidades')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      }
+      
+      return await query;
+    } catch (error) {
+      console.error('Error fetching resource:', error);
+      return { data: null, error: error };
+    }
+  };
+  
+  return {
+    resource,
+    setResource,
+    isLoading,
+    fields: [] // This is typically populated by useResourceFields, which is used elsewhere
+  };
+};
+
+export default useResourceData;

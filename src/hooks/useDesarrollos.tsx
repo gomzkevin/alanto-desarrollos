@@ -15,7 +15,7 @@ export type ExtendedDesarrollo = Desarrollo & {
 type FetchDesarrollosOptions = {
   limit?: number;
   withPrototipos?: boolean;
-  userId?: string | null; // New option to filter by user ID
+  userId?: string | null; // Option to filter by user ID
 };
 
 export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
@@ -29,7 +29,7 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       // Build the select query
       let query = supabase.from('desarrollos').select('*');
       
-      // Filter by user ID if provided
+      // Filter by user ID if provided - Fixed the infinite type instantiation issue
       if (userId) {
         query = query.eq('user_id', userId);
       }

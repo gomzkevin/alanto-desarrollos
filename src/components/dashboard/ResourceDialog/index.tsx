@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { ResourceType, FormValues } from './types';
@@ -18,6 +19,7 @@ interface ResourceDialogProps {
   buttonText?: string;
   buttonIcon?: React.ReactNode;
   buttonVariant?: string;
+  defaultValues?: Record<string, any>; // Added defaultValues prop
 }
 
 const ResourceDialog: React.FC<ResourceDialogProps> = ({
@@ -28,7 +30,8 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
   onSuccess,
   desarrolloId,
   lead_id,
-  prototipo_id
+  prototipo_id,
+  defaultValues
 }) => {
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [isExistingClient, setIsExistingClient] = useState(true);
@@ -54,7 +57,8 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     usarFiniquito,
     selectedAmenities,
     onStatusChange: setSelectedStatus,
-    onAmenitiesChange: setSelectedAmenities
+    onAmenitiesChange: setSelectedAmenities,
+    defaultValues // Pass defaultValues to useResourceData
   });
 
   const fields = useResourceFields(resourceType, selectedStatus);
