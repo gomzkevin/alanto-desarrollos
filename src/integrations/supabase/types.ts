@@ -455,6 +455,99 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          features: Json | null
+          id: string
+          interval: string
+          name: string
+          price: number
+          stripe_price_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          interval: string
+          name: string
+          price: number
+          stripe_price_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          interval?: string
+          name?: string
+          price?: number
+          stripe_price_id?: string | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          empresa_id: number | null
+          id: string
+          plan_id: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          empresa_id?: number | null
+          id?: string
+          plan_id?: string | null
+          status: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          empresa_id?: number | null
+          id?: string
+          plan_id?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa_info"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unidades: {
         Row: {
           comprador_id: string | null
@@ -530,6 +623,7 @@ export type Database = {
           empresa_id: number | null
           fecha_creacion: string | null
           id: string
+          is_company_admin: boolean | null
           nombre: string
           rol: string | null
         }
@@ -540,6 +634,7 @@ export type Database = {
           empresa_id?: number | null
           fecha_creacion?: string | null
           id?: string
+          is_company_admin?: boolean | null
           nombre: string
           rol?: string | null
         }
@@ -550,6 +645,7 @@ export type Database = {
           empresa_id?: number | null
           fecha_creacion?: string | null
           id?: string
+          is_company_admin?: boolean | null
           nombre?: string
           rol?: string | null
         }
@@ -568,6 +664,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_active_subscription: {
+        Args: {
+          user_uuid: string
+        }
+        Returns: boolean
+      }
       has_column: {
         Args: {
           table_name: string

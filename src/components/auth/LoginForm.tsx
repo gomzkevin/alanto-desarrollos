@@ -30,6 +30,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           title: "Inicio de sesión exitoso",
           description: "Bienvenido de nuevo",
         });
+        
+        // After successful login, check if the user has a company and subscription
+        // For now, just redirect to dashboard
         navigate("/dashboard");
         if (onSuccess) onSuccess();
       } else {

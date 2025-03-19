@@ -6,21 +6,41 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isAuthenticated } from "@/lib/supabase";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { SignupForm } from "@/components/auth/SignupForm";
+import { supabase } from "@/integrations/supabase/client";
 
 export function Auth() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   // Check if user is already authenticated
   useEffect(() => {
     const checkAuth = async () => {
-      const auth = await isAuthenticated();
-      setIsLoggedIn(auth);
+      try {
+        setCheckingAuth(true);
+        const auth = await isAuthenticated();
+        setIsLoggedIn(auth);
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+      } finally {
+        setCheckingAuth(false);
+      }
     };
+    
     checkAuth();
+    
+    // Also listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event);
+      setIsLoggedIn(!!session);
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   // If user is authenticated, redirect to dashboard
-  if (isLoggedIn) {
+  if (isLoggedIn && !checkingAuth) {
     return <Navigate to="/dashboard" replace />;
   }
 
