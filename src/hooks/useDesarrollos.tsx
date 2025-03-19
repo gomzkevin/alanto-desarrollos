@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, Json } from '@/integrations/supabase/types';
@@ -27,12 +26,18 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     console.log('Fetching desarrollos with options:', options);
     
     try {
+      // Don't proceed if userId is required but not available yet
+      if (options.userId === null || options.userId === undefined) {
+        console.log('userId is null or undefined, returning empty array');
+        return [];
+      }
+      
       // Build the select query
       let query = supabase.from('desarrollos').select('*');
       
-      // Filter by user ID if provided using the string filter method to avoid type recursion
+      // Filter by user ID if provided
       if (userId) {
-        // Use string literals for column and operator to avoid TypeScript recursion
+        // Use string literals for column and operator
         query = query.filter('user_id', 'eq', userId);
       }
       
@@ -125,17 +130,17 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   };
 
   // Use React Query to fetch and cache the data
-  // Set staleTime to 0 to ensure data is always fresh on initial load
   const queryResult = useQuery({
     queryKey: ['desarrollos', limit, withPrototipos, userId],
     queryFn: fetchDesarrollos,
-    enabled: true, // Always enable the query, even if userId is null
-    staleTime: 0 // Force a fresh fetch on each component mount
+    enabled: userId !== null && userId !== undefined, // Only enable query when userId is available
+    staleTime: 0, // Force a fresh fetch on each component mount
+    retry: 1, // Limit retries to avoid excessive calls when userId is missing
   });
 
   return {
     desarrollos: queryResult.data || [],
-    isLoading: queryResult.isLoading,
+    isLoading: queryResult.isLoading || queryResult.isFetching,
     error: queryResult.error,
     refetch: queryResult.refetch
   };

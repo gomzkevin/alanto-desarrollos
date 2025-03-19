@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -9,7 +8,6 @@ import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Tables } from '@/integrations/supabase/types';
 import useUnidades from '@/hooks/useUnidades';
-import { getCurrentUserId } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
 type Desarrollo = Tables<"desarrollos">;
@@ -19,35 +17,45 @@ const DesarrollosPage = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [desarrollosWithRealCounts, setDesarrollosWithRealCounts] = useState<Desarrollo[]>([]);
   
-  // Get user info from useUserRole hook
   const { 
     userId,
     isAdmin,
     isLoading: isUserLoading 
   } = useUserRole();
   
-  // Remove the separate loading state to prevent race conditions
-  // and directly use the desarrollos query with userId from the hook
   const { 
     desarrollos = [], 
-    isLoading, 
+    isLoading: isDesarrollosLoading, 
     error,
     refetch 
   } = useDesarrollos({ 
     withPrototipos: true,
-    userId // Use userId directly from the hook
+    userId 
   });
   
   const { countDesarrolloUnidadesByStatus } = useUnidades();
+
+  useEffect(() => {
+    console.log('DesarrollosPage - userId:', userId);
+    console.log('DesarrollosPage - isUserLoading:', isUserLoading);
+    console.log('DesarrollosPage - isDesarrollosLoading:', isDesarrollosLoading);
+    console.log('DesarrollosPage - desarrollos count:', desarrollos.length);
+  }, [userId, isUserLoading, isDesarrollosLoading, desarrollos.length]);
+
+  useEffect(() => {
+    if (userId && !isUserLoading) {
+      console.log('Forcing desarrollos refetch because userId is now available:', userId);
+      refetch();
+    }
+  }, [userId, isUserLoading, refetch]);
 
   const canCreateResource = () => {
     return isAdmin();
   };
 
-  // Update unit counts when desarrollos change
   useEffect(() => {
     const updateRealUnitCounts = async () => {
-      if (desarrollos.length === 0 || isLoading) return;
+      if (desarrollos.length === 0 || isDesarrollosLoading) return;
       
       try {
         const updatedDesarrollos = await Promise.all(
@@ -79,7 +87,7 @@ const DesarrollosPage = () => {
     };
     
     updateRealUnitCounts();
-  }, [desarrollos, isLoading]);
+  }, [desarrollos, isDesarrollosLoading]);
 
   const normalizeDesarrollos = (desarrollos: Desarrollo[]): Desarrollo[] => {
     return desarrollos.map(desarrollo => {
@@ -106,13 +114,12 @@ const DesarrollosPage = () => {
     ? normalizeDesarrollos(desarrollosWithRealCounts)
     : normalizeDesarrollos(desarrollos as Desarrollo[]);
 
-  // Simplified loading state determination - we're loading if either user or desarrollos are loading
-  const isActuallyLoading = isUserLoading || isLoading;
+  const isLoading = isUserLoading || isDesarrollosLoading;
   
-  // Add debug logs to help troubleshoot
-  console.log('Desarrollo page render:', { 
+  console.log('DesarrollosPage render state:', { 
     userId,
     isUserLoading,
+    isDesarrollosLoading,
     isLoading,
     desarrollosCount: desarrollos.length,
     displayDesarrollosCount: displayDesarrollos.length
@@ -146,7 +153,7 @@ const DesarrollosPage = () => {
           />
         </div>
 
-        {isActuallyLoading ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-[400px] bg-slate-100 animate-pulse rounded-xl" />

@@ -23,7 +23,11 @@ export const useUserRole = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    let isMounted = true; // Track component mount state
+    
     const fetchUserData = async () => {
+      if (!isMounted) return; // Don't proceed if component unmounted
+      
       setIsLoading(true);
       try {
         // Get the current user
@@ -31,18 +35,20 @@ export const useUserRole = () => {
         
         if (authError) {
           console.error('Error fetching auth user:', authError);
-          setIsLoading(false);
+          if (isMounted) setIsLoading(false);
           return;
         }
         
         if (!user) {
           console.log('No authenticated user found');
-          setIsLoading(false);
+          if (isMounted) setIsLoading(false);
           return;
         }
         
-        setUserId(user.id);
-        setUserEmail(user.email);
+        if (isMounted) {
+          setUserId(user.id);
+          setUserEmail(user.email);
+        }
         console.log('Auth user found:', user.id, user.email);
         
         // Get the user's role from the usuarios table
@@ -50,16 +56,15 @@ export const useUserRole = () => {
           .from('usuarios')
           .select('*')
           .eq('auth_id', user.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle instead of single to avoid errors
         
         if (userError) {
           console.error('Error fetching user data:', userError);
-          // If this is the first login, we may need to create the user record
-          setIsLoading(false);
+          if (isMounted) setIsLoading(false);
           return;
         }
         
-        if (userData) {
+        if (userData && isMounted) {
           console.log('User data loaded:', userData);
           setUserRole(userData.rol);
           setUserName(userData.nombre);
@@ -75,13 +80,17 @@ export const useUserRole = () => {
         }
       } catch (error) {
         console.error('Error in fetchUserData:', error);
-        toast({
-          title: 'Error',
-          description: 'No se pudo obtener la información del usuario',
-          variant: 'destructive',
-        });
+        if (isMounted) {
+          toast({
+            title: 'Error',
+            description: 'No se pudo obtener la información del usuario',
+            variant: 'destructive',
+          });
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
     
@@ -90,6 +99,8 @@ export const useUserRole = () => {
     // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
+      
+      if (!isMounted) return; // Don't proceed if component unmounted
       
       if (event === 'SIGNED_IN' && session?.user) {
         // User signed in, fetch their data
@@ -100,9 +111,9 @@ export const useUserRole = () => {
           .from('usuarios')
           .select('*')
           .eq('auth_id', session.user.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle for safety
         
-        if (!error && data) {
+        if (!error && data && isMounted) {
           console.log('User data from auth change:', data);
           setUserRole(data.rol);
           setUserName(data.nombre);
@@ -114,7 +125,7 @@ export const useUserRole = () => {
           
           setEmpresaId(data.empresa_id);
         }
-      } else if (event === 'SIGNED_OUT') {
+      } else if (event === 'SIGNED_OUT' && isMounted) {
         // User signed out, clear their data
         setUserId(null);
         setUserEmail(null);
@@ -126,6 +137,7 @@ export const useUserRole = () => {
     });
     
     return () => {
+      isMounted = false; // Mark component as unmounted
       authListener.subscription.unsubscribe();
     };
   }, []);
