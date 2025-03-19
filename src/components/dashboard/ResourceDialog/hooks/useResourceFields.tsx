@@ -14,6 +14,59 @@ const ESTADOS_UNIDAD = [
   { value: 'vendido', label: 'Vendido' }
 ];
 
+const LEAD_STATUS_OPTIONS = [
+  { value: 'nuevo', label: 'Nuevo' },
+  { value: 'contactado', label: 'Contactado' },
+  { value: 'interesado', label: 'Interesado' },
+  { value: 'calificado', label: 'Calificado' },
+  { value: 'negociacion', label: 'En Negociación' },
+  { value: 'ganado', label: 'Ganado' },
+  { value: 'perdido', label: 'Perdido' }
+];
+
+const LEAD_ORIGIN_OPTIONS = [
+  { value: 'web', label: 'Sitio Web' },
+  { value: 'referido', label: 'Referido' },
+  { value: 'redes_sociales', label: 'Redes Sociales' },
+  { value: 'evento', label: 'Evento' },
+  { value: 'llamada', label: 'Llamada' },
+  { value: 'otro', label: 'Otro' }
+];
+
+const LEAD_SUBSTATUS_OPTIONS = {
+  nuevo: [
+    { value: 'sin_contactar', label: 'Sin Contactar' },
+    { value: 'en_espera', label: 'En Espera' }
+  ],
+  contactado: [
+    { value: 'pendiente_respuesta', label: 'Pendiente de Respuesta' },
+    { value: 'no_interesado', label: 'No Interesado' },
+    { value: 'seguimiento', label: 'Seguimiento' }
+  ],
+  interesado: [
+    { value: 'evaluando', label: 'Evaluando' },
+    { value: 'solicitando_informacion', label: 'Solicitando Información' }
+  ],
+  calificado: [
+    { value: 'visitando_propiedad', label: 'Visitando Propiedad' },
+    { value: 'analizando_propuesta', label: 'Analizando Propuesta' }
+  ],
+  negociacion: [
+    { value: 'negociando_terminos', label: 'Negociando Términos' },
+    { value: 'en_aprobacion', label: 'En Aprobación' }
+  ],
+  ganado: [
+    { value: 'contrato_firmado', label: 'Contrato Firmado' },
+    { value: 'esperando_pago', label: 'Esperando Pago' },
+    { value: 'completado', label: 'Completado' }
+  ],
+  perdido: [
+    { value: 'sin_respuesta', label: 'Sin Respuesta' },
+    { value: 'desistio', label: 'Desistió' },
+    { value: 'eligio_competencia', label: 'Eligió Competencia' }
+  ]
+};
+
 const TIPOS_PROPIEDADES = [
   { value: 'apartamento', label: 'Apartamento' },
   { value: 'casa', label: 'Casa' },
@@ -243,5 +296,5 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
     setFields(getFieldDefinitions());
   }, [resourceType, leads, vendedores, selectedStatus, desarrollos, prototipos]);
 
-  return fields;
+  return { fields, selectedStatus };
 };

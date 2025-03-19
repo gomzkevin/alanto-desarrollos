@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from './useUserRole';
+import { Json } from '@/integrations/supabase/types';
 
 export interface Desarrollo {
   id: string;
@@ -14,7 +15,20 @@ export interface Desarrollo {
   unidades_disponibles: number;
   fecha_inicio: string | null;
   fecha_entrega: string | null;
-  empresa_id?: number;
+  empresa_id?: number | null;
+  // Adding other fields to match the expected type
+  adr_base?: number;
+  amenidades?: Json | null;
+  comision_operador?: number;
+  es_gastos_fijos_porcentaje?: boolean;
+  es_gastos_variables_porcentaje?: boolean;
+  es_impuestos_porcentaje?: boolean;
+  es_mantenimiento_porcentaje?: boolean;
+  gastos_fijos?: number;
+  gastos_variables?: number;
+  impuestos?: number;
+  moneda?: string;
+  ocupacion_anual?: number;
 }
 
 export const useDesarrollos = () => {

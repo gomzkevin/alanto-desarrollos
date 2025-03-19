@@ -89,8 +89,9 @@ export const useUserRole = () => {
         let empresaId: number | null = null;
         let empresaNombre: string | null = null;
         
-        if (hasEmpresaColumn && data && typeof data === 'object' && 'empresa_id' in data) {
-          empresaId = data.empresa_id as number;
+        if (hasEmpresaColumn && data && typeof data === 'object') {
+          // Using optional chaining to safely access empresa_id
+          empresaId = data?.empresa_id || null;
           
           // Get empresa name
           if (empresaId) {
@@ -108,10 +109,10 @@ export const useUserRole = () => {
         
         if (data && typeof data === 'object') {
           setUserData({
-            id: data.id as string,
-            role: data.rol as UserRole,
-            name: data.nombre as string,
-            email: data.email as string,
+            id: data?.id || '',
+            role: data?.rol as UserRole || null,
+            name: data?.nombre || '',
+            email: data?.email || '',
             empresaId,
             empresaNombre
           });

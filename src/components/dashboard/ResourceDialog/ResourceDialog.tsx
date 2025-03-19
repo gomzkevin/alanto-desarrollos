@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ResourceDialogProps } from './types';
 import { ResourceDialogContent } from './components/ResourceDialogContent';
@@ -18,26 +18,35 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
   lead_id,
   prototipo_id
 }) => {
-  const { fields, selectedStatus } = useResourceFields(resourceType);
-  
-  const {
-    resource,
-    isLoading,
-    selectedAmenities,
-    setSelectedAmenities,
-    isExistingClient,
-    setIsExistingClient,
-    newClientData,
-    setNewClientData,
-    onDesarrolloSelect
-  } = useResourceData(resourceType, resourceId, desarrolloId);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [isExistingClient, setIsExistingClient] = useState<boolean>(true);
+  const [newClientData, setNewClientData] = useState<{ nombre: string; email: string; telefono: string }>({
+    nombre: '',
+    email: '',
+    telefono: ''
+  });
+  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | null>(desarrolloId || null);
+  const [usarFiniquito, setUsarFiniquito] = useState<boolean>(false);
 
-  const {
-    isLoading: isSubmitting,
-    resourceData,
-    saveResource: handleSaveResource,
-    handleImageUpload
-  } = useResourceActions({
+  const { fields } = useResourceFields(resourceType, selectedStatus, selectedDesarrolloId || undefined);
+  
+  const resourceDataProps = {
+    resourceType,
+    resourceId,
+    desarrolloId,
+    lead_id,
+    selectedDesarrolloId,
+    selectedStatus,
+    usarFiniquito,
+    selectedAmenities,
+    onStatusChange: setSelectedStatus,
+    onAmenitiesChange: setSelectedAmenities
+  };
+  
+  const { resource, isLoading } = useResourceData(resourceDataProps);
+
+  const resourceActionsProps = {
     resourceType,
     resourceId,
     onSuccess,
@@ -46,18 +55,34 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
       isExistingClient,
       newClientData
     }
-  });
+  };
 
   const {
-    formValues,
+    isLoading: isSubmitting,
+    saveResource: handleSaveResource,
+    handleImageUpload
+  } = useResourceActions(resourceActionsProps);
+
+  const resourceFormProps = {
+    resourceType,
+    resourceId,
+    desarrolloId: selectedDesarrolloId || undefined,
+    lead_id,
+    prototipo_id,
+    onSuccess,
+  };
+
+  const {
+    resource: formValues,
     handleChange,
     handleSelectChange,
     handleSwitchChange,
     handleLeadSelect,
     handleDateChange,
     uploading,
-    setUploading
-  } = useResourceForm(resource);
+    setUploading,
+    saveResource
+  } = useResourceForm(resourceFormProps);
   
   const handleClose = () => {
     if (typeof onClose === 'function') {
@@ -65,8 +90,8 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     }
   };
   
-  const saveResource = async () => {
-    return await handleSaveResource(formValues);
+  const handleFormSubmit = async () => {
+    return await saveResource();
   };
 
   const handleExistingClientChange = (isExisting: boolean) => {
@@ -84,6 +109,14 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     setSelectedAmenities(amenities);
   };
 
+  const handleImageUploadWrapper = async (file: File, bucket: string, folder: string, fieldName: string) => {
+    return await handleImageUpload(file, bucket, folder, fieldName);
+  };
+
+  const onDesarrolloSelect = (id: string) => {
+    setSelectedDesarrolloId(id);
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
@@ -94,7 +127,7 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
           resourceId={resourceId}
           isLoading={isLoading}
           isSubmitting={isSubmitting}
-          resource={formValues}
+          resource={formValues || {}}
           fields={fields}
           selectedAmenities={selectedAmenities}
           handleChange={handleChange}
@@ -102,11 +135,11 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
           handleSwitchChange={handleSwitchChange}
           handleLeadSelect={handleLeadSelect}
           handleAmenitiesChange={handleAmenitiesChange}
-          saveResource={saveResource}
+          saveResource={handleFormSubmit}
           desarrolloId={desarrolloId}
           prototipo_id={prototipo_id}
           lead_id={lead_id}
-          handleImageUpload={handleImageUpload}
+          handleImageUpload={handleImageUploadWrapper}
           uploading={uploading}
           isExistingClient={isExistingClient}
           onExistingClientChange={handleExistingClientChange}

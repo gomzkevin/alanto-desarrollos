@@ -1,15 +1,35 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { ResourceType, FormValues } from './types';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
-import { ResourceType } from './types';
+
+// Define a type for the tables that exist in Supabase
+type SupabaseTable = 
+  | 'desarrollos' 
+  | 'prototipos' 
+  | 'leads' 
+  | 'cotizaciones'
+  | 'unidades'
+  | 'usuarios'
+  | 'empresa_info'
+  | 'desarrollo_imagenes'
+  | 'propiedades'
+  | 'configuracion_financiera';
+
+// A mapping of ResourceType to actual table names
+const resourceTableMap: Record<ResourceType, SupabaseTable> = {
+  desarrollos: 'desarrollos',
+  prototipos: 'prototipos',
+  leads: 'leads',
+  cotizaciones: 'cotizaciones',
+  unidades: 'unidades'
+};
 
 interface UseResourceActionsProps {
   resourceType: ResourceType;
   resourceId?: string;
-  onSuccess?: (resource: any) => void;
-  onError?: (error: Error) => void;
+  onSuccess?: () => void;
   selectedAmenities?: string[];
   clientConfig?: {
     isExistingClient: boolean;
@@ -21,108 +41,32 @@ interface UseResourceActionsProps {
   };
 }
 
-const getTableName = (resourceType: ResourceType): string => {
-  // Direct mapping to valid table names
-  const tableMapping: Record<ResourceType, string> = {
-    'desarrollos': 'desarrollos',
-    'prototipos': 'prototipos',
-    'leads': 'leads',
-    'cotizaciones': 'cotizaciones',
-    'unidades': 'unidades'
-  };
-  
-  const tableName = tableMapping[resourceType];
-  if (!tableName) {
-    throw new Error(`Invalid resource type: ${resourceType}`);
-  }
-  
-  return tableName;
-};
-
-const useResourceActions = ({
+export default function useResourceActions({
   resourceType,
   resourceId,
   onSuccess,
-  onError,
   selectedAmenities = [],
-  clientConfig
-}: UseResourceActionsProps) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [resourceData, setResourceData] = useState<any | null>(null);
+  clientConfig = {
+    isExistingClient: true,
+    newClientData: { nombre: '', email: '', telefono: '' }
+  }
+}: UseResourceActionsProps) {
   const { toast } = useToast();
-  const { userData } = useUserRole();
-
-  const handleImageUpload = async (file: File) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [resourceData, setResourceData] = useState<FormValues | null>(null);
+  
+  const saveResource = async (formValues: FormValues): Promise<boolean> => {
     setIsLoading(true);
-    
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${resourceType}_${Date.now()}.${fileExt}`;
-      const filePath = `${resourceType}s/${fileName}`;
-      
-      // Upload file to Supabase Storage
-      const { data: uploadData, error } = await supabase.storage
-        .from('prototipo-images')
-        .upload(filePath, file);
-        
-      if (error) throw error;
-      
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('prototipo-images')
-        .getPublicUrl(filePath);
-        
-      setIsLoading(false);
-      
-      return urlData.publicUrl;
-    } catch (error: any) {
-      console.error('Error uploading image:', error);
-      setIsLoading(false);
-      toast({
-        title: 'Error',
-        description: `Error al subir imagen: ${error.message}`,
-        variant: 'destructive',
-      });
-      return null;
-    }
-  };
-
-  const saveResource = async (data: any) => {
-    setIsLoading(true);
-    
-    try {
-      // Get the appropriate table name
-      const tableName = getTableName(resourceType);
-      
-      console.log(`Saving ${resourceType} data:`, data);
-      
-      // Process amenities if available
-      if (resourceType === 'desarrollos' && selectedAmenities.length > 0) {
-        data.amenidades = JSON.stringify(selectedAmenities);
-      }
-      
-      // Check for empresa_id
-      if (resourceType === 'desarrollos' || resourceType === 'leads') {
-        const { data: hasColumn } = await supabase
-          .rpc('has_column', { 
-            table_name: tableName, 
-            column_name: 'empresa_id' 
-          });
-          
-        if (hasColumn && userData?.empresaId) {
-          data.empresa_id = userData.empresaId;
-        }
-      }
-      
-      // Create new lead if necesary for cotización with new client
-      if (resourceType === 'cotizaciones' && clientConfig && !clientConfig.isExistingClient) {
+      // Special handling for client data in cotizaciones
+      if (resourceType === 'cotizaciones' && !clientConfig.isExistingClient && formValues) {
+        // Create a new lead first
         const { nombre, email, telefono } = clientConfig.newClientData;
         
-        // Validate data
         if (!nombre) {
           toast({
             title: 'Error',
-            description: 'El nombre del cliente es requerido',
+            description: 'Debe ingresar el nombre del cliente',
             variant: 'destructive',
           });
           setIsLoading(false);
@@ -136,97 +80,125 @@ const useResourceActions = ({
             nombre,
             email,
             telefono,
+            origen: 'sistema',
             estado: 'nuevo',
             subestado: 'sin_contactar'
           })
-          .select();
+          .select()
+          .single();
           
-        if (leadError) throw leadError;
+        if (leadError) {
+          console.error('Error creating lead:', leadError);
+          toast({
+            title: 'Error',
+            description: `No se pudo crear el lead: ${leadError.message}`,
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return false;
+        }
         
-        // Use the new lead ID
-        data.lead_id = newLead[0].id;
+        // Update form values with the new lead id
+        formValues.lead_id = newLead.id;
       }
       
+      // Update or create resource
       let result;
+
+      // Get the correct table name from our mapping
+      const tableName = resourceTableMap[resourceType];
       
       if (resourceId) {
         // Update existing resource
-        const { data: updatedResource, error } = await supabase
-          .from(tableName as any)
-          .update(data)
+        const { data, error } = await supabase
+          .from(tableName)
+          .update({
+            ...formValues,
+            ...(resourceType === 'desarrollos' && { amenidades: selectedAmenities })
+          })
           .eq('id', resourceId)
           .select();
           
-        if (error) throw error;
-        
-        result = updatedResource[0];
-        
-        toast({
-          title: `${resourceType.slice(0, -1).charAt(0).toUpperCase() + resourceType.slice(0, -1).slice(1)} actualizado`,
-          description: `El ${resourceType.slice(0, -1)} ha sido actualizado exitosamente`,
-        });
+        result = { data, error };
       } else {
         // Create new resource
-        const { data: createdResource, error } = await supabase
-          .from(tableName as any)
-          .insert(data)
+        const { data, error } = await supabase
+          .from(tableName)
+          .insert({
+            ...formValues,
+            ...(resourceType === 'desarrollos' && { amenidades: selectedAmenities })
+          })
           .select();
           
-        if (error) throw error;
-        
-        result = createdResource[0];
-        
-        // Handle development image for 'desarrollo' if needed
-        if (resourceType === 'desarrollos' && data.imagen_url) {
-          const imageUrl = data.imagen_url;
-          
-          const { error: imageError } = await supabase
-            .from('desarrollo_imagenes')
-            .insert({
-              desarrollo_id: result.id,
-              url: imageUrl,
-              es_principal: true,
-              orden: 1,
-            });
-            
-          if (imageError) {
-            console.error('Error uploading image:', imageError);
-            toast({
-              title: 'Error',
-              description: 'Error al subir la imagen',
-              variant: 'destructive',
-            });
-          }
-        }
-        
+        result = { data, error };
+      }
+      
+      if (result.error) {
+        console.error('Error saving resource:', result.error);
         toast({
-          title: `${resourceType.slice(0, -1).charAt(0).toUpperCase() + resourceType.slice(0, -1).slice(1)} creado`,
-          description: `El ${resourceType.slice(0, -1)} ha sido creado exitosamente`,
+          title: 'Error',
+          description: `No se pudo guardar: ${result.error.message}`,
+          variant: 'destructive',
         });
+        return false;
       }
       
-      setIsLoading(false);
-      setResourceData(result);
+      setResourceData(result.data[0]);
       
-      if (onSuccess) {
-        onSuccess(result);
-      }
-      
-      return true;
-    } catch (error: any) {
-      console.error(`Error saving ${resourceType}:`, error);
-      setIsLoading(false);
       toast({
-        title: 'Error',
-        description: `No se pudo guardar el ${resourceType.slice(0, -1)}: ${error.message}`,
-        variant: 'destructive',
+        title: 'Éxito',
+        description: `${resourceId ? 'Actualizado' : 'Creado'} correctamente`,
       });
       
-      if (onError) {
-        onError(error);
+      if (onSuccess) onSuccess();
+      return true;
+    } catch (error) {
+      console.error('Error in saveResource:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo completar la operación',
+        variant: 'destructive',
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleImageUpload = async (file: File, bucket: string, folder: string, fieldName: string): Promise<string | null> => {
+    if (!file) return null;
+    
+    setIsLoading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const filePath = `${folder}/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file);
+      
+      if (uploadError) {
+        throw uploadError;
       }
       
-      return false;
+      const { data } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+      
+      const publicUrl = data.publicUrl;
+      
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo subir la imagen',
+        variant: 'destructive',
+      });
+      return null;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -236,6 +208,4 @@ const useResourceActions = ({
     saveResource,
     handleImageUpload
   };
-};
-
-export default useResourceActions;
+}

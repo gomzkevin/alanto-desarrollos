@@ -14,6 +14,19 @@ import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 
+interface UseResourceDataProps {
+  resourceType: ResourceType;
+  resourceId?: string;
+  desarrolloId?: string;
+  lead_id?: string;
+  selectedDesarrolloId: string | null;
+  selectedStatus: string | null;
+  usarFiniquito: boolean;
+  selectedAmenities: string[];
+  onStatusChange: (status: string) => void;
+  onAmenitiesChange: (amenities: string[]) => void;
+}
+
 export default function useResourceData({
   resourceType,
   resourceId,
@@ -25,18 +38,7 @@ export default function useResourceData({
   selectedAmenities,
   onStatusChange,
   onAmenitiesChange
-}: {
-  resourceType: ResourceType;
-  resourceId?: string;
-  desarrolloId?: string;
-  lead_id?: string;
-  selectedDesarrolloId: string | null;
-  selectedStatus: string | null;
-  usarFiniquito: boolean;
-  selectedAmenities: string[];
-  onStatusChange: (status: string) => void;
-  onAmenitiesChange: (amenities: string[]) => void;
-}) {
+}: UseResourceDataProps) {
   const { toast } = useToast();
   const [resource, setResource] = useState<FormValues | null>(null);
   const [fields, setFields] = useState<any[]>([]);

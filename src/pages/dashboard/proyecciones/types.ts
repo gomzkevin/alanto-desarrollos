@@ -10,3 +10,18 @@ export interface Proyeccion {
   desarrollo_id?: string;
   desarrollo_nombre?: string;
 }
+
+export interface ProyeccionFilters {
+  desarrolloId?: string | null;
+  fechaInicio?: Date | null;
+  fechaFin?: Date | null;
+}
+
+export interface ProyeccionSummary {
+  inversionTotal: number;
+  ingresoTotal: number;
+  gastoTotal: number;
+  beneficioNeto: number;
+  tirPromedio: number;
+  paybackPromedio: number;
+}
