@@ -1,38 +1,44 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isEmailNotConfirmed, setIsEmailNotConfirmed] = useState(false);
   const navigate = useNavigate();
-
-  // Check if user is already logged in
+  const location = useLocation();
+  
+  // Check if there's a redirect path stored in location state
+  const from = location.state?.from?.pathname || '/dashboard';
+  
+  // Check if already logged in
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        // User is already logged in, redirect to dashboard
-        navigate('/dashboard');
+        navigate(from);
       }
     };
     
     checkSession();
-  }, [navigate]);
-
+  }, [navigate, from]);
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+    setIsEmailNotConfirmed(false);
+    setLoading(true);
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -41,18 +47,27 @@ const Login = () => {
       });
       
       if (error) {
-        setError(error.message);
+        if (error.message.includes('Email not confirmed')) {
+          setIsEmailNotConfirmed(true);
+        } else {
+          setError(error.message);
+        }
         toast({
           title: "Error al iniciar sesión",
           description: error.message,
           variant: "destructive"
         });
-      } else if (data.user) {
+        return;
+      }
+      
+      if (data.user) {
         toast({
-          title: "Sesión iniciada",
-          description: "Has iniciado sesión exitosamente"
+          title: "Inicio de sesión exitoso",
+          description: "Bienvenido de nuevo"
         });
-        navigate('/dashboard');
+        
+        // Navigate to the page they were trying to access, or dashboard by default
+        navigate(from);
       }
     } catch (err: any) {
       setError(err.message);
@@ -65,7 +80,37 @@ const Login = () => {
       setLoading(false);
     }
   };
-
+  
+  const handleResendConfirmation = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+      });
+      
+      if (error) {
+        setError(error.message);
+        toast({
+          title: "Error al reenviar confirmación",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      toast({
+        title: "Correo enviado",
+        description: "Se ha enviado un nuevo correo de confirmación"
+      });
+      setIsEmailNotConfirmed(false);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
       <Card className="w-full max-w-md">
@@ -77,11 +122,37 @@ const Login = () => {
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
-            {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
-                {error}
-              </div>
+            {error && !isEmailNotConfirmed && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {error}
+                </AlertDescription>
+              </Alert>
             )}
+            
+            {isEmailNotConfirmed && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="space-y-2">
+                  <p>Tu correo electrónico no ha sido confirmado.</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleResendConfirmation}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : "Reenviar correo de confirmación"}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="email">Correo electrónico</Label>
               <Input 
@@ -96,7 +167,7 @@ const Login = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Contraseña</Label>
-                <Link to="/auth/reset-password" className="text-sm text-indigo-600 hover:underline">
+                <Link to="/auth/reset-password" className="text-xs text-indigo-600 hover:underline">
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
@@ -137,3 +208,4 @@ const Login = () => {
 };
 
 export default Login;
+
