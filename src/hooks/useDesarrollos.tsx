@@ -5,6 +5,7 @@ import { Tables, Json } from '@/integrations/supabase/types';
 
 export type Desarrollo = Tables<"desarrollos"> & {
   amenidades?: string[] | null;
+  user_id?: string | null; // Added user_id field to match database
 };
 
 // Define extended type with prototipos relation
@@ -31,9 +32,8 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       
       // Filter by user ID if provided
       if (userId) {
-        // Convert userId to string in a type-safe way
-        const userIdString = String(userId);
-        query = query.eq('user_id', userIdString);
+        // Explicitly use String constructor to avoid type issues
+        query = query.eq('user_id', String(userId));
       }
       
       // Apply limit if provided
