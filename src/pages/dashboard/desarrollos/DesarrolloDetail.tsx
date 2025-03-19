@@ -59,7 +59,7 @@ const DesarrolloDetail = () => {
   const [desarrollo, setDesarrollo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
-  const { imagenes, isLoading: imagesLoading, refetch: refetchImages } = 
+  const { images, isLoading: imagesLoading, refetch: refetchImages } = 
     useDesarrolloImagenes(id || '');
   
   const { stats, isLoading: statsLoading } = useDesarrolloStats(id || '');
@@ -187,7 +187,10 @@ const DesarrolloDetail = () => {
           </div>
         </div>
         
-        <DesarrolloImageCarousel imagenes={imagenes} isLoading={imagesLoading} />
+        <DesarrolloImageCarousel 
+          images={images} 
+          isLoading={imagesLoading} 
+        />
         
         <div className="mt-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>

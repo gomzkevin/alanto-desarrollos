@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ResourceType, FormValues } from './types';
 import { useToast } from '@/hooks/use-toast';
 import { Tables } from '@/integrations/supabase/types';
+import { Json } from '@/integrations/supabase/types';
 
 // Define valid table names from the Supabase schema
 type ValidTableName = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones' | 'unidades';
@@ -111,7 +112,7 @@ export default function useResourceActions({
           // Update existing resource
           const { data, error } = await supabase
             .from(tableName)
-            .update(updateData)
+            .update(updateData as any) // Using type assertion for now
             .eq('id', resourceId)
             .select();
             
@@ -120,7 +121,7 @@ export default function useResourceActions({
           // Update existing resource for other resource types
           const { data, error } = await supabase
             .from(tableName)
-            .update(formValues)
+            .update(formValues as any) // Using type assertion for now
             .eq('id', resourceId)
             .select();
             
@@ -138,7 +139,7 @@ export default function useResourceActions({
           // Insert new resource
           const { data, error } = await supabase
             .from(tableName)
-            .insert(insertData)
+            .insert(insertData as any) // Using type assertion for now
             .select();
             
           result = { data, error };
@@ -146,7 +147,7 @@ export default function useResourceActions({
           // Insert new resource for other resource types
           const { data, error } = await supabase
             .from(tableName)
-            .insert(formValues)
+            .insert(formValues as any) // Using type assertion for now
             .select();
             
           result = { data, error };

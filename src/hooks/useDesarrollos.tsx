@@ -16,7 +16,7 @@ export interface Desarrollo {
   fecha_inicio: string | null;
   fecha_entrega: string | null;
   empresa_id?: number | null;
-  // Financial fields
+  // Financial fields - All optional
   adr_base?: number | null;
   amenidades?: Json | null;
   comision_operador?: number | null;

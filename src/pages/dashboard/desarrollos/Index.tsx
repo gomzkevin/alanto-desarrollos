@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -48,7 +47,7 @@ const DesarrollosPage = () => {
         })
       );
       
-      setDesarrollosWithRealCounts(updatedDesarrollos);
+      setDesarrollosWithRealCounts(updatedDesarrollos as Desarrollo[]);
     };
     
     updateRealUnitCounts();
