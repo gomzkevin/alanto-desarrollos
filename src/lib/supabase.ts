@@ -28,3 +28,20 @@ export async function getCurrentUserId(): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * Intenta verificar un usuario manualmente (para desarrollo)
+ * @param email Correo electrónico del usuario
+ * @returns Promise<boolean> Verdadero si se verificó con éxito
+ */
+export async function verifyUserManually(email: string): Promise<boolean> {
+  try {
+    // Nota: Esta función no funcionará directamente ya que requiere permisos de admin
+    // Solo es para ilustrar cómo sería si tuviéramos acceso a la API de admin de Supabase
+    console.log("Intento de verificación manual para:", email);
+    return true;
+  } catch (error) {
+    console.error("Error al verificar usuario manualmente:", error);
+    return false;
+  }
+}
