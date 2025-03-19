@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -256,9 +257,13 @@ const NuevaCotizacion = () => {
                   <Label htmlFor="anticipoAmount">Monto de anticipo</Label>
                   <Input
                     id="anticipoAmount"
-                    type="number"
+                    formatCurrency
                     value={anticipoAmount}
-                    onChange={(e) => setAnticipoAmount(Number(e.target.value))}
+                    onChange={(e) => {
+                      // Remove non-numeric characters for storing the raw value
+                      const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                      setAnticipoAmount(Number(numericValue));
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -315,9 +320,13 @@ const NuevaCotizacion = () => {
                     <Label htmlFor="finiquitoAmount">Monto de finiquito</Label>
                     <Input
                       id="finiquitoAmount"
-                      type="number"
+                      formatCurrency
                       value={finiquitoAmount}
-                      onChange={(e) => setFiniquitoAmount(Number(e.target.value))}
+                      onChange={(e) => {
+                        // Remove non-numeric characters for storing the raw value
+                        const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                        setFiniquitoAmount(Number(numericValue));
+                      }}
                     />
                   </div>
                   

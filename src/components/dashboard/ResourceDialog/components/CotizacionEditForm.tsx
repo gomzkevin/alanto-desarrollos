@@ -1,9 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { DialogHeader } from './DialogHeader';
-import { DialogFooter } from './DialogFooter';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -18,6 +15,9 @@ import { cn } from "@/lib/utils";
 import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { formatCurrency } from '@/lib/utils';
 
 interface CotizacionEditFormProps {
   cotizacion: any;
@@ -327,9 +327,13 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                         <FormLabel>Monto de anticipo</FormLabel>
                         <FormControl>
                           <Input 
-                            {...field} 
-                            type="number" 
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            formatCurrency 
+                            value={field.value}
+                            onChange={(e) => {
+                              // Remove non-numeric characters for the actual value
+                              const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                              field.onChange(parseFloat(numericValue) || 0);
+                            }}
                           />
                         </FormControl>
                       </FormItem>
@@ -411,9 +415,13 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                           <FormLabel>Monto de finiquito</FormLabel>
                           <FormControl>
                             <Input 
-                              {...field} 
-                              type="number" 
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                              formatCurrency 
+                              value={field.value}
+                              onChange={(e) => {
+                                // Remove non-numeric characters for the actual value
+                                const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                                field.onChange(parseFloat(numericValue) || 0);
+                              }}
                             />
                           </FormControl>
                         </FormItem>
