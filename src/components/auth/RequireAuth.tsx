@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -14,11 +14,12 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
   const [authenticated, setAuthenticated] = useState(false);
   const location = useLocation();
   const { toast } = useToast();
+  const params = useParams();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        console.log('Checking authentication in RequireAuth...');
+        console.log('Checking authentication in RequireAuth...', location.pathname, params);
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
@@ -57,7 +58,7 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [toast]);
+  }, [toast, location.pathname]);
 
   if (loading) {
     return (

@@ -1,11 +1,20 @@
 
 import { useEffect, ReactNode } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { Sidebar, SidebarProvider, SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
+import { Outlet, useNavigate, Link } from 'react-router-dom';
+import { 
+  Sidebar, 
+  SidebarProvider, 
+  SidebarContent, 
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton, 
+} from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks';
 import { supabase } from '@/integrations/supabase/client';
 import UserMenu from './UserMenu';
+import { Home, Building, FileText, Users, Settings, BarChart2 } from 'lucide-react';
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -54,12 +63,36 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     }
   }, [isLoading, role, navigate, toast]);
 
+  // Navigation items for the sidebar
+  const navItems = [
+    { icon: Home, label: 'Dashboard', path: '/dashboard' },
+    { icon: Building, label: 'Desarrollos', path: '/dashboard/desarrollos' },
+    { icon: FileText, label: 'Cotizaciones', path: '/dashboard/cotizaciones' },
+    { icon: Users, label: 'Leads', path: '/dashboard/leads' },
+    { icon: BarChart2, label: 'Proyecciones', path: '/dashboard/proyecciones' },
+    { icon: Settings, label: 'Configuración', path: '/dashboard/configuracion' },
+  ];
+
   return (
     <SidebarProvider>
       <div className="flex h-screen bg-slate-50 w-full">
         <Sidebar>
           <SidebarContent>
-            {/* Sidebar navigation content goes here */}
+            <div className="px-3 py-4">
+              <h2 className="text-xl font-bold text-indigo-600 mb-6 px-2">InmobApp</h2>
+              <SidebarMenu>
+                {navItems.map((item) => (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton asChild tooltip={item.label}>
+                      <Link to={item.path} className="flex items-center gap-2">
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </div>
           </SidebarContent>
           <SidebarFooter className="p-4">
             <UserMenu />

@@ -33,7 +33,7 @@ import ProfilePage from './pages/dashboard/profile/Index';
 import './App.css';
 import { Toaster } from './components/ui/toaster';
 
-// Crear una instancia del cliente de consulta
+// Create React Query client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
