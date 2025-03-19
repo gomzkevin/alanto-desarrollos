@@ -30,6 +30,12 @@ export function ConfiguracionPage() {
     }
   }, [isAdmin]);
 
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    console.log("Changing tab to:", value);
+    setActiveTab(value);
+  };
+
   // Simple account settings component for the "Mi Cuenta" tab
   const AccountSettings = () => {
     return (
@@ -96,12 +102,13 @@ export function ConfiguracionPage() {
           <p className="text-slate-600 mt-1">
             Administra la configuración de tu cuenta y empresa
           </p>
-          <p className="text-xs text-slate-500 mt-1">
-            Estado admin: {adminStatus ? "Sí" : "No"}
-          </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs 
+          value={activeTab} 
+          onValueChange={handleTabChange} 
+          className="space-y-6"
+        >
           <TabsList className="mb-6">
             {adminStatus && (
               <>
