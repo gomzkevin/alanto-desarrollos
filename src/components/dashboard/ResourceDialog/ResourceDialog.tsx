@@ -30,7 +30,7 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
   const [usarFiniquito, setUsarFiniquito] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
 
-  const { fields } = useResourceFields(resourceType, selectedStatus, selectedDesarrolloId || undefined);
+  const { fields, selectedStatus: statusFromFields } = useResourceFields(resourceType, selectedStatus, selectedDesarrolloId || undefined);
   
   const resourceDataProps = {
     resourceType,
@@ -112,33 +112,33 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     }
   };
 
-  const handleImageUploadWrapper = async (file: File, bucket: string, folder: string, fieldName: string) => {
-    setUploading(true);
-    try {
-      const result = await handleImageUpload(file, bucket, folder, fieldName);
-      return result;
-    } finally {
-      setUploading(false);
-    }
-  };
-  
-  // Create an adapter function to match the expected interface
-  const adaptedImageUpload = (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+  // Wrapper function to handle file upload from HTML input
+  const adaptedImageUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      // These values would typically come from props or context in a real implementation
-      // For now, we'll use default values
-      const bucket = 'your-bucket';
-      const folder = 'your-folder';
-      const fieldName = 'image_field';
-      
-      return handleImageUploadWrapper(file, bucket, folder, fieldName)
-        .then(() => {})
-        .catch(err => {
-          console.error('Error uploading image:', err);
-        });
+      setUploading(true);
+      try {
+        const file = e.target.files[0];
+        // Use default bucket and folder names
+        const bucket = 'prototipo-images';
+        const folder = resourceType === 'desarrollos' ? 'desarrollos' : 'prototipos';
+        const fieldName = 'imagen_url';
+        
+        const imageUrl = await handleImageUpload(file, bucket, folder, fieldName);
+        
+        if (imageUrl && handleChange) {
+          handleChange({
+            target: {
+              name: fieldName,
+              value: imageUrl
+            }
+          } as React.ChangeEvent<HTMLInputElement>);
+        }
+      } catch (err) {
+        console.error('Error uploading image:', err);
+      } finally {
+        setUploading(false);
+      }
     }
-    return Promise.resolve();
   };
 
   const onDesarrolloSelect = (id: string) => {

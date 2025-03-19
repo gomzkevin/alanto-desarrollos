@@ -1,406 +1,335 @@
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { ArrowLeft, Building2, Calendar, MapPin, User, Clipboard, Plus } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { 
-  ChevronLeft, 
-  Home, 
-  MapPin, 
-  Clock, 
-  CalendarClock, 
-  ImageIcon, 
-  Package,
-  Bath, 
-  Dumbbell, 
-  Flame, 
-  ParkingSquare, 
-  Utensils, 
-  Wifi, 
-  Baby, 
-  Lock, 
-  Car, 
-  Trees, 
-  Waves, 
-  GlassWater, 
-  Check,
-  PlusCircle 
-} from 'lucide-react';
-import PrototipoCard from '@/components/dashboard/PrototipoCard';
-import { useQuery } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
-import usePrototipos from '@/hooks/usePrototipos';
-import { Tables } from '@/integrations/supabase/types';
-import AdminResourceDialog from '@/components/dashboard/ResourceDialog/AdminResourceDialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 import DesarrolloImageCarousel from '@/components/dashboard/DesarrolloImageCarousel';
+import useUserRole from '@/hooks/useUserRole';
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import DesarrolloEditButton from '@/components/dashboard/DesarrolloEditButton';
-import { useUserRole } from '@/hooks';
-import { Badge } from '@/components/ui/badge';
-import useUnidades from '@/hooks/useUnidades';
-import { Progress } from '@/components/ui/progress';
+import useDesarrolloImagenes from '@/hooks/useDesarrolloImagenes';
 import useDesarrolloStats from '@/hooks/useDesarrolloStats';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
+import { useDesarrollos } from '@/hooks/useDesarrollos';
+import { Json } from '@/integrations/supabase/types';
 
-type Desarrollo = Tables<"desarrollos"> & {
-  amenidades?: string[] | string;
-};
+interface Desarrollo {
+  id: string;
+  nombre: string;
+  ubicacion: string;
+  descripcion: string | null;
+  avance_porcentaje: number | null;
+  imagen_url: string | null;
+  total_unidades: number;
+  unidades_disponibles: number;
+  fecha_inicio: string | null;
+  fecha_entrega: string | null;
+  empresa_id?: number | null;
+  // Financial fields
+  adr_base?: number | null;
+  amenidades?: Json | null;
+  comision_operador?: number | null;
+  es_gastos_fijos_porcentaje?: boolean | null;
+  es_gastos_variables_porcentaje?: boolean | null;
+  es_impuestos_porcentaje?: boolean | null;
+  es_mantenimiento_porcentaje?: boolean | null;
+  gastos_fijos?: number | null;
+  gastos_variables?: number | null;
+  impuestos?: number | null;
+  mantenimiento_valor?: number | null;
+  moneda?: string | null;
+  ocupacion_anual?: number | null;
+}
 
-const fetchDesarrolloById = async (id: string) => {
-  console.log('Fetching desarrollo with ID:', id);
-  const { data, error } = await supabase
-    .from('desarrollos')
-    .select('*')
-    .eq('id', id)
-    .single();
-  
-  if (error) {
-    console.error('Error fetching desarrollo:', error);
-    throw new Error(error.message);
-  }
-  
-  console.log('Desarrollo fetched:', data);
-  return data as Desarrollo;
-};
-
-const getDesarrolloStatus = (desarrollo: Desarrollo) => {
-  if (desarrollo.avance_porcentaje === 0) {
-    return { label: 'Pre-venta', color: 'bg-blue-100 text-blue-800' };
-  } else if (desarrollo.avance_porcentaje && desarrollo.avance_porcentaje < 100) {
-    return { label: 'En venta', color: 'bg-yellow-100 text-yellow-800' };
-  } else {
-    return { label: 'Vendido', color: 'bg-green-100 text-green-800' };
-  }
-};
-
-const getAmenityIcon = (amenityId: string) => {
-  const amenityMap: Record<string, { icon: React.ReactNode, label: string }> = {
-    "pool": { icon: <Waves className="h-3.5 w-3.5 mr-1" />, label: "Alberca" },
-    "gym": { icon: <Dumbbell className="h-3.5 w-3.5 mr-1" />, label: "Gimnasio" },
-    "spa": { icon: <Bath className="h-3.5 w-3.5 mr-1" />, label: "Spa" },
-    "bbq": { icon: <Flame className="h-3.5 w-3.5 mr-1" />, label: "Área de BBQ" },
-    "playground": { icon: <Baby className="h-3.5 w-3.5 mr-1" />, label: "Área infantil" },
-    "security": { icon: <Lock className="h-3.5 w-3.5 mr-1" />, label: "Seguridad 24/7" },
-    "parking": { icon: <ParkingSquare className="h-3.5 w-3.5 mr-1" />, label: "Estacionamiento" },
-    "garden": { icon: <Trees className="h-3.5 w-3.5 mr-1" />, label: "Jardín" },
-    "beach": { icon: <Waves className="h-3.5 w-3.5 mr-1" />, label: "Playa" },
-    "restaurant": { icon: <Utensils className="h-3.5 w-3.5 mr-1" />, label: "Restaurante" },
-    "bar": { icon: <GlassWater className="h-3.5 w-3.5 mr-1" />, label: "Bar" },
-    "wifi": { icon: <Wifi className="h-3.5 w-3.5 mr-1" />, label: "WiFi" }
-  };
-
-  return amenityMap[amenityId] || { icon: <Check className="h-3.5 w-3.5 mr-1" />, label: amenityId };
-};
-
-const parseAmenidades = (amenidades: string[] | string | undefined): string[] => {
-  if (!amenidades) return [];
-  
-  if (Array.isArray(amenidades)) {
-    return amenidades;
-  }
-  
-  try {
-    return typeof amenidades === 'string' ? JSON.parse(amenidades) : [];
-  } catch (e) {
-    console.error('Error parsing amenidades:', e);
-    return [];
-  }
-};
-
-const DesarrolloDetailPage = () => {
+const DesarrolloDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAdmin } = useUserRole();
-  const { countDesarrolloUnidadesByStatus } = useUnidades();
+  const { desarrollos } = useDesarrollos();
+  const { userData, isAdmin } = useUserRole();
+  const { toast } = useToast();
   
-  const { 
-    data: desarrollo, 
-    isLoading: isLoadingDesarrollo,
-    error: errorDesarrollo,
-    refetch: refetchDesarrollo 
-  } = useQuery({
-    queryKey: ['desarrollo', id],
-    queryFn: () => fetchDesarrolloById(id as string),
-    enabled: !!id,
-  });
+  const [activeTab, setActiveTab] = useState('informacion');
+  const [isAddPrototipoOpen, setIsAddPrototipoOpen] = useState(false);
+  const [isAddImageOpen, setIsAddImageOpen] = useState(false);
+  const [desarrollo, setDesarrollo] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
-  const { 
-    prototipos = [], 
-    isLoading: isLoadingPrototipos,
-    error: errorPrototipos,
-    refetch: refetchPrototipos
-  } = usePrototipos({
-    desarrolloId: id,
-  });
+  const { imagenes, isLoading: imagesLoading, refetch: refetchImages } = 
+    useDesarrolloImagenes(id || '');
   
-  const { 
-    data: desarrolloStats, 
-    isLoading: isLoadingStats 
-  } = useDesarrolloStats(id);
+  const { stats, isLoading: statsLoading } = useDesarrolloStats(id || '');
   
-  const { 
-    data: unitCounts,
-    isLoading: isLoadingUnitCounts
-  } = useQuery({
-    queryKey: ['desarrollo-unit-counts', id],
-    queryFn: () => countDesarrolloUnidadesByStatus(id as string),
-    enabled: !!id,
-  });
-  
-  const handleVolver = () => {
-    navigate('/dashboard/desarrollos');
-  };
-  
-  const handleRefresh = () => {
-    refetchDesarrollo();
-    refetchPrototipos();
-  };
-  
-  const handlePrototipoClick = (prototipoId: string) => {
-    navigate(`/dashboard/prototipos/${prototipoId}`);
-  };
-  
-  const isLoading = isLoadingDesarrollo || isLoadingPrototipos || isLoadingUnitCounts || isLoadingStats;
-  const hasError = errorDesarrollo || errorPrototipos;
-  
-  const calculateComercialProgress = () => {
-    if (desarrolloStats) {
-      return desarrolloStats.avanceComercial;
-    }
+  useEffect(() => {
+    const fetchDesarrollo = async () => {
+      if (!id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('desarrollos')
+          .select('*')
+          .eq('id', id)
+          .single();
+          
+        if (error) {
+          throw error;
+        }
+        
+        if (data) {
+          setDesarrollo(data);
+        }
+      } catch (error) {
+        console.error('Error fetching desarrollo:', error);
+        toast({
+          title: 'Error',
+          description: 'No se pudo cargar el desarrollo',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    if (!unitCounts) return 0;
-    
-    const totalUnits = unitCounts.total || 0;
-    const soldOrReserved = (unitCounts.vendidas || 0) + (unitCounts.con_anticipo || 0);
-    
-    if (totalUnits === 0) return 0;
-    
-    return Math.round((soldOrReserved / totalUnits) * 100);
-  };
+    fetchDesarrollo();
+  }, [id, toast]);
   
-  const getUnitCountDisplay = () => {
-    if (desarrolloStats) {
-      return `${desarrolloStats.unidadesDisponibles}/${desarrolloStats.totalUnidades} disponibles`;
-    }
-    
-    if (!unitCounts) return "0/0 disponibles";
-    
-    const availableUnits = unitCounts.disponibles || 0;
-    const totalUnits = unitCounts.total || 0;
-    
-    return `${availableUnits}/${totalUnits} disponibles`;
-  };
-  
-  const calcularUnidadesAsignadas = () => {
-    if (!prototipos || prototipos.length === 0) return 0;
-    return prototipos.reduce((sum, prototipo) => sum + (prototipo.total_unidades || 0), 0);
-  };
-  
-  const puedeCrearPrototipos = () => {
-    if (!desarrollo) return false;
-    
-    const unidadesAsignadas = calcularUnidadesAsignadas();
-    const unidadesDesarrollo = desarrollo.total_unidades || 0;
-    
-    return unidadesAsignadas < unidadesDesarrollo;
-  };
-  
-  const unidadesDisponiblesParaPrototipos = () => {
+  const calculateProgress = () => {
     if (!desarrollo) return 0;
-    
-    const unidadesAsignadas = calcularUnidadesAsignadas();
-    const unidadesDesarrollo = desarrollo.total_unidades || 0;
-    
-    return Math.max(0, unidadesDesarrollo - unidadesAsignadas);
+    const sold = desarrollo.total_unidades - desarrollo.unidades_disponibles;
+    return (sold / desarrollo.total_unidades) * 100;
   };
   
-  return (
-    <DashboardLayout>
-      <div className="space-y-6 p-6 pb-16">
-        <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={handleVolver}>
-            <ChevronLeft className="mr-1 h-4 w-4" />
+  const progress = calculateProgress();
+  
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center items-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+  
+  if (!desarrollo) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <Button 
+            onClick={() => navigate('/dashboard/desarrollos')}
+            variant="outline"
+            className="mb-6"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
           </Button>
           
-          {desarrollo && <DesarrolloEditButton desarrollo={desarrollo} onSuccess={handleRefresh} />}
+          <div className="text-center py-10">
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">Desarrollo no encontrado</h2>
+            <p className="text-slate-600">El desarrollo que buscas no existe o no tienes permisos para verlo.</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+  
+  return (
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0">
+          <div className="flex items-center space-x-4">
+            <Button 
+              onClick={() => navigate('/dashboard/desarrollos')}
+              variant="outline"
+              size="sm"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver
+            </Button>
+            
+            <h1 className="text-2xl font-bold text-slate-800">{desarrollo.nombre}</h1>
+          </div>
+          
+          <div className="flex space-x-2">
+            {isAdmin && (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsAddImageOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar imagen
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsAddPrototipoOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar prototipo
+                </Button>
+              </>
+            )}
+            
+            <DesarrolloEditButton 
+              desarrollo={desarrollo}
+              onSuccess={() => {
+                // Refresh the desarrollo data
+                window.location.reload();
+              }}
+            />
+          </div>
         </div>
         
-        {isLoading ? (
-          <div className="space-y-6">
-            <div className="h-24 bg-slate-100 animate-pulse rounded-xl" />
-            <div className="h-48 bg-slate-100 animate-pulse rounded-xl" />
-          </div>
-        ) : hasError ? (
-          <div className="text-center py-10">
-            <p className="text-red-500">Error al cargar los datos del desarrollo</p>
-            <Button 
-              variant="outline" 
-              className="mt-4"
-              onClick={handleRefresh}
-            >
-              Intentar de nuevo
-            </Button>
-          </div>
-        ) : desarrollo ? (
-          <>
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-                <div className="space-y-1">
-                  <h1 className="text-3xl font-bold text-slate-800">{desarrollo.nombre}</h1>
-                  <div className="flex items-center text-slate-600">
-                    <MapPin className="h-4 w-4 mr-1" />
+        <DesarrolloImageCarousel imagenes={imagenes} isLoading={imagesLoading} />
+        
+        <div className="mt-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="informacion">Información</TabsTrigger>
+              <TabsTrigger value="prototipos">Prototipos</TabsTrigger>
+              <TabsTrigger value="estadisticas">Estadísticas</TabsTrigger>
+              <TabsTrigger value="financieros">Datos Financieros</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="informacion" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Detalles del Desarrollo</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Building2 className="h-4 w-4 text-slate-500" />
+                    <span>{desarrollo.nombre}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-4 w-4 text-slate-500" />
                     <span>{desarrollo.ubicacion}</span>
                   </div>
-                </div>
-                <div className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${
-                  getDesarrolloStatus(desarrollo).color
-                }`}>
-                  {getDesarrolloStatus(desarrollo).label}
-                </div>
-              </div>
-              
-              <div className="mt-6">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-xl font-semibold flex items-center">
-                    <ImageIcon className="h-5 w-5 mr-2 text-indigo-600" />
-                    Imágenes del desarrollo
-                  </h2>
-                </div>
-                <DesarrolloImageCarousel desarrolloId={id as string} editable={isAdmin()} />
-              </div>
-              
-              {desarrollo.descripcion && (
-                <p className="text-slate-700 mt-4">{desarrollo.descripcion}</p>
-              )}
-              
-              {desarrollo.amenidades && parseAmenidades(desarrollo.amenidades).length > 0 && (
-                <div className="mt-6">
-                  <h2 className="text-xl font-semibold flex items-center mb-4">
-                    <Package className="h-5 w-5 mr-2 text-indigo-600" />
-                    Amenidades
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
-                    {parseAmenidades(desarrollo.amenidades).map((amenidadId, index) => {
-                      const { icon, label } = getAmenityIcon(amenidadId);
-                      return (
-                        <Badge key={index} variant="amenity" className="flex items-center py-1">
-                          {icon}
-                          <span>{label}</span>
-                        </Badge>
-                      );
-                    })}
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-slate-500" />
+                    <span>
+                      {desarrollo.fecha_inicio
+                        ? new Date(desarrollo.fecha_inicio).toLocaleDateString()
+                        : 'Fecha de inicio no especificada'}
+                    </span>
                   </div>
-                </div>
-              )}
-              
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg mt-6">
-                <div className="space-y-1">
-                  <div className="flex items-center text-slate-500 text-sm">
-                    <Home className="h-4 w-4 mr-1" />
-                    <span>Unidades</span>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-slate-500" />
+                    <span>
+                      {desarrollo.fecha_entrega
+                        ? new Date(desarrollo.fecha_entrega).toLocaleDateString()
+                        : 'Fecha de entrega no especificada'}
+                    </span>
                   </div>
-                  <p className="font-semibold">
-                    {getUnitCountDisplay()}
-                  </p>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="flex items-center text-slate-500 text-sm">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span>Inicio</span>
+                  <div className="flex items-center space-x-2">
+                    <User className="h-4 w-4 text-slate-500" />
+                    <span>{desarrollo.total_unidades} Unidades en total</span>
                   </div>
-                  <p className="font-semibold">
-                    {desarrollo.fecha_inicio 
-                      ? new Date(desarrollo.fecha_inicio).toLocaleDateString('es-MX', {
-                          month: 'short',
-                          year: 'numeric'
-                        })
-                      : 'N/A'
-                    }
-                  </p>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="flex items-center text-slate-500 text-sm">
-                    <CalendarClock className="h-4 w-4 mr-1" />
-                    <span>Entrega</span>
+                  <div className="flex items-center space-x-2">
+                    <Clipboard className="h-4 w-4 text-slate-500" />
+                    <span>{desarrollo.descripcion || 'Sin descripción'}</span>
                   </div>
-                  <p className="font-semibold">
-                    {desarrollo.fecha_entrega 
-                      ? new Date(desarrollo.fecha_entrega).toLocaleDateString('es-MX', {
-                          month: 'short',
-                          year: 'numeric'
-                        })
-                      : 'Por definir'
-                    }
-                  </p>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="flex items-center text-slate-500 text-sm">
-                    <span className="h-4 w-4 mr-1 flex items-center justify-center font-bold">%</span>
-                    <span>Avance Comercial</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold mb-1">{calculateComercialProgress()}%</p>
-                    <Progress value={calculateComercialProgress()} className="h-2" />
-                  </div>
-                </div>
-              </div>
-            </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
             
-            <div className="mt-8 space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-                <div className="space-y-1">
-                  <h2 className="text-2xl font-bold text-slate-800">Prototipos disponibles</h2>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <p className="text-slate-600">
-                      {prototipos.length} {prototipos.length === 1 ? 'prototipo' : 'prototipos'} en este desarrollo
-                    </p>
-                    {puedeCrearPrototipos() && (
-                      <div className="flex items-center text-indigo-600 gap-2">
-                        <span>(Aún puedes crear prototipos para {unidadesDisponiblesParaPrototipos()} unidades más)</span>
+            <TabsContent value="prototipos">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Prototipos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  Lista de prototipos
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="estadisticas">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Estadísticas del Desarrollo</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {statsLoading ? (
+                    <div className="flex justify-center items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Progreso de ventas</span>
+                          <span className="text-sm text-slate-500">{progress.toFixed(2)}%</span>
+                        </div>
+                        <Progress value={progress} />
                       </div>
-                    )}
-                  </div>
-                </div>
-                <AdminResourceDialog 
-                  resourceType="prototipos" 
-                  buttonText="Nuevo prototipo" 
-                  buttonIcon={<PlusCircle className="h-4 w-4 mr-2" />}
-                  buttonVariant="default"
-                  onSuccess={refetchPrototipos}
-                  desarrolloId={id}
-                />
-              </div>
-              
-              {prototipos.length === 0 ? (
-                <div className="text-center py-10 bg-slate-50 rounded-lg">
-                  <Home className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                  <p className="text-slate-700 mb-4">No hay prototipos registrados en este desarrollo</p>
-                  <AdminResourceDialog 
-                    resourceType="prototipos" 
-                    buttonText="Nuevo prototipo" 
-                    buttonIcon={<PlusCircle className="h-4 w-4 mr-2" />}
-                    buttonVariant="default"
-                    onSuccess={refetchPrototipos}
-                    desarrolloId={id}
-                  />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {prototipos.map((prototipo) => (
-                    <PrototipoCard 
-                      key={prototipo.id} 
-                      prototipo={prototipo}
-                      onViewDetails={handlePrototipoClick}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
-        ) : null}
+                      
+                      <Separator />
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-semibold">Unidades</h3>
+                          <p>Total: {desarrollo.total_unidades}</p>
+                          <p>Disponibles: {desarrollo.unidades_disponibles}</p>
+                          <p>Vendidas: {desarrollo.total_unidades - desarrollo.unidades_disponibles}</p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-semibold">Ingresos</h3>
+                          <p>Ingresos Estimados: {stats?.ingresos_estimados}</p>
+                          <p>Ingresos Recibidos: {stats?.ingresos_recibidos}</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="financieros">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Datos Financieros</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  Datos financieros del desarrollo
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+        
+        <AdminResourceDialog
+          resourceType="prototipos"
+          open={isAddPrototipoOpen}
+          onClose={() => setIsAddPrototipoOpen(false)}
+          onSuccess={() => {
+            setIsAddPrototipoOpen(false);
+            window.location.reload();
+          }}
+          desarrolloId={id}
+        />
+        
+        <AdminResourceDialog
+          resourceType="desarrollos"
+          open={isAddImageOpen}
+          onClose={() => setIsAddImageOpen(false)}
+          onSuccess={() => {
+            setIsAddImageOpen(false);
+            refetchImages();
+          }}
+          resourceId={id}
+        />
       </div>
     </DashboardLayout>
   );
 };
 
-export default DesarrolloDetailPage;
+export default DesarrolloDetail;

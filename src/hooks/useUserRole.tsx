@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@supabase/auth-helpers-react';
@@ -8,6 +9,9 @@ interface UserData {
   nombre: string;
   email: string;
   empresaId: number | null;
+  // Add name and empresaNombre properties needed in DashboardLayout
+  name: string;
+  empresaNombre: string;
 }
 
 interface Permissions {
@@ -20,6 +24,7 @@ interface Permissions {
 
 export const useUserRole = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [permissions, setPermissions] = useState<Permissions>({
     canCreateResource: false,
     canEditResource: false,
@@ -29,9 +34,11 @@ export const useUserRole = () => {
   });
 
   const user = useUser();
+  const isAuthenticated = !!user;
 
   useEffect(() => {
     const fetchRole = async () => {
+      setIsLoading(true);
       if (user?.id) {
         const fetchedUserData = await fetchUserData(user.id);
         setUserData(fetchedUserData);
@@ -45,6 +52,7 @@ export const useUserRole = () => {
           isAdmin: false,
         });
       }
+      setIsLoading(false);
     };
 
     fetchRole();
@@ -55,7 +63,7 @@ export const useUserRole = () => {
       // First get the user info from usuarios table
       const { data, error } = await supabase
         .from('usuarios')
-        .select('*')
+        .select('*, empresa_info(nombre)')
         .eq('auth_id', userId)
         .single();
 
@@ -64,9 +72,14 @@ export const useUserRole = () => {
         return null;
       }
 
+      if (!data) {
+        return null;
+      }
+
       // Make sure all userData properties are safely accessed with null checks
       const empresaId = data?.empresa_id || null;
       const rolValue = data?.rol || 'vendedor';
+      const empresaNombre = data?.empresa_info?.nombre || 'AirbnbInvest';
       
       // Create user data object with safe null checks
       const userData: UserData = {
@@ -75,6 +88,9 @@ export const useUserRole = () => {
         nombre: data?.nombre || '',
         email: data?.email || '',
         empresaId: empresaId,
+        // Map nombre to name for DashboardLayout compatibility
+        name: data?.nombre || '',
+        empresaNombre: empresaNombre,
       };
 
       // Set permissions based on role
@@ -103,6 +119,8 @@ export const useUserRole = () => {
     canDeleteResource: permissions.canDeleteResource,
     canSeeFinancials: permissions.canSeeFinancials,
     isAdmin: permissions.isAdmin,
+    isLoading,
+    isAuthenticated
   };
 };
 

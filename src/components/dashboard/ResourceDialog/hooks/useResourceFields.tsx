@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,7 +32,7 @@ const LEAD_ORIGIN_OPTIONS = [
   { value: 'otro', label: 'Otro' }
 ];
 
-const LEAD_SUBSTATUS_OPTIONS = {
+const LEAD_SUBSTATUS_OPTIONS: Record<string, { value: string; label: string }[]> = {
   nuevo: [
     { value: 'sin_contactar', label: 'Sin Contactar' },
     { value: 'en_espera', label: 'En Espera' }
@@ -79,15 +78,11 @@ const TIPOS_PROPIEDADES = [
 
 export const useResourceFields = (resourceType: ResourceType, selectedStatus?: string | null, selectedDesarrolloId?: string) => {
   const [fields, setFields] = useState<FieldDefinition[]>([]);
-  const leadsData = useLeads();
-  const desarrollosData = useDesarrollos();
-  const prototipesData = usePrototipos({
+  const { leads } = useLeads();
+  const { desarrollos } = useDesarrollos();
+  const { prototipos } = usePrototipos({
     desarrolloId: selectedDesarrolloId
   });
-  
-  const leads = leadsData.leads || [];
-  const desarrollos = desarrollosData.desarrollos || [];
-  const prototipos = prototipesData.prototipos || [];
   
   // Obtener la lista de vendedores desde la tabla de usuarios
   const { data: vendedores = [] } = useQuery({
@@ -217,8 +212,8 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
           ];
         case 'leads':
           // Get substatus options based on the selected status
-          const substatusOptions = selectedStatus && LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
-            ? LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
+          const substatusOptions = selectedStatus && LEAD_SUBSTATUS_OPTIONS[selectedStatus] 
+            ? LEAD_SUBSTATUS_OPTIONS[selectedStatus] 
             : [];
           
           return [

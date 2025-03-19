@@ -5,11 +5,11 @@ import { ResourceType, FormValues } from './types';
 import { useToast } from '@/hooks/use-toast';
 import { Tables } from '@/integrations/supabase/types';
 
-// Define a type for the tables that exist in Supabase
-type SupabaseTable = keyof Tables;
+// Define valid table names from the Supabase schema
+type ValidTableName = 'desarrollos' | 'prototipos' | 'leads' | 'cotizaciones' | 'unidades';
 
 // A mapping of ResourceType to actual table names
-const resourceTableMap: Record<ResourceType, SupabaseTable> = {
+const resourceTableMap: Record<ResourceType, ValidTableName> = {
   desarrollos: 'desarrollos',
   prototipos: 'prototipos',
   leads: 'leads',
