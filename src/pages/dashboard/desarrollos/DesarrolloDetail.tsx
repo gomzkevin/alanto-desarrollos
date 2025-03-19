@@ -46,7 +46,7 @@ function DesarrolloDetail() {
 
   // Get desarrollo images
   const { 
-    images, 
+    images,
     isLoading: imagesLoading,
     error: imagesError, 
     refetch: refetchImages,
@@ -183,8 +183,7 @@ function DesarrolloDetail() {
           <div className="lg:col-span-2 space-y-6">
             <DesarrolloCard 
               desarrollo={desarrollo} 
-              stats={stats} 
-              showAddRoomsButton={false}
+              onViewDetails={() => {}} 
             />
             
             <Card>
@@ -213,7 +212,7 @@ function DesarrolloDetail() {
                       <PrototipoCard 
                         key={prototipo.id} 
                         prototipo={prototipo} 
-                        onSuccess={handleRefresh} 
+                        onViewDetails={(id) => navigate(`/dashboard/prototipos/${id}`)} 
                       />
                     ))}
                   </div>

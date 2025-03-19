@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 
-interface InterestSelectorProps {
+export interface InterestSelectorProps {
   value: string;
   onChange: (value: string) => void;
   label?: string;

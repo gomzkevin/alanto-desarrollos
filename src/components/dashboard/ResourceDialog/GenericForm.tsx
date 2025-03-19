@@ -12,7 +12,7 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { FieldDefinition, FormValues } from './types';
 import { ClientSearch } from './components/ClientSearch';
-import AmenitiesSelector from '@/components/dashboard/AmenitiesSelector';
+import { AmenitiesSelector } from '@/components/dashboard/AmenitiesSelector';
 import ImageUploader from '@/components/dashboard/ImageUploader';
 import { InterestSelector } from './components/InterestSelector';
 import { cn } from '@/lib/utils';
