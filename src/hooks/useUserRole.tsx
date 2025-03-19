@@ -39,15 +39,43 @@ export const useUserRole = () => {
         
         setIsAuthenticated(true);
         
+        // First check if the empresa_id column exists in the usuarios table
+        const { data: hasEmpresaColumn, error: columnCheckError } = await supabase
+          .rpc('has_column', { table_name: 'usuarios', column_name: 'empresa_id' });
+        
+        if (columnCheckError) {
+          console.error('Error checking for empresa_id column:', columnCheckError);
+          toast({
+            title: 'Error',
+            description: 'Error al verificar la estructura de la base de datos',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
+        
         // Fetch user data from usuarios table
-        const { data, error } = await supabase
+        let query = supabase
           .from('usuarios')
           .select(`
             id,
             nombre,
             email,
             rol
-          `)
+          `);
+          
+        // Add empresa_id to the selection if the column exists
+        if (hasEmpresaColumn) {
+          query = query.select(`
+            id,
+            nombre,
+            email,
+            rol,
+            empresa_id
+          `);
+        }
+        
+        const { data, error } = await query
           .eq('auth_id', session.user.id)
           .single();
         
@@ -70,37 +98,22 @@ export const useUserRole = () => {
           return;
         }
         
-        // Get empresa info if empresa_id column exists
+        // Get empresa info if empresa_id exists
         let empresaId: number | null = null;
         let empresaNombre: string | null = null;
         
-        // Check if empresa_id column exists
-        const { data: empresaData, error: empresaError } = await supabase
-          .rpc('has_column', { table_name: 'usuarios', column_name: 'empresa_id' });
+        if (hasEmpresaColumn && data.empresa_id) {
+          empresaId = data.empresa_id;
           
-        const hasEmpresaColumn = empresaData || false;
-        
-        if (hasEmpresaColumn) {
-          // Fetch empresa_id
-          const { data: userWithEmpresa, error: userEmpresaError } = await supabase
-            .from('usuarios')
-            .select('empresa_id')
-            .eq('id', data.id)
+          // Get empresa name
+          const { data: empresa, error: empresaNameError } = await supabase
+            .from('empresa_info')
+            .select('nombre')
+            .eq('id', empresaId)
             .single();
             
-          if (!userEmpresaError && userWithEmpresa && userWithEmpresa.empresa_id) {
-            empresaId = userWithEmpresa.empresa_id;
-            
-            // Get empresa name
-            const { data: empresa, error: empresaNameError } = await supabase
-              .from('empresa_info')
-              .select('nombre')
-              .eq('id', empresaId)
-              .single();
-              
-            if (!empresaNameError && empresa) {
-              empresaNombre = empresa.nombre;
-            }
+          if (!empresaNameError && empresa) {
+            empresaNombre = empresa.nombre;
           }
         }
         

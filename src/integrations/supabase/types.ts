@@ -543,7 +543,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_column: {
+        Args: {
+          table_name: string
+          column_name: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
