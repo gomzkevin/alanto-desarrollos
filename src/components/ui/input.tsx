@@ -21,9 +21,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     // Handle display of formatted currency
     let displayValue = value;
-    if (formatCurrency && type === 'number' && value !== undefined && value !== null && value !== '') {
-      // Don't format the display for controlled inputs with formatCurrency
-      displayValue = rawValue;
+    if (formatCurrency && type === 'number' && rawValue !== '') {
+      // Format the displayed value for currency
+      const numValue = parseFloat(rawValue);
+      if (!isNaN(numValue)) {
+        displayValue = formatCurrencyUtil(numValue);
+      } else {
+        displayValue = rawValue;
+      }
     }
     
     // Custom handler for currency formatting
