@@ -10,10 +10,10 @@ import { ChevronLeft, Plus, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { DesarrolloCard } from '@/components/dashboard/DesarrolloCard';
-import { DesarrolloEditButton } from '@/components/dashboard/DesarrolloEditButton';
-import { DesarrolloImageCarousel } from '@/components/dashboard/DesarrolloImageCarousel';
-import { PrototipoCard } from '@/components/dashboard/PrototipoCard';
+import DesarrolloCard from '@/components/dashboard/DesarrolloCard';
+import DesarrolloEditButton from '@/components/dashboard/DesarrolloEditButton';
+import DesarrolloImageCarousel from '@/components/dashboard/DesarrolloImageCarousel';
+import PrototipoCard from '@/components/dashboard/PrototipoCard';
 import { useToast } from '@/hooks/use-toast';
 import usePrototipos from '@/hooks/usePrototipos';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
@@ -46,13 +46,17 @@ function DesarrolloDetail() {
 
   // Get desarrollo images
   const { 
-    imagenes, 
+    images, 
     isLoading: imagesLoading,
-    principal,
     error: imagesError, 
     refetch: refetchImages,
-    handleUploadImage
+    uploadImage
   } = useDesarrolloImagenes(id);
+
+  // Buscar la imagen principal
+  const principal = React.useMemo(() => {
+    return images ? images.find(img => img.es_principal) : undefined;
+  }, [images]);
 
   // Get estadísticas del desarrollo
   const { 
@@ -167,7 +171,7 @@ function DesarrolloDetail() {
           
           <div className="flex items-center gap-2">
             <DesarrolloEditButton 
-              desarrolloId={id} 
+              desarrollo={desarrollo} 
               onSuccess={handleRefresh} 
             />
           </div>
@@ -236,11 +240,8 @@ function DesarrolloDetail() {
           {/* Right column */}
           <div className="space-y-6">
             <DesarrolloImageCarousel 
-              images={imagenes} 
-              mainImage={principal}
-              isLoading={imagesLoading}
-              onUpload={handleUploadImage}
-              onSuccess={refetchImages}
+              desarrolloId={id || ''} 
+              editable={true}
             />
             
             {/* Additional info or components can go here */}

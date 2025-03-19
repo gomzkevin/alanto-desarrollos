@@ -21,6 +21,7 @@ interface ClientSearchProps {
     email: string;
     telefono: string;
   };
+  disabled?: boolean;
 }
 
 export function ClientSearch({ 
@@ -30,7 +31,8 @@ export function ClientSearch({
   isExistingClient,
   onExistingClientChange,
   onNewClientDataChange,
-  newClientData
+  newClientData,
+  disabled = false
 }: ClientSearchProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -100,6 +102,7 @@ export function ClientSearch({
               className="w-full justify-start h-10 px-3 text-left font-normal"
               onClick={() => setOpen(true)}
               type="button"
+              disabled={disabled}
             >
               <div className="text-left w-full truncate">
                 <div className="font-medium">{selectedLead.nombre}</div>
@@ -123,6 +126,7 @@ export function ClientSearch({
               onClick={() => setOpen(true)}
               ref={inputRef}
               className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              disabled={disabled}
             />
           )}
         </div>
@@ -138,6 +142,7 @@ export function ClientSearch({
                 handleClear();
               }}
               className="h-8 w-8"
+              disabled={disabled}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -153,6 +158,7 @@ export function ClientSearch({
                 }
               }}
               className="h-8 w-8"
+              disabled={disabled}
             >
               <Search className="h-4 w-4 text-muted-foreground" />
             </Button>
@@ -169,6 +175,7 @@ export function ClientSearch({
               onChange={(e) => setSearch(e.target.value)}
               className="w-full"
               autoFocus
+              disabled={disabled}
             />
           </div>
           
@@ -186,6 +193,7 @@ export function ClientSearch({
                     variant="ghost"
                     className="w-full justify-start px-3 py-2 text-left h-auto hover:bg-gray-50"
                     onClick={() => handleSelectLead(lead)}
+                    disabled={disabled}
                   >
                     <div className="truncate flex flex-col items-start w-full">
                       <span className="font-medium">{lead.nombre}</span>
@@ -220,6 +228,7 @@ export function ClientSearch({
           value={newClientData?.nombre || ''}
           onChange={(e) => onNewClientDataChange && onNewClientDataChange('nombre', e.target.value)}
           className="mt-1"
+          disabled={disabled}
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -231,6 +240,7 @@ export function ClientSearch({
             value={newClientData?.email || ''}
             onChange={(e) => onNewClientDataChange && onNewClientDataChange('email', e.target.value)}
             className="mt-1"
+            disabled={disabled}
           />
         </div>
         <div>
@@ -241,6 +251,7 @@ export function ClientSearch({
             value={newClientData?.telefono || ''}
             onChange={(e) => onNewClientDataChange && onNewClientDataChange('telefono', e.target.value)}
             className="mt-1"
+            disabled={disabled}
           />
         </div>
       </div>
@@ -272,6 +283,7 @@ export function ClientSearch({
           id="existingClient"
           checked={isExistingClient}
           onCheckedChange={onExistingClientChange}
+          disabled={disabled}
         />
       </div>
       

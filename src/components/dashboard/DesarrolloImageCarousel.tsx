@@ -13,7 +13,16 @@ interface DesarrolloImageCarouselProps {
 }
 
 const DesarrolloImageCarousel = ({ desarrolloId, editable = false }: DesarrolloImageCarouselProps) => {
-  const { images, isLoading, uploadImage, deleteImage, setMainImage, isUploading, isDeleting } = useDesarrolloImagenes(desarrolloId);
+  const { 
+    images, 
+    isLoading, 
+    uploadImage, 
+    deleteImage, 
+    setMainImage, 
+    isUploading, 
+    isDeleting 
+  } = useDesarrolloImagenes(desarrolloId);
+  
   const { toast } = useToast();
   const [hoveredImage, setHoveredImage] = useState<string | null>(null);
   
@@ -59,6 +68,9 @@ const DesarrolloImageCarousel = ({ desarrolloId, editable = false }: DesarrolloI
   const handleSetMain = (imageId: string) => {
     setMainImage(imageId);
   };
+  
+  // Find main image
+  const principal = images.find(img => img.es_principal);
   
   if (isLoading) {
     return (

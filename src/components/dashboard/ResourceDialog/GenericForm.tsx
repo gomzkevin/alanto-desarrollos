@@ -12,8 +12,8 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { FieldDefinition, FormValues } from './types';
 import { ClientSearch } from './components/ClientSearch';
-import { AmenitiesSelector } from '@/components/dashboard/AmenitiesSelector';
-import { ImageUploader } from '@/components/dashboard/ImageUploader';
+import AmenitiesSelector from '@/components/dashboard/AmenitiesSelector';
+import ImageUploader from '@/components/dashboard/ImageUploader';
 import { InterestSelector } from './components/InterestSelector';
 import { cn } from '@/lib/utils';
 
@@ -206,7 +206,8 @@ const GenericForm: React.FC<GenericFormProps> = ({
             <ClientSearch
               value={fieldValue}
               onClientSelect={onLeadSelect}
-              disabled={isSubmitting || readOnly}
+              isExistingClient={true}
+              onExistingClientChange={() => {}}
             />
           </div>
         );
@@ -221,7 +222,6 @@ const GenericForm: React.FC<GenericFormProps> = ({
             <AmenitiesSelector
               selectedAmenities={selectedAmenities}
               onChange={onAmenitiesChange}
-              disabled={isSubmitting || readOnly}
             />
           </div>
         );
@@ -233,11 +233,11 @@ const GenericForm: React.FC<GenericFormProps> = ({
               {label} {required && <span className="text-red-500 ml-1">*</span>}
             </Label>
             <ImageUploader 
-              imageUrl={fieldValue} 
-              bucket={field.bucket || 'prototipo-images'} 
-              folder={field.folder || 'prototipos'} 
-              onImageUpload={(url) => onChange({ [name]: url })}
-              disabled={isSubmitting || readOnly}
+              entityId={values.id || name}
+              bucketName={field.bucket || 'prototipo-images'} 
+              folderPath={field.folder || 'prototipos'} 
+              currentImageUrl={fieldValue} 
+              onImageUploaded={(url) => onChange({ [name]: url })}
             />
           </div>
         );
@@ -251,7 +251,6 @@ const GenericForm: React.FC<GenericFormProps> = ({
             <InterestSelector
               value={fieldValue}
               onChange={(value) => onChange({ [name]: value })}
-              disabled={isSubmitting || readOnly}
             />
           </div>
         );
