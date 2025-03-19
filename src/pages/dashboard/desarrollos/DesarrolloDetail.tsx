@@ -21,7 +21,8 @@ import {
   Trees, 
   Waves, 
   GlassWater, 
-  Check 
+  Check,
+  PlusCircle 
 } from 'lucide-react';
 import PrototipoCard from '@/components/dashboard/PrototipoCard';
 import { useQuery } from '@tanstack/react-query';
@@ -186,6 +187,29 @@ const DesarrolloDetailPage = () => {
     return `${availableUnits}/${totalUnits} disponibles`;
   };
   
+  const calcularUnidadesAsignadas = () => {
+    if (!prototipos || prototipos.length === 0) return 0;
+    return prototipos.reduce((sum, prototipo) => sum + (prototipo.total_unidades || 0), 0);
+  };
+  
+  const puedeCrearPrototipos = () => {
+    if (!desarrollo) return false;
+    
+    const unidadesAsignadas = calcularUnidadesAsignadas();
+    const unidadesDesarrollo = desarrollo.total_unidades || 0;
+    
+    return unidadesAsignadas < unidadesDesarrollo;
+  };
+  
+  const unidadesDisponiblesParaPrototipos = () => {
+    if (!desarrollo) return 0;
+    
+    const unidadesAsignadas = calcularUnidadesAsignadas();
+    const unidadesDesarrollo = desarrollo.total_unidades || 0;
+    
+    return Math.max(0, unidadesDesarrollo - unidadesAsignadas);
+  };
+  
   return (
     <DashboardLayout>
       <div className="space-y-6 p-6 pb-16">
@@ -328,11 +352,17 @@ const DesarrolloDetailPage = () => {
                   <h2 className="text-2xl font-bold text-slate-800">Prototipos disponibles</h2>
                   <p className="text-slate-600">
                     {prototipos.length} {prototipos.length === 1 ? 'prototipo' : 'prototipos'} en este desarrollo
+                    {puedeCrearPrototipos() && (
+                      <span className="ml-1 text-indigo-600">
+                        (Aún puedes crear prototipos para {unidadesDisponiblesParaPrototipos()} unidades más)
+                      </span>
+                    )}
                   </p>
                 </div>
                 <AdminResourceDialog 
                   resourceType="prototipos" 
                   buttonText="Nuevo prototipo" 
+                  buttonIcon={<PlusCircle className="h-4 w-4 mr-2" />}
                   onSuccess={refetchPrototipos}
                   desarrolloId={id}
                 />
@@ -345,6 +375,7 @@ const DesarrolloDetailPage = () => {
                   <AdminResourceDialog 
                     resourceType="prototipos" 
                     buttonText="Agregar prototipo" 
+                    buttonIcon={<PlusCircle className="h-4 w-4 mr-2" />}
                     onSuccess={refetchPrototipos}
                     desarrolloId={id}
                   />

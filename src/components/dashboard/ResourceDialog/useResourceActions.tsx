@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -91,6 +90,7 @@ export default function useResourceActions({
           return false;
         }
         
+        console.log(`Successfully updated ${resourceType} with id ${resourceId}`);
         toast({
           title: 'Actualizado',
           description: `${getResourceLabel(resourceType)} actualizado correctamente`,
@@ -113,6 +113,7 @@ export default function useResourceActions({
           return false;
         }
         
+        console.log(`Successfully created new ${resourceType}`);
         toast({
           title: 'Creado',
           description: `${getResourceLabel(resourceType)} creado correctamente`,
@@ -121,9 +122,11 @@ export default function useResourceActions({
       
       // Call onSuccess callback if provided
       if (onSuccess) {
+        console.log('Calling onSuccess callback');
         onSuccess();
       }
       
+      setIsLoading(false);
       return true;
     } catch (error) {
       console.error('Error in saveResource:', error);
@@ -132,9 +135,8 @@ export default function useResourceActions({
         description: 'Ha ocurrido un error inesperado',
         variant: 'destructive',
       });
-      return false;
-    } finally {
       setIsLoading(false);
+      return false;
     }
   };
   
