@@ -54,16 +54,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }, [isLoading, role, navigate, toast]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Sidebar>
-        <div className="absolute top-4 right-4">
-          <UserMenu />
-        </div>
-      </Sidebar>
-      <main className="pl-16 md:pl-64 pr-4 py-6">
-        {children || <Outlet />}
-      </main>
-    </div>
+    <SidebarProvider>
+      <div className="min-h-screen bg-slate-50">
+        <Sidebar>
+          <div className="absolute top-4 right-4">
+            <UserMenu />
+          </div>
+        </Sidebar>
+        <main className="pl-16 md:pl-64 pr-4 py-6">
+          {children || <Outlet />}
+        </main>
+      </div>
+    </SidebarProvider>
   );
 };
 
