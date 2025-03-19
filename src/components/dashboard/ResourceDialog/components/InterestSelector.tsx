@@ -5,20 +5,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 
-export interface InterestSelectorProps {
+interface InterestSelectorProps {
   value: string;
   onChange: (value: string) => void;
   label?: string;
   description?: string;
-  disabled?: boolean;
 }
 
 export const InterestSelector: React.FC<InterestSelectorProps> = ({
   value,
   onChange,
   label = 'Interés en',
-  description,
-  disabled = false
+  description
 }) => {
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('');
   const [selectedPrototipoId, setSelectedPrototipoId] = useState<string>('');
@@ -111,9 +109,8 @@ export const InterestSelector: React.FC<InterestSelectorProps> = ({
         <Select
           value={selectedDesarrolloId}
           onValueChange={handleDesarrolloSelect}
-          disabled={disabled}
         >
-          <SelectTrigger id="desarrollo-select" className={disabled ? 'bg-gray-100' : ''}>
+          <SelectTrigger>
             <SelectValue placeholder="Seleccionar desarrollo..." />
           </SelectTrigger>
           <SelectContent className="bg-white">
@@ -133,9 +130,9 @@ export const InterestSelector: React.FC<InterestSelectorProps> = ({
           <Select
             value={selectedPrototipoId}
             onValueChange={handlePrototipoSelect}
-            disabled={!selectedDesarrolloId || disabled}
+            disabled={!selectedDesarrolloId}
           >
-            <SelectTrigger className={disabled ? 'bg-gray-100' : ''}>
+            <SelectTrigger>
               <SelectValue placeholder="Seleccionar prototipo (opcional)..." />
             </SelectTrigger>
             <SelectContent className="bg-white">
