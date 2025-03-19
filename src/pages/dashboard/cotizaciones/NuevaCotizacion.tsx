@@ -18,6 +18,7 @@ import { es } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useUserRole } from '@/hooks/useUserRole';
 
 const NuevaCotizacion = () => {
   const navigate = useNavigate();
@@ -38,8 +39,9 @@ const NuevaCotizacion = () => {
   const [submitting, setSubmitting] = useState(false);
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [finiquitoDate, setFiniquitoDate] = useState<Date | undefined>(undefined);
+  const { empresaId } = useUserRole();
 
-  const { leads } = useLeads({ limit: 100 });
+  const { leads } = useLeads({ empresa_id: empresaId });
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos({ desarrolloId: selectedDesarrollo?.id });
 
@@ -62,7 +64,8 @@ const NuevaCotizacion = () => {
             nombre: newLeadData.nombre,
             email: newLeadData.email || null,
             telefono: newLeadData.telefono || null,
-            estado: 'nuevo'
+            estado: 'nuevo',
+            empresa_id: empresaId
           })
           .select()
           .single();
@@ -86,7 +89,8 @@ const NuevaCotizacion = () => {
           monto_finiquito: useFiniquito ? finiquitoAmount : null,
           notas: notes,
           fecha_inicio_pagos: startDate.toISOString(),
-          fecha_finiquito: useFiniquito && finiquitoDate ? finiquitoDate.toISOString() : null
+          fecha_finiquito: useFiniquito && finiquitoDate ? finiquitoDate.toISOString() : null,
+          empresa_id: empresaId
         })
         .select();
       

@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ResourceType, FormValues } from './types';
 import { getCurrentUserId } from '@/lib/supabase';
+import useUserRole from '@/hooks/useUserRole';
 
 interface UseResourceActionsProps {
   resourceType: ResourceType;
@@ -25,6 +26,7 @@ export default function useResourceActions({
 }: UseResourceActionsProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { empresaId } = useUserRole();
 
   // Save resource function
   const saveResource = async (values: FormValues) => {
@@ -59,6 +61,11 @@ export default function useResourceActions({
         }
       }
       
+      // Ensure empresa_id is set for new resources
+      if ((resourceType === 'leads' || resourceType === 'cotizaciones') && empresaId) {
+        data.empresa_id = empresaId;
+      }
+      
       // Handle client creation for cotizaciones
       if (resourceType === 'cotizaciones' && !clientConfig?.isExistingClient) {
         // Create a new lead first
@@ -69,7 +76,8 @@ export default function useResourceActions({
             email: clientConfig?.newClientData.email,
             telefono: clientConfig?.newClientData.telefono,
             estado: 'nuevo',
-            subestado: 'sin_contactar'
+            subestado: 'sin_contactar',
+            empresa_id: empresaId
           })
           .select()
           .single();

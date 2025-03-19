@@ -46,6 +46,7 @@ const LeadsPage = () => {
   const [selectedEstado, setSelectedEstado] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const { empresaId } = useUserRole();
   
   const { 
     leads, 
@@ -57,7 +58,8 @@ const LeadsPage = () => {
     getOriginLabel
   } = useLeads({
     estado: selectedEstado || undefined,
-    search: searchTerm.length > 2 ? searchTerm : undefined
+    search: searchTerm.length > 2 ? searchTerm : undefined,
+    empresa_id: empresaId
   });
   
   const { desarrollos } = useDesarrollos();

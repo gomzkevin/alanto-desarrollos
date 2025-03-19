@@ -299,6 +299,7 @@ export type Database = {
         Row: {
           agente: string | null
           email: string | null
+          empresa_id: number | null
           estado: string | null
           fecha_creacion: string | null
           id: string
@@ -313,6 +314,7 @@ export type Database = {
         Insert: {
           agente?: string | null
           email?: string | null
+          empresa_id?: number | null
           estado?: string | null
           fecha_creacion?: string | null
           id?: string
@@ -327,6 +329,7 @@ export type Database = {
         Update: {
           agente?: string | null
           email?: string | null
+          empresa_id?: number | null
           estado?: string | null
           fecha_creacion?: string | null
           id?: string

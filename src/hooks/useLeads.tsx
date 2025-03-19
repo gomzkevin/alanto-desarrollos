@@ -5,6 +5,7 @@ import { Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import useDesarrollos from './useDesarrollos';
 import usePrototipos from './usePrototipos';
+import useUserRole from './useUserRole';
 
 export type Lead = Tables<"leads">;
 
@@ -62,21 +63,25 @@ type FetchLeadsOptions = {
   agente?: string;
   limit?: number;
   search?: string;
+  empresa_id?: number;
 };
 
 export const useLeads = (options: FetchLeadsOptions = {}) => {
-  const { estado, agente, limit, search } = options;
+  const { estado, agente, limit, search, empresa_id } = options;
   const { toast } = useToast();
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos();
+  const { empresaId } = useUserRole();
   
-  console.log("useLeads initialization with options:", options);
+  const effectiveEmpresaId = empresa_id || empresaId;
+  
+  console.log("useLeads initialization with options:", { ...options, empresaId: effectiveEmpresaId });
   console.log("Lead status options:", LEAD_STATUS_OPTIONS);
   console.log("Lead origin options:", LEAD_ORIGIN_OPTIONS);
   
   // Function to fetch leads
   const fetchLeads = async () => {
-    console.log('Fetching leads with options:', options);
+    console.log('Fetching leads with options:', { ...options, empresaId: effectiveEmpresaId });
     
     try {
       let query = supabase
@@ -94,6 +99,11 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
       
       if (search) {
         query = query.or(`nombre.ilike.%${search}%,email.ilike.%${search}%,telefono.ilike.%${search}%`);
+      }
+      
+      // Filter by empresa_id if provided
+      if (effectiveEmpresaId) {
+        query = query.eq('empresa_id', effectiveEmpresaId);
       }
       
       // Apply limit if provided
@@ -134,6 +144,11 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
     try {
       console.log('Updating lead with data:', updatedData);
       
+      // Ensure empresa_id is set if not already present
+      if (!updatedData.empresa_id && effectiveEmpresaId) {
+        updatedData.empresa_id = effectiveEmpresaId;
+      }
+      
       const { data, error } = await supabase
         .from('leads')
         .update(updatedData)
@@ -164,7 +179,7 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
 
   // Use React Query to fetch and cache the data
   const queryResult = useQuery({
-    queryKey: ['leads', estado, agente, limit, search],
+    queryKey: ['leads', estado, agente, limit, search, effectiveEmpresaId],
     queryFn: fetchLeads,
     retry: 3,
     retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
