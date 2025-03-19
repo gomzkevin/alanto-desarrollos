@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { ResourceType, FormValues } from './types';
@@ -16,7 +15,6 @@ interface ResourceDialogProps {
   desarrolloId?: string;
   lead_id?: string;
   prototipo_id?: string;
-  // Added buttonText prop and others
   buttonText?: string;
   buttonIcon?: React.ReactNode;
   buttonVariant?: string;
@@ -41,7 +39,6 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Custom hook to fetch resource data
   const { 
     resource, 
     setResource, 
@@ -60,16 +57,13 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     onAmenitiesChange: setSelectedAmenities
   });
 
-  // Get field definitions using the hook
   const fields = useResourceFields(resourceType, selectedStatus);
 
-  // Custom hook for resource actions (save, delete)
   const { saveResource, handleImageUpload: uploadResourceImage } = useResourceActions({
     resourceType,
     resourceId,
     onSuccess,
     selectedAmenities,
-    // Pass isExistingClient and newClientData as part of a client config object
     clientConfig: {
       isExistingClient,
       newClientData
@@ -82,20 +76,16 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
         setSelectedDesarrolloId(desarrolloId);
       }
       
-      // Set default status for new leads
       if (resourceType === 'leads' && !resourceId) {
         setSelectedStatus('nuevo');
       }
     }
   }, [open, desarrolloId, resourceId, resourceType]);
 
-  // Handle form change
   const handleChange = (values: FormValues) => {
     if (resource) {
-      // Create a copy of the current resource
       const updatedResource = { ...resource };
       
-      // Update only the fields that have changed
       Object.keys(values).forEach(key => {
         updatedResource[key] = values[key];
       });
@@ -104,20 +94,16 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     }
   };
 
-  // Handle select field change
   const handleSelectChange = (name: string, value: string) => {
     console.log("Select changed:", name, value);
     
     if (name === 'estado' && resourceType === 'leads') {
-      // Update the selected status
       setSelectedStatus(value);
       
-      // When changing status, preserve all form data and just update the status
       if (resource) {
         const updatedResource = {
           ...resource,
           estado: value,
-          // Only reset subestado which depends on selected status
           subestado: ''
         };
         setResource(updatedResource);
@@ -133,7 +119,6 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
         setResource(updatedResource);
       }
     } else if (resource) {
-      // For any other field, just update that specific field
       const updatedResource = {
         ...resource,
         [name]: value
@@ -142,7 +127,6 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     }
   };
 
-  // Handle switch field change
   const handleSwitchChange = (name: string, checked: boolean) => {
     if (name === 'usar_finiquito') {
       setUsarFiniquito(checked);
@@ -157,7 +141,6 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     }
   };
 
-  // Handle client selection
   const handleLeadSelect = (leadId: string, leadName: string) => {
     if (resource) {
       const updatedResource = {
@@ -168,7 +151,6 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     }
   };
 
-  // Handler for image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
@@ -192,7 +174,6 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     }
   };
 
-  // Handle form submission
   const handleSaveResource = async () => {
     console.log("handleSaveResource called with resource:", resource);
     if (!resource) return false;

@@ -3,7 +3,6 @@ import React from 'react';
 import { DialogContent } from '@/components/ui/dialog';
 import { DialogHeader } from './DialogHeader';
 import { DialogFooter } from './DialogFooter';
-import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { FormValues, ResourceType, FieldDefinition } from '../types';
 import GenericForm from '../GenericForm';

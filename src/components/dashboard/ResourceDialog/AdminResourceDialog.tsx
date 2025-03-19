@@ -13,6 +13,7 @@ interface AdminResourceDialogProps {
   desarrolloId?: string;
   prototipo_id?: string;
   lead_id?: string;
+  resourceId?: string; // Added resourceId prop
 }
 
 const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
@@ -23,7 +24,8 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
   onSuccess,
   desarrolloId,
   prototipo_id,
-  lead_id
+  lead_id,
+  resourceId // Added resourceId param
 }) => {
   const [open, setOpen] = React.useState(false);
 
@@ -60,6 +62,7 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
         desarrolloId={desarrolloId}
         prototipo_id={prototipo_id}
         lead_id={lead_id}
+        resourceId={resourceId} // Pass resourceId to ResourceDialog
       />
     </>
   );
