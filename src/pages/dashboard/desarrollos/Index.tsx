@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -9,6 +10,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Tables } from '@/integrations/supabase/types';
 import useUnidades from '@/hooks/useUnidades';
 import { getCurrentUserId } from '@/lib/supabase';
+import { toast } from '@/hooks/use-toast';
 
 type Desarrollo = Tables<"desarrollos">;
 
@@ -17,14 +19,21 @@ const DesarrollosPage = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [desarrollosWithRealCounts, setDesarrollosWithRealCounts] = useState<Desarrollo[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
+  const { 
+    userId,
+    isAdmin,
+    isLoading: isUserLoading
+  } = useUserRole();
+  
+  // Usamos el userId del hook useUserRole en lugar de fetchUserId
   useEffect(() => {
-    const fetchUserId = async () => {
-      const userId = await getCurrentUserId();
+    if (userId) {
       setCurrentUserId(userId);
-    };
-    fetchUserId();
-  }, []);
+      setInitialLoadComplete(true);
+    }
+  }, [userId]);
   
   const { 
     desarrollos = [], 
@@ -38,8 +47,6 @@ const DesarrollosPage = () => {
   
   const { countDesarrolloUnidadesByStatus } = useUnidades();
 
-  const { isAdmin } = useUserRole();
-
   const canCreateResource = () => {
     return isAdmin();
   };
@@ -48,24 +55,33 @@ const DesarrollosPage = () => {
     const updateRealUnitCounts = async () => {
       if (desarrollos.length === 0 || isLoading) return;
       
-      const updatedDesarrollos = await Promise.all(
-        desarrollos.map(async (desarrollo) => {
-          try {
-            const counts = await countDesarrolloUnidadesByStatus(desarrollo.id);
-            
-            return {
-              ...desarrollo,
-              unidades_disponibles: counts.disponibles,
-              total_unidades: counts.total || 0
-            };
-          } catch (error) {
-            console.error('Error updating real counts for desarrollo:', desarrollo.id, error);
-            return desarrollo;
-          }
-        })
-      );
-      
-      setDesarrollosWithRealCounts(updatedDesarrollos);
+      try {
+        const updatedDesarrollos = await Promise.all(
+          desarrollos.map(async (desarrollo) => {
+            try {
+              const counts = await countDesarrolloUnidadesByStatus(desarrollo.id);
+              
+              return {
+                ...desarrollo,
+                unidades_disponibles: counts.disponibles,
+                total_unidades: counts.total || 0
+              };
+            } catch (error) {
+              console.error('Error updating real counts for desarrollo:', desarrollo.id, error);
+              return desarrollo;
+            }
+          })
+        );
+        
+        setDesarrollosWithRealCounts(updatedDesarrollos);
+      } catch (error) {
+        console.error('Error updating unit counts:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los conteos de unidades",
+          variant: "destructive"
+        });
+      }
     };
     
     updateRealUnitCounts();
@@ -96,6 +112,9 @@ const DesarrollosPage = () => {
     ? normalizeDesarrollos(desarrollosWithRealCounts)
     : normalizeDesarrollos(desarrollos as Desarrollo[]);
 
+  // Determinar si realmente estamos en estado de carga
+  const isActuallyLoading = isUserLoading || isLoading || (!initialLoadComplete && !userId);
+
   return (
     <DashboardLayout>
       <div className="space-y-6 p-6 pb-16">
@@ -124,7 +143,7 @@ const DesarrollosPage = () => {
           />
         </div>
 
-        {isLoading ? (
+        {isActuallyLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-[400px] bg-slate-100 animate-pulse rounded-xl" />
