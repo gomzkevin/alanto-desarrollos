@@ -135,7 +135,7 @@ const DesarrollosPage = () => {
             {displayDesarrollos.map((desarrollo) => (
               <DesarrolloCard 
                 key={desarrollo.id} 
-                desarrollo={desarrollo}
+                desarrollo={desarrollo as any}
                 onViewDetails={handleDesarrolloClick}
               />
             ))}
