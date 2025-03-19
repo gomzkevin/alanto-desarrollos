@@ -46,12 +46,7 @@ export const useUserRole = () => {
             id,
             nombre,
             email,
-            rol,
-            empresa_id,
-            empresa_info:empresa_id (
-              id,
-              nombre
-            )
+            rol
           `)
           .eq('auth_id', session.user.id)
           .single();
@@ -64,19 +59,59 @@ export const useUserRole = () => {
             variant: 'destructive',
           });
           setUserData(null);
-        } else if (!data) {
+          setIsLoading(false);
+          return;
+        }
+        
+        if (!data) {
           console.log('User not found in usuarios table');
           setUserData(null);
-        } else {
-          setUserData({
-            id: data.id,
-            role: data.rol as UserRole,
-            name: data.nombre,
-            email: data.email,
-            empresaId: data.empresa_id,
-            empresaNombre: data.empresa_info?.nombre || null
-          });
+          setIsLoading(false);
+          return;
         }
+        
+        // Get empresa info if empresa_id column exists
+        let empresaId: number | null = null;
+        let empresaNombre: string | null = null;
+        
+        // Check if empresa_id column exists
+        const { data: empresaData, error: empresaError } = await supabase
+          .rpc('has_column', { table_name: 'usuarios', column_name: 'empresa_id' });
+          
+        const hasEmpresaColumn = empresaData || false;
+        
+        if (hasEmpresaColumn) {
+          // Fetch empresa_id
+          const { data: userWithEmpresa, error: userEmpresaError } = await supabase
+            .from('usuarios')
+            .select('empresa_id')
+            .eq('id', data.id)
+            .single();
+            
+          if (!userEmpresaError && userWithEmpresa && userWithEmpresa.empresa_id) {
+            empresaId = userWithEmpresa.empresa_id;
+            
+            // Get empresa name
+            const { data: empresa, error: empresaNameError } = await supabase
+              .from('empresa_info')
+              .select('nombre')
+              .eq('id', empresaId)
+              .single();
+              
+            if (!empresaNameError && empresa) {
+              empresaNombre = empresa.nombre;
+            }
+          }
+        }
+        
+        setUserData({
+          id: data.id,
+          role: data.rol as UserRole,
+          name: data.nombre,
+          email: data.email,
+          empresaId,
+          empresaNombre
+        });
       } catch (error) {
         console.error('Error in useUserRole hook:', error);
         setUserData(null);

@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Tables, Json } from '@/integrations/supabase/types';
+import { Tables } from '@/integrations/supabase/types';
 import { useUserRole } from './useUserRole';
 
 export type Desarrollo = Tables<"desarrollos"> & {
@@ -30,8 +30,12 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       // Build the select query
       let query = supabase.from('desarrollos').select('*');
       
-      // Filter by empresa_id if available
-      if (userData?.empresaId) {
+      // Check if empresa_id column exists in desarrollos table
+      const { data: hasColumn } = await supabase
+        .rpc('has_column', { table_name: 'desarrollos', column_name: 'empresa_id' });
+      
+      // Filter by empresa_id if the column exists and user has empresaId
+      if (hasColumn && userData?.empresaId) {
         console.log('Filtering desarrollos by empresa_id:', userData.empresaId);
         query = query.eq('empresa_id', userData.empresaId);
       }
@@ -52,7 +56,7 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       }
       
       // Process desarrollos to handle JSON amenidades
-      const processedDesarrollos = desarrollos.map(desarrollo => {
+      const processedDesarrollos = desarrollos?.map(desarrollo => {
         // Parse amenidades from JSON to string array if it exists
         let amenidades: string[] | null = null;
         
@@ -74,7 +78,7 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
             }
           } else {
             // Handle object case by converting to array of strings
-            const jsonObj = desarrollo.amenidades as Json;
+            const jsonObj = desarrollo.amenidades;
             
             // For objects we'll extract their values as strings, if they have an id property
             if (typeof jsonObj === 'object' && jsonObj !== null) {
@@ -94,7 +98,7 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
         };
         
         return processedDesarrollo;
-      });
+      }) || [];
       
       // If relations are requested, fetch them for each desarrollo
       if (withPrototipos && processedDesarrollos && processedDesarrollos.length > 0) {
@@ -128,7 +132,7 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   const queryResult = useQuery({
     queryKey: ['desarrollos', limit, withPrototipos, userData?.empresaId],
     queryFn: fetchDesarrollos,
-    enabled: !!userData // Only run the query when user data is available
+    enabled: true // Always run the query, even if userData is not available
   });
 
   return {

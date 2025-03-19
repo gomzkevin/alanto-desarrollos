@@ -29,6 +29,18 @@ const queryClient = new QueryClient({
   },
 });
 
+// Create a function to check if Supabase is available
+const checkSupabaseConnection = async () => {
+  try {
+    // Simple query to check if Supabase is reachable
+    const { error } = await supabase.from('usuarios').select('count').limit(1);
+    return !error;
+  } catch (e) {
+    console.error('Error connecting to Supabase:', e);
+    return false;
+  }
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>

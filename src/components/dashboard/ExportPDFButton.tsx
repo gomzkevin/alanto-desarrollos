@@ -32,7 +32,7 @@ export const ExportPDFButton = ({
   showInListView = false // Default to false - only show in detail views
 }: ExportPDFButtonProps) => {
   const { toast } = useToast();
-  const { role } = useUserRole();
+  const { userData } = useUserRole();
   const [isLoading, setIsLoading] = useState(false);
   
   // Admin y vendedor pueden exportar PDFs - mostrar siempre durante desarrollo
