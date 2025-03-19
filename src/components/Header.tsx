@@ -33,14 +33,9 @@ const Header = () => {
             <a href="#features" className="text-slate-700 hover:text-indigo-600 transition-colors">Características</a>
             <a href="#properties" className="text-slate-700 hover:text-indigo-600 transition-colors">Propiedades</a>
             <a href="#calculator" className="text-slate-700 hover:text-indigo-600 transition-colors">Calculadora</a>
-            <div className="flex space-x-2">
-              <Link to="/login">
-                <Button variant="outline">Iniciar sesión</Button>
-              </Link>
-              <Link to="/register">
-                <Button>Registrarse</Button>
-              </Link>
-            </div>
+            <Link to="/dashboard">
+              <Button>Acceder</Button>
+            </Link>
           </nav>
 
           {/* Mobile menu button */}
@@ -91,14 +86,14 @@ const Header = () => {
             >
               Calculadora
             </a>
-            <div className="flex flex-col space-y-2 px-3 py-2">
-              <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button variant="outline" className="w-full">Iniciar sesión</Button>
-              </Link>
-              <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button className="w-full">Registrarse</Button>
-              </Link>
-            </div>
+            <Link to="/dashboard" className="block px-3 py-2">
+              <Button 
+                className="w-full"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Acceder
+              </Button>
+            </Link>
           </div>
         </div>
       )}

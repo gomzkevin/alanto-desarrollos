@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   Building2, Users, BarChart3, Calculator, Briefcase, 
   Settings, LogOut, Menu, X, ChevronDown, Home
@@ -15,9 +15,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useUserRole } from '@/hooks/useUserRole';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -26,9 +23,6 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
-  const { userData, isLoading } = useUserRole();
-  const { toast } = useToast();
   
   // Cerrar el sidebar en versión móvil cuando cambia la ruta
   useEffect(() => {
@@ -44,34 +38,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: 'Proyecciones', href: '/dashboard/proyecciones', icon: Briefcase, current: location.pathname.includes('/dashboard/proyecciones') },
     { name: 'Configuración', href: '/dashboard/configuracion', icon: Settings, current: location.pathname === '/dashboard/configuracion' },
   ];
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({
-        title: 'Sesión cerrada',
-        description: 'Has cerrado sesión correctamente',
-      });
-      navigate('/');
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo cerrar la sesión correctamente',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Get initials from user name
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
   
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -89,9 +55,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         {/* Sidebar sliding panel */}
         <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out">
           <div className="flex items-center justify-between h-16 px-4 border-b">
-            <div className="text-lg font-semibold text-indigo-600">
-              {userData?.empresaNombre || 'AirbnbInvest'}
-            </div>
+            <div className="text-lg font-semibold text-indigo-600">AirbnbInvest</div>
             <button 
               onClick={() => setIsSidebarOpen(false)}
               className="p-1 rounded hover:bg-slate-100"
@@ -129,9 +93,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <div className="hidden lg:flex lg:flex-shrink-0">
         <div className="flex flex-col w-64 border-r border-slate-200 bg-white">
           <div className="flex items-center h-16 px-4 border-b">
-            <div className="text-lg font-semibold text-indigo-600">
-              {userData?.empresaNombre || 'AirbnbInvest'}
-            </div>
+            <div className="text-lg font-semibold text-indigo-600">AirbnbInvest</div>
           </div>
           
           <div className="flex flex-col flex-1 overflow-y-auto">
@@ -190,30 +152,25 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <div className="h-8 w-8 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700 font-semibold">
-                      {userData ? getInitials(userData.name) : 'U'}
+                      JD
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{userData?.name || 'Usuario'}</p>
+                      <p className="text-sm font-medium leading-none">Juan Díaz</p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        {userData?.email || 'correo@ejemplo.com'}
+                        juan@ejemplo.com
                       </p>
-                      {userData?.empresaNombre && (
-                        <p className="text-xs font-medium text-indigo-600">
-                          {userData.empresaNombre}
-                        </p>
-                      )}
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/dashboard/configuracion')}>
+                  <DropdownMenuItem>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Configuración</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuItem>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Cerrar sesión</span>
                   </DropdownMenuItem>

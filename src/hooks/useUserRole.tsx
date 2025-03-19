@@ -1,28 +1,16 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 
 type UserRole = 'admin' | 'vendedor' | null;
 
-export interface UserData {
-  id: string;
-  role: UserRole;
-  name: string;
-  email: string;
-  empresaId: number | null;
-  empresaNombre: string | null;
-}
-
 export const useUserRole = () => {
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const [role, setRole] = useState<UserRole>('admin'); // Set default to admin for development
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const navigate = useNavigate();
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchUserRole = async () => {
       try {
         setIsLoading(true);
         
@@ -30,85 +18,58 @@ export const useUserRole = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          console.log('No session, redirecting to login');
-          setUserData(null);
-          setIsAuthenticated(false);
-          setIsLoading(false);
+          // For development, use admin role even if not authenticated
+          console.log('No session, using default admin role for development');
+          setUserId('dev-user-id');
           return;
         }
         
-        setIsAuthenticated(true);
+        setUserId(session.user.id);
         
-        // Fetch user data from usuarios table
+        // Fetch user role from usuarios table
         const { data, error } = await supabase
           .from('usuarios')
-          .select(`
-            id,
-            nombre,
-            email,
-            rol,
-            empresa_id,
-            empresa_info:empresa_id (
-              id,
-              nombre
-            )
-          `)
+          .select('rol')
           .eq('auth_id', session.user.id)
           .single();
         
         if (error) {
-          console.error('Error fetching user data:', error);
-          toast({
-            title: 'Error',
-            description: 'No se pudo cargar información del usuario',
-            variant: 'destructive',
-          });
-          setUserData(null);
-        } else if (!data) {
-          console.log('User not found in usuarios table');
-          setUserData(null);
+          console.error('Error fetching user role:', error);
+          console.log('Using default admin role for development');
         } else {
-          setUserData({
-            id: data.id,
-            role: data.rol as UserRole,
-            name: data.nombre,
-            email: data.email,
-            empresaId: data.empresa_id,
-            empresaNombre: data.empresa_info?.nombre || null
-          });
+          setRole(data?.rol as UserRole || 'admin'); // Default to admin if role not found
         }
       } catch (error) {
         console.error('Error in useUserRole hook:', error);
-        setUserData(null);
+        console.log('Using default admin role for development');
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchUserData();
+    fetchUserRole();
     
     // Also listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
-      
-      if (event === 'SIGNED_OUT') {
-        setUserData(null);
-        setIsAuthenticated(false);
-        navigate('/');
-      } else if (session) {
-        setIsAuthenticated(true);
-        fetchUserData();
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setUserId(session.user.id);
+        fetchUserRole();
+      } else {
+        // For development, use admin role even if not authenticated
+        console.log('Auth state changed to no session, using default admin role');
+        setUserId('dev-user-id');
+        setIsLoading(false);
       }
     });
     
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
   
   // Helper functions to check permissions
-  const isAdmin = () => userData?.role === 'admin';
-  const isVendedor = () => userData?.role === 'vendedor';
+  const isAdmin = () => role === 'admin';
+  const isVendedor = () => role === 'vendedor';
   const canCreateResource = (resourceType: 'desarrollo' | 'prototipo' | 'propiedad' | 'lead' | 'cotizacion') => {
     if (resourceType === 'desarrollo' || resourceType === 'prototipo' || resourceType === 'propiedad') {
       return isAdmin();
@@ -117,9 +78,9 @@ export const useUserRole = () => {
   };
   
   return {
-    userData,
+    role,
     isLoading,
-    isAuthenticated,
+    userId,
     isAdmin,
     isVendedor,
     canCreateResource

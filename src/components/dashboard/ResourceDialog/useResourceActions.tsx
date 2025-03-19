@@ -1,9 +1,7 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ResourceType, FormValues } from './types';
-import { useUserRole } from '@/hooks/useUserRole';
 
 interface UseResourceActionsProps {
   resourceType: ResourceType;
@@ -24,7 +22,6 @@ export default function useResourceActions({
   clientConfig
 }: UseResourceActionsProps) {
   const { toast } = useToast();
-  const { userData } = useUserRole();
   const [isLoading, setIsLoading] = useState(false);
 
   // Save resource function
@@ -37,11 +34,6 @@ export default function useResourceActions({
       
       // Prepare the data to be saved
       let data = { ...values };
-      
-      // Add empresa_id to all resources if it doesn't exist
-      if (userData?.empresaId && !data.empresa_id) {
-        data.empresa_id = userData.empresaId;
-      }
       
       // Handle special cases for each resource type
       if (resourceType === 'desarrollos' && selectedAmenities.length > 0) {
@@ -58,8 +50,7 @@ export default function useResourceActions({
             email: clientConfig?.newClientData.email,
             telefono: clientConfig?.newClientData.telefono,
             estado: 'nuevo',
-            subestado: 'sin_contactar',
-            empresa_id: userData?.empresaId // Associate the lead with the user's company
+            subestado: 'sin_contactar'
           })
           .select()
           .single();
@@ -85,7 +76,7 @@ export default function useResourceActions({
         console.log('Updating existing resource with id:', resourceId);
         const { error } = await supabase
           .from(resourceType)
-          .update(data)
+          .update(data as any)
           .eq('id', resourceId);
         
         if (error) {
@@ -106,10 +97,10 @@ export default function useResourceActions({
         });
       } else {
         // Create new resource
-        console.log('Creating new resource', data);
+        console.log('Creating new resource');
         const { error } = await supabase
           .from(resourceType)
-          .insert(data);
+          .insert(data as any);
         
         if (error) {
           console.error(`Error creating ${resourceType}:`, error);

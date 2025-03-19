@@ -2,7 +2,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, Json } from '@/integrations/supabase/types';
-import { useUserRole } from './useUserRole';
 
 export type Desarrollo = Tables<"desarrollos"> & {
   amenidades?: string[] | null;
@@ -20,7 +19,6 @@ type FetchDesarrollosOptions = {
 
 export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   const { limit, withPrototipos = false } = options;
-  const { userData } = useUserRole();
   
   // Function to fetch desarrollos
   const fetchDesarrollos = async (): Promise<ExtendedDesarrollo[]> => {
@@ -29,12 +27,6 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     try {
       // Build the select query
       let query = supabase.from('desarrollos').select('*');
-      
-      // Filter by empresa_id if available
-      if (userData?.empresaId) {
-        console.log('Filtering desarrollos by empresa_id:', userData.empresaId);
-        query = query.eq('empresa_id', userData.empresaId);
-      }
       
       // Apply limit if provided
       if (limit) {
@@ -126,9 +118,8 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
 
   // Use React Query to fetch and cache the data
   const queryResult = useQuery({
-    queryKey: ['desarrollos', limit, withPrototipos, userData?.empresaId],
-    queryFn: fetchDesarrollos,
-    enabled: !!userData // Only run the query when user data is available
+    queryKey: ['desarrollos', limit, withPrototipos],
+    queryFn: fetchDesarrollos
   });
 
   return {
