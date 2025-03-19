@@ -18,23 +18,16 @@ const DesarrollosPage = () => {
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
   const [desarrollosWithRealCounts, setDesarrollosWithRealCounts] = useState<Desarrollo[]>([]);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
+  // Get user info from useUserRole hook
   const { 
     userId,
     isAdmin,
-    isLoading: isUserLoading
+    isLoading: isUserLoading 
   } = useUserRole();
   
-  // Usamos el userId del hook useUserRole en lugar de fetchUserId
-  useEffect(() => {
-    if (userId) {
-      setCurrentUserId(userId);
-      setInitialLoadComplete(true);
-    }
-  }, [userId]);
-  
+  // Remove the separate loading state to prevent race conditions
+  // and directly use the desarrollos query with userId from the hook
   const { 
     desarrollos = [], 
     isLoading, 
@@ -42,7 +35,7 @@ const DesarrollosPage = () => {
     refetch 
   } = useDesarrollos({ 
     withPrototipos: true,
-    userId: currentUserId // Filter by current user ID
+    userId // Use userId directly from the hook
   });
   
   const { countDesarrolloUnidadesByStatus } = useUnidades();
@@ -51,6 +44,7 @@ const DesarrollosPage = () => {
     return isAdmin();
   };
 
+  // Update unit counts when desarrollos change
   useEffect(() => {
     const updateRealUnitCounts = async () => {
       if (desarrollos.length === 0 || isLoading) return;
@@ -112,8 +106,17 @@ const DesarrollosPage = () => {
     ? normalizeDesarrollos(desarrollosWithRealCounts)
     : normalizeDesarrollos(desarrollos as Desarrollo[]);
 
-  // Determinar si realmente estamos en estado de carga
-  const isActuallyLoading = isUserLoading || isLoading || (!initialLoadComplete && !userId);
+  // Simplified loading state determination - we're loading if either user or desarrollos are loading
+  const isActuallyLoading = isUserLoading || isLoading;
+  
+  // Add debug logs to help troubleshoot
+  console.log('Desarrollo page render:', { 
+    userId,
+    isUserLoading,
+    isLoading,
+    desarrollosCount: desarrollos.length,
+    displayDesarrollosCount: displayDesarrollos.length
+  });
 
   return (
     <DashboardLayout>
@@ -139,7 +142,7 @@ const DesarrollosPage = () => {
             onSuccess={refetch}
             open={openDialog}
             onClose={() => setOpenDialog(false)}
-            defaultValues={currentUserId ? { user_id: currentUserId } : undefined}
+            defaultValues={userId ? { user_id: userId } : undefined}
           />
         </div>
 

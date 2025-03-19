@@ -125,9 +125,12 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   };
 
   // Use React Query to fetch and cache the data
+  // Set staleTime to 0 to ensure data is always fresh on initial load
   const queryResult = useQuery({
     queryKey: ['desarrollos', limit, withPrototipos, userId],
-    queryFn: fetchDesarrollos
+    queryFn: fetchDesarrollos,
+    enabled: true, // Always enable the query, even if userId is null
+    staleTime: 0 // Force a fresh fetch on each component mount
   });
 
   return {
