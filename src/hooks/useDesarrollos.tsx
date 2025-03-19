@@ -30,9 +30,8 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       // Build the select query
       let query = supabase.from('desarrollos').select('*');
       
-      // Filter by user ID if provided
+      // Filter by user ID if provided - fixed to avoid TypeScript error
       if (userId) {
-        // Using optional chaining and null check to avoid type issues
         query = query.eq('user_id', userId);
       }
       
