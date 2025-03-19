@@ -9,7 +9,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-// Create client with retries on network errors
+// Create client with explicit auth configuration to ensure consistent behavior
 export const supabase = createClient<Database>(
   SUPABASE_URL, 
   SUPABASE_PUBLISHABLE_KEY,
@@ -17,6 +17,10 @@ export const supabase = createClient<Database>(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
+      storageKey: 'supabase.auth.token',
+      storage: localStorage,
+      detectSessionInUrl: true,
+      flowType: 'implicit',
     },
     global: {
       fetch: async (url, options = {}) => {
