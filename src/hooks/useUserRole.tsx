@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,14 +21,52 @@ export const useUserRole = () => {
   const [empresaId, setEmpresaId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  
+  // Cache user data fetch to avoid race conditions
+  const fetchUserData = useCallback(async (authUserId: string) => {
+    console.log('Fetching user data for:', authUserId);
+    try {
+      // Get the user's role from the usuarios table
+      const { data: userData, error: userError } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('auth_id', authUserId)
+        .maybeSingle();
+      
+      if (userError) {
+        console.error('Error fetching user data:', userError);
+        return null;
+      }
+      
+      if (userData) {
+        console.log('User data loaded:', userData);
+        
+        // Set isAdmin based on is_company_admin flag or role being 'admin'
+        const adminStatus = userData.is_company_admin || userData.rol === 'admin';
+        console.log('Admin status:', adminStatus);
+        
+        return {
+          role: userData.rol,
+          name: userData.nombre,
+          isAdmin: adminStatus,
+          empresaId: userData.empresa_id
+        };
+      } else {
+        console.log('No user data found in usuarios table');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error in fetchUserData:', error);
+      return null;
+    }
+  }, []);
 
   useEffect(() => {
-    let isMounted = true; // Track component mount state
+    let isMounted = true;
     
-    const fetchUserData = async () => {
-      if (!isMounted) return; // Don't proceed if component unmounted
-      
+    const initializeUserData = async () => {
       setIsLoading(true);
+      
       try {
         // Get the current user
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -51,35 +89,17 @@ export const useUserRole = () => {
         }
         console.log('Auth user found:', user.id, user.email);
         
-        // Get the user's role from the usuarios table
-        const { data: userData, error: userError } = await supabase
-          .from('usuarios')
-          .select('*')
-          .eq('auth_id', user.id)
-          .maybeSingle(); // Use maybeSingle instead of single to avoid errors
-        
-        if (userError) {
-          console.error('Error fetching user data:', userError);
-          if (isMounted) setIsLoading(false);
-          return;
-        }
+        // Fetch and set user data
+        const userData = await fetchUserData(user.id);
         
         if (userData && isMounted) {
-          console.log('User data loaded:', userData);
-          setUserRole(userData.rol);
-          setUserName(userData.nombre);
-          
-          // Set isAdmin based on is_company_admin flag or role being 'admin'
-          const adminStatus = userData.is_company_admin || userData.rol === 'admin';
-          console.log('Admin status:', adminStatus);
-          setIsAdmin(adminStatus);
-          
-          setEmpresaId(userData.empresa_id);
-        } else {
-          console.log('No user data found in usuarios table');
+          setUserRole(userData.role);
+          setUserName(userData.name);
+          setIsAdmin(userData.isAdmin);
+          setEmpresaId(userData.empresaId);
         }
       } catch (error) {
-        console.error('Error in fetchUserData:', error);
+        console.error('Error in initializeUserData:', error);
         if (isMounted) {
           toast({
             title: 'Error',
@@ -94,37 +114,28 @@ export const useUserRole = () => {
       }
     };
     
-    fetchUserData();
-    
-    // Set up auth state change listener
+    // Set up auth state change listener first to avoid race conditions
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
       
-      if (!isMounted) return; // Don't proceed if component unmounted
+      if (!isMounted) return;
       
       if (event === 'SIGNED_IN' && session?.user) {
-        // User signed in, fetch their data
+        setIsLoading(true);
+        // User signed in, set basic info immediately
         setUserId(session.user.id);
         setUserEmail(session.user.email);
         
-        const { data, error } = await supabase
-          .from('usuarios')
-          .select('*')
-          .eq('auth_id', session.user.id)
-          .maybeSingle(); // Use maybeSingle for safety
+        // Fetch extended user data
+        const userData = await fetchUserData(session.user.id);
         
-        if (!error && data && isMounted) {
-          console.log('User data from auth change:', data);
-          setUserRole(data.rol);
-          setUserName(data.nombre);
-          
-          // Set isAdmin based on is_company_admin flag or role being 'admin'
-          const adminStatus = data.is_company_admin || data.rol === 'admin';
-          console.log('Admin status after auth change:', adminStatus);
-          setIsAdmin(adminStatus);
-          
-          setEmpresaId(data.empresa_id);
+        if (userData && isMounted) {
+          setUserRole(userData.role);
+          setUserName(userData.name);
+          setIsAdmin(userData.isAdmin);
+          setEmpresaId(userData.empresaId);
         }
+        if (isMounted) setIsLoading(false);
       } else if (event === 'SIGNED_OUT' && isMounted) {
         // User signed out, clear their data
         setUserId(null);
@@ -133,14 +144,18 @@ export const useUserRole = () => {
         setUserName(null);
         setIsAdmin(false);
         setEmpresaId(null);
+        setIsLoading(false);
       }
     });
     
+    // Initialize user data after setting up the listener
+    initializeUserData();
+    
     return () => {
-      isMounted = false; // Mark component as unmounted
+      isMounted = false;
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchUserData, toast]);
 
   // Helper methods
   const isUserAdmin = () => {

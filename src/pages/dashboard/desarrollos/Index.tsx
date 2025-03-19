@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -16,18 +17,23 @@ const DesarrollosPage = () => {
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
   const [desarrollosWithRealCounts, setDesarrollosWithRealCounts] = useState<Desarrollo[]>([]);
+  const [hasTriedInitialLoad, setHasTriedInitialLoad] = useState(false);
   
+  // Get user data first
   const { 
     userId,
     isAdmin,
     isLoading: isUserLoading 
   } = useUserRole();
   
+  // Only fetch desarrollos when userId is available
   const { 
     desarrollos = [], 
-    isLoading: isDesarrollosLoading, 
+    isLoading: isDesarrollosLoading,
+    isFetching: isDesarrollosFetching,
     error,
-    refetch 
+    refetch,
+    status: desarrollosStatus
   } = useDesarrollos({ 
     withPrototipos: true,
     userId 
@@ -35,29 +41,44 @@ const DesarrollosPage = () => {
   
   const { countDesarrolloUnidadesByStatus } = useUnidades();
 
+  // Debug logs to track component lifecycle and data fetching
   useEffect(() => {
-    console.log('DesarrollosPage - userId:', userId);
-    console.log('DesarrollosPage - isUserLoading:', isUserLoading);
-    console.log('DesarrollosPage - isDesarrollosLoading:', isDesarrollosLoading);
-    console.log('DesarrollosPage - desarrollos count:', desarrollos.length);
-  }, [userId, isUserLoading, isDesarrollosLoading, desarrollos.length]);
+    console.log('DesarrollosPage - Component lifecycle:', { 
+      userId,
+      isUserLoading,
+      isDesarrollosLoading,
+      isDesarrollosFetching,
+      hasTriedInitialLoad,
+      desarrollosStatus,
+      desarrollosCount: desarrollos.length
+    });
+  }, [
+    userId, 
+    isUserLoading, 
+    isDesarrollosLoading, 
+    isDesarrollosFetching,
+    hasTriedInitialLoad,
+    desarrollosStatus,
+    desarrollos.length
+  ]);
 
+  // Fetch desarrollos when userId becomes available
   useEffect(() => {
-    if (userId && !isUserLoading) {
+    if (userId && !isUserLoading && !hasTriedInitialLoad) {
       console.log('Forcing desarrollos refetch because userId is now available:', userId);
-      refetch();
+      refetch().then(() => {
+        setHasTriedInitialLoad(true);
+      });
     }
-  }, [userId, isUserLoading, refetch]);
+  }, [userId, isUserLoading, refetch, hasTriedInitialLoad]);
 
-  const canCreateResource = () => {
-    return isAdmin();
-  };
-
+  // When desarrollos are updated, update real counts
   useEffect(() => {
     const updateRealUnitCounts = async () => {
       if (desarrollos.length === 0 || isDesarrollosLoading) return;
       
       try {
+        console.log('Updating real unit counts for', desarrollos.length, 'desarrollos');
         const updatedDesarrollos = await Promise.all(
           desarrollos.map(async (desarrollo) => {
             try {
@@ -87,7 +108,11 @@ const DesarrollosPage = () => {
     };
     
     updateRealUnitCounts();
-  }, [desarrollos, isDesarrollosLoading]);
+  }, [desarrollos, isDesarrollosLoading, countDesarrolloUnidadesByStatus]);
+
+  const canCreateResource = () => {
+    return isAdmin();
+  };
 
   const normalizeDesarrollos = (desarrollos: Desarrollo[]): Desarrollo[] => {
     return desarrollos.map(desarrollo => {
@@ -110,20 +135,25 @@ const DesarrollosPage = () => {
     navigate(`/dashboard/desarrollos/${id}`);
   };
 
+  // Determine which desarrollos to display
   const displayDesarrollos = desarrollosWithRealCounts.length > 0 
     ? normalizeDesarrollos(desarrollosWithRealCounts)
     : normalizeDesarrollos(desarrollos as Desarrollo[]);
 
-  const isLoading = isUserLoading || isDesarrollosLoading;
+  // Determine if we're in a loading state
+  const isLoading = isUserLoading || (isDesarrollosLoading && !hasTriedInitialLoad);
+  const hasNoData = !isLoading && !isDesarrollosFetching && displayDesarrollos.length === 0;
   
-  console.log('DesarrollosPage render state:', { 
-    userId,
+  // Combined status for debugging
+  const loadingStatus = {
     isUserLoading,
     isDesarrollosLoading,
-    isLoading,
-    desarrollosCount: desarrollos.length,
-    displayDesarrollosCount: displayDesarrollos.length
-  });
+    isDesarrollosFetching,
+    hasTriedInitialLoad,
+    userId: !!userId,
+    hasNoData
+  };
+  console.log('DesarrollosPage render state:', loadingStatus);
 
   return (
     <DashboardLayout>
@@ -170,7 +200,7 @@ const DesarrollosPage = () => {
               Intentar de nuevo
             </Button>
           </div>
-        ) : displayDesarrollos.length === 0 ? (
+        ) : hasNoData ? (
           <div className="text-center py-10">
             <p className="text-slate-600">No tienes desarrollos inmobiliarios</p>
             {canCreateResource() && (

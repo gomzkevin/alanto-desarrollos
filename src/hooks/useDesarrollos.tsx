@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, Json } from '@/integrations/supabase/types';
@@ -23,11 +24,16 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   
   // Function to fetch desarrollos
   const fetchDesarrollos = async (): Promise<ExtendedDesarrollo[]> => {
-    console.log('Fetching desarrollos with options:', options);
+    console.log('Fetching desarrollos with options:', { 
+      limit, 
+      withPrototipos, 
+      userId,
+      hasUserId: !!userId 
+    });
     
     try {
       // Don't proceed if userId is required but not available yet
-      if (options.userId === null || options.userId === undefined) {
+      if (userId === null || userId === undefined) {
         console.log('userId is null or undefined, returning empty array');
         return [];
       }
@@ -55,6 +61,8 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
         console.error('Error fetching desarrollos:', error);
         throw new Error(error.message);
       }
+      
+      console.log(`Found ${desarrollos?.length || 0} desarrollos for user ${userId}`);
       
       // Process desarrollos to handle JSON amenidades
       const processedDesarrollos = desarrollos.map(desarrollo => {
@@ -117,11 +125,11 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
           })
         );
         
-        console.log('Extended desarrollos fetched:', extendedDesarrollos);
+        console.log('Extended desarrollos fetched:', extendedDesarrollos.length);
         return extendedDesarrollos;
       }
       
-      console.log('Desarrollos fetched:', processedDesarrollos);
+      console.log('Desarrollos fetched:', processedDesarrollos.length);
       return processedDesarrollos;
     } catch (error) {
       console.error('Error in fetchDesarrollos:', error);
@@ -129,20 +137,25 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     }
   };
 
-  // Use React Query to fetch and cache the data
+  // Enhanced query configuration
   const queryResult = useQuery({
     queryKey: ['desarrollos', limit, withPrototipos, userId],
     queryFn: fetchDesarrollos,
     enabled: userId !== null && userId !== undefined, // Only enable query when userId is available
-    staleTime: 0, // Force a fresh fetch on each component mount
-    retry: 1, // Limit retries to avoid excessive calls when userId is missing
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    retry: 1, // Limit retries to avoid excessive calls
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });
 
   return {
     desarrollos: queryResult.data || [],
-    isLoading: queryResult.isLoading || queryResult.isFetching,
+    isLoading: queryResult.isLoading,
+    isFetching: queryResult.isFetching,
     error: queryResult.error,
-    refetch: queryResult.refetch
+    refetch: queryResult.refetch,
+    status: queryResult.status,
+    isSuccess: queryResult.isSuccess,
+    isEnabled: userId !== null && userId !== undefined
   };
 };
 
