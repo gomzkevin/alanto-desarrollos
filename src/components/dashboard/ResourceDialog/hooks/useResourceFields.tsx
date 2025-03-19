@@ -1,8 +1,9 @@
+
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { FieldDefinition, ResourceType } from '../types';
-import useLeads, { LEAD_STATUS_OPTIONS, LEAD_SUBSTATUS_OPTIONS, LEAD_ORIGIN_OPTIONS } from '@/hooks/useLeads';
+import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 
@@ -25,15 +26,15 @@ const TIPOS_PROPIEDADES = [
 
 export const useResourceFields = (resourceType: ResourceType, selectedStatus?: string | null, selectedDesarrolloId?: string) => {
   const [fields, setFields] = useState<FieldDefinition[]>([]);
-  const { data: leadsData = [] } = useLeads();
-  const { data: desarrollosData = [] } = useDesarrollos();
-  const { data: prototipesData = [] } = usePrototipos({
+  const leadsData = useLeads();
+  const desarrollosData = useDesarrollos();
+  const prototipesData = usePrototipos({
     desarrolloId: selectedDesarrolloId
   });
   
-  const leads = leadsData || [];
-  const desarrollos = desarrollosData || [];
-  const prototipos = prototipesData || [];
+  const leads = leadsData.leads || [];
+  const desarrollos = desarrollosData.desarrollos || [];
+  const prototipos = prototipesData.prototipos || [];
   
   // Obtener la lista de vendedores desde la tabla de usuarios
   const { data: vendedores = [] } = useQuery({

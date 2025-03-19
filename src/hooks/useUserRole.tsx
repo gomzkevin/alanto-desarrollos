@@ -89,29 +89,33 @@ export const useUserRole = () => {
         let empresaId: number | null = null;
         let empresaNombre: string | null = null;
         
-        if (hasEmpresaColumn && data.empresa_id) {
-          empresaId = data.empresa_id;
+        if (hasEmpresaColumn && data && typeof data === 'object' && 'empresa_id' in data) {
+          empresaId = data.empresa_id as number;
           
           // Get empresa name
-          const { data: empresa, error: empresaNameError } = await supabase
-            .from('empresa_info')
-            .select('nombre')
-            .eq('id', empresaId)
-            .single();
-            
-          if (!empresaNameError && empresa) {
-            empresaNombre = empresa.nombre;
+          if (empresaId) {
+            const { data: empresa, error: empresaNameError } = await supabase
+              .from('empresa_info')
+              .select('nombre')
+              .eq('id', empresaId)
+              .single();
+              
+            if (!empresaNameError && empresa) {
+              empresaNombre = empresa.nombre;
+            }
           }
         }
         
-        setUserData({
-          id: data.id,
-          role: data.rol as UserRole,
-          name: data.nombre,
-          email: data.email,
-          empresaId,
-          empresaNombre
-        });
+        if (data && typeof data === 'object') {
+          setUserData({
+            id: data.id as string,
+            role: data.rol as UserRole,
+            name: data.nombre as string,
+            email: data.email as string,
+            empresaId,
+            empresaNombre
+          });
+        }
       } catch (error) {
         console.error('Error in useUserRole hook:', error);
         setUserData(null);

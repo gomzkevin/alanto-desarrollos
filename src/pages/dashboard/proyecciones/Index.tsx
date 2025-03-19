@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useChartData } from '@/hooks';
-import { ProyeccionView } from './components/ProyeccionView';
+import ProyeccionView from './components/ProyeccionView';
 import { toast } from "sonner";
 
 export const ProyeccionesPage = () => {

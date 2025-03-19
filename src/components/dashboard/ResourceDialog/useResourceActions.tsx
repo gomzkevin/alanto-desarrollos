@@ -21,9 +21,9 @@ interface UseResourceActionsProps {
   };
 }
 
-const getTableName = (resourceType: string): string => {
+const getTableName = (resourceType: ResourceType): string => {
   // Direct mapping to valid table names
-  const tableMapping: Record<string, string> = {
+  const tableMapping: Record<ResourceType, string> = {
     'desarrollos': 'desarrollos',
     'prototipos': 'prototipos',
     'leads': 'leads',
@@ -152,7 +152,7 @@ const useResourceActions = ({
       if (resourceId) {
         // Update existing resource
         const { data: updatedResource, error } = await supabase
-          .from(tableName)
+          .from(tableName as any)
           .update(data)
           .eq('id', resourceId)
           .select();
@@ -168,7 +168,7 @@ const useResourceActions = ({
       } else {
         // Create new resource
         const { data: createdResource, error } = await supabase
-          .from(tableName)
+          .from(tableName as any)
           .insert(data)
           .select();
           
