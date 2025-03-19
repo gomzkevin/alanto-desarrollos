@@ -31,8 +31,8 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       
       // Filter by user ID if provided
       if (userId) {
-        // Cast userId to string explicitly to avoid type instantiation issues
-        const userIdString = userId.toString();
+        // Convert userId to string in a type-safe way
+        const userIdString = String(userId);
         query = query.eq('user_id', userIdString);
       }
       
