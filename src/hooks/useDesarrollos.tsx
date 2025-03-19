@@ -32,7 +32,8 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       
       // Filter by user ID if provided - fixed to avoid TypeScript error
       if (userId) {
-        query = query.eq('user_id', userId);
+        // Pass userId directly without type conversion
+        query = query.filter('user_id', 'eq', userId);
       }
       
       // Apply limit if provided

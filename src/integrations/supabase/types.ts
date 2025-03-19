@@ -196,6 +196,7 @@ export type Database = {
           total_unidades: number
           ubicacion: string
           unidades_disponibles: number
+          user_id: string | null
         }
         Insert: {
           adr_base?: number | null
@@ -222,6 +223,7 @@ export type Database = {
           total_unidades: number
           ubicacion: string
           unidades_disponibles: number
+          user_id?: string | null
         }
         Update: {
           adr_base?: number | null
@@ -248,6 +250,7 @@ export type Database = {
           total_unidades?: number
           ubicacion?: string
           unidades_disponibles?: number
+          user_id?: string | null
         }
         Relationships: [
           {
