@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { isAuthenticated } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
