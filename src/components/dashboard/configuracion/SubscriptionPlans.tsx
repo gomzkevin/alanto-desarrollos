@@ -42,6 +42,13 @@ export function SubscriptionPlans() {
   const [isLoading, setIsLoading] = useState(true);
   const { userId } = useUserRole();
 
+  // Helper function to ensure features is always an object
+  const normalizeFeatures = (features: any): SubscriptionPlan['features'] => {
+    if (!features) return {};
+    if (typeof features === 'object' && !Array.isArray(features)) return features;
+    return {}; // Default empty object if features is not in expected format
+  };
+
   useEffect(() => {
     const fetchPlansAndSubscription = async () => {
       if (!userId) return;
@@ -59,11 +66,11 @@ export function SubscriptionPlans() {
           throw plansError;
         }
 
-        // Convert string interval to our union type
-        const typedPlans = plansData?.map(plan => ({
+        // Convert and ensure proper typing
+        const typedPlans: SubscriptionPlan[] = plansData?.map(plan => ({
           ...plan,
           interval: plan.interval === 'year' ? 'year' : 'month' as 'month' | 'year',
-          features: plan.features || {}
+          features: normalizeFeatures(plan.features)
         })) || [];
 
         setPlans(typedPlans);
@@ -82,14 +89,14 @@ export function SubscriptionPlans() {
 
         // If we have subscription data, properly type it
         if (subData) {
-          const typedSubscription = {
+          const typedSubscription: CurrentSubscription = {
             ...subData,
             subscription_plans: {
               ...subData.subscription_plans,
               interval: subData.subscription_plans.interval === 'year' 
                 ? 'year' 
                 : 'month' as 'month' | 'year',
-              features: subData.subscription_plans.features || {}
+              features: normalizeFeatures(subData.subscription_plans.features)
             }
           };
           
@@ -151,14 +158,14 @@ export function SubscriptionPlans() {
       
       if (subscriptionData && subscriptionData.length > 0) {
         // Properly type the subscription data 
-        const typedSubscription = {
+        const typedSubscription: CurrentSubscription = {
           ...subscriptionData[0],
           subscription_plans: {
             ...subscriptionData[0].subscription_plans,
             interval: subscriptionData[0].subscription_plans.interval === 'year' 
               ? 'year' 
               : 'month' as 'month' | 'year',
-            features: subscriptionData[0].subscription_plans.features || {}
+            features: normalizeFeatures(subscriptionData[0].subscription_plans.features)
           }
         };
         
