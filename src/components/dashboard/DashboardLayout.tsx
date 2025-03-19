@@ -19,6 +19,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 import LogoutButton from './LogoutButton';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -28,7 +29,22 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { isLoading, userId } = useUserRole();
+  const { isLoading, userId, userEmail, userName } = useUserRole();
+  
+  // Obtener las iniciales del usuario para el avatar
+  const getUserInitials = () => {
+    if (userName) {
+      const names = userName.split(' ');
+      if (names.length >= 2) {
+        return `${names[0][0]}${names[1][0]}`.toUpperCase();
+      }
+      return userName.substring(0, 2).toUpperCase();
+    }
+    if (userEmail) {
+      return userEmail.substring(0, 2).toUpperCase();
+    }
+    return 'U';
+  };
   
   // Verificar si el usuario está autenticado
   useEffect(() => {
@@ -188,17 +204,21 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <div className="h-8 w-8 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700 font-semibold">
-                      JD
-                    </div>
+                    <Avatar>
+                      <AvatarFallback className="bg-indigo-200 text-indigo-700 font-semibold">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">Juan Díaz</p>
+                      <p className="text-sm font-medium leading-none">
+                        {userName || 'Usuario'}
+                      </p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        juan@ejemplo.com
+                        {userEmail || 'correo@ejemplo.com'}
                       </p>
                     </div>
                   </DropdownMenuLabel>
