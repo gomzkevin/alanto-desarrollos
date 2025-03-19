@@ -6,6 +6,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Plus, Trash2, Star, Upload, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { DesarrolloImagen } from '@/types/desarrolloImagen';
 
 interface DesarrolloImageCarouselProps {
   desarrolloId: string;

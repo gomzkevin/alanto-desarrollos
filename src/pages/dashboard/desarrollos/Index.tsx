@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -47,7 +48,7 @@ const DesarrollosPage = () => {
         })
       );
       
-      setDesarrollosWithRealCounts(updatedDesarrollos as Desarrollo[]);
+      setDesarrollosWithRealCounts(updatedDesarrollos);
     };
     
     updateRealUnitCounts();
@@ -57,7 +58,7 @@ const DesarrollosPage = () => {
   const normalizeDesarrollos = (desarrollos: Desarrollo[]): Desarrollo[] => {
     return desarrollos.map(desarrollo => {
       // Ensure unidades_disponibles is not greater than total_unidades
-      const normalizedDesarrollo = {
+      const normalizedDesarrollo: Desarrollo = {
         ...desarrollo,
         unidades_disponibles: Math.min(
           desarrollo.unidades_disponibles || 0,

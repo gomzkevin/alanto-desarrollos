@@ -188,8 +188,8 @@ const DesarrolloDetail = () => {
         </div>
         
         <DesarrolloImageCarousel 
-          images={images} 
-          isLoading={imagesLoading} 
+          desarrolloId={id || ''} 
+          editable={isAdmin} 
         />
         
         <div className="mt-6">

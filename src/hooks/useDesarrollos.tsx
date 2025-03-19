@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from './useUserRole';
@@ -16,7 +15,7 @@ export interface Desarrollo {
   fecha_inicio: string | null;
   fecha_entrega: string | null;
   empresa_id?: number | null;
-  // Financial fields - All optional
+  // All financial fields are optional
   adr_base?: number | null;
   amenidades?: Json | null;
   comision_operador?: number | null;
