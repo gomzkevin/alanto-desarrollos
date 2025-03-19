@@ -105,8 +105,9 @@ export function ConfiguracionPage() {
         </div>
 
         <Tabs 
-          value={activeTab} 
-          onValueChange={handleTabChange} 
+          defaultValue={activeTab}
+          value={activeTab}
+          onValueChange={handleTabChange}
           className="space-y-6"
         >
           <TabsList className="mb-6">
