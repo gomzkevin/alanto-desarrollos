@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -8,6 +9,7 @@ import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import useUserRole from '@/hooks/useUserRole';
 import { Tables } from '@/integrations/supabase/types';
 import useUnidades from '@/hooks/useUnidades';
+import { getCurrentUserId } from '@/lib/supabase';
 
 type Desarrollo = Tables<"desarrollos">;
 
@@ -15,13 +17,26 @@ const DesarrollosPage = () => {
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
   const [desarrollosWithRealCounts, setDesarrollosWithRealCounts] = useState<Desarrollo[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  // Fetch current user ID on component mount
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const userId = await getCurrentUserId();
+      setCurrentUserId(userId);
+    };
+    fetchUserId();
+  }, []);
   
   const { 
     desarrollos = [], 
     isLoading, 
     error,
     refetch 
-  } = useDesarrollos({ withPrototipos: true });
+  } = useDesarrollos({ 
+    withPrototipos: true,
+    userId: currentUserId // Filter by current user ID
+  });
   
   const { countDesarrolloUnidadesByStatus } = useUnidades();
 
@@ -109,6 +124,7 @@ const DesarrollosPage = () => {
             onSuccess={refetch}
             open={openDialog}
             onClose={() => setOpenDialog(false)}
+            defaultValues={currentUserId ? { user_id: currentUserId } : undefined}
           />
         </div>
 
@@ -128,6 +144,18 @@ const DesarrollosPage = () => {
             >
               Intentar de nuevo
             </Button>
+          </div>
+        ) : displayDesarrollos.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-slate-600">No tienes desarrollos inmobiliarios</p>
+            {canCreateResource && (
+              <Button 
+                className="mt-4"
+                onClick={() => setOpenDialog(true)}
+              >
+                Crear tu primer desarrollo
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

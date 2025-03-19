@@ -15,10 +15,11 @@ export type ExtendedDesarrollo = Desarrollo & {
 type FetchDesarrollosOptions = {
   limit?: number;
   withPrototipos?: boolean;
+  userId?: string | null; // New option to filter by user ID
 };
 
 export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
-  const { limit, withPrototipos = false } = options;
+  const { limit, withPrototipos = false, userId = null } = options;
   
   // Function to fetch desarrollos
   const fetchDesarrollos = async (): Promise<ExtendedDesarrollo[]> => {
@@ -27,6 +28,11 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     try {
       // Build the select query
       let query = supabase.from('desarrollos').select('*');
+      
+      // Filter by user ID if provided
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
       
       // Apply limit if provided
       if (limit) {
@@ -118,7 +124,7 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
 
   // Use React Query to fetch and cache the data
   const queryResult = useQuery({
-    queryKey: ['desarrollos', limit, withPrototipos],
+    queryKey: ['desarrollos', limit, withPrototipos, userId],
     queryFn: fetchDesarrollos
   });
 

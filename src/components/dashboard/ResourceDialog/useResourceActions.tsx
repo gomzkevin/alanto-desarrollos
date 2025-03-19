@@ -1,7 +1,9 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ResourceType, FormValues } from './types';
+import { getCurrentUserId } from '@/lib/supabase';
 
 interface UseResourceActionsProps {
   resourceType: ResourceType;
@@ -38,6 +40,23 @@ export default function useResourceActions({
       // Handle special cases for each resource type
       if (resourceType === 'desarrollos' && selectedAmenities.length > 0) {
         data.amenidades = selectedAmenities;
+      }
+      
+      // If creating a new desarrollo, ensure it has a user_id
+      if (resourceType === 'desarrollos' && !resourceId && !data.user_id) {
+        const userId = await getCurrentUserId();
+        
+        if (userId) {
+          data.user_id = userId;
+        } else {
+          toast({
+            title: 'Error',
+            description: 'No se pudo obtener el ID de usuario. Por favor, inicia sesión nuevamente.',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return false;
+        }
       }
       
       // Handle client creation for cotizaciones
