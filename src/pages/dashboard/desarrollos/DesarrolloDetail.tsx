@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -29,7 +30,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import usePrototipos from '@/hooks/usePrototipos';
 import { Tables } from '@/integrations/supabase/types';
-import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog/AdminResourceDialog';
 import DesarrolloImageCarousel from '@/components/dashboard/DesarrolloImageCarousel';
 import DesarrolloEditButton from '@/components/dashboard/DesarrolloEditButton';
 import { useUserRole } from '@/hooks';
@@ -412,4 +413,3 @@ const DesarrolloDetailPage = () => {
 };
 
 export default DesarrolloDetailPage;
-
