@@ -12,7 +12,7 @@ interface ExportPDFButtonProps {
   desarrolloNombre: string;
   prototipoNombre: string;
   disabled?: boolean;
-  variant?: string;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined;
   buttonText?: string;
   resourceName?: string;
   elementId?: string;

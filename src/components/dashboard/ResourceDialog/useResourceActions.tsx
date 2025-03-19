@@ -91,7 +91,7 @@ export const useResourceActions = ({
     setIsLoading(true);
     
     try {
-      // Use type assertion to avoid TS errors with dynamic table names
+      // Get the appropriate table name
       const tableName = getTableName(resourceType);
       
       console.log(`Saving ${resourceType} data:`, data);
@@ -151,12 +151,11 @@ export const useResourceActions = ({
       
       if (resourceId) {
         // Update existing resource
-        // Cast to any to avoid TypeScript errors with dynamic table names
-        const { data: updatedResource, error } = await (supabase
-          .from(tableName as any)
-          .update(data as any)
+        const { data: updatedResource, error } = await supabase
+          .from(tableName)
+          .update(data)
           .eq('id', resourceId)
-          .select() as any);
+          .select();
           
         if (error) throw error;
         
@@ -168,11 +167,10 @@ export const useResourceActions = ({
         });
       } else {
         // Create new resource
-        // Cast to any to avoid TypeScript errors with dynamic table names
-        const { data: createdResource, error } = await (supabase
-          .from(tableName as any)
-          .insert(data as any)
-          .select() as any);
+        const { data: createdResource, error } = await supabase
+          .from(tableName)
+          .insert(data)
+          .select();
           
         if (error) throw error;
         
@@ -239,3 +237,5 @@ export const useResourceActions = ({
     handleImageUpload
   };
 };
+
+export default useResourceActions;

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -21,7 +22,7 @@ const DesarrollosPage = () => {
     isLoading, 
     error,
     refetch 
-  } = useDesarrollos({ withPrototipos: true });
+  } = useDesarrollos();
   
   const { countDesarrolloUnidadesByStatus } = useUnidades();
 

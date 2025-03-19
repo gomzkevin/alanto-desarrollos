@@ -177,6 +177,7 @@ export type Database = {
           avance_porcentaje: number | null
           comision_operador: number | null
           descripcion: string | null
+          empresa_id: number | null
           es_gastos_fijos_porcentaje: boolean | null
           es_gastos_variables_porcentaje: boolean | null
           es_impuestos_porcentaje: boolean | null
@@ -202,6 +203,7 @@ export type Database = {
           avance_porcentaje?: number | null
           comision_operador?: number | null
           descripcion?: string | null
+          empresa_id?: number | null
           es_gastos_fijos_porcentaje?: boolean | null
           es_gastos_variables_porcentaje?: boolean | null
           es_impuestos_porcentaje?: boolean | null
@@ -227,6 +229,7 @@ export type Database = {
           avance_porcentaje?: number | null
           comision_operador?: number | null
           descripcion?: string | null
+          empresa_id?: number | null
           es_gastos_fijos_porcentaje?: boolean | null
           es_gastos_variables_porcentaje?: boolean | null
           es_impuestos_porcentaje?: boolean | null
@@ -246,7 +249,15 @@ export type Database = {
           ubicacion?: string
           unidades_disponibles?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "desarrollos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa_info"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       empresa_info: {
         Row: {
@@ -513,6 +524,7 @@ export type Database = {
           activo: boolean | null
           auth_id: string | null
           email: string
+          empresa_id: number | null
           fecha_creacion: string | null
           id: string
           nombre: string
@@ -522,6 +534,7 @@ export type Database = {
           activo?: boolean | null
           auth_id?: string | null
           email: string
+          empresa_id?: number | null
           fecha_creacion?: string | null
           id?: string
           nombre: string
@@ -531,12 +544,21 @@ export type Database = {
           activo?: boolean | null
           auth_id?: string | null
           email?: string
+          empresa_id?: number | null
           fecha_creacion?: string | null
           id?: string
           nombre?: string
           rol?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "usuarios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa_info"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
