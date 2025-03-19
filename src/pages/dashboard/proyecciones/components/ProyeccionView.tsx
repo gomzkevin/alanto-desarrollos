@@ -1,157 +1,257 @@
-
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { ProyeccionFilters } from './ProyeccionFilters';
-import { Calculator } from '@/components/Calculator';
-import { ProyeccionChart } from './ProyeccionChart';
-import { ProyeccionTable } from './ProyeccionTable';
-import { ProyeccionSummary } from './ProyeccionSummary';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Proyeccion } from '../types';
+import { formatCurrency } from '@/lib/utils';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState } from 'react';
-import { BarChart2, TableIcon, ArrowRightIcon } from 'lucide-react';
 
 interface ProyeccionViewProps {
-  selectedDesarrolloId: string;
-  selectedPrototipoId: string;
-  onDesarrolloChange: (value: string) => void;
-  onPrototipoChange: (value: string) => void;
-  chartData: any[];
-  summaryData: {
-    propertyValue: number;
-    airbnbProfit: number;
-    altReturn: number;
-    avgROI: number;
-  };
-  onDataUpdate: (data: any[]) => void;
-  shouldCalculate: boolean;
-  onCreateProjection: () => void;
-  fileName: string;
+  proyeccionId: string;
 }
 
-export const ProyeccionView = ({
-  selectedDesarrolloId,
-  selectedPrototipoId,
-  onDesarrolloChange,
-  onPrototipoChange,
-  chartData,
-  summaryData,
-  onDataUpdate,
-  shouldCalculate,
-  onCreateProjection,
-  fileName
-}: ProyeccionViewProps) => {
-  const [activeTab, setActiveTab] = useState('grafica');
+interface Desarrollo {
+  id: string;
+  nombre: string;
+}
 
-  return (
-    <div className="space-y-6" id="proyeccion-detail-content">
-      {/* Header con título y filtros */}
-      <Card className="border-indigo-100 shadow-md bg-gradient-to-r from-white to-indigo-50/30">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <div>
-            <CardTitle className="text-indigo-900">Información de la proyección</CardTitle>
-            <CardDescription>
-              Selecciona desarrollo y prototipo para personalizar la proyección
-            </CardDescription>
-          </div>
-          <ExportPDFButton
-            buttonText="Exportar PDF"
-            resourceName="proyeccion"
-            fileName={fileName}
-            elementId="proyeccion-detail-content"
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
-            variant="default"
-          />
+const ProyeccionView: React.FC<ProyeccionViewProps> = ({ proyeccionId }) => {
+  const [proyeccion, setProyeccion] = useState<Proyeccion | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedDesarrollo, setSelectedDesarrollo] = useState<Desarrollo | null>(null);
+  const [desarrollos, setDesarrollos] = useState<Desarrollo[]>([]);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchProyeccion = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('proyecciones')
+          .select('*')
+          .eq('id', proyeccionId)
+          .single();
+
+        if (error) {
+          console.error("Error fetching proyeccion:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load proyeccion data.",
+            variant: "destructive",
+          });
+        }
+
+        setProyeccion(data);
+        if (data?.desarrollo_id) {
+          setSelectedDesarrollo({ id: data.desarrollo_id, nombre: data.desarrollo_nombre });
+        }
+      } catch (error) {
+        console.error("Unexpected error fetching proyeccion:", error);
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred while loading proyeccion data.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProyeccion();
+  }, [proyeccionId, toast]);
+
+  useEffect(() => {
+    const fetchDesarrollos = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('desarrollos')
+          .select('id, nombre');
+
+        if (error) {
+          console.error("Error fetching desarrollos:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load desarrollos data.",
+            variant: "destructive",
+          });
+        }
+
+        setDesarrollos(data || []);
+      } catch (error) {
+        console.error("Unexpected error fetching desarrollos:", error);
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred while loading desarrollos data.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchDesarrollos();
+  }, [toast]);
+
+  const handleDesarrolloChange = async (desarrolloId: string) => {
+    const selected = desarrollos.find(d => d.id === desarrolloId);
+    setSelectedDesarrollo(selected || null);
+
+    // Optimistically update the state
+    setProyeccion(prevProyeccion => ({
+      ...prevProyeccion,
+      desarrollo_id: desarrolloId,
+      desarrollo_nombre: selected ? selected.nombre : null,
+    } as Proyeccion));
+
+    try {
+      const { error } = await supabase
+        .from('proyecciones')
+        .update({ desarrollo_id: desarrolloId, desarrollo_nombre: selected?.nombre })
+        .eq('id', proyeccionId);
+
+      if (error) {
+        console.error("Error updating proyeccion:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update proyeccion with the new desarrollo.",
+          variant: "destructive",
+        });
+
+        // Revert the state on failure
+        setProyeccion(prevProyeccion => ({
+          ...prevProyeccion,
+          desarrollo_id: null,
+          desarrollo_nombre: null,
+        } as Proyeccion));
+        setSelectedDesarrollo(null);
+      } else {
+        toast({
+          title: "Success",
+          description: "Proyeccion updated successfully with the new desarrollo.",
+        });
+      }
+    } catch (error) {
+      console.error("Unexpected error updating proyeccion:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while updating the proyeccion.",
+        variant: "destructive",
+      });
+
+      // Revert the state on unexpected error
+      setProyeccion(prevProyeccion => ({
+        ...prevProyeccion,
+        desarrollo_id: null,
+        desarrollo_nombre: null,
+      } as Proyeccion));
+      setSelectedDesarrollo(null);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <Skeleton className="h-6 w-80" />
+          </CardTitle>
+          <CardDescription>
+            <Skeleton className="h-4 w-60" />
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <ProyeccionFilters
-              selectedDesarrolloId={selectedDesarrolloId}
-              selectedPrototipoId={selectedPrototipoId}
-              onDesarrolloChange={onDesarrolloChange}
-              onPrototipoChange={onPrototipoChange}
-            />
+          <div className="grid gap-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
           </div>
         </CardContent>
       </Card>
+    );
+  }
 
-      {/* Sección de Calculadora */}
-      <Card className="border-purple-100 shadow-md overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-white to-purple-50/30 border-b border-purple-100 pb-2">
-          <CardTitle className="text-purple-900">Parámetros de proyección</CardTitle>
-          <CardDescription>
-            Ajusta los valores para personalizar el cálculo de rendimiento
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <Calculator 
-            desarrolloId={selectedDesarrolloId !== "global" ? selectedDesarrolloId : undefined}
-            prototipoId={selectedPrototipoId !== "global" ? selectedPrototipoId : undefined}
-            onDataUpdate={onDataUpdate}
-            shouldCalculate={shouldCalculate}
-          />
-          
-          <Button 
-            onClick={onCreateProjection} 
-            className="w-full bg-indigo-600 hover:bg-indigo-700 mt-6 flex items-center justify-center gap-2 font-medium"
-          >
-            Actualizar Proyección
-            <ArrowRightIcon size={16} />
-          </Button>
-        </CardContent>
+  if (!proyeccion) {
+    return (
+      <Card>
+        <CardContent>No se encontró la proyección.</CardContent>
       </Card>
+    );
+  }
 
-      {/* Sección de Resultados */}
-      <Card className="border-amber-100 shadow-md overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-white to-amber-50/30 border-b border-amber-100 pb-2">
-          <CardTitle className="text-amber-900">Resumen de la inversión</CardTitle>
-          <CardDescription>
-            Análisis comparativo de rendimientos
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <ProyeccionSummary summaryData={summaryData} />
-        </CardContent>
-      </Card>
+  const chartData = [
+    { name: 'Ingresos', value: proyeccion.ingresos_totales },
+    { name: 'Gastos', value: proyeccion.gastos_totales },
+    { name: 'Beneficio Neto', value: proyeccion.beneficio_neto },
+  ];
 
-      {/* Sección de Gráfica y Tabla */}
-      <Card className="border-emerald-100 shadow-md overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-white to-emerald-50/30 border-b border-emerald-100 pb-2">
-          <CardTitle className="text-emerald-900">Resultados detallados</CardTitle>
-          <CardDescription>
-            Visualización año por año de la proyección financiera
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Tabs 
-            defaultValue="grafica" 
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <div className="px-6 pt-4">
-              <TabsList className="grid w-full max-w-[400px] grid-cols-2 p-1 bg-emerald-50 border border-emerald-100">
-                <TabsTrigger value="grafica" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-emerald-800">
-                  <BarChart2 size={16} />
-                  Gráfica
-                </TabsTrigger>
-                <TabsTrigger value="tabla" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-emerald-800">
-                  <TableIcon size={16} />
-                  Tabla detallada
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            
-            <TabsContent value="grafica" className="p-6">
-              <ProyeccionChart chartData={chartData} />
-            </TabsContent>
-            
-            <TabsContent value="tabla" className="px-0">
-              <ProyeccionTable chartData={chartData} />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          Proyección Financiera
+        </CardTitle>
+        <CardDescription>
+          Análisis detallado de la proyección financiera.
+        </CardDescription>
+      </CardHeader>
+      <CardContent id="proyeccion-content">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Detalles</h3>
+          <p>Inversión Inicial: {formatCurrency(proyeccion.inversion_inicial)}</p>
+          <p>Ingresos Totales: {formatCurrency(proyeccion.ingresos_totales)}</p>
+          <p>Gastos Totales: {formatCurrency(proyeccion.gastos_totales)}</p>
+          <p>Beneficio Neto: {formatCurrency(proyeccion.beneficio_neto)}</p>
+          <p>TIR: {proyeccion.tir}%</p>
+          <p>Payback: {proyeccion.payback} años</p>
+        </div>
+
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Desarrollo Asociado</h3>
+          <Select onValueChange={handleDesarrolloChange} defaultValue={selectedDesarrollo?.id || ""}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecciona un desarrollo" />
+            </SelectTrigger>
+            <SelectContent>
+              {desarrollos.map((desarrollo) => (
+                <SelectItem key={desarrollo.id} value={desarrollo.id}>
+                  {desarrollo.nombre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedDesarrollo && <p>Desarrollo seleccionado: {selectedDesarrollo.nombre}</p>}
+        </div>
+
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Gráfico de Resultados</h3>
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis tickFormatter={(value) => formatCurrency(value as number)} />
+              <Tooltip formatter={(value) => formatCurrency(value as number)} />
+              <Legend />
+              <Bar dataKey="value" fill="#8884d8" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+      <div className="flex justify-end space-x-2 p-4">
+        <ExportPDFButton
+          cotizacionId="placeholder"
+          leadName="Proyección"
+          desarrolloNombre={selectedDesarrollo?.nombre || "Desarrollo"}
+          prototipoNombre="Análisis"
+          buttonText="Exportar PDF"
+          resourceName="proyección"
+          fileName={`Proyeccion_${selectedDesarrollo?.nombre || 'Desarrollo'}_${new Date().toLocaleDateString('es-MX').replace(/\//g, '-')}`}
+          elementId="proyeccion-content"
+          className="ml-2"
+          variant="default"
+        />
+      </div>
+    </Card>
   );
 };
+
+export default ProyeccionView;

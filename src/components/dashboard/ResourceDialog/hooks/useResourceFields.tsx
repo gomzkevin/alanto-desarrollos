@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,11 +23,13 @@ const TIPOS_PROPIEDADES = [
   { value: 'otro', label: 'Otro' },
 ];
 
-export const useResourceFields = (resourceType: ResourceType, selectedStatus?: string | null) => {
+export const useResourceFields = (resourceType: ResourceType, selectedStatus?: string | null, selectedDesarrolloId?: string) => {
   const [fields, setFields] = useState<FieldDefinition[]>([]);
   const { data: leadsData = [] } = useLeads();
   const { data: desarrollosData = [] } = useDesarrollos();
-  const { data: prototipesData = [] } = usePrototipos();
+  const { data: prototipesData = [] } = usePrototipos({
+    desarrolloId: selectedDesarrolloId
+  });
   
   const leads = leadsData || [];
   const desarrollos = desarrollosData || [];

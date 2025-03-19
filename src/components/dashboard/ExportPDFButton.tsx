@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
-import { generateQuotationPDF } from '@/utils/quotationPDF';
+import { downloadQuotationPDF } from '@/utils/quotationPDF';
 
-interface ExportPDFButtonProps {
-  cotizacionId: string;
-  leadName: string;
-  desarrolloNombre: string;
-  prototipoNombre: string;
+export interface ExportPDFButtonProps {
+  cotizacionId?: string;
+  leadName?: string;
+  desarrolloNombre?: string;
+  prototipoNombre?: string;
   disabled?: boolean;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined;
   buttonText?: string;
@@ -22,9 +22,9 @@ interface ExportPDFButtonProps {
 
 const ExportPDFButton: React.FC<ExportPDFButtonProps> = ({
   cotizacionId,
-  leadName,
-  desarrolloNombre,
-  prototipoNombre,
+  leadName = '',
+  desarrolloNombre = '',
+  prototipoNombre = '',
   disabled = false,
   variant = "outline",
   buttonText = "Exportar PDF",
@@ -41,12 +41,32 @@ const ExportPDFButton: React.FC<ExportPDFButtonProps> = ({
       // Get company name from userData
       const companyName = userData?.empresaNombre || 'AirbnbInvest';
       
-      await generateQuotationPDF({
-        cotizacionId,
-        leadName,
-        desarrolloNombre,
-        prototipoNombre,
-        companyName
+      if (!cotizacionId || !leadName || !desarrolloNombre || !prototipoNombre) {
+        console.error('Missing required parameters for PDF generation');
+        toast({
+          title: "Error al generar PDF",
+          description: "Faltan parámetros requeridos para generar el PDF.",
+          variant: "destructive"
+        });
+        setIsGenerating(false);
+        return;
+      }
+      
+      await downloadQuotationPDF({
+        clientName: leadName,
+        propertyInfo: {
+          desarrollo: desarrolloNombre,
+          desarrollo_id: '', // This will be populated from backend
+          prototipo: prototipoNombre,
+          prototipo_id: '', // This will be populated from backend
+          precio: 0 // This will be populated from backend
+        },
+        paymentInfo: {
+          anticipoAmount: 0, // This will be populated from backend
+          numberOfPayments: 0, // This will be populated from backend
+          startDate: new Date(), // This will be populated from backend
+          useFiniquito: false // This will be populated from backend
+        }
       });
       
       toast({

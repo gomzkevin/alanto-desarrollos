@@ -1,7 +1,7 @@
 
 import AdminResourceDialog from './AdminResourceDialog';
-import { useResourceActions } from './useResourceActions';
-import { useResourceData } from './useResourceData';
+import useResourceActions from './useResourceActions';
+import useResourceData from './useResourceData';
 import { useResourceFields } from './hooks/useResourceFields'; 
 import { useResourceForm } from './hooks/useResourceForm';
 

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
 type UserRole = 'admin' | 'vendedor' | null;
@@ -20,6 +20,7 @@ export const useUserRole = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -55,9 +56,13 @@ export const useUserRole = () => {
         }
         
         // Fetch user data from usuarios table
+        const selectQuery = hasEmpresaColumn ? 
+          'id, nombre, email, rol, empresa_id' : 
+          'id, nombre, email, rol';
+          
         let { data, error } = await supabase
           .from('usuarios')
-          .select(hasEmpresaColumn ? 'id, nombre, email, rol, empresa_id' : 'id, nombre, email, rol')
+          .select(selectQuery)
           .eq('auth_id', session.user.id)
           .single();
         
@@ -134,7 +139,7 @@ export const useUserRole = () => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, toast]);
   
   // Helper functions to check permissions
   const isAdmin = () => userData?.role === 'admin';

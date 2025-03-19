@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,8 +8,7 @@ import {
   DesarrolloResource, 
   PrototipoResource, 
   LeadResource, 
-  CotizacionResource, 
-  FieldDefinition
+  CotizacionResource
 } from './types';
 import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
@@ -39,20 +39,20 @@ export default function useResourceData({
 }) {
   const { toast } = useToast();
   const [resource, setResource] = useState<FormValues | null>(null);
-  const [fields, setFields] = useState<FieldDefinition[]>([]);
+  const [fields, setFields] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [initialFetchComplete, setInitialFetchComplete] = useState(false);
   const [prevStatus, setPrevStatus] = useState<string | null>(null);
 
-  const { data: leadsData } = useLeads();
-  const { data: desarrollosData } = useDesarrollos();
-  const { data: prototipesData } = usePrototipos({ 
+  const leadsResult = useLeads();
+  const desarrollosResult = useDesarrollos();
+  const prototipesResult = usePrototipos({ 
     desarrolloId: selectedDesarrolloId 
   });
   
-  const leads = leadsData || [];
-  const desarrollos = desarrollosData || [];
-  const prototipos = prototipesData || [];
+  const leads = leadsResult.leads || [];
+  const desarrollos = desarrollosResult.desarrollos || [];
+  const prototipos = prototipesResult.prototipos || [];
 
   // Fetch resource data on initial load
   useEffect(() => {

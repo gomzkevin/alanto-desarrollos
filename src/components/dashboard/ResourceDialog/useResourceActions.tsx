@@ -3,8 +3,7 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-
-type ResourceType = 'desarrollo' | 'prototipo' | 'propiedad' | 'lead' | 'cotizacion';
+import { ResourceType } from './types';
 
 interface UseResourceActionsProps {
   resourceType: ResourceType;
@@ -22,24 +21,25 @@ interface UseResourceActionsProps {
   };
 }
 
-const getTableName = (resourceType: ResourceType): string => {
-  switch (resourceType) {
-    case 'desarrollo':
-      return 'desarrollos';
-    case 'prototipo':
-      return 'prototipos';
-    case 'propiedad':
-      return 'propiedades';
-    case 'lead':
-      return 'leads';
-    case 'cotizacion':
-      return 'cotizaciones';
-    default:
-      throw new Error(`Invalid resource type: ${resourceType}`);
+const getTableName = (resourceType: string): string => {
+  // Direct mapping to valid table names
+  const tableMapping: Record<string, string> = {
+    'desarrollos': 'desarrollos',
+    'prototipos': 'prototipos',
+    'leads': 'leads',
+    'cotizaciones': 'cotizaciones',
+    'unidades': 'unidades'
+  };
+  
+  const tableName = tableMapping[resourceType];
+  if (!tableName) {
+    throw new Error(`Invalid resource type: ${resourceType}`);
   }
+  
+  return tableName;
 };
 
-export const useResourceActions = ({
+const useResourceActions = ({
   resourceType,
   resourceId,
   onSuccess,
@@ -97,12 +97,12 @@ export const useResourceActions = ({
       console.log(`Saving ${resourceType} data:`, data);
       
       // Process amenities if available
-      if (resourceType === 'desarrollo' && selectedAmenities.length > 0) {
+      if (resourceType === 'desarrollos' && selectedAmenities.length > 0) {
         data.amenidades = JSON.stringify(selectedAmenities);
       }
       
       // Check for empresa_id
-      if (resourceType === 'desarrollo' || resourceType === 'lead') {
+      if (resourceType === 'desarrollos' || resourceType === 'leads') {
         const { data: hasColumn } = await supabase
           .rpc('has_column', { 
             table_name: tableName, 
@@ -115,7 +115,7 @@ export const useResourceActions = ({
       }
       
       // Create new lead if necesary for cotización with new client
-      if (resourceType === 'cotizacion' && clientConfig && !clientConfig.isExistingClient) {
+      if (resourceType === 'cotizaciones' && clientConfig && !clientConfig.isExistingClient) {
         const { nombre, email, telefono } = clientConfig.newClientData;
         
         // Validate data
@@ -162,8 +162,8 @@ export const useResourceActions = ({
         result = updatedResource[0];
         
         toast({
-          title: `${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)} actualizado`,
-          description: `El ${resourceType} ha sido actualizado exitosamente`,
+          title: `${resourceType.slice(0, -1).charAt(0).toUpperCase() + resourceType.slice(0, -1).slice(1)} actualizado`,
+          description: `El ${resourceType.slice(0, -1)} ha sido actualizado exitosamente`,
         });
       } else {
         // Create new resource
@@ -177,7 +177,7 @@ export const useResourceActions = ({
         result = createdResource[0];
         
         // Handle development image for 'desarrollo' if needed
-        if (resourceType === 'desarrollo' && data.imagen_url) {
+        if (resourceType === 'desarrollos' && data.imagen_url) {
           const imageUrl = data.imagen_url;
           
           const { error: imageError } = await supabase
@@ -200,8 +200,8 @@ export const useResourceActions = ({
         }
         
         toast({
-          title: `${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)} creado`,
-          description: `El ${resourceType} ha sido creado exitosamente`,
+          title: `${resourceType.slice(0, -1).charAt(0).toUpperCase() + resourceType.slice(0, -1).slice(1)} creado`,
+          description: `El ${resourceType.slice(0, -1)} ha sido creado exitosamente`,
         });
       }
       
@@ -218,7 +218,7 @@ export const useResourceActions = ({
       setIsLoading(false);
       toast({
         title: 'Error',
-        description: `No se pudo guardar el ${resourceType}: ${error.message}`,
+        description: `No se pudo guardar el ${resourceType.slice(0, -1)}: ${error.message}`,
         variant: 'destructive',
       });
       
