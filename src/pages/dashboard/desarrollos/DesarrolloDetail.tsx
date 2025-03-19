@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -350,22 +351,35 @@ const DesarrolloDetailPage = () => {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                 <div className="space-y-1">
                   <h2 className="text-2xl font-bold text-slate-800">Prototipos disponibles</h2>
-                  <p className="text-slate-600">
-                    {prototipos.length} {prototipos.length === 1 ? 'prototipo' : 'prototipos'} en este desarrollo
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <p className="text-slate-600">
+                      {prototipos.length} {prototipos.length === 1 ? 'prototipo' : 'prototipos'} en este desarrollo
+                    </p>
                     {puedeCrearPrototipos() && (
-                      <span className="ml-1 text-indigo-600 flex items-center mt-1">
-                        (Aún puedes crear prototipos para {unidadesDisponiblesParaPrototipos()} unidades más)
-                        <AdminResourceDialog 
-                          resourceType="prototipos" 
-                          buttonText="Crear" 
-                          buttonIcon={<PlusCircle className="h-3 w-3" />}
-                          buttonVariant="link"
-                          onSuccess={refetchPrototipos}
-                          desarrolloId={id}
-                        />
-                      </span>
+                      <div className="flex items-center text-indigo-600 gap-2">
+                        <span>(Aún puedes crear prototipos para {unidadesDisponiblesParaPrototipos()} unidades más)</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="ml-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50"
+                          onClick={() => {}}
+                          asChild
+                        >
+                          <span className="flex items-center">
+                            <PlusCircle className="h-3.5 w-3.5 mr-1" />
+                            <AdminResourceDialog 
+                              resourceType="prototipos" 
+                              buttonText="Crear prototipo" 
+                              buttonIcon={<PlusCircle className="h-4 w-4 mr-1" />}
+                              buttonVariant="link"
+                              onSuccess={refetchPrototipos}
+                              desarrolloId={id}
+                            />
+                          </span>
+                        </Button>
+                      </div>
                     )}
-                  </p>
+                  </div>
                 </div>
                 <AdminResourceDialog 
                   resourceType="prototipos" 
