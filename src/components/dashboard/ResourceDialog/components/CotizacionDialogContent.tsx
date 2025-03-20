@@ -88,7 +88,7 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
   return (
     <DialogContent className="p-0 border-2 border-gray-300 shadow-lg rounded-lg max-h-[90vh] overflow-hidden flex flex-col max-w-4xl">
       <form onSubmit={handleFormSubmit} className="flex flex-col h-full max-h-[90vh]">
-        <div className="px-8 py-6">
+        <div className="px-10 py-8">
           <DialogHeader 
             title={getResourceTitle()} 
             description={getResourceDescription()}
@@ -103,33 +103,35 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
             </div>
           ) : (
             <ScrollArea className="h-[calc(90vh-180px)]">
-              <div className="px-8 py-6">
-                <div className="space-y-8">
-                  <div className="gap-y-6">
-                    <GenericForm
-                      resourceType="cotizaciones"
-                      fields={fields}
-                      values={resource}
-                      onChange={handleChange}
-                      onSelectChange={handleSelectChange}
-                      onSwitchChange={handleSwitchChange}
-                      onLeadSelect={handleLeadSelect}
-                      selectedAmenities={selectedAmenities}
-                      onAmenitiesChange={handleAmenitiesChange}
-                      isSubmitting={isSubmitting}
-                      desarrolloId={desarrolloId}
-                      prototipo_id={prototipo_id}
-                      lead_id={lead_id}
-                      onImageUpload={handleImageUpload}
-                      uploading={uploading}
-                      isExistingClient={isExistingClient}
-                      onExistingClientChange={onExistingClientChange}
-                      newClientData={newClientData}
-                      onNewClientDataChange={onNewClientDataChange}
-                      onDesarrolloSelect={onDesarrolloSelect}
-                      onDateChange={handleDateChange}
-                      formId="resource-form"
-                    />
+              <div className="px-10 py-6">
+                <div className="space-y-10">
+                  <div className="gap-y-8">
+                    <div className="bg-gray-50 rounded-xl p-8 shadow-sm border border-gray-100">
+                      <GenericForm
+                        resourceType="cotizaciones"
+                        fields={fields}
+                        values={resource}
+                        onChange={handleChange}
+                        onSelectChange={handleSelectChange}
+                        onSwitchChange={handleSwitchChange}
+                        onLeadSelect={handleLeadSelect}
+                        selectedAmenities={selectedAmenities}
+                        onAmenitiesChange={handleAmenitiesChange}
+                        isSubmitting={isSubmitting}
+                        desarrolloId={desarrolloId}
+                        prototipo_id={prototipo_id}
+                        lead_id={lead_id}
+                        onImageUpload={handleImageUpload}
+                        uploading={uploading}
+                        isExistingClient={isExistingClient}
+                        onExistingClientChange={onExistingClientChange}
+                        newClientData={newClientData}
+                        onNewClientDataChange={onNewClientDataChange}
+                        onDesarrolloSelect={onDesarrolloSelect}
+                        onDateChange={handleDateChange}
+                        formId="resource-form"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -137,7 +139,7 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
           )}
         </div>
         
-        <div className="px-8 py-6">
+        <div className="px-10 py-8">
           <DialogFooter 
             onClose={onClose}
             onSave={async () => {
