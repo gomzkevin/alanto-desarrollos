@@ -1,12 +1,12 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useRouter } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
 export const useUnitSale = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   // Función para crear una venta y redireccionar
@@ -73,7 +73,7 @@ export const useUnitSale = () => {
         });
         
         setTimeout(() => {
-          router.navigate(`/dashboard/ventas/${ventaId}`);
+          navigate(`/dashboard/ventas/${ventaId}`);
         }, 500);
       }
     } catch (err) {
