@@ -82,7 +82,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
   });
 
   // Función para crear una venta
-  const createVenta = async (ventaData: Partial<Venta>) => {
+  const createVenta = async (ventaData: Omit<Venta, 'id' | 'fecha_actualizacion' | 'fecha_inicio'> & { precio_total: number; unidad_id: string }) => {
     setIsCreating(true);
     try {
       const { data, error } = await supabase
@@ -103,7 +103,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
   };
 
   // Función para actualizar una venta
-  const updateVenta = async (id: string, updates: Partial<Venta>) => {
+  const updateVenta = async (id: string, updates: Partial<Omit<Venta, 'id'>>) => {
     setIsUpdating(true);
     try {
       const { data, error } = await supabase
