@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VentasTable } from './components/VentasTable';
-import { VentasStatistics } from './components/VentasStatistics';
+import VentasStatistics from './components/VentasStatistics';
 import { NuevaVentaDialog } from './components/NuevaVentaDialog';
 
 const VentasPage = () => {

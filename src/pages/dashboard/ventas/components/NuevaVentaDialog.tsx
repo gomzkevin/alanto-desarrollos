@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useVentas } from '@/hooks/useVentas';
 import { useUnidades } from '@/hooks/useUnidades';
 import { Venta } from '@/hooks/useVentas';
+import { supabase } from '@/integrations/supabase/client';
 
 interface NuevaVentaDialogProps {
   open: boolean;
@@ -93,14 +94,13 @@ export const NuevaVentaDialog = ({ open, onOpenChange, onSuccess }: NuevaVentaDi
     setLoading(true);
     
     try {
-      const nuevaVenta: Partial<Venta> = {
+      // Create the venta object with required properties explicitly defined
+      await createVenta({
         unidad_id: unidadId,
         precio_total: precioTotal,
         es_fraccional: esFraccional,
         estado: 'en_proceso'
-      };
-      
-      await createVenta(nuevaVenta);
+      });
       
       toast({
         title: 'Éxito',
@@ -158,7 +158,6 @@ export const NuevaVentaDialog = ({ open, onOpenChange, onSuccess }: NuevaVentaDi
               type="number"
               value={precioTotal}
               onChange={(e) => setPrecioTotal(Number(e.target.value))}
-              formatCurrency
             />
           </div>
           
