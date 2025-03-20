@@ -4,14 +4,13 @@ import { DialogContent } from '@/components/ui/dialog';
 import { DialogHeader } from './DialogHeader';
 import { DialogFooter } from './DialogFooter';
 import { Loader2 } from 'lucide-react';
-import { FormValues, ResourceType, FieldDefinition } from '../types';
+import { FormValues, FieldDefinition } from '../types';
 import GenericForm from '../GenericForm';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-interface ResourceDialogContentProps {
+interface CotizacionDialogContentProps {
   isOpen: boolean;
   onClose: () => void;
-  resourceType: ResourceType;
   resourceId?: string;
   isLoading: boolean;
   isSubmitting: boolean;
@@ -37,10 +36,9 @@ interface ResourceDialogContentProps {
   handleDateChange: (name: string, date: Date | undefined) => void;
 }
 
-export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
+export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = ({
   isOpen,
   onClose,
-  resourceType,
   resourceId,
   isLoading,
   isSubmitting,
@@ -67,45 +65,17 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
 }) => {
   const getResourceTitle = () => {
     if (resourceId) {
-      switch (resourceType) {
-        case 'desarrollos': return 'Editar desarrollo';
-        case 'prototipos': return 'Editar prototipo';
-        case 'leads': return 'Editar lead';
-        case 'cotizaciones': return 'Editar cotización';
-        case 'unidades': return 'Editar unidad';
-        default: return 'Editar recurso';
-      }
+      return 'Editar cotización';
     } else {
-      switch (resourceType) {
-        case 'desarrollos': return 'Nuevo desarrollo';
-        case 'prototipos': return 'Nuevo prototipo';
-        case 'leads': return 'Nuevo lead';
-        case 'cotizaciones': return 'Nueva cotización';
-        case 'unidades': return 'Nueva unidad';
-        default: return 'Nuevo recurso';
-      }
+      return 'Nueva cotización';
     }
   };
 
   const getResourceDescription = () => {
     if (resourceId) {
-      switch (resourceType) {
-        case 'desarrollos': return 'Actualizar información del desarrollo';
-        case 'prototipos': return 'Actualizar información del prototipo';
-        case 'leads': return 'Actualizar información del lead';
-        case 'cotizaciones': return 'Actualizar información de la cotización';
-        case 'unidades': return 'Actualizar información de la unidad';
-        default: return 'Actualizar información del recurso';
-      }
+      return 'Actualizar información de la cotización';
     } else {
-      switch (resourceType) {
-        case 'desarrollos': return 'Crear un nuevo desarrollo';
-        case 'prototipos': return 'Crear un nuevo prototipo';
-        case 'leads': return 'Registrar un nuevo lead';
-        case 'cotizaciones': return 'Crear una nueva cotización';
-        case 'unidades': return 'Registrar una nueva unidad';
-        default: return 'Crear un nuevo recurso';
-      }
+      return 'Crear una nueva cotización';
     }
   };
 
@@ -116,7 +86,7 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
   };
 
   return (
-    <DialogContent className="p-0 border-2 border-gray-300 shadow-lg rounded-lg max-h-[90vh] overflow-hidden flex flex-col max-w-lg">
+    <DialogContent className="p-0 border-2 border-gray-300 shadow-lg rounded-lg max-h-[90vh] overflow-hidden flex flex-col max-w-4xl">
       <form onSubmit={handleFormSubmit} className="flex flex-col h-full max-h-[90vh]">
         <DialogHeader 
           title={getResourceTitle()} 
@@ -134,7 +104,7 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
               <div className="px-6 py-4">
                 <div className="space-y-6">
                   <GenericForm
-                    resourceType={resourceType}
+                    resourceType="cotizaciones"
                     fields={fields}
                     values={resource}
                     onChange={handleChange}
