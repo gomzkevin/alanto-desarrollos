@@ -38,6 +38,17 @@ export const createUnidad = async (unidadData: any) => {
       }
     }
     
+    // Limpiar campos vacíos para IDs
+    if (unidadData.vendedor_id === '') {
+      unidadData.vendedor_id = null;
+    }
+    
+    if (unidadData.comprador_id === '') {
+      unidadData.comprador_id = null;
+    }
+    
+    console.log('Datos sanitizados para crear:', unidadData);
+    
     const { data, error } = await supabase
       .from('unidades')
       .insert(unidadData)
@@ -91,16 +102,14 @@ export const updateUnidad = async ({ id, ...unidadData }: { id: string; [key: st
       unidadData.comprador_id = null;
     }
     
-    // Asegurarse de que el campo estado esté incluido
+    // Ensure estado field is included
     if (!unidadData.estado) {
       console.error('Estado no definido en la actualización!');
       unidadData.estado = 'disponible'; // Valor por defecto seguro
     }
     
-    // Log the final data being sent to ensure it's correct
-    console.log('Sanitized data for update:', { id, ...unidadData });
+    console.log('Datos sanitizados para actualizar:', { id, ...unidadData });
     
-    // Use una transacción para asegurar la atomicidad de la operación
     const { data, error } = await supabase
       .from('unidades')
       .update(unidadData)

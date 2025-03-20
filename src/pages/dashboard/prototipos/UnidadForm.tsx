@@ -10,12 +10,12 @@ import useUnidadForm from './hooks/useUnidadForm';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import useUnitSale from '@/hooks/useUnitSale';
 import { useToast } from '@/hooks/use-toast';
 
 interface UnidadFormProps {
   unidad?: any;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: any) => Promise<void>;
   onCancel: () => void;
   leads: any[];
   isSubmitting?: boolean;
@@ -26,20 +26,26 @@ export const UnidadForm = ({
   onSubmit, 
   onCancel, 
   leads,
-  isSubmitting = false
+  isSubmitting: externalIsSubmitting = false
 }: UnidadFormProps) => {
   const { vendedores } = useVendedores();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Estado para la alerta de redirección
   const [showRedirectAlert, setShowRedirectAlert] = useState(false);
-  const [ventaId, setVentaId] = useState<string | null>(null);
+  const [targetVentaId, setTargetVentaId] = useState<string | null>(null);
   
-  // Eliminamos isSubmittingInternal y usamos solo el isSubmitting del padre
+  // Estado de seguimiento para creación de ventas
+  const [unidadModificada, setUnidadModificada] = useState<string | undefined>(undefined);
+  const { waitForVenta } = useUnitSale(unidadModificada);
   
+  // Hook para el formulario
   const {
     formData,
     precioFormateado,
     isEditing,
+    isSubmitting: formIsSubmitting,
     handleChange,
     handleSubmit: originalHandleSubmit,
     setFormData
@@ -47,77 +53,54 @@ export const UnidadForm = ({
     unidad, 
     onSubmit: async (data) => {
       try {
-        // Primero dejamos que se complete la actualización de la unidad
-        // y esperamos que termine antes de continuar
+        // 1. Guardar el estado original para comparación
+        const estadoOriginal = unidad?.estado;
+        const estadoNuevo = data.estado;
+        
+        // 2. Enviar la actualización al servidor
         await onSubmit(data);
         
-        // Mostramos el toast DESPUÉS de que la operación se haya completado
+        // 3. Mostrar mensaje de éxito
         toast({
-          title: "Unidad actualizada",
-          description: `La unidad ${data.numero} ha sido actualizada correctamente.`
+          title: "Cambios guardados",
+          description: `La unidad ${data.numero} ha sido ${isEditing ? 'actualizada' : 'creada'} correctamente.`
         });
         
-        // Si estamos editando y cambiando a un estado que genera venta
-        const creatingVenta = isEditing && 
-          unidad?.estado === 'disponible' && 
-          (data.estado === 'apartado' || data.estado === 'en_proceso');
+        // 4. Verificar si potencialmente se creará una venta (solo para ediciones)
+        const posibleCreacionVenta = isEditing && 
+          estadoOriginal === 'disponible' && 
+          (estadoNuevo === 'apartado' || estadoNuevo === 'en_proceso');
         
-        console.log('Submitting unidad data:', data);
-        console.log('Original unidad estado:', unidad?.estado);
-        console.log('New unidad estado:', data.estado);
-        console.log('Will create venta?', creatingVenta);
+        console.log('Verificación de creación de venta:', {
+          isEditing,
+          estadoOriginal,
+          estadoNuevo,
+          posibleCreacionVenta
+        });
         
-        // Si se creará una venta, consultamos solo DESPUÉS de que la actualización se complete
-        if (creatingVenta) {
-          console.log('Checking for created venta for unidad:', unidad?.id);
+        // 5. Si es probable que se haya creado una venta, buscarla
+        if (posibleCreacionVenta && unidad?.id) {
+          setUnidadModificada(unidad.id);
           
-          try {
-            // En lugar de setTimeout, usamos una búsqueda asincrónica 
-            // e intentamos varias veces con un pequeño retraso entre intentos
-            let attempts = 0;
-            let ventaData = null;
-            
-            while (attempts < 5 && !ventaData) {
-              attempts++;
-              console.log(`Attempt ${attempts} to find created venta...`);
-              
-              const { data: result, error } = await supabase
-                .from('ventas')
-                .select('id')
-                .eq('unidad_id', unidad.id)
-                .limit(1)
-                .maybeSingle();
-              
-              if (error) {
-                console.error('Error al buscar la venta creada:', error);
-              }
-              
-              if (result) {
-                ventaData = result;
-                break;
-              }
-              
-              // Esperamos un poco antes del siguiente intento
-              if (!result && attempts < 5) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-              }
-            }
-            
-            console.log('Found venta data:', ventaData);
-            
-            if (ventaData) {
-              setVentaId(ventaData.id);
-              setShowRedirectAlert(true);
-            }
-          } catch (error) {
-            console.error('Error al buscar la venta creada:', error);
+          // Esperar a que se cree la venta (con reintentos)
+          const ventaEncontrada = await waitForVenta(unidad.id);
+          
+          if (ventaEncontrada) {
+            console.log(`Venta encontrada: ${ventaEncontrada}`);
+            setTargetVentaId(ventaEncontrada);
+            setShowRedirectAlert(true);
+          } else {
+            console.log('No se encontró venta después de la modificación');
           }
+          
+          // Limpiar el seguimiento
+          setUnidadModificada(undefined);
         }
       } catch (error) {
-        console.error('Error en el procesamiento del formulario:', error);
+        console.error('Error al procesar el formulario:', error);
         toast({
           title: "Error",
-          description: "No se pudo actualizar la unidad. Intente nuevamente.",
+          description: "No se pudieron guardar los cambios. Intente nuevamente.",
           variant: "destructive"
         });
       }
@@ -125,27 +108,31 @@ export const UnidadForm = ({
     onCancel 
   });
   
-  // Fix the type error by explicitly specifying the form event type
+  // Combinar estados de carga
+  const isFormDisabled = externalIsSubmitting || formIsSubmitting;
+  
+  // Manejar el envío del formulario
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (isSubmitting) return;
+    if (isFormDisabled) return;
     
-    // Registrar el estado previo y nuevo para debugging
-    console.log('Form submission - Current estado:', unidad?.estado);
-    console.log('Form submission - New estado:', formData.estado);
+    // Registrar datos para depuración
+    console.log('Enviando formulario:', {
+      estadoPrevio: unidad?.estado,
+      estadoNuevo: formData.estado
+    });
     
     originalHandleSubmit(e);
   };
   
-  // Manejo de redirección a la venta
+  // Manejar redirección a la página de venta
   const handleRedirectToVenta = () => {
-    if (ventaId) {
-      navigate(`/dashboard/ventas/${ventaId}`);
+    if (targetVentaId) {
+      navigate(`/dashboard/ventas/${targetVentaId}`);
     }
   };
   
-  // Handle lead selection - cleanup to prevent stale references
-  const handleLeadSelect = React.useCallback((lead: any) => {
+  // Manejar selección de lead (comprador)
+  const handleLeadSelect = (lead: any) => {
     if (!lead) return;
     
     setFormData(prev => ({
@@ -153,10 +140,10 @@ export const UnidadForm = ({
       comprador_id: lead.id,
       comprador_nombre: lead.nombre
     }));
-  }, [setFormData]);
+  };
   
-  // Handle vendedor selection - cleanup to prevent stale references
-  const handleVendedorSelect = React.useCallback((vendedor: any) => {
+  // Manejar selección de vendedor
+  const handleVendedorSelect = (vendedor: any) => {
     if (!vendedor) return;
     
     setFormData(prev => ({
@@ -164,12 +151,12 @@ export const UnidadForm = ({
       vendedor_id: vendedor.id,
       vendedor_nombre: vendedor.nombre
     }));
-  }, [setFormData]);
+  };
   
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Alerta de redirección a ventas */}
-      {showRedirectAlert && ventaId && (
+      {showRedirectAlert && targetVentaId && (
         <Alert className="bg-green-50 border-green-200 mb-4">
           <InfoIcon className="h-4 w-4 text-green-500" />
           <AlertDescription className="flex justify-between items-center">
@@ -196,7 +183,7 @@ export const UnidadForm = ({
         </Alert>
       )}
       
-      {/* Basic Information Fields */}
+      {/* Campos del formulario */}
       <div className="space-y-2">
         <Label htmlFor="numero">Número *</Label>
         {isEditing ? (
@@ -216,7 +203,7 @@ export const UnidadForm = ({
             onChange={handleChange}
             placeholder="Ej. A101"
             required
-            disabled={isSubmitting}
+            disabled={isFormDisabled}
           />
         )}
       </div>
@@ -229,7 +216,7 @@ export const UnidadForm = ({
           value={formData.nivel}
           onChange={handleChange}
           placeholder="Ej. 1"
-          disabled={isSubmitting}
+          disabled={isFormDisabled}
         />
       </div>
       
@@ -241,7 +228,7 @@ export const UnidadForm = ({
           onValueChange={(value) => handleChange({
             target: { name: 'estado', value }
           } as React.ChangeEvent<HTMLSelectElement>)}
-          disabled={isSubmitting}
+          disabled={isFormDisabled}
         >
           <SelectTrigger>
             <SelectValue placeholder="Selecciona un estado" />
@@ -269,7 +256,7 @@ export const UnidadForm = ({
           onChange={handleChange}
           placeholder="Ej. $1,500,000"
           className="font-medium"
-          disabled={isSubmitting}
+          disabled={isFormDisabled}
         />
       </div>
       
@@ -282,7 +269,7 @@ export const UnidadForm = ({
             displayValue={formData.comprador_nombre}
             onSelect={handleLeadSelect}
             placeholder="Seleccionar comprador"
-            disabled={isSubmitting}
+            disabled={isFormDisabled}
           />
           
           <SearchableEntitySelect
@@ -292,7 +279,7 @@ export const UnidadForm = ({
             displayValue={formData.vendedor_nombre}
             onSelect={handleVendedorSelect}
             placeholder="Seleccionar vendedor"
-            disabled={isSubmitting}
+            disabled={isFormDisabled}
           />
           
           <div className="space-y-2">
@@ -306,7 +293,7 @@ export const UnidadForm = ({
               value={formData.fecha_venta ? formData.fecha_venta.slice(0, 10) : ''}
               onChange={handleChange}
               className="w-full"
-              disabled={isSubmitting}
+              disabled={isFormDisabled}
             />
           </div>
         </>
@@ -317,15 +304,15 @@ export const UnidadForm = ({
           type="button"
           variant="outline"
           onClick={onCancel}
-          disabled={isSubmitting}
+          disabled={isFormDisabled}
         >
           Cancelar
         </Button>
         <Button 
           type="submit"
-          disabled={!formData.numero || isSubmitting}
+          disabled={!formData.numero || isFormDisabled}
         >
-          {isSubmitting ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
+          {isFormDisabled ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
         </Button>
       </div>
     </form>

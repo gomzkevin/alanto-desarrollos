@@ -32,36 +32,36 @@ export const UnidadTable = ({
     deleteUnidad
   } = useUnidades({ prototipo_id: prototipo.id });
   
-  // Dialog state - using separate state variables to prevent issues
+  // Estados simplificados
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentUnidad, setCurrentUnidad] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Sale notification state
+  // Estado para la alerta de venta creada
   const [showSaleAlert, setShowSaleAlert] = useState(false);
   const [editedUnidadId, setEditedUnidadId] = useState<string | undefined>(undefined);
-  const { ventaId, fetchVentaId } = useUnitSale(editedUnidadId);
+  const { ventaId } = useUnitSale(editedUnidadId);
   
-  // Normalize price with a stable reference
+  // Función para normalizar precios
   const normalizePrice = useCallback((price: any): number | undefined => {
     if (price === undefined || price === null) return undefined;
     
     if (typeof price === 'string') {
-      return parseFloat(price.replace(/[$,]/g, ''));
+      return parseFloat(price.replace(/[^0-9]/g, ''));
     }
     
     return Number(price);
   }, []);
 
-  // Create unidad handler with proper cleanup
+  // Agregar unidad - simplificado
   const handleAddUnidad = useCallback(async (data: any) => {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
     try {
-      console.log('Creating unidad with data:', data);
+      console.log('Creando unidad con datos:', data);
       
       await createUnidad({
         prototipo_id: prototipo.id,
@@ -81,11 +81,10 @@ export const UnidadTable = ({
         description: "La unidad ha sido creada exitosamente"
       });
       
-      // Safe state updates
       setIsAddDialogOpen(false);
       
       if (onRefresh) {
-        setTimeout(onRefresh, 300);
+        setTimeout(onRefresh, 500);
       }
     } catch (error: any) {
       console.error("Error creating unidad:", error);
@@ -95,12 +94,11 @@ export const UnidadTable = ({
         variant: "destructive"
       });
     } finally {
-      // Ensure we reset submission state
-      setTimeout(() => setIsSubmitting(false), 100);
+      setIsSubmitting(false);
     }
   }, [createUnidad, normalizePrice, onRefresh, prototipo.id, toast, isSubmitting]);
 
-  // Edit unidad handler with proper cleanup
+  // Editar unidad - simplificado
   const handleEditUnidad = useCallback(async (data: any) => {
     if (!currentUnidad || isSubmitting) return;
     
@@ -110,10 +108,12 @@ export const UnidadTable = ({
       const prevEstado = currentUnidad.estado;
       const newEstado = data.estado;
       
-      console.log('Updating unidad:', unidadId);
-      console.log('Previous state:', prevEstado);
-      console.log('New state:', newEstado);
-      console.log('Full data:', data);
+      console.log('Actualizando unidad:', {
+        id: unidadId,
+        estadoPrevio: prevEstado,
+        estadoNuevo: newEstado,
+        data
+      });
       
       await updateUnidad({
         id: unidadId,
@@ -128,48 +128,33 @@ export const UnidadTable = ({
         fecha_venta: data.fecha_venta
       });
       
-      toast({
-        title: "Unidad actualizada",
-        description: "La unidad ha sido actualizada exitosamente"
-      });
+      setIsEditDialogOpen(false);
       
-      // Check if a sale should be created (status changed to apartado or en_proceso)
-      const shouldCheckForSale = 
+      // Check if a sale might have been created
+      const possibleSaleCreation = 
         (prevEstado === 'disponible') && 
         (newEstado === 'apartado' || newEstado === 'en_proceso');
       
-      // Close dialog first, then clear state
-      setIsEditDialogOpen(false);
-      
-      // Safe cleanup with timeouts
-      if (onRefresh) {
-        setTimeout(() => {
-          onRefresh();
-          
-          // If status changed to trigger sale creation, check for sale and show alert
-          if (shouldCheckForSale) {
-            console.log('Status changed to trigger sale, checking for sale creation');
-            setEditedUnidadId(unidadId);
-            setTimeout(async () => {
-              const newVentaId = await fetchVentaId(unidadId);
-              console.log('Fetched ventaId:', newVentaId);
-              if (newVentaId) {
-                setShowSaleAlert(true);
-                // Auto-hide after some time
-                setTimeout(() => {
-                  setShowSaleAlert(false);
-                  setEditedUnidadId(undefined);
-                }, 15000);
-              }
-            }, 1000);
-          }
-          
-          // Clear the current unidad after refreshing
-          setTimeout(() => setCurrentUnidad(null), 100);
-        }, 300);
-      } else {
-        setTimeout(() => setCurrentUnidad(null), 300);
+      if (possibleSaleCreation) {
+        setEditedUnidadId(unidadId);
       }
+      
+      if (onRefresh) {
+        setTimeout(onRefresh, 500);
+      }
+      
+      setTimeout(() => {
+        setCurrentUnidad(null);
+        
+        if (possibleSaleCreation && ventaId) {
+          setShowSaleAlert(true);
+          // Auto-hide after some time
+          setTimeout(() => {
+            setShowSaleAlert(false);
+            setEditedUnidadId(undefined);
+          }, 8000);
+        }
+      }, 500);
     } catch (error: any) {
       console.error("Error updating unidad:", error);
       toast({
@@ -178,12 +163,11 @@ export const UnidadTable = ({
         variant: "destructive"
       });
     } finally {
-      // Reset submission state with delay
-      setTimeout(() => setIsSubmitting(false), 100);
+      setIsSubmitting(false);
     }
-  }, [currentUnidad, normalizePrice, onRefresh, toast, updateUnidad, isSubmitting, fetchVentaId]);
+  }, [currentUnidad, normalizePrice, onRefresh, toast, updateUnidad, isSubmitting, ventaId]);
 
-  // Delete unidad handler with proper cleanup
+  // Eliminar unidad - simplificado
   const handleDeleteUnidad = useCallback(async () => {
     if (!currentUnidad || isSubmitting) return;
     
@@ -197,19 +181,15 @@ export const UnidadTable = ({
         description: "La unidad ha sido eliminada exitosamente"
       });
       
-      // Close dialog first
       setIsDeleteDialogOpen(false);
       
-      // Safe cleanup with timeouts
       if (onRefresh) {
-        setTimeout(() => {
-          onRefresh();
-          // Clear after refreshing
-          setTimeout(() => setCurrentUnidad(null), 100);
-        }, 300);
-      } else {
-        setTimeout(() => setCurrentUnidad(null), 300);
+        setTimeout(onRefresh, 500);
       }
+      
+      setTimeout(() => {
+        setCurrentUnidad(null);
+      }, 500);
     } catch (error: any) {
       console.error("Error deleting unidad:", error);
       toast({
@@ -218,15 +198,13 @@ export const UnidadTable = ({
         variant: "destructive"
       });
     } finally {
-      // Reset submission state with delay
-      setTimeout(() => setIsSubmitting(false), 100);
+      setIsSubmitting(false);
     }
   }, [currentUnidad, deleteUnidad, onRefresh, toast, isSubmitting]);
 
-  // Dialog open handlers with stable references
+  // Funciones para abrir dialogs
   const openEditDialog = useCallback((unidad: any) => {
     if (isSubmitting) return;
-    console.log('Opening edit dialog for unidad:', unidad);
     setCurrentUnidad(unidad);
     setIsEditDialogOpen(true);
   }, [isSubmitting]);
@@ -237,33 +215,26 @@ export const UnidadTable = ({
     setIsDeleteDialogOpen(true);
   }, [isSubmitting]);
   
-  // Dialog close handlers with proper cleanup
-  const closeAddDialog = useCallback(() => {
-    if (isSubmitting) return;
-    setIsAddDialogOpen(false);
-  }, [isSubmitting]);
-
+  // Funciones para cerrar dialogs
   const closeEditDialog = useCallback(() => {
     if (isSubmitting) return;
     setIsEditDialogOpen(false);
-    // Clear current unidad with delay
     setTimeout(() => setCurrentUnidad(null), 300);
   }, [isSubmitting]);
   
   const closeDeleteDialog = useCallback(() => {
     if (isSubmitting) return;
     setIsDeleteDialogOpen(false);
-    // Clear current unidad with delay
     setTimeout(() => setCurrentUnidad(null), 300);
   }, [isSubmitting]);
 
-  // Memoize empty state check to prevent re-renders
+  // Verificar si hay unidades
   const hasUnidades = useMemo(() => 
     unidades && unidades.length > 0, 
     [unidades]
   );
 
-  // Render loading state if explicitly requested
+  // Renderizar estado de carga si es necesario
   if (isLoading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -275,7 +246,7 @@ export const UnidadTable = ({
 
   return (
     <div className="space-y-4">
-      {/* Sale creation alert */}
+      {/* Alerta de creación de venta */}
       <UnidadSaleAlert 
         isVisible={showSaleAlert}
         unidadId={editedUnidadId}
@@ -325,7 +296,7 @@ export const UnidadTable = ({
         </button>
       </div>
       
-      {/* All dialogs extracted to a separate component */}
+      {/* Diálogos */}
       <UnidadDialogs
         isAddDialogOpen={isAddDialogOpen}
         isEditDialogOpen={isEditDialogOpen}

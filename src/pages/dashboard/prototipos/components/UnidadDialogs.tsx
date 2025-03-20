@@ -3,7 +3,6 @@ import React from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import DeleteUnidadDialog from './DeleteUnidadDialog';
 import { UnidadForm } from "../UnidadForm";
-import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 
 interface UnidadDialogsProps {
   isAddDialogOpen: boolean;
@@ -15,9 +14,9 @@ interface UnidadDialogsProps {
   setIsAddDialogOpen: (open: boolean) => void;
   closeEditDialog: () => void;
   closeDeleteDialog: () => void;
-  handleAddUnidad: (data: any) => void;
-  handleEditUnidad: (data: any) => void;
-  handleDeleteUnidad: () => void;
+  handleAddUnidad: (data: any) => Promise<void>;
+  handleEditUnidad: (data: any) => Promise<void>;
+  handleDeleteUnidad: () => Promise<void>;
 }
 
 export const UnidadDialogs = ({

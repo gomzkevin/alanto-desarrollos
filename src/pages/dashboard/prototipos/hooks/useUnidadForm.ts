@@ -1,17 +1,17 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { formatCurrency } from '@/lib/utils';
 
 interface UseUnidadFormProps {
   unidad?: any;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: any) => Promise<void>;
   onCancel: () => void;
 }
 
 export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps) => {
   const isEditing = !!unidad;
   
-  // Form state
+  // Form state - inicializado con valores por defecto
   const [formData, setFormData] = useState({
     numero: '',
     nivel: '',
@@ -24,16 +24,17 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
     fecha_venta: ''
   });
   
-  // State to track the formatted price display
+  // Estado para el precio formateado (visual)
   const [precioFormateado, setPrecioFormateado] = useState('');
+  // Estado para controlar el envío del formulario
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Initialize form with unidad data if editing
+  // Inicializar el formulario con los datos de la unidad cuando está en modo edición
   useEffect(() => {
-    // No necesitamos la bandera isMounted ya que podemos usar una función de cleanup
     if (unidad) {
-      console.log("Setting form data from unidad:", unidad);
+      console.log("Inicializando formulario con datos:", unidad);
       
-      // Set the raw form data
+      // Actualizar el estado del formulario
       setFormData({
         numero: unidad.numero || '',
         nivel: unidad.nivel || '',
@@ -46,32 +47,29 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
         fecha_venta: unidad.fecha_venta || ''
       });
       
-      // Format the price for display
+      // Formatear el precio para visualización
       if (unidad.precio_venta) {
         setPrecioFormateado(formatCurrency(unidad.precio_venta));
       }
     }
-    
-    // No necesitamos un return cleanup ya que no hay suscripciones
   }, [unidad]);
   
-  // Handle input changes with stable callback
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  // Manejar cambios en los inputs
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    console.log("Unidad form change:", name, value);
     
-    // Special handling for precio_venta field to format the display
+    // Caso especial para precio_venta: formatear para visualización
     if (name === 'precio_venta') {
-      // Remove non-numeric characters for storing the raw value
+      // Remover caracteres no numéricos para almacenar solo el valor
       const numericValue = value.replace(/[^0-9]/g, '');
       
-      // Update the form data with the numeric value
+      // Actualizar el estado del formulario con el valor numérico
       setFormData(prev => ({
         ...prev,
         [name]: numericValue
       }));
       
-      // Format the value for display if it's not empty
+      // Formatear el valor para visualización
       if (numericValue) {
         setPrecioFormateado(formatCurrency(Number(numericValue)));
       } else {
@@ -80,7 +78,7 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
       return;
     }
     
-    // Special handling for estado field to reset related fields when changed to 'disponible'
+    // Caso especial: Si el estado cambia a disponible, resetear campos relacionados
     if (name === 'estado' && value === 'disponible') {
       setFormData(prev => ({
         ...prev,
@@ -94,36 +92,47 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
       return;
     }
     
+    // Actualización normal para otros campos
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-  }, []);
+  };
   
-  // Handle form submission with stable callback - explicitly type the form event
-  const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
+  // Manejar envío del formulario
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    e.stopPropagation();
-    console.log("Submitting form data:", formData);
     
-    // Prepare data to submit - handle empty date properly
-    const dataToSubmit = {
-      ...formData,
-      // If fecha_venta is empty string, set to null for database compatibility
-      fecha_venta: formData.fecha_venta || null
-    };
+    if (isSubmitting) return;
     
-    // Llamamos a onSubmit directamente sin manejar estados adicionales aquí
-    onSubmit(dataToSubmit);
-  }, [formData, onSubmit]);
+    setIsSubmitting(true);
+    
+    try {
+      // Preparar datos para enviar
+      const dataToSubmit = {
+        ...formData,
+        // Si fecha_venta es vacío, establecer a null para compatibilidad con la base de datos
+        fecha_venta: formData.fecha_venta || null
+      };
+      
+      console.log("Enviando datos del formulario:", dataToSubmit);
+      
+      // Llamar a la función onSubmit proporcionada
+      await onSubmit(dataToSubmit);
+    } catch (error) {
+      console.error("Error al enviar el formulario:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   
   return {
     formData,
     precioFormateado,
     isEditing,
+    isSubmitting,
     handleChange,
     handleSubmit,
-    setPrecioFormateado,
     setFormData
   };
 };

@@ -7,95 +7,72 @@ export const useUnitSale = (unidadId: string | undefined) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  // Mejorado para incluir reintentos y manejo de errores consistente
-  const fetchVentaId = useCallback(async (id: string) => {
+  // Función para buscar la venta asociada a una unidad
+  const fetchVentaId = useCallback(async (id: string): Promise<string | null> => {
     if (!id) return null;
     
     setIsLoading(true);
     setError(null);
     
-    let attempts = 0;
-    const maxAttempts = 3;
-    
-    while (attempts < maxAttempts) {
-      attempts++;
+    try {
+      console.log(`Buscando venta para unidad_id: ${id}`);
       
-      try {
-        console.log(`Attempt ${attempts}: Fetching venta for unidad_id: ${id}`);
-        
-        const { data, error } = await supabase
-          .from('ventas')
-          .select('id')
-          .eq('unidad_id', id)
-          .maybeSingle();
+      const { data, error } = await supabase
+        .from('ventas')
+        .select('id')
+        .eq('unidad_id', id)
+        .maybeSingle();
 
-        if (error) {
-          console.error(`Attempt ${attempts}: Error fetching venta by unidad_id:`, error);
-          
-          // Si es el último intento, lanzamos el error
-          if (attempts === maxAttempts) throw error;
-          
-          // Esperamos un poco antes del siguiente intento
-          await new Promise(resolve => setTimeout(resolve, 800));
-          continue;
-        }
-        
-        console.log(`Attempt ${attempts}: Venta data returned:`, data);
-        
-        if (data) {
-          setVentaId(data.id);
-          setIsLoading(false);
-          return data.id;
-        }
-        
-        // Si estamos en el último intento y no hay datos, terminamos
-        if (attempts === maxAttempts) {
-          setVentaId(null);
-          setIsLoading(false);
-          return null;
-        }
-        
-        // Esperamos un poco antes del siguiente intento
-        await new Promise(resolve => setTimeout(resolve, 800));
-      } catch (err) {
-        console.error(`Attempt ${attempts}: Error in fetchVentaId:`, err);
-        
-        // Si es el último intento, establecemos el error
-        if (attempts === maxAttempts) {
-          setError(err instanceof Error ? err : new Error('Error desconocido'));
-          setIsLoading(false);
-          return null;
-        }
-        
-        // Esperamos un poco antes del siguiente intento
-        await new Promise(resolve => setTimeout(resolve, 800));
+      if (error) {
+        console.error('Error al buscar venta por unidad_id:', error);
+        throw error;
       }
+      
+      console.log('Resultado de búsqueda de venta:', data);
+      
+      if (data) {
+        return data.id;
+      }
+      
+      return null;
+    } catch (err) {
+      console.error('Error en fetchVentaId:', err);
+      setError(err instanceof Error ? err : new Error('Error desconocido'));
+      return null;
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
-    return null;
   }, []);
-
-  // Mejorado para manejar cambios de ID
+  
+  // Efecto para buscar la venta cuando cambia el ID de la unidad
   useEffect(() => {
     let isMounted = true;
     
     if (unidadId) {
-      console.log('useUnitSale triggered for unidadId:', unidadId);
+      console.log('useUnitSale: buscando venta para unidad:', unidadId);
       
-      // Limpiamos el estado anterior inmediatamente
+      // Limpiar estado previo
       setVentaId(null);
+      setError(null);
+      setIsLoading(true);
       
-      // Iniciamos la búsqueda
+      // Buscar la venta
       fetchVentaId(unidadId).then(id => {
-        if (isMounted && id) {
+        if (isMounted) {
           setVentaId(id);
+          setIsLoading(false);
+        }
+      }).catch(err => {
+        if (isMounted) {
+          setError(err instanceof Error ? err : new Error(String(err)));
+          setIsLoading(false);
         }
       });
     } else {
-      // Limpiamos el estado cuando no hay unidadId
+      // Limpiar estado cuando no hay unidadId
       setVentaId(null);
       setError(null);
+      setIsLoading(false);
     }
     
     return () => {
@@ -103,7 +80,34 @@ export const useUnitSale = (unidadId: string | undefined) => {
     };
   }, [unidadId, fetchVentaId]);
 
-  return { ventaId, isLoading, error, fetchVentaId };
+  // Función para esperar a que se cree una venta
+  const waitForVenta = useCallback(async (id: string, maxAttempts = 5): Promise<string | null> => {
+    if (!id) return null;
+    
+    console.log(`Esperando creación de venta para unidad: ${id}`);
+    
+    // Implementar espera con reintentos
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      console.log(`Intento ${attempt}/${maxAttempts}`);
+      
+      const ventaId = await fetchVentaId(id);
+      if (ventaId) {
+        console.log(`Venta encontrada en intento ${attempt}: ${ventaId}`);
+        setVentaId(ventaId);
+        return ventaId;
+      }
+      
+      // Esperar antes del siguiente intento (tiempo creciente)
+      if (attempt < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 800 * attempt));
+      }
+    }
+    
+    console.log(`No se encontró venta después de ${maxAttempts} intentos`);
+    return null;
+  }, [fetchVentaId]);
+
+  return { ventaId, isLoading, error, fetchVentaId, waitForVenta };
 };
 
 export default useUnitSale;
