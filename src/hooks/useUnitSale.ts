@@ -3,12 +3,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useUnitSale = (unidadId: string | undefined) => {
-  const [ventaId, setVentaId] = useState<string | undefined>(undefined);
+  const [ventaId, setVentaId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchVentaId = useCallback(async (id: string) => {
-    if (!id) return;
+    if (!id) return null;
     
     try {
       setIsLoading(true);
@@ -26,12 +26,18 @@ export const useUnitSale = (unidadId: string | undefined) => {
       }
       
       console.log('Venta data returned:', data);
-      setVentaId(data?.id);
-      return data?.id;
+      
+      if (data) {
+        setVentaId(data.id);
+        return data.id;
+      } else {
+        setVentaId(null);
+        return null;
+      }
     } catch (err) {
       console.error('Error fetching venta by unidad_id:', err);
       setError(err instanceof Error ? err : new Error('Error desconocido'));
-      return undefined;
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -41,6 +47,9 @@ export const useUnitSale = (unidadId: string | undefined) => {
     if (unidadId) {
       console.log('useUnitSale triggered for unidadId:', unidadId);
       fetchVentaId(unidadId);
+    } else {
+      // Limpiar el estado cuando no hay unidadId
+      setVentaId(null);
     }
   }, [unidadId, fetchVentaId]);
 

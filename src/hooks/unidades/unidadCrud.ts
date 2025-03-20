@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { updatePrototipoUnitCounts } from './updateUtils';
@@ -71,6 +70,11 @@ export const updateUnidad = async ({ id, ...unidadData }: { id: string; [key: st
     
     // Log the final data being sent to ensure it's correct
     console.log('Sanitized data for update:', { id, ...unidadData });
+    
+    // Asegurarse de que el campo estado esté incluido
+    if (!unidadData.estado) {
+      console.error('Estado no definido en la actualización!');
+    }
     
     const { data, error } = await supabase
       .from('unidades')

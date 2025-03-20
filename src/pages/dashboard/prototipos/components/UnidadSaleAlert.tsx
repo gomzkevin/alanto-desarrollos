@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 interface UnidadSaleAlertProps {
   isVisible: boolean;
   unidadId?: string;
-  ventaId?: string;
+  ventaId?: string | null;
   onClose: () => void;
 }
 
@@ -28,7 +28,7 @@ export const UnidadSaleAlert: React.FC<UnidadSaleAlertProps> = ({
       return;
     }
     
-    console.log('Sale alert visible with ventaId:', ventaId);
+    console.log('Sale alert visible with ventaId:', ventaId, 'and unidadId:', unidadId);
     
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -46,7 +46,7 @@ export const UnidadSaleAlert: React.FC<UnidadSaleAlertProps> = ({
     }, 1000);
     
     return () => clearInterval(timer);
-  }, [isVisible, ventaId, navigate, onClose]);
+  }, [isVisible, ventaId, navigate, onClose, unidadId]);
   
   if (!isVisible || !ventaId) return null;
   
