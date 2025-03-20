@@ -1,5 +1,6 @@
 
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -8,124 +9,163 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, FileText } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Search, Eye, CreditCard } from "lucide-react";
+import { useVentas, VentasFilter } from "@/hooks/useVentas";
+import { formatCurrency } from "@/lib/utils";
 
 const VentasTable = () => {
-  const [filter, setFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("todos");
+  const [filters, setFilters] = useState<VentasFilter>({
+    estado: 'todos'
+  });
+  const [searchQuery, setSearchQuery] = useState('');
   
-  // Datos de ejemplo - estos vendrían de un hook useVentas
-  const ventas = [];
+  const { ventas, isLoading } = useVentas(filters);
+  
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFilters(prev => ({ ...prev, busqueda: searchQuery }));
+  };
+  
+  const handleEstadoChange = (value: string) => {
+    setFilters(prev => ({ ...prev, estado: value }));
+  };
+  
+  const getEstadoBadge = (estado: string) => {
+    switch (estado) {
+      case 'completada':
+        return <Badge variant="success">Completada</Badge>;
+      case 'en_proceso':
+        return <Badge variant="warning">En proceso</Badge>;
+      default:
+        return <Badge>{estado}</Badge>;
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-          <Input
-            placeholder="Buscar venta..."
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="max-w-xs"
-          />
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los estados</SelectItem>
-              <SelectItem value="en_proceso">En proceso</SelectItem>
-              <SelectItem value="completada">Completada</SelectItem>
-            </SelectContent>
-          </Select>
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle>Lista de ventas</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <form onSubmit={handleSearch} className="flex w-full max-w-sm items-center space-x-2">
+              <Input
+                placeholder="Buscar por desarrollo o unidad..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1"
+              />
+              <Button type="submit" variant="secondary" size="icon">
+                <Search className="h-4 w-4" />
+              </Button>
+            </form>
+            
+            <div className="flex space-x-2">
+              <Select 
+                defaultValue="todos"
+                onValueChange={handleEstadoChange}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filtrar por estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="todos">Todos los estados</SelectItem>
+                    <SelectItem value="en_proceso">En proceso</SelectItem>
+                    <SelectItem value="completada">Completada</SelectItem>
+                    <SelectItem value="cancelada">Cancelada</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <p className="text-muted-foreground">Cargando ventas...</p>
+            </div>
+          ) : ventas.length === 0 ? (
+            <div className="flex items-center justify-center h-64">
+              <p className="text-muted-foreground">No se encontraron ventas con los filtros actuales</p>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Desarrollo / Unidad</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Precio Total</TableHead>
+                    <TableHead>Progreso</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ventas.map((venta) => (
+                    <TableRow key={venta.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">
+                            {venta.unidad?.prototipo?.desarrollo?.nombre || 'Desarrollo'} 
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {venta.unidad?.prototipo?.nombre || 'Prototipo'} - Unidad {venta.unidad?.numero || 'N/A'}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {venta.es_fraccional ? 'Fraccional' : 'Individual'}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(venta.precio_total)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <Progress value={venta.progreso || 0} className="h-2" />
+                          <p className="text-xs text-right">{venta.progreso || 0}%</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getEstadoBadge(venta.estado)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" asChild>
+                            <Link to={`/dashboard/ventas/${venta.id}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button variant="ghost" size="icon" asChild>
+                            <Link to={`/dashboard/ventas/${venta.id}?tab=pagos`}>
+                              <CreditCard className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </div>
-
-        <Button asChild>
-          <Link to="/dashboard/ventas/nueva">
-            Nueva Venta
-          </Link>
-        </Button>
-      </div>
-
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Desarrollo/Prototipo</TableHead>
-              <TableHead>Unidad</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Precio Total</TableHead>
-              <TableHead>Progreso</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {ventas.length > 0 ? (
-              ventas.map((venta) => (
-                <TableRow key={venta.id}>
-                  <TableCell>
-                    <div className="font-medium">{venta.desarrollo}</div>
-                    <div className="text-sm text-muted-foreground">{venta.prototipo}</div>
-                  </TableCell>
-                  <TableCell>{venta.unidad}</TableCell>
-                  <TableCell>
-                    {venta.es_fraccional ? "Fraccional" : "Individual"}
-                  </TableCell>
-                  <TableCell>${venta.precio_total.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Progress value={venta.progreso} className="w-[60px]" />
-                      <span className="text-xs">{venta.progreso}%</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={venta.estado === "completada" ? "success" : "default"}
-                    >
-                      {venta.estado === "en_proceso" ? "En proceso" : "Completada"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        asChild
-                      >
-                        <Link to={`/dashboard/ventas/${venta.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        asChild
-                      >
-                        <Link to={`/dashboard/ventas/${venta.id}/pagos`}>
-                          <FileText className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
-                  No hay ventas registradas.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

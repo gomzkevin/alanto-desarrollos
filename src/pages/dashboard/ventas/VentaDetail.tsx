@@ -1,40 +1,58 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronLeft, Building2, Home, Users, Calendar, CreditCard } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
+import { ChevronLeft, Building2, Home, Calendar, CreditCard } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/lib/utils';
+import { useVentaDetail } from '@/hooks/useVentaDetail';
+import { InfoTab } from './components/InfoTab';
+import { PagosTab } from './components/PagosTab';
+import { VentaProgress } from './components/VentaProgress';
+import { PagoDialog } from './components/PagoDialog';
 
 const VentaDetail = () => {
-  const { ventaId } = useParams();
+  const { ventaId } = useParams<{ ventaId: string }>();
   const [activeTab, setActiveTab] = useState('info');
+  const [openPagoDialog, setOpenPagoDialog] = useState(false);
+  
+  const { 
+    venta, 
+    compradores, 
+    pagos,
+    isLoading, 
+    montoPagado,
+    progreso,
+    refetch,
+    compradorVentaId
+  } = useVentaDetail(ventaId);
 
-  // Datos de ejemplo - estos vendrían del hook useVentaDetail
-  const venta = {
-    id: ventaId,
-    precio_total: 1500000,
-    progreso: 30,
-    estado: 'en_proceso',
-    es_fraccional: false,
-    fecha_inicio: '2023-10-15',
-    unidad: {
-      numero: 'A101',
-      desarrollo: 'Costa Azul',
-      prototipo: 'Suite Premium'
-    },
-    compradores: [
-      {
-        id: '1',
-        nombre: 'Juan Pérez',
-        porcentaje: 100,
-        pagos_realizados: 3,
-        total_pagos: 12
-      }
-    ]
-  };
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <div className="h-screen flex items-center justify-center">
+            <p className="text-muted-foreground">Cargando información de la venta...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!venta) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <div className="h-screen flex items-center justify-center">
+            <p className="text-muted-foreground">No se encontró la venta solicitada</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -48,7 +66,14 @@ const VentaDetail = () => {
           </Button>
           
           <div className="flex gap-2">
-            <Button variant="outline">Registrar Pago</Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setOpenPagoDialog(true)} 
+              disabled={!compradorVentaId}
+            >
+              <CreditCard className="mr-2 h-4 w-4" />
+              Registrar Pago
+            </Button>
             <Button variant="outline">Editar Venta</Button>
           </div>
         </div>
@@ -62,15 +87,24 @@ const VentaDetail = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">ID de Venta</p>
-                  <p className="font-medium">{ventaId}</p>
+                  <p className="font-medium">{venta.id}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Estado</p>
-                  <p className="font-medium capitalize">{venta.estado.replace('_', ' ')}</p>
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant={
+                        venta.estado === 'completada' ? 'success' : 
+                        venta.estado === 'en_proceso' ? 'warning' : 'default'
+                      }
+                    >
+                      {venta.estado.replace('_', ' ')}
+                    </Badge>
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Fecha de Inicio</p>
-                  <p className="font-medium">{venta.fecha_inicio}</p>
+                  <p className="font-medium">{new Date(venta.fecha_inicio).toLocaleDateString()}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Tipo de Venta</p>
@@ -78,16 +112,19 @@ const VentaDetail = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Precio Total</p>
-                  <p className="font-medium">${venta.precio_total.toLocaleString()}</p>
+                  <p className="font-medium">{formatCurrency(venta.precio_total)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Progreso de Pago</p>
-                  <div className="flex items-center gap-2">
-                    <Progress value={venta.progreso} className="flex-1" />
-                    <span className="text-sm">{venta.progreso}%</span>
-                  </div>
+                  <p className="text-sm text-muted-foreground">Última actualización</p>
+                  <p className="font-medium">{new Date(venta.fecha_actualizacion).toLocaleDateString()}</p>
                 </div>
               </div>
+              
+              <VentaProgress 
+                progreso={progreso} 
+                montoTotal={venta.precio_total} 
+                montoPagado={montoPagado}
+              />
             </CardContent>
           </Card>
 
@@ -96,31 +133,35 @@ const VentaDetail = () => {
               <CardTitle className="text-xl">Información de la Unidad</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Building2 className="h-10 w-10 text-slate-400" />
-                <div>
-                  <p className="font-medium">{venta.unidad.desarrollo}</p>
-                  <p className="text-sm text-muted-foreground">Desarrollo</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <Home className="h-10 w-10 text-slate-400" />
-                <div>
-                  <p className="font-medium">{venta.unidad.prototipo}</p>
-                  <p className="text-sm text-muted-foreground">Prototipo</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 bg-slate-100 rounded-md flex items-center justify-center font-medium text-slate-700">
-                  {venta.unidad.numero}
-                </div>
-                <div>
-                  <p className="font-medium">Unidad {venta.unidad.numero}</p>
-                  <p className="text-sm text-muted-foreground">Número de unidad</p>
-                </div>
-              </div>
+              {venta.unidad && (
+                <>
+                  <div className="flex items-center gap-4">
+                    <Building2 className="h-10 w-10 text-slate-400" />
+                    <div>
+                      <p className="font-medium">{venta.unidad.prototipo?.desarrollo?.nombre || 'Desarrollo'}</p>
+                      <p className="text-sm text-muted-foreground">Desarrollo</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <Home className="h-10 w-10 text-slate-400" />
+                    <div>
+                      <p className="font-medium">{venta.unidad.prototipo?.nombre || 'Prototipo'}</p>
+                      <p className="text-sm text-muted-foreground">Prototipo</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 bg-slate-100 rounded-md flex items-center justify-center font-medium text-slate-700">
+                      {venta.unidad.numero}
+                    </div>
+                    <div>
+                      <p className="font-medium">Unidad {venta.unidad.numero}</p>
+                      <p className="text-sm text-muted-foreground">Número de unidad</p>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -128,38 +169,35 @@ const VentaDetail = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="info">Compradores</TabsTrigger>
-            <TabsTrigger value="pagos">Plan de Pagos</TabsTrigger>
-            <TabsTrigger value="historial">Historial de Pagos</TabsTrigger>
+            <TabsTrigger value="pagos">Pagos</TabsTrigger>
+            <TabsTrigger value="plan">Plan de Pagos</TabsTrigger>
           </TabsList>
           
           <TabsContent value="info" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Compradores</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {venta.compradores.map(comprador => (
-                  <div key={comprador.id} className="flex items-center justify-between py-3 border-b last:border-0">
-                    <div className="flex items-center gap-3">
-                      <Users className="h-8 w-8 text-slate-400" />
-                      <div>
-                        <p className="font-medium">{comprador.nombre}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Porcentaje: {comprador.porcentaje}%
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">{comprador.pagos_realizados} / {comprador.total_pagos}</p>
-                      <p className="text-sm text-muted-foreground">Pagos realizados</p>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            <InfoTab venta={venta} compradores={compradores} />
           </TabsContent>
           
           <TabsContent value="pagos" className="space-y-4">
+            {compradorVentaId ? (
+              <PagosTab 
+                ventaId={venta.id} 
+                compradorVentaId={compradorVentaId}
+                pagos={pagos}
+                isLoading={isLoading}
+                refetchPagos={refetch}
+              />
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center py-4 text-muted-foreground">
+                    No hay compradores asignados a esta venta. Debe asignar al menos un comprador para registrar pagos.
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="plan" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Plan de Pagos</CardTitle>
@@ -171,20 +209,16 @@ const VentaDetail = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
-          <TabsContent value="historial" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Historial de Pagos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-center h-40 text-slate-500">
-                  Historial de pagos (próximamente)
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
+        
+        {compradorVentaId && (
+          <PagoDialog
+            open={openPagoDialog}
+            onOpenChange={setOpenPagoDialog}
+            compradorVentaId={compradorVentaId}
+            onSuccess={refetch}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
