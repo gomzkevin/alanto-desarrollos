@@ -113,11 +113,35 @@ export const usePagos = (compradorVentaId?: string) => {
     setIsUpdating(true);
     try {
       console.log('Actualizando pago:', id, 'con datos:', actualizacion);
+
+      // Obtener datos del pago actual para tener contexto completo
+      const { data: pagoActual, error: fetchError } = await supabase
+        .from('pagos')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (fetchError) {
+        console.error('Error al obtener pago actual:', fetchError);
+        throw fetchError;
+      }
       
-      // Simplificar la consulta para evitar ambigüedades con columnas
+      // Construir los datos de actualización (mantener los campos que no cambian)
+      const datosActualizados = {
+        ...pagoActual,
+        ...actualizacion,
+      };
+      
+      // Eliminar campos que no deberían ser parte de la actualización
+      delete datosActualizados.id;
+      delete datosActualizados.created_at;
+      
+      console.log('Datos para actualización:', datosActualizados);
+      
+      // Realizar la actualización con todos los campos explícitamente
       const { data, error } = await supabase
         .from('pagos')
-        .update(actualizacion)
+        .update(datosActualizados)
         .eq('id', id)
         .select();
 

@@ -55,6 +55,8 @@ export const PagoEditDialog = ({ open, onOpenChange, pago, onSuccess }: PagoEdit
     if (!pago) return;
     
     try {
+      console.log('Enviando actualización de pago con estado:', estado);
+      
       await updatePagoEstado(
         pago.id, 
         {
