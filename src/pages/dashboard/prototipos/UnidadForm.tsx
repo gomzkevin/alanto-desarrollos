@@ -42,33 +42,48 @@ export const UnidadForm = ({
   } = useUnidadForm({ 
     unidad, 
     onSubmit: async (data) => {
-      // Si estamos editando y cambiando a un estado que genera venta
-      const creatingVenta = isEditing && 
-        unidad?.estado === 'disponible' && 
-        (data.estado === 'apartado' || data.estado === 'en_proceso');
-      
-      // Primero dejamos que se complete la actualización de la unidad
-      await onSubmit(data);
-      
-      // Si se creará una venta, consultamos para obtener su ID
-      if (creatingVenta) {
-        setTimeout(async () => {
-          try {
-            const { data: ventaData } = await supabase
-              .from('ventas')
-              .select('id')
-              .eq('unidad_id', unidad.id)
-              .limit(1)
-              .single();
-            
-            if (ventaData) {
-              setVentaId(ventaData.id);
-              setShowRedirectAlert(true);
+      try {
+        // Si estamos editando y cambiando a un estado que genera venta
+        const creatingVenta = isEditing && 
+          unidad?.estado === 'disponible' && 
+          (data.estado === 'apartado' || data.estado === 'en_proceso');
+        
+        console.log('Submitting unidad data:', data);
+        console.log('Will create venta?', creatingVenta);
+        
+        // Primero dejamos que se complete la actualización de la unidad
+        await onSubmit(data);
+        
+        // Si se creará una venta, consultamos para obtener su ID
+        if (creatingVenta) {
+          console.log('Checking for created venta for unidad:', unidad?.id);
+          setTimeout(async () => {
+            try {
+              const { data: ventaData, error } = await supabase
+                .from('ventas')
+                .select('id')
+                .eq('unidad_id', unidad.id)
+                .limit(1)
+                .single();
+              
+              if (error) {
+                console.error('Error al buscar la venta creada:', error);
+                return;
+              }
+              
+              console.log('Found venta data:', ventaData);
+              
+              if (ventaData) {
+                setVentaId(ventaData.id);
+                setShowRedirectAlert(true);
+              }
+            } catch (error) {
+              console.error('Error al buscar la venta creada:', error);
             }
-          } catch (error) {
-            console.error('Error al buscar la venta creada:', error);
-          }
-        }, 1000); // Esperar un segundo para que el trigger de Supabase tenga tiempo de ejecutarse
+          }, 1000); // Esperar un segundo para que el trigger de Supabase tenga tiempo de ejecutarse
+        }
+      } catch (error) {
+        console.error('Error en el procesamiento del formulario:', error);
       }
     }, 
     onCancel 

@@ -12,13 +12,20 @@ export const useUnitSale = (unidadId: string | undefined) => {
     
     try {
       setIsLoading(true);
+      console.log('Fetching venta for unidad_id:', id);
+      
       const { data, error } = await supabase
         .from('ventas')
         .select('id')
         .eq('unidad_id', id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching venta by unidad_id:', error);
+        throw error;
+      }
+      
+      console.log('Venta data returned:', data);
       setVentaId(data?.id);
       return data?.id;
     } catch (err) {
@@ -32,6 +39,7 @@ export const useUnitSale = (unidadId: string | undefined) => {
 
   useEffect(() => {
     if (unidadId) {
+      console.log('useUnitSale triggered for unidadId:', unidadId);
       fetchVentaId(unidadId);
     }
   }, [unidadId, fetchVentaId]);

@@ -61,6 +61,8 @@ export const UnidadTable = ({
     
     setIsSubmitting(true);
     try {
+      console.log('Creating unidad with data:', data);
+      
       await createUnidad({
         prototipo_id: prototipo.id,
         numero: data.numero,
@@ -108,6 +110,11 @@ export const UnidadTable = ({
       const prevEstado = currentUnidad.estado;
       const newEstado = data.estado;
       
+      console.log('Updating unidad:', unidadId);
+      console.log('Previous state:', prevEstado);
+      console.log('New state:', newEstado);
+      console.log('Full data:', data);
+      
       await updateUnidad({
         id: unidadId,
         numero: data.numero,
@@ -141,9 +148,11 @@ export const UnidadTable = ({
           
           // If status changed to trigger sale creation, check for sale and show alert
           if (shouldCheckForSale) {
+            console.log('Status changed to trigger sale, checking for sale creation');
             setEditedUnidadId(unidadId);
             setTimeout(async () => {
               const newVentaId = await fetchVentaId(unidadId);
+              console.log('Fetched ventaId:', newVentaId);
               if (newVentaId) {
                 setShowSaleAlert(true);
                 // Auto-hide after some time
@@ -152,7 +161,7 @@ export const UnidadTable = ({
                   setEditedUnidadId(undefined);
                 }, 15000);
               }
-            }, 500);
+            }, 1000);
           }
           
           // Clear the current unidad after refreshing
@@ -217,6 +226,7 @@ export const UnidadTable = ({
   // Dialog open handlers with stable references
   const openEditDialog = useCallback((unidad: any) => {
     if (isSubmitting) return;
+    console.log('Opening edit dialog for unidad:', unidad);
     setCurrentUnidad(unidad);
     setIsEditDialogOpen(true);
   }, [isSubmitting]);

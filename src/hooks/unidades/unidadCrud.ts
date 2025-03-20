@@ -69,6 +69,9 @@ export const updateUnidad = async ({ id, ...unidadData }: { id: string; [key: st
       unidadData.comprador_id = null;
     }
     
+    // Log the final data being sent to ensure it's correct
+    console.log('Sanitized data for update:', { id, ...unidadData });
+    
     const { data, error } = await supabase
       .from('unidades')
       .update(unidadData)
@@ -205,7 +208,8 @@ export const useUpdateUnidad = (prototipoId?: string) => {
   
   return useMutation({
     mutationFn: updateUnidad,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Mutation success with data:', data);
       if (prototipoId) {
         // Invalidar sin provocar refresco inmediato
         queryClient.invalidateQueries({ 

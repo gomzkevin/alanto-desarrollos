@@ -21,16 +21,24 @@ export const UnidadSaleAlert: React.FC<UnidadSaleAlertProps> = ({
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState(10);
   
+  // Reset timer when visibility changes
   useEffect(() => {
     if (!isVisible) {
       setTimeLeft(10);
       return;
     }
     
+    console.log('Sale alert visible with ventaId:', ventaId);
+    
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
+          // Auto-redirect when timer reaches zero
+          if (ventaId) {
+            navigate(`/dashboard/ventas/${ventaId}`);
+            onClose();
+          }
           return 0;
         }
         return prev - 1;
@@ -38,9 +46,9 @@ export const UnidadSaleAlert: React.FC<UnidadSaleAlertProps> = ({
     }, 1000);
     
     return () => clearInterval(timer);
-  }, [isVisible]);
+  }, [isVisible, ventaId, navigate, onClose]);
   
-  if (!isVisible) return null;
+  if (!isVisible || !ventaId) return null;
   
   const handleGoToSale = () => {
     if (ventaId) {
