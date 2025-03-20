@@ -100,7 +100,7 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
     }));
   }, []);
   
-  // Handle form submission with stable callback
+  // Handle form submission with stable callback - explicitly type the form event
   const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation();

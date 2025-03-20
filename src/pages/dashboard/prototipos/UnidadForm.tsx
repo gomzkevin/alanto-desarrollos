@@ -113,7 +113,8 @@ export const UnidadForm = ({
     onCancel 
   });
   
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Fix the type error by explicitly specifying the form event type
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isSubmitting || isSubmittingInternal) return;
     
