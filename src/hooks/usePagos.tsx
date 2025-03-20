@@ -112,94 +112,9 @@ export const usePagos = (compradorVentaId?: string) => {
   const updatePagoEstado = async (id: string, actualizacion: ActualizacionPago) => {
     setIsUpdating(true);
     try {
-      console.log('Actualizando pago:', id, 'con datos:', actualizacion);
-      console.log('Estado a actualizar:', actualizacion.estado);
-
-      // Verificar si estamos intentando cambiar a estado "verificado"
+      // Si estamos intentando actualizar a estado verificado, manejarlo de manera especial
       if (actualizacion.estado === 'verificado') {
-        console.log('⚠️ Detectado intento de actualizar a estado verificado');
-        
-        // Obtenemos el comprador_venta_id del pago actual
-        const { data: pagoActual, error: pagoError } = await supabase
-          .from('pagos')
-          .select('*')
-          .eq('id', id)
-          .single();
-          
-        if (pagoError) {
-          console.error('Error al obtener pago para verificación:', pagoError);
-          throw pagoError;
-        }
-        
-        console.log('Pago actual obtenido:', pagoActual);
-        
-        // Si vamos a cambiar a verificado, hacemos un proceso especial
-        // Primero, intentamos actualizar solo el estado para evitar conflictos con el trigger
-        const { data: estadoUpdate, error: estadoError } = await supabase
-          .from('pagos')
-          .update({ estado: 'verificado' })
-          .eq('id', id)
-          .select();
-        
-        if (estadoError) {
-          console.error('Error específico al actualizar solo el estado:', estadoError);
-          
-          // Si falla, intentamos una actualización completa
-          const datosCompletos = {
-            ...pagoActual,
-            ...actualizacion,
-          };
-          
-          // Eliminamos campos que no deben actualizarse directamente
-          delete datosCompletos.id;
-          delete datosCompletos.created_at;
-          
-          const { data, error } = await supabase
-            .from('pagos')
-            .update(datosCompletos)
-            .eq('id', id)
-            .select();
-            
-          if (error) {
-            console.error('Error en actualización completa:', error);
-            throw error;
-          }
-          
-          console.log('Actualización completa exitosa:', data);
-          await refetch();
-          return data;
-        }
-        
-        console.log('Actualización de estado exitosa:', estadoUpdate);
-        
-        // Si hay otros campos para actualizar además del estado
-        if (Object.keys(actualizacion).length > 1) {
-          // Quitamos el estado de la actualización ya que lo acabamos de actualizar
-          const { estado, ...otrosAtributos } = actualizacion;
-          
-          // Actualizamos los demás campos
-          if (Object.keys(otrosAtributos).length > 0) {
-            const { data: atributosUpdate, error: atributosError } = await supabase
-              .from('pagos')
-              .update(otrosAtributos)
-              .eq('id', id)
-              .select();
-              
-            if (atributosError) {
-              console.error('Error al actualizar otros atributos:', atributosError);
-              // No lanzamos error aquí, ya que el estado ya se actualizó correctamente
-            } else {
-              console.log('Actualización de otros atributos exitosa:', atributosUpdate);
-            }
-          }
-        }
-        
-        await refetch();
-        return estadoUpdate;
-      } else {
-        // Para actualizaciones que no son a "verificado", usamos el proceso normal
-        
-        // Primero obtenemos el pago completo para asegurar que tenemos todos los datos
+        // 1. Primero, obtener el pago actual
         const { data: pagoActual, error: fetchError } = await supabase
           .from('pagos')
           .select('*')
@@ -211,39 +126,59 @@ export const usePagos = (compradorVentaId?: string) => {
           throw fetchError;
         }
         
-        console.log('Pago actual obtenido:', pagoActual);
+        // 2. Actualizar SOLO el estado a verificado
+        const { data: estadoUpdate, error: estadoError } = await supabase
+          .from('pagos')
+          .update({ estado: 'verificado' })
+          .eq('id', id)
+          .select();
         
-        // Construimos el objeto de actualización con todos los campos necesarios
-        const datosActualizados = {
-          ...pagoActual,
-          ...actualizacion,
-        };
+        if (estadoError) {
+          console.error('Error al actualizar estado del pago:', estadoError);
+          throw estadoError;
+        }
         
-        // Eliminamos campos que no deben actualizarse directamente
-        delete datosActualizados.id;
-        delete datosActualizados.created_at;
+        // 3. Si hay otros campos para actualizar además del estado
+        const { estado, ...otrosAtributos } = actualizacion;
         
-        console.log('Datos completos para actualización:', datosActualizados);
+        if (Object.keys(otrosAtributos).length > 0) {
+          // 4. Actualizar los demás campos en una operación separada
+          const { error: atributosError } = await supabase
+            .from('pagos')
+            .update(otrosAtributos)
+            .eq('id', id);
+            
+          if (atributosError) {
+            console.error('Error al actualizar atributos adicionales:', atributosError);
+            // No lanzamos error aquí, el cambio de estado ya se completó
+            toast({
+              title: "Advertencia",
+              description: "El pago fue verificado, pero hubo un error al actualizar algunos campos adicionales",
+              variant: "warning"
+            });
+          }
+        }
         
-        // Realizamos la actualización directa sin usar joins o relaciones
+        await refetch();
+        return estadoUpdate;
+      } else {
+        // Para otros estados, realizar la actualización normalmente
         const { data, error } = await supabase
           .from('pagos')
-          .update(datosActualizados)
+          .update(actualizacion)
           .eq('id', id)
           .select();
 
         if (error) {
-          console.error('Error detallado en actualización:', error);
+          console.error('Error al actualizar pago:', error);
           throw error;
         }
-        
-        console.log('Actualización exitosa, resultado:', data);
         
         await refetch();
         return data;
       }
     } catch (error) {
-      console.error('Error al actualizar pago:', error);
+      console.error('Error general al actualizar pago:', error);
       throw error;
     } finally {
       setIsUpdating(false);

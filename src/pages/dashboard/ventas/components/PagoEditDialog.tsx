@@ -55,8 +55,15 @@ export const PagoEditDialog = ({ open, onOpenChange, pago, onSuccess }: PagoEdit
     if (!pago) return;
     
     try {
-      console.log('Enviando actualización de pago con estado:', estado);
-      console.log('Datos a enviar:', {
+      const isChangingToVerificado = estado === 'verificado' && pago.estado !== 'verificado';
+      
+      // Log para depuración
+      if (isChangingToVerificado) {
+        console.log('Actualizando a estado verificado');
+      }
+      
+      // Preparar los datos para actualizar
+      const updateData = {
         monto: parseFloat(monto),
         fecha: fecha.toISOString(),
         metodo_pago: metodoPago,
@@ -64,24 +71,16 @@ export const PagoEditDialog = ({ open, onOpenChange, pago, onSuccess }: PagoEdit
         estado,
         notas,
         comprobante_url: comprobanteUrl
-      });
+      };
       
-      await updatePagoEstado(
-        pago.id, 
-        {
-          monto: parseFloat(monto),
-          fecha: fecha.toISOString(),
-          metodo_pago: metodoPago,
-          referencia,
-          estado,
-          notas,
-          comprobante_url: comprobanteUrl
-        }
-      );
+      // Realizar la actualización utilizando la función mejorada
+      await updatePagoEstado(pago.id, updateData);
       
       toast({
         title: "Pago actualizado",
-        description: "El pago ha sido actualizado exitosamente",
+        description: isChangingToVerificado 
+          ? "El pago ha sido verificado exitosamente" 
+          : "El pago ha sido actualizado exitosamente",
       });
       
       onSuccess();
