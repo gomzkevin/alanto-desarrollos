@@ -16,7 +16,7 @@ interface AdminResourceDialogProps {
   resourceId?: string;
   open?: boolean;
   onClose?: () => void;
-  defaultValues?: Record<string, any>; // Added defaultValues prop
+  defaultValues?: Record<string, any>;
 }
 
 const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
@@ -63,6 +63,7 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
         <Button 
           variant={buttonVariant} 
           onClick={handleOpen}
+          className="border border-gray-200 shadow-sm"
         >
           {buttonIcon}
           {buttonText || `Nuevo ${resourceType.slice(0, -1)}`}
@@ -78,7 +79,7 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
         prototipo_id={prototipo_id}
         lead_id={lead_id}
         resourceId={resourceId}
-        defaultValues={defaultValues} // Pass defaultValues to ResourceDialog
+        defaultValues={defaultValues}
       />
     </>
   );

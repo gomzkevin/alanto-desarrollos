@@ -168,8 +168,8 @@ export const CompradorDialog = ({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] border border-gray-200 shadow-md">
+        <DialogHeader className="bg-gradient-to-r from-indigo-50 to-white pb-2">
           <DialogTitle>Agregar comprador a la venta</DialogTitle>
         </DialogHeader>
         
@@ -180,7 +180,7 @@ export const CompradorDialog = ({
               value={compradorId}
               onValueChange={setCompradorId}
             >
-              <SelectTrigger id="comprador">
+              <SelectTrigger id="comprador" className="border border-gray-200 shadow-sm">
                 <SelectValue placeholder="Seleccionar comprador" />
               </SelectTrigger>
               <SelectContent>
@@ -204,6 +204,7 @@ export const CompradorDialog = ({
               onChange={(e) => setPorcentaje(e.target.value)}
               disabled={!esVentaFraccional}
               required
+              className="border border-gray-200 shadow-sm"
             />
             <p className="text-xs text-gray-500">
               {esVentaFraccional ? 
@@ -218,7 +219,7 @@ export const CompradorDialog = ({
               value={vendedorId}
               onValueChange={setVendedorId}
             >
-              <SelectTrigger id="vendedor">
+              <SelectTrigger id="vendedor" className="border border-gray-200 shadow-sm">
                 <SelectValue placeholder="Seleccionar vendedor (opcional)" />
               </SelectTrigger>
               <SelectContent>
@@ -231,11 +232,11 @@ export const CompradorDialog = ({
             </Select>
           </div>
           
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="pt-2 px-0">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-gray-300">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700">
               {isSubmitting ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>

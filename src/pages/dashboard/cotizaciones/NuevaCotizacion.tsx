@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -121,31 +122,31 @@ const NuevaCotizacion = () => {
       <div className="container py-10">
         <h1 className="text-3xl font-semibold mb-6">Nueva Cotización</h1>
         <form onSubmit={handleSubmit}>
-          <Card>
-            <CardHeader>
-              <CardTitle>Información del Cliente</CardTitle>
-              <CardDescription>
+          <Card className="border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b border-gray-100 pb-4">
+              <CardTitle className="text-xl font-semibold text-indigo-900">Información del Cliente</CardTitle>
+              <CardDescription className="text-gray-600 mt-1">
                 Selecciona un cliente existente o crea uno nuevo
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2">
+            <CardContent className="space-y-4 p-6">
+              <div className="flex items-center space-x-2 p-2 rounded-md">
                 <Switch
                   id="isExistingClient"
                   checked={isExistingClient}
                   onCheckedChange={setIsExistingClient}
                 />
-                <Label htmlFor="isExistingClient">Cliente existente</Label>
+                <Label htmlFor="isExistingClient" className="font-medium">Cliente existente</Label>
               </div>
 
               {isExistingClient ? (
-                <div className="space-y-2">
-                  <Label htmlFor="lead">Seleccionar cliente</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="lead" className="text-gray-700">Seleccionar cliente</Label>
                   <Select onValueChange={(value) => {
                     const selected = leads.find(lead => lead.id === value);
                     setSelectedLead(selected);
                   }}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full border border-gray-200 shadow-sm">
                       <SelectValue placeholder="Selecciona un cliente" defaultValue={selectedLead?.id} />
                     </SelectTrigger>
                     <SelectContent>
@@ -158,34 +159,37 @@ const NuevaCotizacion = () => {
                   </Select>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nombre">Nombre completo</Label>
+                <div className="space-y-5">
+                  <div className="space-y-3">
+                    <Label htmlFor="nombre" className="text-gray-700">Nombre completo</Label>
                     <Input
                       id="nombre"
                       placeholder="Nombre completo"
                       value={newLeadData.nombre}
                       onChange={(e) => setNewLeadData({ ...newLeadData, nombre: e.target.value })}
+                      className="border border-gray-200 shadow-sm"
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
+                    <div className="space-y-3">
+                      <Label htmlFor="email" className="text-gray-700">Email</Label>
                       <Input
                         id="email"
                         type="email"
                         placeholder="correo@ejemplo.com"
                         value={newLeadData.email}
                         onChange={(e) => setNewLeadData({ ...newLeadData, email: e.target.value })}
+                        className="border border-gray-200 shadow-sm"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="telefono">Teléfono</Label>
+                    <div className="space-y-3">
+                      <Label htmlFor="telefono" className="text-gray-700">Teléfono</Label>
                       <Input
                         id="telefono"
                         placeholder="+52 55 1234 5678"
                         value={newLeadData.telefono}
                         onChange={(e) => setNewLeadData({ ...newLeadData, telefono: e.target.value })}
+                        className="border border-gray-200 shadow-sm"
                       />
                     </div>
                   </div>
@@ -194,23 +198,23 @@ const NuevaCotizacion = () => {
             </CardContent>
           </Card>
 
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Información de la Propiedad</CardTitle>
-              <CardDescription>
+          <Card className="mt-6 border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b border-gray-100 pb-4">
+              <CardTitle className="text-xl font-semibold text-indigo-900">Información de la Propiedad</CardTitle>
+              <CardDescription className="text-gray-600 mt-1">
                 Selecciona el desarrollo y prototipo para la cotización
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="desarrollo">Desarrollo</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="desarrollo" className="text-gray-700">Desarrollo</Label>
                   <Select onValueChange={(value) => {
                     const selected = desarrollos.find(desarrollo => desarrollo.id === value);
                     setSelectedDesarrollo(selected);
                     setSelectedPrototipo(null);
                   }}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full border border-gray-200 shadow-sm">
                       <SelectValue placeholder="Selecciona un desarrollo" defaultValue={selectedDesarrollo?.id} />
                     </SelectTrigger>
                     <SelectContent>
@@ -222,8 +226,8 @@ const NuevaCotizacion = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="prototipo">Prototipo</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="prototipo" className="text-gray-700">Prototipo</Label>
                   <Select 
                     onValueChange={(value) => {
                       const selected = prototipos.find(prototipo => prototipo.id === value);
@@ -231,7 +235,7 @@ const NuevaCotizacion = () => {
                     }}
                     disabled={!selectedDesarrollo}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full border border-gray-200 shadow-sm">
                       <SelectValue placeholder="Selecciona un prototipo" defaultValue={selectedPrototipo?.id} />
                     </SelectTrigger>
                     <SelectContent>
@@ -247,17 +251,17 @@ const NuevaCotizacion = () => {
             </CardContent>
           </Card>
 
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Detalles de pago</CardTitle>
-              <CardDescription>
+          <Card className="mt-6 border border-gray-200 shadow-sm rounded-lg overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b border-gray-100 pb-4">
+              <CardTitle className="text-xl font-semibold text-indigo-900">Detalles de pago</CardTitle>
+              <CardDescription className="text-gray-600 mt-1">
                 Configura el anticipo, mensualidades y otros detalles de pago
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="anticipoAmount">Monto de anticipo</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="anticipoAmount" className="text-gray-700">Monto de anticipo</Label>
                   <Input
                     id="anticipoAmount"
                     formatCurrency
@@ -266,28 +270,30 @@ const NuevaCotizacion = () => {
                       const numericValue = e.target.value.replace(/[^0-9]/g, '');
                       setAnticipoAmount(Number(numericValue));
                     }}
+                    className="border border-gray-200 shadow-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="numberOfPayments">Número de mensualidades</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="numberOfPayments" className="text-gray-700">Número de mensualidades</Label>
                   <Input
                     id="numberOfPayments"
                     type="number"
                     value={numberOfPayments}
                     onChange={(e) => setNumberOfPayments(Number(e.target.value))}
+                    className="border border-gray-200 shadow-sm"
                   />
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Fecha de inicio de pagos</Label>
+              <div className="space-y-3">
+                <Label htmlFor="startDate" className="text-gray-700">Fecha de inicio de pagos</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       id="startDate"
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal border border-gray-200 shadow-sm",
                         !startDate && "text-muted-foreground"
                       )}
                     >
@@ -307,19 +313,19 @@ const NuevaCotizacion = () => {
                 </Popover>
               </div>
               
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 p-2 rounded-md">
                 <Switch
                   id="useFiniquito"
                   checked={useFiniquito}
                   onCheckedChange={setUseFiniquito}
                 />
-                <Label htmlFor="useFiniquito">Usar finiquito</Label>
+                <Label htmlFor="useFiniquito" className="font-medium">Usar finiquito</Label>
               </div>
               
               {useFiniquito && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="finiquitoAmount">Monto de finiquito</Label>
+                <div className="space-y-4 border-l-2 border-indigo-100 pl-4 ml-2">
+                  <div className="space-y-3">
+                    <Label htmlFor="finiquitoAmount" className="text-gray-700">Monto de finiquito</Label>
                     <Input
                       id="finiquitoAmount"
                       formatCurrency
@@ -328,18 +334,19 @@ const NuevaCotizacion = () => {
                         const numericValue = e.target.value.replace(/[^0-9]/g, '');
                         setFiniquitoAmount(Number(numericValue));
                       }}
+                      className="border border-gray-200 shadow-sm"
                     />
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="finiquitoDate">Fecha de finiquito</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="finiquitoDate" className="text-gray-700">Fecha de finiquito</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           id="finiquitoDate"
                           variant="outline"
                           className={cn(
-                            "w-full justify-start text-left font-normal",
+                            "w-full justify-start text-left font-normal border border-gray-200 shadow-sm",
                             !finiquitoDate && "text-muted-foreground"
                           )}
                         >
@@ -361,20 +368,29 @@ const NuevaCotizacion = () => {
                 </div>
               )}
               
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notas adicionales</Label>
+              <div className="space-y-3">
+                <Label htmlFor="notes" className="text-gray-700">Notas adicionales</Label>
                 <Textarea
                   id="notes"
                   placeholder="Agrega cualquier detalle o condición adicional..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
+                  className="border border-gray-200 shadow-sm min-h-[80px]"
                 />
               </div>
             </CardContent>
           </Card>
 
           <div className="mt-6 flex justify-end">
-            <Button type="submit" disabled={submitting}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => navigate('/dashboard/cotizaciones')}
+              className="mr-2 border border-gray-300"
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={submitting} className="bg-indigo-600 hover:bg-indigo-700">
               {submitting ? 'Creando...' : 'Crear Cotización'}
             </Button>
           </div>

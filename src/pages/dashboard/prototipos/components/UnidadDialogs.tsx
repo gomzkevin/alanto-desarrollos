@@ -54,9 +54,13 @@ export const UnidadDialogs = ({
           if (!open && !isSubmitting) safeCloseAddDialog();
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>Agregar Unidad</DialogTitle>
-          <DialogDescription>Ingresa los datos de la nueva unidad</DialogDescription>
+        <DialogContent className="sm:max-w-md border border-gray-200 shadow-md">
+          <DialogTitle className="text-xl font-bold text-indigo-900 py-4 bg-gradient-to-r from-indigo-50 to-white rounded-t-lg mb-4">
+            Agregar Unidad
+          </DialogTitle>
+          <DialogDescription className="px-6 mt-0 mb-4">
+            Ingresa los datos de la nueva unidad
+          </DialogDescription>
           {isAddDialogOpen && (
             <UnidadForm 
               onSubmit={handleAddUnidad}
@@ -76,9 +80,13 @@ export const UnidadDialogs = ({
           if (!open && !isSubmitting) closeEditDialog();
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>Editar Unidad</DialogTitle>
-          <DialogDescription>Modifica los datos de la unidad</DialogDescription>
+        <DialogContent className="sm:max-w-md border border-gray-200 shadow-md">
+          <DialogTitle className="text-xl font-bold text-indigo-900 py-4 bg-gradient-to-r from-indigo-50 to-white rounded-t-lg mb-4">
+            Editar Unidad
+          </DialogTitle>
+          <DialogDescription className="px-6 mt-0 mb-4">
+            Modifica los datos de la unidad
+          </DialogDescription>
           {isEditDialogOpen && currentUnidad && (
             <UnidadForm 
               unidad={currentUnidad}

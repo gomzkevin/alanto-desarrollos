@@ -125,7 +125,7 @@ export const EditCotizacionButton = ({
       
       {isDialogOpen && cotizacionData && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+          <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-0 border border-gray-200 shadow-md">
             <CotizacionEditForm 
               cotizacion={cotizacionData} 
               onSave={handleUpdateCotizacion} 

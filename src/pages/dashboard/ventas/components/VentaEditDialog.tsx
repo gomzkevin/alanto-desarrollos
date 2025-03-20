@@ -64,8 +64,8 @@ export const VentaEditDialog = ({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[425px] border border-gray-200 shadow-md">
+        <DialogHeader className="bg-gradient-to-r from-indigo-50 to-white pb-2">
           <DialogTitle>Editar información de venta</DialogTitle>
         </DialogHeader>
         
@@ -80,6 +80,7 @@ export const VentaEditDialog = ({
               value={precioTotal}
               onChange={(e) => setPrecioTotal(e.target.value)}
               required
+              className="border border-gray-200 shadow-sm"
             />
           </div>
           
@@ -92,11 +93,11 @@ export const VentaEditDialog = ({
             <Label htmlFor="es-fraccional" className="text-gray-700 cursor-pointer">Venta fraccional</Label>
           </div>
           
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="pt-2 px-0">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-gray-300">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isUpdating}>
+            <Button type="submit" disabled={isUpdating} className="bg-indigo-600 hover:bg-indigo-700">
               {isUpdating ? 'Guardando...' : 'Guardar cambios'}
             </Button>
           </DialogFooter>
