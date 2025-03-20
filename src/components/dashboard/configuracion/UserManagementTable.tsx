@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -81,7 +80,6 @@ export function UserManagementTable() {
   const { isAdmin, userId, empresaId } = useUserRole();
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  // Fetch subscription status
   useEffect(() => {
     const checkSubscription = async () => {
       if (!userId) return;
@@ -110,7 +108,6 @@ export function UserManagementTable() {
     checkSubscription();
   }, [userId]);
 
-  // Load users from the same empresa as the current user
   useEffect(() => {
     const fetchUsers = async () => {
       if (!userId) return;
@@ -124,7 +121,6 @@ export function UserManagementTable() {
           .select('*')
           .order('fecha_creacion', { ascending: false });
           
-        // If empresaId exists, filter by it
         if (empresaId) {
           query = query.eq('empresa_id', empresaId);
         }
@@ -181,7 +177,6 @@ export function UserManagementTable() {
     const { name, value } = e.target;
     setNewUser((prev) => ({ ...prev, [name]: value }));
     
-    // Clear validation error when field is updated
     if (validationErrors[name]) {
       setValidationErrors(prev => {
         const newErrors = { ...prev };
@@ -205,12 +200,10 @@ export function UserManagementTable() {
       return;
     }
     
-    // Validate form
     if (!validateForm()) {
       return;
     }
 
-    // Check if within subscription limits
     if (activeSubscription?.subscription_plans?.features?.max_vendedores) {
       const vendedorCount = users.filter(u => u.rol === 'vendedor' && u.activo).length;
       const maxVendedores = activeSubscription.subscription_plans.features.max_vendedores;
@@ -228,8 +221,6 @@ export function UserManagementTable() {
     try {
       setIsCreatingUser(true);
 
-      // First, try to register the user using our auth service
-      console.log("Creating user with email:", newUser.email);
       const authResult = await signUpWithEmailPassword(newUser.email, newUser.password, empresaId || undefined);
 
       if (!authResult.success) {
@@ -240,14 +231,10 @@ export function UserManagementTable() {
       
       if (authResult.user) {
         authUserId = authResult.user.id;
-        console.log("User created with auth ID:", authUserId);
       } else if (authResult.autoSignIn) {
-        // User was auto-signed in (development)
         const { data } = await supabase.auth.getUser();
         authUserId = data.user?.id;
-        console.log("User auto-signed in with ID:", authUserId);
       } else {
-        // For development, try to get the user ID by email
         const { data: userData, error: userError } = await supabase
           .from('usuarios')
           .select('auth_id')
@@ -256,13 +243,11 @@ export function UserManagementTable() {
           
         if (!userError && userData?.auth_id) {
           authUserId = userData.auth_id;
-          console.log("Found existing user with email:", authUserId);
         } else {
           console.log("Could not find user ID, but will continue with user creation");
         }
       }
       
-      // Then create or update the user record in our usuarios table
       const userData = {
         auth_id: authUserId,
         nombre: newUser.nombre,
@@ -288,10 +273,9 @@ export function UserManagementTable() {
       toast({
         title: "Usuario creado",
         description: "El usuario ha sido creado exitosamente.",
-        variant: "success",
+        variant: "default",
       });
 
-      // Reset form and close dialog
       setNewUser({
         nombre: "",
         email: "",
@@ -300,7 +284,6 @@ export function UserManagementTable() {
       });
       setIsNewUserDialogOpen(false);
 
-      // Refresh user list
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
@@ -342,7 +325,6 @@ export function UserManagementTable() {
         throw error;
       }
 
-      // Update local state
       setUsers(users.map(user => 
         user.id === id ? { ...user, activo: !currentStatus } : user
       ));
@@ -350,7 +332,7 @@ export function UserManagementTable() {
       toast({
         title: "Usuario actualizado",
         description: `El usuario ha sido ${!currentStatus ? "activado" : "desactivado"} exitosamente.`,
-        variant: "success",
+        variant: "default",
       });
     } catch (error) {
       console.error("Error updating user:", error);
@@ -379,7 +361,7 @@ export function UserManagementTable() {
 
   const canAddMoreUsers = () => {
     if (!activeSubscription?.subscription_plans?.features?.max_vendedores) {
-      return true; // Si no hay límite establecido, permitir agregar
+      return true;
     }
     
     const vendedorCount = users.filter(u => u.rol === 'vendedor' && u.activo).length;
