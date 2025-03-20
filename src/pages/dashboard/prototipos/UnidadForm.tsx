@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import SearchableEntitySelect from './components/SearchableEntitySelect';
 import useVendedores from './hooks/useVendedores';
@@ -7,6 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import useUnidadForm from './hooks/useUnidadForm';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { InfoIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UnidadFormProps {
   unidad?: any;
@@ -24,6 +28,9 @@ export const UnidadForm = ({
   isSubmitting = false
 }: UnidadFormProps) => {
   const { vendedores } = useVendedores();
+  const navigate = useNavigate();
+  const [showRedirectAlert, setShowRedirectAlert] = useState(false);
+  const [ventaId, setVentaId] = useState<string | null>(null);
   
   const {
     formData,
@@ -32,7 +39,47 @@ export const UnidadForm = ({
     handleChange,
     handleSubmit,
     setFormData
-  } = useUnidadForm({ unidad, onSubmit, onCancel });
+  } = useUnidadForm({ 
+    unidad, 
+    onSubmit: async (data) => {
+      // Si estamos editando y cambiando a un estado que genera venta
+      const creatingVenta = isEditing && 
+        unidad?.estado === 'disponible' && 
+        (data.estado === 'apartado' || data.estado === 'en_proceso');
+      
+      // Primero dejamos que se complete la actualización de la unidad
+      await onSubmit(data);
+      
+      // Si se creará una venta, consultamos para obtener su ID
+      if (creatingVenta) {
+        setTimeout(async () => {
+          try {
+            const { data: ventaData } = await supabase
+              .from('ventas')
+              .select('id')
+              .eq('unidad_id', unidad.id)
+              .limit(1)
+              .single();
+            
+            if (ventaData) {
+              setVentaId(ventaData.id);
+              setShowRedirectAlert(true);
+            }
+          } catch (error) {
+            console.error('Error al buscar la venta creada:', error);
+          }
+        }, 1000); // Esperar un segundo para que el trigger de Supabase tenga tiempo de ejecutarse
+      }
+    }, 
+    onCancel 
+  });
+  
+  // Manejo de redirección a la venta
+  const handleRedirectToVenta = () => {
+    if (ventaId) {
+      navigate(`/dashboard/ventas/${ventaId}`);
+    }
+  };
   
   // Handle lead selection - cleanup to prevent stale references
   const handleLeadSelect = React.useCallback((lead: any) => {
@@ -58,6 +105,34 @@ export const UnidadForm = ({
   
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Alerta de redirección a ventas */}
+      {showRedirectAlert && ventaId && (
+        <Alert className="bg-green-50 border-green-200 mb-4">
+          <InfoIcon className="h-4 w-4 text-green-500" />
+          <AlertDescription className="flex justify-between items-center">
+            <span>¡Se ha creado una venta! ¿Deseas ir a la página de detalle para completar la información?</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="ml-2 border-green-500 text-green-600 hover:bg-green-100"
+              onClick={handleRedirectToVenta}
+            >
+              Ir a la venta
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isEditing && (
+        <Alert className="bg-blue-50 border-blue-200 mb-4">
+          <InfoIcon className="h-4 w-4 text-blue-500" />
+          <AlertDescription>
+            Al cambiar el estado de una unidad a "apartado" o "en proceso", se creará automáticamente una 
+            venta en el sistema. Si asignas un comprador, se vinculará a la venta.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {/* Basic Information Fields */}
       <div className="space-y-2">
         <Label htmlFor="numero">Número *</Label>
@@ -117,6 +192,11 @@ export const UnidadForm = ({
             <SelectItem value="vendido">Vendido</SelectItem>
           </SelectContent>
         </Select>
+        {(formData.estado === 'apartado' || formData.estado === 'en_proceso') && (
+          <p className="text-xs text-blue-600 mt-1">
+            Este estado creará una venta automáticamente.
+          </p>
+        )}
       </div>
       
       <div className="space-y-2">

@@ -81,12 +81,14 @@ const VentaDetail = () => {
         <VentaInfoAlert className="mb-4" />
 
         <div className="grid gap-6 md:grid-cols-2">
+          {/* Información de la Venta card */}
           <Card>
             <CardHeader>
               <CardTitle className="text-xl">Información de la Venta</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
+                {/* Venta properties */}
                 <div>
                   <p className="text-sm text-muted-foreground">ID de Venta</p>
                   <p className="font-medium">{venta.id}</p>

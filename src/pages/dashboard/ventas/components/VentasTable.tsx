@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { VentaProgress } from './VentaProgress';
-import { AlertCircle, InfoIcon } from 'lucide-react';
+import { InfoIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface VentasTableProps {
