@@ -24,26 +24,15 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   
   // Function to fetch desarrollos
   const fetchDesarrollos = async (): Promise<ExtendedDesarrollo[]> => {
-    console.log('Fetching desarrollos with options:', { 
-      limit, 
-      withPrototipos, 
-      userId,
-      hasUserId: !!userId 
-    });
+    console.log('Fetching desarrollos with options:', options);
     
     try {
-      // Don't proceed if userId is required but not available yet
-      if (userId === null || userId === undefined) {
-        console.log('userId is null or undefined, returning empty array');
-        return [];
-      }
-      
       // Build the select query
       let query = supabase.from('desarrollos').select('*');
       
-      // Filter by user ID if provided
+      // Filter by user ID if provided using the string filter method to avoid type recursion
       if (userId) {
-        // Use string literals for column and operator
+        // Use string literals for column and operator to avoid TypeScript recursion
         query = query.filter('user_id', 'eq', userId);
       }
       
@@ -61,8 +50,6 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
         console.error('Error fetching desarrollos:', error);
         throw new Error(error.message);
       }
-      
-      console.log(`Found ${desarrollos?.length || 0} desarrollos for user ${userId}`);
       
       // Process desarrollos to handle JSON amenidades
       const processedDesarrollos = desarrollos.map(desarrollo => {
@@ -125,11 +112,11 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
           })
         );
         
-        console.log('Extended desarrollos fetched:', extendedDesarrollos.length);
+        console.log('Extended desarrollos fetched:', extendedDesarrollos);
         return extendedDesarrollos;
       }
       
-      console.log('Desarrollos fetched:', processedDesarrollos.length);
+      console.log('Desarrollos fetched:', processedDesarrollos);
       return processedDesarrollos;
     } catch (error) {
       console.error('Error in fetchDesarrollos:', error);
@@ -137,25 +124,20 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     }
   };
 
-  // Enhanced query configuration
+  // Use React Query to fetch and cache the data
+  // Set staleTime to 0 to ensure data is always fresh on initial load
   const queryResult = useQuery({
     queryKey: ['desarrollos', limit, withPrototipos, userId],
     queryFn: fetchDesarrollos,
-    enabled: userId !== null && userId !== undefined, // Only enable query when userId is available
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-    retry: 1, // Limit retries to avoid excessive calls
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    enabled: true, // Always enable the query, even if userId is null
+    staleTime: 0 // Force a fresh fetch on each component mount
   });
 
   return {
     desarrollos: queryResult.data || [],
     isLoading: queryResult.isLoading,
-    isFetching: queryResult.isFetching,
     error: queryResult.error,
-    refetch: queryResult.refetch,
-    status: queryResult.status,
-    isSuccess: queryResult.isSuccess,
-    isEnabled: userId !== null && userId !== undefined
+    refetch: queryResult.refetch
   };
 };
 

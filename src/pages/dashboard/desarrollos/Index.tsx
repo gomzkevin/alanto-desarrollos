@@ -9,6 +9,7 @@ import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Tables } from '@/integrations/supabase/types';
 import useUnidades from '@/hooks/useUnidades';
+import { getCurrentUserId } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
 type Desarrollo = Tables<"desarrollos">;
@@ -17,68 +18,38 @@ const DesarrollosPage = () => {
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
   const [desarrollosWithRealCounts, setDesarrollosWithRealCounts] = useState<Desarrollo[]>([]);
-  const [hasTriedInitialLoad, setHasTriedInitialLoad] = useState(false);
   
-  // Get user data first
+  // Get user info from useUserRole hook
   const { 
     userId,
     isAdmin,
     isLoading: isUserLoading 
   } = useUserRole();
   
-  // Only fetch desarrollos when userId is available
+  // Remove the separate loading state to prevent race conditions
+  // and directly use the desarrollos query with userId from the hook
   const { 
     desarrollos = [], 
-    isLoading: isDesarrollosLoading,
-    isFetching: isDesarrollosFetching,
+    isLoading, 
     error,
-    refetch,
-    status: desarrollosStatus
+    refetch 
   } = useDesarrollos({ 
     withPrototipos: true,
-    userId 
+    userId // Use userId directly from the hook
   });
   
   const { countDesarrolloUnidadesByStatus } = useUnidades();
 
-  // Debug logs to track component lifecycle and data fetching
-  useEffect(() => {
-    console.log('DesarrollosPage - Component lifecycle:', { 
-      userId,
-      isUserLoading,
-      isDesarrollosLoading,
-      isDesarrollosFetching,
-      hasTriedInitialLoad,
-      desarrollosStatus,
-      desarrollosCount: desarrollos.length
-    });
-  }, [
-    userId, 
-    isUserLoading, 
-    isDesarrollosLoading, 
-    isDesarrollosFetching,
-    hasTriedInitialLoad,
-    desarrollosStatus,
-    desarrollos.length
-  ]);
+  const canCreateResource = () => {
+    return isAdmin();
+  };
 
-  // Fetch desarrollos when userId becomes available
-  useEffect(() => {
-    if (userId && !isUserLoading && !hasTriedInitialLoad) {
-      console.log('Forcing desarrollos refetch because userId is now available:', userId);
-      refetch().then(() => {
-        setHasTriedInitialLoad(true);
-      });
-    }
-  }, [userId, isUserLoading, refetch, hasTriedInitialLoad]);
-
-  // When desarrollos are updated, update real counts
+  // Update unit counts when desarrollos change
   useEffect(() => {
     const updateRealUnitCounts = async () => {
-      if (desarrollos.length === 0 || isDesarrollosLoading) return;
+      if (desarrollos.length === 0 || isLoading) return;
       
       try {
-        console.log('Updating real unit counts for', desarrollos.length, 'desarrollos');
         const updatedDesarrollos = await Promise.all(
           desarrollos.map(async (desarrollo) => {
             try {
@@ -108,11 +79,7 @@ const DesarrollosPage = () => {
     };
     
     updateRealUnitCounts();
-  }, [desarrollos, isDesarrollosLoading, countDesarrolloUnidadesByStatus]);
-
-  const canCreateResource = () => {
-    return isAdmin();
-  };
+  }, [desarrollos, isLoading]);
 
   const normalizeDesarrollos = (desarrollos: Desarrollo[]): Desarrollo[] => {
     return desarrollos.map(desarrollo => {
@@ -135,25 +102,21 @@ const DesarrollosPage = () => {
     navigate(`/dashboard/desarrollos/${id}`);
   };
 
-  // Determine which desarrollos to display
   const displayDesarrollos = desarrollosWithRealCounts.length > 0 
     ? normalizeDesarrollos(desarrollosWithRealCounts)
     : normalizeDesarrollos(desarrollos as Desarrollo[]);
 
-  // Determine if we're in a loading state
-  const isLoading = isUserLoading || (isDesarrollosLoading && !hasTriedInitialLoad);
-  const hasNoData = !isLoading && !isDesarrollosFetching && displayDesarrollos.length === 0;
+  // Simplified loading state determination - we're loading if either user or desarrollos are loading
+  const isActuallyLoading = isUserLoading || isLoading;
   
-  // Combined status for debugging
-  const loadingStatus = {
+  // Add debug logs to help troubleshoot
+  console.log('Desarrollo page render:', { 
+    userId,
     isUserLoading,
-    isDesarrollosLoading,
-    isDesarrollosFetching,
-    hasTriedInitialLoad,
-    userId: !!userId,
-    hasNoData
-  };
-  console.log('DesarrollosPage render state:', loadingStatus);
+    isLoading,
+    desarrollosCount: desarrollos.length,
+    displayDesarrollosCount: displayDesarrollos.length
+  });
 
   return (
     <DashboardLayout>
@@ -183,7 +146,7 @@ const DesarrollosPage = () => {
           />
         </div>
 
-        {isLoading ? (
+        {isActuallyLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-[400px] bg-slate-100 animate-pulse rounded-xl" />
@@ -200,7 +163,7 @@ const DesarrollosPage = () => {
               Intentar de nuevo
             </Button>
           </div>
-        ) : hasNoData ? (
+        ) : displayDesarrollos.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-slate-600">No tienes desarrollos inmobiliarios</p>
             {canCreateResource() && (

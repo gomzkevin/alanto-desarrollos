@@ -16,22 +16,19 @@ export function ConfiguracionPage() {
   const { isAdmin, userName, userEmail, isLoading: userLoading, userId } = useUserRole();
   const { toast } = useToast();
 
+  console.log("ConfiguracionPage - userId:", userId);
+  console.log("ConfiguracionPage - Admin status:", isAdmin());
+  console.log("ConfiguracionPage - userLoading:", userLoading);
+
   // Set default tab based on user role
   useEffect(() => {
-    if (!userLoading) {
-      if (isAdmin()) {
-        setActiveTab("perfil");
-      } else {
-        setActiveTab("cuenta");
-      }
+    console.log("Setting default tab based on admin status:", isAdmin());
+    if (isAdmin()) {
+      setActiveTab("perfil");
+    } else {
+      setActiveTab("cuenta");
     }
-  }, [isAdmin, userLoading]);
-
-  // Handle tab change
-  const handleTabChange = (value: string) => {
-    console.log("Changing tab to:", value);
-    setActiveTab(value);
-  };
+  }, [isAdmin]);
 
   // Simple account settings component for the "Mi Cuenta" tab
   const AccountSettings = () => {
@@ -99,13 +96,12 @@ export function ConfiguracionPage() {
           <p className="text-slate-600 mt-1">
             Administra la configuración de tu cuenta y empresa
           </p>
+          <p className="text-xs text-slate-500 mt-1">
+            Estado admin: {adminStatus ? "Sí" : "No"}
+          </p>
         </div>
 
-        <Tabs 
-          value={activeTab}
-          onValueChange={handleTabChange}
-          className="space-y-6"
-        >
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="mb-6">
             {adminStatus && (
               <>
