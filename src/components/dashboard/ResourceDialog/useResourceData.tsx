@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ResourceType, FormValues } from './types';
@@ -16,7 +17,7 @@ interface UseResourceDataProps {
   selectedAmenities?: string[];
   onStatusChange?: (status: string) => void;
   onAmenitiesChange?: (amenities: string[]) => void;
-  defaultValues?: Record<string, any>; // Add defaultValues prop
+  defaultValues?: Record<string, any>;
 }
 
 const useResourceData = ({
@@ -30,7 +31,7 @@ const useResourceData = ({
   selectedAmenities = [],
   onStatusChange,
   onAmenitiesChange,
-  defaultValues = {} // Initialize with empty object
+  defaultValues = {}
 }: UseResourceDataProps) => {
   const { toast } = useToast();
   const [resource, setResource] = useState<FormValues | null>(null);
@@ -97,7 +98,7 @@ const useResourceData = ({
           // Merge with provided defaultValues
           const mergedValues = {
             ...initialValues,
-            ...defaultValues // Apply defaultValues over initial values
+            ...defaultValues
           };
           
           setResource(mergedValues);
@@ -232,7 +233,7 @@ const useResourceData = ({
     resource,
     setResource,
     isLoading,
-    fields: [] // This is typically populated by useResourceFields, which is used elsewhere
+    fields: []
   };
 };
 

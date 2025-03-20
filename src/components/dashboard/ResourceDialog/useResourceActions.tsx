@@ -61,8 +61,9 @@ export default function useResourceActions({
         }
       }
       
-      // Ensure empresa_id is set for new resources
-      if ((resourceType === 'leads' || resourceType === 'cotizaciones') && empresaId) {
+      // Ensure empresa_id is set for relevant resource types
+      if ((resourceType === 'desarrollos' || resourceType === 'leads' || resourceType === 'cotizaciones') 
+          && !data.empresa_id && empresaId) {
         data.empresa_id = empresaId;
       }
       
@@ -101,10 +102,42 @@ export default function useResourceActions({
       if (resourceId) {
         // Update existing resource
         console.log('Updating existing resource with id:', resourceId);
-        const { error } = await supabase
-          .from(resourceType)
-          .update(data as any)
-          .eq('id', resourceId);
+        let error;
+        
+        if (resourceType === 'desarrollos') {
+          const result = await supabase
+            .from(resourceType)
+            .update({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any)
+            .eq('id', resourceId);
+          error = result.error;
+        } else if (resourceType === 'leads') {
+          const result = await supabase
+            .from(resourceType)
+            .update({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any)
+            .eq('id', resourceId);
+          error = result.error;
+        } else if (resourceType === 'cotizaciones') {
+          const result = await supabase
+            .from(resourceType)
+            .update({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any)
+            .eq('id', resourceId);
+          error = result.error;
+        } else {
+          const result = await supabase
+            .from(resourceType)
+            .update(data as any)
+            .eq('id', resourceId);
+          error = result.error;
+        }
         
         if (error) {
           console.error(`Error updating ${resourceType}:`, error);
@@ -125,9 +158,38 @@ export default function useResourceActions({
       } else {
         // Create new resource
         console.log('Creating new resource');
-        const { error } = await supabase
-          .from(resourceType)
-          .insert(data as any);
+        let error;
+        
+        if (resourceType === 'desarrollos') {
+          const result = await supabase
+            .from(resourceType)
+            .insert({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any);
+          error = result.error;
+        } else if (resourceType === 'leads') {
+          const result = await supabase
+            .from(resourceType)
+            .insert({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any);
+          error = result.error;
+        } else if (resourceType === 'cotizaciones') {
+          const result = await supabase
+            .from(resourceType)
+            .insert({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any);
+          error = result.error;
+        } else {
+          const result = await supabase
+            .from(resourceType)
+            .insert(data as any);
+          error = result.error;
+        }
         
         if (error) {
           console.error(`Error creating ${resourceType}:`, error);

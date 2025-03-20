@@ -338,16 +338,15 @@ export const useResourceForm = ({
     
     setIsSubmitting(true);
     try {
-      let query;
+      if ((resourceType === 'desarrollos' || resourceType === 'leads' || resourceType === 'cotizaciones') 
+          && !resourceToSave.empresa_id && empresaId) {
+        resourceToSave.empresa_id = empresaId;
+      }
       
       let dataToSave: Record<string, any> = { ...resourceToSave };
       
       if (resourceType === 'desarrollos' && selectedAmenities.length > 0) {
         dataToSave.amenidades = selectedAmenities;
-      }
-      
-      if (resourceType === 'desarrollos' && !dataToSave.empresa_id && empresaId) {
-        dataToSave.empresa_id = empresaId;
       }
       
       const validationError = validateResourceData(dataToSave);
@@ -357,150 +356,139 @@ export const useResourceForm = ({
           description: validationError,
           variant: 'destructive',
         });
+        setIsSubmitting(false);
         return false;
       }
       
       if (resourceId) {
-        if (!dataToSave.empresa_id && empresaId) {
-          dataToSave.empresa_id = empresaId;
-        }
-        
         if (resourceType === 'desarrollos') {
-          query = supabase
+          const { error } = await supabase
             .from('desarrollos')
-            .update(dataToSave)
-            .eq('id', resourceId);
-        } else if (resourceType === 'prototipos') {
-          const { nombre, desarrollo_id, tipo, precio, total_unidades, unidades_disponibles, ...rest } = dataToSave;
-          if (!nombre || !desarrollo_id || !tipo || precio === undefined || total_unidades === undefined || unidades_disponibles === undefined) {
-            toast({
-              title: 'Error',
-              description: 'Faltan campos requeridos para el prototipo',
-              variant: 'destructive',
-            });
-            return false;
-          }
-          
-          query = supabase
-            .from('prototipos')
-            .update({ 
-              nombre, 
-              desarrollo_id, 
-              tipo, 
-              precio, 
-              total_unidades, 
-              unidades_disponibles,
-              ...rest
+            .update(dataToSave as {
+              nombre: string;
+              ubicacion: string;
+              total_unidades: number;
+              unidades_disponibles: number;
+              empresa_id: number;
+              // other optional fields are included in the type
             })
             .eq('id', resourceId);
+            
+          if (error) throw error;
+        } else if (resourceType === 'prototipos') {
+          const { error } = await supabase
+            .from('prototipos')
+            .update(dataToSave as {
+              nombre: string;
+              desarrollo_id: string;
+              tipo: string;
+              precio: number;
+              total_unidades: number;
+              unidades_disponibles: number;
+              // other optional fields
+            })
+            .eq('id', resourceId);
+            
+          if (error) throw error;
         } else if (resourceType === 'leads') {
-          if (!dataToSave.empresa_id && empresaId) {
-            dataToSave.empresa_id = empresaId;
-          }
-          
-          query = supabase
+          const { error } = await supabase
             .from('leads')
-            .update(dataToSave)
+            .update(dataToSave as {
+              nombre: string;
+              empresa_id?: number;
+              // other optional fields
+            })
             .eq('id', resourceId);
+            
+          if (error) throw error;
         } else if (resourceType === 'cotizaciones') {
-          if (!dataToSave.empresa_id && empresaId) {
-            dataToSave.empresa_id = empresaId;
-          }
-          
-          query = supabase
+          const { error } = await supabase
             .from('cotizaciones')
-            .update(dataToSave)
+            .update(dataToSave as {
+              lead_id: string;
+              desarrollo_id: string;
+              prototipo_id: string;
+              monto_anticipo: number;
+              numero_pagos: number;
+              // other optional fields
+            })
             .eq('id', resourceId);
+            
+          if (error) throw error;
         } else if (resourceType === 'unidades') {
-          const { numero, prototipo_id, ...rest } = dataToSave;
-          if (!numero || !prototipo_id) {
-            toast({
-              title: 'Error',
-              description: 'Faltan campos requeridos para la unidad',
-              variant: 'destructive',
-            });
-            return false;
-          }
-          
-          query = supabase
+          const { error } = await supabase
             .from('unidades')
-            .update({ numero, prototipo_id, ...rest })
+            .update(dataToSave as {
+              numero: string;
+              prototipo_id: string;
+              // other optional fields
+            })
             .eq('id', resourceId);
+            
+          if (error) throw error;
         }
       } else {
-        if (!dataToSave.empresa_id && empresaId) {
-          dataToSave.empresa_id = empresaId;
-        }
-        
         if (resourceType === 'desarrollos') {
-          query = supabase
+          const { error } = await supabase
             .from('desarrollos')
-            .insert(dataToSave);
+            .insert(dataToSave as {
+              nombre: string;
+              ubicacion: string;
+              total_unidades: number;
+              unidades_disponibles: number;
+              empresa_id: number;
+              // other optional fields
+            });
+            
+          if (error) throw error;
         } else if (resourceType === 'prototipos') {
-          const { nombre, desarrollo_id, tipo, precio, total_unidades, unidades_disponibles, ...rest } = dataToSave;
-          if (!nombre || !desarrollo_id || !tipo || precio === undefined || total_unidades === undefined || unidades_disponibles === undefined) {
-            toast({
-              title: 'Error',
-              description: 'Faltan campos requeridos para el prototipo',
-              variant: 'destructive',
-            });
-            return false;
-          }
-          
-          query = supabase
+          const { error } = await supabase
             .from('prototipos')
-            .insert({ 
-              nombre, 
-              desarrollo_id, 
-              tipo, 
-              precio, 
-              total_unidades, 
-              unidades_disponibles,
-              ...rest 
+            .insert(dataToSave as {
+              nombre: string;
+              desarrollo_id: string;
+              tipo: string;
+              precio: number;
+              total_unidades: number;
+              unidades_disponibles: number;
+              // other optional fields
             });
+            
+          if (error) throw error;
         } else if (resourceType === 'leads') {
-          if (!dataToSave.empresa_id && empresaId) {
-            dataToSave.empresa_id = empresaId;
-          }
-          
-          query = supabase
+          const { error } = await supabase
             .from('leads')
-            .insert(dataToSave);
-        } else if (resourceType === 'cotizaciones') {
-          if (!dataToSave.empresa_id && empresaId) {
-            dataToSave.empresa_id = empresaId;
-          }
-          
-          query = supabase
-            .from('cotizaciones')
-            .insert(dataToSave);
-        } else if (resourceType === 'unidades') {
-          const { numero, prototipo_id, ...rest } = dataToSave;
-          if (!numero || !prototipo_id) {
-            toast({
-              title: 'Error',
-              description: 'Faltan campos requeridos para la unidad',
-              variant: 'destructive',
+            .insert(dataToSave as {
+              nombre: string;
+              empresa_id?: number;
+              // other optional fields
             });
-            return false;
-          }
-          
-          query = supabase
+            
+          if (error) throw error;
+        } else if (resourceType === 'cotizaciones') {
+          const { error } = await supabase
+            .from('cotizaciones')
+            .insert(dataToSave as {
+              lead_id: string;
+              desarrollo_id: string;
+              prototipo_id: string;
+              monto_anticipo: number;
+              numero_pagos: number;
+              // other optional fields
+            });
+            
+          if (error) throw error;
+        } else if (resourceType === 'unidades') {
+          const { error } = await supabase
             .from('unidades')
-            .insert({ numero, prototipo_id, ...rest });
+            .insert(dataToSave as {
+              numero: string;
+              prototipo_id: string;
+              // other optional fields
+            });
+            
+          if (error) throw error;
         }
-      }
-      
-      const { error } = await query;
-      
-      if (error) {
-        console.error('Error saving resource:', error);
-        toast({
-          title: 'Error',
-          description: `No se pudo guardar el recurso: ${error.message}`,
-          variant: 'destructive',
-        });
-        return false;
       }
       
       toast({
