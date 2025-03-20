@@ -63,7 +63,7 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
         <Button 
           variant={buttonVariant} 
           onClick={handleOpen}
-          className="border border-gray-200 shadow-sm"
+          className="border-2 border-gray-200 shadow-sm hover:bg-indigo-600"
         >
           {buttonIcon}
           {buttonText || `Nuevo ${resourceType.slice(0, -1)}`}

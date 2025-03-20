@@ -64,8 +64,8 @@ export const VentaEditDialog = ({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] border border-gray-200 shadow-lg rounded-lg overflow-hidden">
-        <DialogHeader className="bg-gradient-to-r from-indigo-50 to-white pb-2 border-b border-gray-200">
+      <DialogContent className="sm:max-w-[425px] border-2 border-gray-300 shadow-lg rounded-lg overflow-hidden">
+        <DialogHeader className="bg-gradient-to-r from-indigo-50 to-white pb-2 border-b-2 border-gray-200">
           <DialogTitle>Editar información de venta</DialogTitle>
         </DialogHeader>
         

@@ -115,7 +115,7 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
   };
 
   return (
-    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 border border-gray-300 shadow-lg rounded-lg divide-y divide-gray-200">
+    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 border-2 border-gray-300 shadow-lg rounded-lg divide-y divide-gray-200">
       <form onSubmit={handleFormSubmit} className="flex flex-col h-full">
         <DialogHeader 
           title={getResourceTitle()} 
