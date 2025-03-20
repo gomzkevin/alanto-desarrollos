@@ -2,22 +2,13 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Eye } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { PagoDialog } from "./PagoDialog";
-
-interface Pago {
-  id: string;
-  fecha: string;
-  monto: number;
-  metodo_pago: string;
-  estado: "registrado" | "verificado" | "rechazado";
-  referencia?: string;
-  comprobante_url?: string;
-  notas?: string;
-}
+import { PagoEditDialog } from "./PagoEditDialog";
+import { Pago } from "@/hooks/usePagos";
 
 interface PagosTabProps {
   ventaId: string;
@@ -29,6 +20,8 @@ interface PagosTabProps {
 
 export const PagosTab = ({ ventaId, compradorVentaId, pagos, isLoading, refetchPagos }: PagosTabProps) => {
   const [openDialog, setOpenDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [selectedPago, setSelectedPago] = useState<Pago | null>(null);
   
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
@@ -39,6 +32,11 @@ export const PagosTab = ({ ventaId, compradorVentaId, pagos, isLoading, refetchP
       default:
         return <Badge variant="warning">Pendiente</Badge>;
     }
+  };
+  
+  const handleViewPago = (pago: Pago) => {
+    setSelectedPago(pago);
+    setOpenEditDialog(true);
   };
 
   return (
@@ -80,8 +78,12 @@ export const PagosTab = ({ ventaId, compradorVentaId, pagos, isLoading, refetchP
                     <TableCell>{pago.referencia || '-'}</TableCell>
                     <TableCell>{getEstadoBadge(pago.estado)}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                        Ver
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleViewPago(pago)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" /> Ver
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -96,6 +98,13 @@ export const PagosTab = ({ ventaId, compradorVentaId, pagos, isLoading, refetchP
         open={openDialog}
         onOpenChange={setOpenDialog}
         compradorVentaId={compradorVentaId}
+        onSuccess={refetchPagos}
+      />
+      
+      <PagoEditDialog
+        open={openEditDialog}
+        onOpenChange={setOpenEditDialog}
+        pago={selectedPago}
         onSuccess={refetchPagos}
       />
     </div>

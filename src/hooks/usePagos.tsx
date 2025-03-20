@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,9 +27,20 @@ export interface NuevoPago {
   notas?: string;
 }
 
+export interface ActualizacionPago {
+  monto?: number;
+  fecha?: string;
+  metodo_pago?: string;
+  estado?: 'registrado' | 'verificado' | 'rechazado';
+  referencia?: string;
+  comprobante_url?: string;
+  notas?: string;
+}
+
 export const usePagos = (compradorVentaId?: string) => {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   // Obtener pagos por comprador_venta_id
@@ -45,7 +57,16 @@ export const usePagos = (compradorVentaId?: string) => {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as Pago[] || [];
+      
+      // Map the data to ensure estados conform to the expected type
+      const typedPagos: Pago[] = (data || []).map(pago => ({
+        ...pago,
+        estado: (pago.estado === 'verificado' || pago.estado === 'registrado' || pago.estado === 'rechazado') 
+          ? pago.estado as 'verificado' | 'registrado' | 'rechazado'
+          : 'registrado' // Default value if it doesn't match expected values
+      }));
+      
+      return typedPagos;
     } catch (error) {
       console.error('Error al obtener pagos:', error);
       toast({
@@ -87,16 +108,13 @@ export const usePagos = (compradorVentaId?: string) => {
     }
   };
 
-  // Actualizar estado de un pago
-  const updatePagoEstado = async (id: string, estado: 'verificado' | 'rechazado', notas?: string) => {
+  // Actualizar un pago
+  const updatePagoEstado = async (id: string, actualizacion: ActualizacionPago) => {
     setIsUpdating(true);
     try {
       const { data, error } = await supabase
         .from('pagos')
-        .update({ 
-          estado,
-          notas: notas || undefined
-        })
+        .update(actualizacion)
         .eq('id', id)
         .select();
 
@@ -111,6 +129,27 @@ export const usePagos = (compradorVentaId?: string) => {
       setIsUpdating(false);
     }
   };
+  
+  // Eliminar un pago
+  const deletePago = async (id: string) => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('pagos')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      await refetch();
+      return true;
+    } catch (error) {
+      console.error('Error al eliminar pago:', error);
+      throw error;
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return {
     pagos,
@@ -119,8 +158,10 @@ export const usePagos = (compradorVentaId?: string) => {
     refetch,
     createPago,
     updatePagoEstado,
+    deletePago,
     isCreating,
-    isUpdating
+    isUpdating,
+    isDeleting
   };
 };
 
