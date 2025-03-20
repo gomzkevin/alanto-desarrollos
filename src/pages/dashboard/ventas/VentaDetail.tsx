@@ -5,7 +5,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronLeft, Building2, Home, Calendar, CreditCard } from 'lucide-react';
+import { ChevronLeft, Building2, Home, Calendar, CreditCard, Edit, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import { useVentaDetail } from '@/hooks/useVentaDetail';
@@ -13,12 +13,15 @@ import { InfoTab } from './components/InfoTab';
 import { PagosTab } from './components/PagosTab';
 import { VentaProgress } from './components/VentaProgress';
 import { PagoDialog } from './components/PagoDialog';
-import { VentaInfoAlert } from './components/VentaInfoAlert';
+import { VentaEditDialog } from './components/VentaEditDialog';
+import { CompradorDialog } from './components/CompradorDialog';
 
 const VentaDetail = () => {
   const { ventaId } = useParams<{ ventaId: string }>();
   const [activeTab, setActiveTab] = useState('info');
   const [openPagoDialog, setOpenPagoDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [openCompradorDialog, setOpenCompradorDialog] = useState(false);
   
   const { 
     venta, 
@@ -69,6 +72,13 @@ const VentaDetail = () => {
           <div className="flex gap-2">
             <Button 
               variant="outline" 
+              onClick={() => setOpenCompradorDialog(true)}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Agregar Comprador
+            </Button>
+            <Button 
+              variant="outline" 
               onClick={() => setOpenPagoDialog(true)} 
               disabled={!compradorVentaId}
             >
@@ -78,13 +88,18 @@ const VentaDetail = () => {
           </div>
         </div>
 
-        <VentaInfoAlert className="mb-4" />
-
         <div className="grid gap-6 md:grid-cols-2">
           {/* Información de la Venta card */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xl">Información de la Venta</CardTitle>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setOpenEditDialog(true)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -178,7 +193,11 @@ const VentaDetail = () => {
           </TabsList>
           
           <TabsContent value="info" className="space-y-4">
-            <InfoTab venta={venta} compradores={compradores} />
+            <InfoTab 
+              venta={venta} 
+              compradores={compradores} 
+              onAddComprador={() => setOpenCompradorDialog(true)}
+            />
           </TabsContent>
           
           <TabsContent value="pagos" className="space-y-4">
@@ -223,6 +242,21 @@ const VentaDetail = () => {
             onSuccess={refetch}
           />
         )}
+
+        <VentaEditDialog
+          open={openEditDialog}
+          onOpenChange={setOpenEditDialog}
+          venta={venta}
+          onSuccess={refetch}
+        />
+
+        <CompradorDialog 
+          open={openCompradorDialog}
+          onOpenChange={setOpenCompradorDialog}
+          ventaId={venta.id}
+          esVentaFraccional={venta.es_fraccional}
+          onSuccess={refetch}
+        />
       </div>
     </DashboardLayout>
   );

@@ -17,6 +17,7 @@ interface Comprador {
 export const useVentaDetail = (ventaId?: string) => {
   const [compradores, setCompradores] = useState<Comprador[]>([]);
   const [compradorVentaId, setCompradorVentaId] = useState<string>('');
+  const [loading, setLoading] = useState(false);
   
   // Fetch venta details
   const fetchVentaDetail = async (): Promise<Venta | null> => {
@@ -52,16 +53,17 @@ export const useVentaDetail = (ventaId?: string) => {
     enabled: !!ventaId,
   });
 
-  // Fetch compradores
+  // Fetch compradores with lead information
   const fetchCompradores = async (): Promise<Comprador[]> => {
     if (!ventaId) return [];
     
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('compradores_venta')
         .select(`
           *,
-          comprador:leads(nombre)
+          comprador:leads(id, nombre)
         `)
         .eq('venta_id', ventaId);
 
@@ -72,15 +74,31 @@ export const useVentaDetail = (ventaId?: string) => {
         setCompradorVentaId(data[0].id);
       }
 
-      return data.map(item => ({
-        id: item.id,
-        comprador_id: item.comprador_id,
-        nombre: item.comprador?.nombre || 'Comprador sin nombre',
-        porcentaje: item.porcentaje_propiedad,
-      }));
+      // Count pagos for each comprador
+      const compradoresWithPagos = await Promise.all(
+        data.map(async (item) => {
+          const { count, error: pagosError } = await supabase
+            .from('pagos')
+            .select('id', { count: 'exact', head: true })
+            .eq('comprador_venta_id', item.id)
+            .eq('estado', 'verificado');
+            
+          return {
+            id: item.id,
+            comprador_id: item.comprador_id,
+            nombre: item.comprador?.nombre || 'Comprador sin nombre',
+            porcentaje: item.porcentaje_propiedad,
+            pagos_realizados: count || 0,
+          };
+        })
+      );
+
+      return compradoresWithPagos;
     } catch (error) {
       console.error('Error al obtener compradores:', error);
       return [];
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -120,7 +138,7 @@ export const useVentaDetail = (ventaId?: string) => {
     venta,
     compradores,
     pagos,
-    isLoading: isVentaLoading || isCompradoresLoading || isPagosLoading,
+    isLoading: isVentaLoading || isCompradoresLoading || isPagosLoading || loading,
     montoPagado,
     progreso,
     refetch,

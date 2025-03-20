@@ -130,7 +130,10 @@ export const useVentas = (filters: VentasFilter = {}) => {
     try {
       const { data, error } = await supabase
         .from('ventas')
-        .update(updates)
+        .update({
+          ...updates,
+          fecha_actualizacion: new Date().toISOString()
+        })
         .eq('id', id)
         .select();
 
