@@ -74,19 +74,25 @@ export const ensureUserInDatabase = async (userId: string, userEmail: string, em
  */
 export const isEmailConfirmed = async (email: string): Promise<boolean> => {
   try {
-    // Try to get user info from auth API
-    const { data, error } = await supabase.auth.admin.listUsers({
-      filter: {
-        email: email
-      }
-    });
+    // This was causing the TypeScript error:
+    // The Supabase API doesn't accept 'filter' in PageParams for listUsers
+    // Let's use a different approach that's compatible with the API
     
-    if (error || !data || !data.users || data.users.length === 0) {
-      console.log("No se pudo obtener información del usuario:", email);
+    // Try to get user by email using auth API
+    const { data: { users }, error } = await supabase.auth.admin.listUsers();
+    
+    if (error || !users) {
+      console.log("No se pudo obtener información de usuarios:", error);
       return false;
     }
     
-    const user = data.users[0];
+    // Find user with matching email
+    const user = users.find(u => u.email === email);
+    if (!user) {
+      console.log("No se encontró usuario con email:", email);
+      return false;
+    }
+    
     return !!user.email_confirmed_at;
   } catch (error) {
     console.log("Error al verificar confirmación de email:", error);
