@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ResourceType, FormValues } from './types';
 import { useToast } from '@/hooks/use-toast';
 import { Json } from '@/integrations/supabase/types';
+import useUserRole from '@/hooks/useUserRole';
 
 interface UseResourceDataProps {
   resourceType: ResourceType;
@@ -35,6 +36,7 @@ const useResourceData = ({
   const [resource, setResource] = useState<FormValues | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUsarFiniquito, setUsarFiniquito] = useState(false);
+  const { empresaId } = useUserRole();
 
   useEffect(() => {
     const loadResource = async () => {
@@ -124,6 +126,7 @@ const useResourceData = ({
           avance_porcentaje: 0,
           descripcion: '',
           moneda: 'MXN',
+          empresa_id: empresaId
         };
         break;
       case 'prototipos':
@@ -151,6 +154,7 @@ const useResourceData = ({
           origen: '',
           interes_en: '',
           notas: '',
+          empresa_id: empresaId
         };
         break;
       case 'cotizaciones':
@@ -162,6 +166,7 @@ const useResourceData = ({
           usar_finiquito: usarFiniquito,
           numero_pagos: 12,
           notas: '',
+          empresa_id: empresaId
         };
         break;
       case 'unidades':
