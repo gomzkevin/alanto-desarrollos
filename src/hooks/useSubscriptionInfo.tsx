@@ -14,6 +14,7 @@ export interface SubscriptionPlan {
     tipo?: 'desarrollo' | 'prototipo';
     precio_por_unidad?: number;
     max_vendedores?: number;
+    max_recursos?: number;
   };
 }
 
@@ -68,7 +69,13 @@ export const useSubscriptionInfo = () => {
         name: subscription.subscription_plans.name,
         price: subscription.subscription_plans.price,
         interval: subscription.subscription_plans.interval as 'month' | 'year',
-        features: subscription.subscription_plans.features || {}
+        features: typeof subscription.subscription_plans.features === 'object' ? 
+          {
+            tipo: subscription.subscription_plans.features?.tipo as 'desarrollo' | 'prototipo' | undefined,
+            precio_por_unidad: subscription.subscription_plans.features?.precio_por_unidad as number | undefined,
+            max_vendedores: subscription.subscription_plans.features?.max_vendedores as number | undefined,
+            max_recursos: subscription.subscription_plans.features?.max_recursos as number | undefined
+          } : {}
       };
 
       // Get resource type and count from the plan
