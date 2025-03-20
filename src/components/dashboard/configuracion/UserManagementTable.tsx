@@ -221,6 +221,26 @@ export function UserManagementTable() {
     try {
       setIsCreatingUser(true);
 
+      const { data: existingUsers, error: checkError } = await supabase
+        .from('usuarios')
+        .select('email, auth_id')
+        .eq('email', newUser.email)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("Error checking existing user:", checkError);
+      }
+
+      if (existingUsers) {
+        toast({
+          title: "Usuario ya existe",
+          description: "Ya existe un usuario con este correo electrónico.",
+          variant: "destructive",
+        });
+        setIsCreatingUser(false);
+        return;
+      }
+
       const authResult = await signUpWithEmailPassword(newUser.email, newUser.password, empresaId || undefined);
 
       if (!authResult.success) {
@@ -248,33 +268,70 @@ export function UserManagementTable() {
         }
       }
       
-      const userData = {
-        auth_id: authUserId,
-        nombre: newUser.nombre,
-        email: newUser.email,
-        rol: newUser.rol,
-        empresa_id: empresaId,
-        activo: true
-      };
-      
-      console.log("Creating user record with data:", userData);
-      
-      const { error: userError } = await supabase
-        .from('usuarios')
-        .upsert(userData)
-        .select()
-        .single();
+      if (authUserId) {
+        const { data: existingAuthUser } = await supabase
+          .from('usuarios')
+          .select('id')
+          .eq('auth_id', authUserId)
+          .maybeSingle();
 
-      if (userError) {
-        console.error("Error creating user record:", userError);
-        throw userError;
+        if (existingAuthUser) {
+          const { error: updateError } = await supabase
+            .from('usuarios')
+            .update({
+              nombre: newUser.nombre,
+              rol: newUser.rol,
+              activo: true,
+              empresa_id: empresaId
+            })
+            .eq('auth_id', authUserId);
+
+          if (updateError) {
+            console.error("Error updating existing user:", updateError);
+            throw updateError;
+          }
+
+          toast({
+            title: "Usuario actualizado",
+            description: "El usuario existente ha sido actualizado.",
+            variant: "default",
+          });
+        } else {
+          const userData = {
+            auth_id: authUserId,
+            nombre: newUser.nombre,
+            email: newUser.email,
+            rol: newUser.rol,
+            empresa_id: empresaId,
+            activo: true
+          };
+          
+          console.log("Creating user record with data:", userData);
+          
+          const { error: userError } = await supabase
+            .from('usuarios')
+            .insert(userData);
+
+          if (userError) {
+            console.error("Error creating user record:", userError);
+            throw userError;
+          }
+
+          toast({
+            title: "Usuario creado",
+            description: "El usuario ha sido creado exitosamente.",
+            variant: "default",
+          });
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo obtener el ID del usuario.",
+          variant: "destructive",
+        });
+        setIsCreatingUser(false);
+        return;
       }
-
-      toast({
-        title: "Usuario creado",
-        description: "El usuario ha sido creado exitosamente.",
-        variant: "default",
-      });
 
       setNewUser({
         nombre: "",
@@ -287,6 +344,7 @@ export function UserManagementTable() {
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
+        .eq('empresa_id', empresaId)
         .order('fecha_creacion', { ascending: false });
 
       if (!error) {

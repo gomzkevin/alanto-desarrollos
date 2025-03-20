@@ -136,6 +136,21 @@ export const signUpWithEmailPassword = async (email: string, password: string, e
   try {
     console.log("Iniciando registro con email:", email);
     
+    // First check if user already exists in auth system
+    const { data: existingUser } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    // If the user exists and can sign in with these credentials, return success
+    if (existingUser?.user) {
+      console.log("Usuario ya existía en auth, usando el existente:", existingUser.user.id);
+      // Ensure user exists in the usuarios table with empresa_id
+      await ensureUserInDatabase(existingUser.user.id, existingUser.user.email || email, empresaId);
+      return { success: true, user: existingUser.user, message: "Se utilizó un usuario existente" };
+    }
+    
+    // If the user doesn't exist or credentials are wrong, try to sign up
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -148,6 +163,11 @@ export const signUpWithEmailPassword = async (email: string, password: string, e
     });
 
     if (error) {
+      // If error is that user already exists, but we couldn't sign in, the password might be different
+      if (error.message.includes("already registered")) {
+        return { success: false, error: "Este correo electrónico ya está registrado con una contraseña diferente" };
+      }
+      
       console.error("Error en registro:", error);
       return { success: false, error: error.message };
     } 
