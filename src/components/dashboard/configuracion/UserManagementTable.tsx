@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -241,7 +242,15 @@ export function UserManagementTable() {
         return;
       }
 
-      const authResult = await signUpWithEmailPassword(newUser.email, newUser.password, empresaId || undefined);
+      console.log("Creating user with role:", newUser.rol);
+      
+      // Pass the selected role to the signup function
+      const authResult = await signUpWithEmailPassword(
+        newUser.email, 
+        newUser.password, 
+        empresaId || undefined, 
+        newUser.rol
+      );
 
       if (!authResult.success) {
         throw new Error(authResult.error || "No se pudo crear el usuario");
@@ -280,7 +289,7 @@ export function UserManagementTable() {
             .from('usuarios')
             .update({
               nombre: newUser.nombre,
-              rol: newUser.rol,
+              rol: newUser.rol, // Ensure role is explicitly set
               activo: true,
               empresa_id: empresaId
             })
@@ -301,7 +310,7 @@ export function UserManagementTable() {
             auth_id: authUserId,
             nombre: newUser.nombre,
             email: newUser.email,
-            rol: newUser.rol,
+            rol: newUser.rol, // Ensure role is explicitly set
             empresa_id: empresaId,
             activo: true
           };

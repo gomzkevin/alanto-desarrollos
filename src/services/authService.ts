@@ -1,10 +1,11 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
 /**
  * Ensures the authenticated user exists in the usuarios table
  */
-export const ensureUserInDatabase = async (userId: string, userEmail: string, empresaId?: number): Promise<boolean> => {
+export const ensureUserInDatabase = async (userId: string, userEmail: string, empresaId?: number, userRole?: string): Promise<boolean> => {
   try {
     console.log('Verificando si el usuario existe en la tabla usuarios:', userId);
     
@@ -28,7 +29,7 @@ export const ensureUserInDatabase = async (userId: string, userEmail: string, em
             auth_id: userId,
             email: userEmail,
             nombre: nombre,
-            rol: 'admin', // Default for development
+            rol: userRole || 'admin', // Use provided role or default to admin
             empresa_id: empresaId || null
           })
           .select();
@@ -106,7 +107,6 @@ export const tryConfirmEmail = async (userId: string, email: string, password: s
     
     // Método 3: Intenta registrar al usuario nuevamente con la opción de auto-confirmar
     try {
-      // Correct structure: options object with data property inside
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -239,9 +239,9 @@ export const signInWithEmailPassword = async (email: string, password: string, f
 /**
  * Signs up with email and password
  */
-export const signUpWithEmailPassword = async (email: string, password: string, empresaId?: number) => {
+export const signUpWithEmailPassword = async (email: string, password: string, empresaId?: number, userRole?: string) => {
   try {
-    console.log("Iniciando registro con email:", email);
+    console.log("Iniciando registro con email:", email, "rol:", userRole);
     
     // First check if user already exists in auth system
     const { data: existingUser, error: signInError } = await supabase.auth.signInWithPassword({
@@ -252,8 +252,8 @@ export const signUpWithEmailPassword = async (email: string, password: string, e
     // If the user exists and can sign in with these credentials, return success
     if (existingUser?.user) {
       console.log("Usuario ya existía en auth, usando el existente:", existingUser.user.id);
-      // Ensure user exists in the usuarios table with empresa_id
-      await ensureUserInDatabase(existingUser.user.id, existingUser.user.email || email, empresaId);
+      // Ensure user exists in the usuarios table with empresa_id and specified role
+      await ensureUserInDatabase(existingUser.user.id, existingUser.user.email || email, empresaId, userRole);
       return { success: true, user: existingUser.user, message: "Se utilizó un usuario existente" };
     }
     
@@ -283,8 +283,8 @@ export const signUpWithEmailPassword = async (email: string, password: string, e
             });
             
             if (!loginError && loginData.user) {
-              // Ensure user exists in the usuarios table with empresa_id
-              await ensureUserInDatabase(loginData.user.id, loginData.user.email || email, empresaId);
+              // Ensure user exists in the usuarios table with empresa_id and specified role
+              await ensureUserInDatabase(loginData.user.id, loginData.user.email || email, empresaId, userRole);
               return { success: true, user: loginData.user, message: "Credenciales actualizadas" };
             }
           }
@@ -302,6 +302,7 @@ export const signUpWithEmailPassword = async (email: string, password: string, e
         emailRedirectTo: window.location.origin + "/auth",
         data: {
           confirmed_at: new Date().toISOString(), // Intento de marcar como confirmado automáticamente
+          user_role: userRole // Almacenamos el rol en los metadatos de usuario
         }
       }
     });
@@ -334,8 +335,8 @@ export const signUpWithEmailPassword = async (email: string, password: string, e
           console.log("No se pudo confirmar el email automáticamente (modo admin):", adminError);
         }
         
-        // Ensure user exists in the usuarios table with empresa_id
-        await ensureUserInDatabase(data.user.id, data.user.email || email, empresaId);
+        // Ensure user exists in the usuarios table with empresa_id and specified role
+        await ensureUserInDatabase(data.user.id, data.user.email || email, empresaId, userRole);
         
         // Intentar iniciar sesión inmediatamente
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -356,8 +357,8 @@ export const signUpWithEmailPassword = async (email: string, password: string, e
       });
       
       if (!signInError && signInData.user) {
-        // Ensure user exists in the usuarios table with empresa_id
-        await ensureUserInDatabase(signInData.user.id, signInData.user.email || email, empresaId);
+        // Ensure user exists in the usuarios table with empresa_id and specified role
+        await ensureUserInDatabase(signInData.user.id, signInData.user.email || email, empresaId, userRole);
         return { success: true, user: signInData.user, autoSignIn: true };
       }
     } catch (signInError) {
