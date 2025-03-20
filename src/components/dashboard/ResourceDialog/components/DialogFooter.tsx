@@ -8,15 +8,17 @@ interface DialogFooterProps {
   onClose: () => void;
   onSave: () => void;
   isSubmitting?: boolean;
+  className?: string;
 }
 
 export const DialogFooter: React.FC<DialogFooterProps> = ({
   onClose,
   onSave,
-  isSubmitting = false
+  isSubmitting = false,
+  className
 }) => {
   return (
-    <ShadcnDialogFooter className="p-4 border-t bg-gray-50">
+    <ShadcnDialogFooter className={`p-4 border-t bg-gray-50 ${className || ''}`}>
       <div className="flex gap-2 w-full justify-end">
         <Button
           type="button"

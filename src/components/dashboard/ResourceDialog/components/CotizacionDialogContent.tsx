@@ -88,11 +88,12 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
   return (
     <DialogContent className="p-0 border-2 border-gray-300 shadow-lg rounded-lg max-h-[90vh] overflow-hidden flex flex-col max-w-4xl">
       <form onSubmit={handleFormSubmit} className="flex flex-col h-full max-h-[90vh]">
-        <DialogHeader 
-          title={getResourceTitle()} 
-          description={getResourceDescription()}
-          className="px-8 py-6"
-        />
+        <div className="px-8 py-6">
+          <DialogHeader 
+            title={getResourceTitle()} 
+            description={getResourceDescription()}
+          />
+        </div>
         
         <div className="flex-1 overflow-hidden">
           {isLoading ? (
@@ -104,46 +105,48 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
             <ScrollArea className="h-[calc(90vh-180px)]">
               <div className="px-8 py-6">
                 <div className="space-y-8">
-                  <GenericForm
-                    resourceType="cotizaciones"
-                    fields={fields}
-                    values={resource}
-                    onChange={handleChange}
-                    onSelectChange={handleSelectChange}
-                    onSwitchChange={handleSwitchChange}
-                    onLeadSelect={handleLeadSelect}
-                    selectedAmenities={selectedAmenities}
-                    onAmenitiesChange={handleAmenitiesChange}
-                    isSubmitting={isSubmitting}
-                    desarrolloId={desarrolloId}
-                    prototipo_id={prototipo_id}
-                    lead_id={lead_id}
-                    onImageUpload={handleImageUpload}
-                    uploading={uploading}
-                    isExistingClient={isExistingClient}
-                    onExistingClientChange={onExistingClientChange}
-                    newClientData={newClientData}
-                    onNewClientDataChange={onNewClientDataChange}
-                    onDesarrolloSelect={onDesarrolloSelect}
-                    onDateChange={handleDateChange}
-                    formId="resource-form"
-                    className="gap-y-6"
-                  />
+                  <div className="gap-y-6">
+                    <GenericForm
+                      resourceType="cotizaciones"
+                      fields={fields}
+                      values={resource}
+                      onChange={handleChange}
+                      onSelectChange={handleSelectChange}
+                      onSwitchChange={handleSwitchChange}
+                      onLeadSelect={handleLeadSelect}
+                      selectedAmenities={selectedAmenities}
+                      onAmenitiesChange={handleAmenitiesChange}
+                      isSubmitting={isSubmitting}
+                      desarrolloId={desarrolloId}
+                      prototipo_id={prototipo_id}
+                      lead_id={lead_id}
+                      onImageUpload={handleImageUpload}
+                      uploading={uploading}
+                      isExistingClient={isExistingClient}
+                      onExistingClientChange={onExistingClientChange}
+                      newClientData={newClientData}
+                      onNewClientDataChange={onNewClientDataChange}
+                      onDesarrolloSelect={onDesarrolloSelect}
+                      onDateChange={handleDateChange}
+                      formId="resource-form"
+                    />
+                  </div>
                 </div>
               </div>
             </ScrollArea>
           )}
         </div>
         
-        <DialogFooter 
-          onClose={onClose}
-          onSave={async () => {
-            console.log('DialogFooter save button clicked');
-            await saveResource();
-          }}
-          isSubmitting={isSubmitting}
-          className="px-8 py-6"
-        />
+        <div className="px-8 py-6">
+          <DialogFooter 
+            onClose={onClose}
+            onSave={async () => {
+              console.log('DialogFooter save button clicked');
+              await saveResource();
+            }}
+            isSubmitting={isSubmitting}
+          />
+        </div>
       </form>
     </DialogContent>
   );
