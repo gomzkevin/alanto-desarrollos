@@ -152,11 +152,11 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
           <table className="w-full">
             <thead>
               <tr className="bg-muted/50">
-                <th className="text-left p-4 font-medium">Desarrollo / Unidad</th>
-                <th className="text-left p-4 font-medium">Tipo</th>
-                <th className="text-left p-4 font-medium">Precio Total</th>
-                <th className="text-left p-4 font-medium">Progreso</th>
-                <th className="text-left p-4 font-medium">Estado</th>
+                <th className="text-left p-4 font-medium w-[35%]">Desarrollo / Unidad</th>
+                <th className="text-left p-4 font-medium w-[12%]">Tipo</th>
+                <th className="text-left p-4 font-medium w-[15%]">Precio Total</th>
+                <th className="text-left p-4 font-medium w-[25%]">Progreso</th>
+                <th className="text-left p-4 font-medium w-[13%]">Estado</th>
               </tr>
             </thead>
             <tbody>
@@ -185,7 +185,7 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
                       )}
                     </td>
                     <td className="p-4">{formatCurrency(venta.precio_total)}</td>
-                    <td className="p-4 w-[200px]">
+                    <td className="p-4">
                       <VentaProgress 
                         progreso={paymentData.progreso} 
                         montoTotal={venta.precio_total} 
