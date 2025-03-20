@@ -39,7 +39,7 @@ const Footer = () => {
           <div>
             <div className="flex items-center mb-6">
               <span className="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-300">
-                AirProp
+                Alanto
               </span>
             </div>
             <p className="text-slate-400 mb-6">
@@ -138,8 +138,8 @@ const Footer = () => {
               </li>
               <li className="flex">
                 <Mail className="h-5 w-5 mr-3 text-indigo-500 flex-shrink-0" />
-                <a href="mailto:info@airprop.com" className="text-slate-400 hover:text-white transition-colors">
-                  info@airprop.com
+                <a href="mailto:info@alanto.com" className="text-slate-400 hover:text-white transition-colors">
+                  info@alanto.com
                 </a>
               </li>
               <li className="flex">
@@ -155,7 +155,7 @@ const Footer = () => {
         {/* Bottom footer */}
         <div className="pt-8 border-t border-slate-800/50 text-center">
           <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} AirProp. Todos los derechos reservados.
+            © {new Date().getFullYear()} Alanto. Todos los derechos reservados.
           </p>
         </div>
       </div>
