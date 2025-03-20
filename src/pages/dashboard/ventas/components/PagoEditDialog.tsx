@@ -29,7 +29,7 @@ export const PagoEditDialog = ({ open, onOpenChange, pago, onSuccess }: PagoEdit
   const [metodoPago, setMetodoPago] = useState<string>('transferencia');
   const [referencia, setReferencia] = useState<string>('');
   const [notas, setNotas] = useState<string>('');
-  const [estado, setEstado] = useState<'registrado' | 'verificado' | 'rechazado'>('registrado');
+  const [estado, setEstado] = useState<'registrado' | 'rechazado'>('registrado');
   const [comprobanteUrl, setComprobanteUrl] = useState<string>('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
@@ -55,13 +55,6 @@ export const PagoEditDialog = ({ open, onOpenChange, pago, onSuccess }: PagoEdit
     if (!pago) return;
     
     try {
-      const isChangingToVerificado = estado === 'verificado' && pago.estado !== 'verificado';
-      
-      // Log para depuración
-      if (isChangingToVerificado) {
-        console.log('Actualizando a estado verificado');
-      }
-      
       // Preparar los datos para actualizar
       const updateData = {
         monto: parseFloat(monto),
@@ -73,14 +66,12 @@ export const PagoEditDialog = ({ open, onOpenChange, pago, onSuccess }: PagoEdit
         comprobante_url: comprobanteUrl
       };
       
-      // Realizar la actualización utilizando la función mejorada
+      // Realizar la actualización
       await updatePagoEstado(pago.id, updateData);
       
       toast({
         title: "Pago actualizado",
-        description: isChangingToVerificado 
-          ? "El pago ha sido verificado exitosamente" 
-          : "El pago ha sido actualizado exitosamente",
+        description: "El pago ha sido actualizado exitosamente",
       });
       
       onSuccess();
@@ -193,14 +184,13 @@ export const PagoEditDialog = ({ open, onOpenChange, pago, onSuccess }: PagoEdit
                 <Label htmlFor="estado">Estado *</Label>
                 <Select 
                   value={estado} 
-                  onValueChange={(value) => setEstado(value as 'registrado' | 'verificado' | 'rechazado')}
+                  onValueChange={(value) => setEstado(value as 'registrado' | 'rechazado')}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Estado del pago" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="registrado">Pendiente</SelectItem>
-                    <SelectItem value="verificado">Verificado</SelectItem>
+                    <SelectItem value="registrado">Registrado</SelectItem>
                     <SelectItem value="rechazado">Rechazado</SelectItem>
                   </SelectContent>
                 </Select>

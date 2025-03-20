@@ -76,7 +76,7 @@ export const useVentaDetail = (ventaId?: string) => {
             .from('pagos')
             .select('id', { count: 'exact', head: true })
             .eq('comprador_venta_id', item.id)
-            .eq('estado', 'verificado');
+            .eq('estado', 'registrado');
             
           return {
             id: item.id,
@@ -131,9 +131,7 @@ export const useVentaDetail = (ventaId?: string) => {
       // Map the data to ensure estados conform to the expected type
       const typedPagos: Pago[] = (data || []).map(pago => ({
         ...pago,
-        estado: (pago.estado === 'verificado' || pago.estado === 'registrado' || pago.estado === 'rechazado') 
-          ? pago.estado as 'verificado' | 'registrado' | 'rechazado'
-          : 'registrado' // Default value if it doesn't match expected values
+        estado: pago.estado === 'rechazado' ? 'rechazado' : 'registrado'
       }));
       
       return typedPagos;
@@ -156,7 +154,7 @@ export const useVentaDetail = (ventaId?: string) => {
 
   // Calculate payment progress
   const montoPagado = pagos.reduce((total, pago) => {
-    return pago.estado === 'verificado' ? total + pago.monto : total;
+    return pago.estado === 'registrado' ? total + pago.monto : total;
   }, 0);
 
   const progreso = venta?.precio_total

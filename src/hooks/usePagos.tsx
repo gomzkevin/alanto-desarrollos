@@ -10,7 +10,7 @@ export interface Pago {
   monto: number;
   fecha: string;
   metodo_pago: string;
-  estado: 'registrado' | 'verificado' | 'rechazado';
+  estado: 'registrado' | 'rechazado';
   referencia?: string;
   comprobante_url?: string;
   notas?: string;
@@ -31,7 +31,7 @@ export interface ActualizacionPago {
   monto?: number;
   fecha?: string;
   metodo_pago?: string;
-  estado?: 'registrado' | 'verificado' | 'rechazado';
+  estado?: 'registrado' | 'rechazado';
   referencia?: string;
   comprobante_url?: string;
   notas?: string;
@@ -61,9 +61,7 @@ export const usePagos = (compradorVentaId?: string) => {
       // Map the data to ensure estados conform to the expected type
       const typedPagos: Pago[] = (data || []).map(pago => ({
         ...pago,
-        estado: (pago.estado === 'verificado' || pago.estado === 'registrado' || pago.estado === 'rechazado') 
-          ? pago.estado as 'verificado' | 'registrado' | 'rechazado'
-          : 'registrado' // Default value if it doesn't match expected values
+        estado: pago.estado === 'rechazado' ? 'rechazado' : 'registrado'
       }));
       
       return typedPagos;
@@ -112,71 +110,20 @@ export const usePagos = (compradorVentaId?: string) => {
   const updatePagoEstado = async (id: string, actualizacion: ActualizacionPago) => {
     setIsUpdating(true);
     try {
-      // Si estamos intentando actualizar a estado verificado, manejarlo de manera especial
-      if (actualizacion.estado === 'verificado') {
-        // 1. Primero, obtener el pago actual
-        const { data: pagoActual, error: fetchError } = await supabase
-          .from('pagos')
-          .select('*')
-          .eq('id', id)
-          .single();
-          
-        if (fetchError) {
-          console.error('Error al obtener pago actual:', fetchError);
-          throw fetchError;
-        }
-        
-        // 2. Actualizar SOLO el estado a verificado
-        const { data: estadoUpdate, error: estadoError } = await supabase
-          .from('pagos')
-          .update({ estado: 'verificado' })
-          .eq('id', id)
-          .select();
-        
-        if (estadoError) {
-          console.error('Error al actualizar estado del pago:', estadoError);
-          throw estadoError;
-        }
-        
-        // 3. Si hay otros campos para actualizar además del estado
-        const { estado, ...otrosAtributos } = actualizacion;
-        
-        if (Object.keys(otrosAtributos).length > 0) {
-          // 4. Actualizar los demás campos en una operación separada
-          const { error: atributosError } = await supabase
-            .from('pagos')
-            .update(otrosAtributos)
-            .eq('id', id);
-            
-          if (atributosError) {
-            console.error('Error al actualizar atributos adicionales:', atributosError);
-            // No lanzamos error aquí, el cambio de estado ya se completó
-            toast({
-              title: "Advertencia",
-              description: "El pago fue verificado, pero hubo un error al actualizar algunos campos adicionales",
-              variant: "destructive"  // Cambiado de "warning" a "destructive"
-            });
-          }
-        }
-        
-        await refetch();
-        return estadoUpdate;
-      } else {
-        // Para otros estados, realizar la actualización normalmente
-        const { data, error } = await supabase
-          .from('pagos')
-          .update(actualizacion)
-          .eq('id', id)
-          .select();
+      // Realizar una actualización directa sin lógica especial para diferentes estados
+      const { data, error } = await supabase
+        .from('pagos')
+        .update(actualizacion)
+        .eq('id', id)
+        .select();
 
-        if (error) {
-          console.error('Error al actualizar pago:', error);
-          throw error;
-        }
-        
-        await refetch();
-        return data;
+      if (error) {
+        console.error('Error al actualizar pago:', error);
+        throw error;
       }
+      
+      await refetch();
+      return data;
     } catch (error) {
       console.error('Error general al actualizar pago:', error);
       throw error;

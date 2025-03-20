@@ -25,12 +25,10 @@ export const PagosTab = ({ ventaId, compradorVentaId, pagos, isLoading, refetchP
   
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
-      case 'verificado':
-        return <Badge variant="success">Verificado</Badge>;
       case 'rechazado':
         return <Badge variant="destructive">Rechazado</Badge>;
       default:
-        return <Badge variant="warning">Pendiente</Badge>;
+        return <Badge variant="success">Registrado</Badge>;
     }
   };
   
