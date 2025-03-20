@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Tables } from '@/integrations/supabase/types';
+import { Tables, Json } from '@/integrations/supabase/types';
 import { toast } from '@/components/ui/use-toast';
 
 export type Prototipo = Tables<"prototipos">;
