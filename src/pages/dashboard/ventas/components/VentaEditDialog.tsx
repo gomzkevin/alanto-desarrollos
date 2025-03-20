@@ -65,7 +65,7 @@ export const VentaEditDialog = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] border border-gray-200 shadow-md">
-        <DialogHeader className="bg-gradient-to-r from-indigo-50 to-white pb-2">
+        <DialogHeader className="bg-gradient-to-r from-indigo-50 to-white pb-2 border-b border-gray-200">
           <DialogTitle>Editar información de venta</DialogTitle>
         </DialogHeader>
         
@@ -80,7 +80,7 @@ export const VentaEditDialog = ({
               value={precioTotal}
               onChange={(e) => setPrecioTotal(e.target.value)}
               required
-              className="border border-gray-200 shadow-sm"
+              className="border border-gray-300 shadow-sm"
             />
           </div>
           
