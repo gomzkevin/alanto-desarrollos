@@ -154,7 +154,7 @@ export const usePagos = (compradorVentaId?: string) => {
             toast({
               title: "Advertencia",
               description: "El pago fue verificado, pero hubo un error al actualizar algunos campos adicionales",
-              variant: "warning"
+              variant: "destructive"  // Changed from "warning" to "destructive"
             });
           }
         }
