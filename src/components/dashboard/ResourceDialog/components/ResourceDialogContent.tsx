@@ -6,6 +6,7 @@ import { DialogFooter } from './DialogFooter';
 import { Loader2 } from 'lucide-react';
 import { FormValues, ResourceType, FieldDefinition } from '../types';
 import GenericForm from '../GenericForm';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ResourceDialogContentProps {
   isOpen: boolean;
@@ -115,48 +116,50 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
   };
 
   return (
-    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 border-2 border-gray-300 shadow-lg rounded-lg divide-y divide-gray-200">
+    <DialogContent className="max-w-3xl max-h-[90vh] p-0 border-2 border-gray-300 shadow-lg rounded-lg divide-y divide-gray-200">
       <form onSubmit={handleFormSubmit} className="flex flex-col h-full">
         <DialogHeader 
           title={getResourceTitle()} 
           description={getResourceDescription()} 
         />
         
-        <div className="flex-1 px-6 py-4 overflow-y-auto">
-          {isLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-2">Cargando...</span>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <GenericForm
-                resourceType={resourceType}
-                fields={fields}
-                values={resource}
-                onChange={handleChange}
-                onSelectChange={handleSelectChange}
-                onSwitchChange={handleSwitchChange}
-                onLeadSelect={handleLeadSelect}
-                selectedAmenities={selectedAmenities}
-                onAmenitiesChange={handleAmenitiesChange}
-                isSubmitting={isSubmitting}
-                desarrolloId={desarrolloId}
-                prototipo_id={prototipo_id}
-                lead_id={lead_id}
-                onImageUpload={handleImageUpload}
-                uploading={uploading}
-                isExistingClient={isExistingClient}
-                onExistingClientChange={onExistingClientChange}
-                newClientData={newClientData}
-                onNewClientDataChange={onNewClientDataChange}
-                onDesarrolloSelect={onDesarrolloSelect}
-                onDateChange={handleDateChange}
-                formId="resource-form"
-              />
-            </div>
-          )}
-        </div>
+        <ScrollArea className="flex-1 overflow-y-auto">
+          <div className="px-6 py-4">
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2">Cargando...</span>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <GenericForm
+                  resourceType={resourceType}
+                  fields={fields}
+                  values={resource}
+                  onChange={handleChange}
+                  onSelectChange={handleSelectChange}
+                  onSwitchChange={handleSwitchChange}
+                  onLeadSelect={handleLeadSelect}
+                  selectedAmenities={selectedAmenities}
+                  onAmenitiesChange={handleAmenitiesChange}
+                  isSubmitting={isSubmitting}
+                  desarrolloId={desarrolloId}
+                  prototipo_id={prototipo_id}
+                  lead_id={lead_id}
+                  onImageUpload={handleImageUpload}
+                  uploading={uploading}
+                  isExistingClient={isExistingClient}
+                  onExistingClientChange={onExistingClientChange}
+                  newClientData={newClientData}
+                  onNewClientDataChange={onNewClientDataChange}
+                  onDesarrolloSelect={onDesarrolloSelect}
+                  onDateChange={handleDateChange}
+                  formId="resource-form"
+                />
+              </div>
+            )}
+          </div>
+        </ScrollArea>
         
         <DialogFooter 
           onClose={onClose}

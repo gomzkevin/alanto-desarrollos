@@ -20,6 +20,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useUserRole } from '@/hooks/useUserRole';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const NuevaCotizacion = () => {
   const navigate = useNavigate();
@@ -122,8 +123,8 @@ const NuevaCotizacion = () => {
       <div className="container py-10">
         <h1 className="text-3xl font-semibold mb-6">Nueva Cotización</h1>
         <form onSubmit={handleSubmit}>
-          <Card className="border border-gray-200 shadow-sm rounded-lg overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b border-gray-200 pb-4">
+          <Card className="border-2 border-gray-200 shadow-sm rounded-lg overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b-2 border-gray-200 pb-4">
               <CardTitle className="text-xl font-semibold text-indigo-900">Información del Cliente</CardTitle>
               <CardDescription className="text-gray-600 mt-1">
                 Selecciona un cliente existente o crea uno nuevo
@@ -146,7 +147,7 @@ const NuevaCotizacion = () => {
                     const selected = leads.find(lead => lead.id === value);
                     setSelectedLead(selected);
                   }}>
-                    <SelectTrigger className="w-full border border-gray-300 shadow-sm">
+                    <SelectTrigger className="w-full border-2 border-gray-300 shadow-sm">
                       <SelectValue placeholder="Selecciona un cliente" defaultValue={selectedLead?.id} />
                     </SelectTrigger>
                     <SelectContent>
@@ -167,7 +168,7 @@ const NuevaCotizacion = () => {
                       placeholder="Nombre completo"
                       value={newLeadData.nombre}
                       onChange={(e) => setNewLeadData({ ...newLeadData, nombre: e.target.value })}
-                      className="border border-gray-300 shadow-sm"
+                      className="border-2 border-gray-300 shadow-sm"
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -179,7 +180,7 @@ const NuevaCotizacion = () => {
                         placeholder="correo@ejemplo.com"
                         value={newLeadData.email}
                         onChange={(e) => setNewLeadData({ ...newLeadData, email: e.target.value })}
-                        className="border border-gray-300 shadow-sm"
+                        className="border-2 border-gray-300 shadow-sm"
                       />
                     </div>
                     <div className="space-y-3">
@@ -189,7 +190,7 @@ const NuevaCotizacion = () => {
                         placeholder="+52 55 1234 5678"
                         value={newLeadData.telefono}
                         onChange={(e) => setNewLeadData({ ...newLeadData, telefono: e.target.value })}
-                        className="border border-gray-300 shadow-sm"
+                        className="border-2 border-gray-300 shadow-sm"
                       />
                     </div>
                   </div>
@@ -198,8 +199,8 @@ const NuevaCotizacion = () => {
             </CardContent>
           </Card>
 
-          <Card className="mt-6 border border-gray-200 shadow-sm rounded-lg overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b border-gray-200 pb-4">
+          <Card className="mt-6 border-2 border-gray-200 shadow-sm rounded-lg overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b-2 border-gray-200 pb-4">
               <CardTitle className="text-xl font-semibold text-indigo-900">Información de la Propiedad</CardTitle>
               <CardDescription className="text-gray-600 mt-1">
                 Selecciona el desarrollo y prototipo para la cotización
@@ -214,7 +215,7 @@ const NuevaCotizacion = () => {
                     setSelectedDesarrollo(selected);
                     setSelectedPrototipo(null);
                   }}>
-                    <SelectTrigger className="w-full border border-gray-300 shadow-sm">
+                    <SelectTrigger className="w-full border-2 border-gray-300 shadow-sm">
                       <SelectValue placeholder="Selecciona un desarrollo" defaultValue={selectedDesarrollo?.id} />
                     </SelectTrigger>
                     <SelectContent>
@@ -235,7 +236,7 @@ const NuevaCotizacion = () => {
                     }}
                     disabled={!selectedDesarrollo}
                   >
-                    <SelectTrigger className="w-full border border-gray-300 shadow-sm">
+                    <SelectTrigger className="w-full border-2 border-gray-300 shadow-sm">
                       <SelectValue placeholder="Selecciona un prototipo" defaultValue={selectedPrototipo?.id} />
                     </SelectTrigger>
                     <SelectContent>
@@ -251,8 +252,8 @@ const NuevaCotizacion = () => {
             </CardContent>
           </Card>
 
-          <Card className="mt-6 border border-gray-200 shadow-sm rounded-lg overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b border-gray-200 pb-4">
+          <Card className="mt-6 border-2 border-gray-200 shadow-sm rounded-lg overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b-2 border-gray-200 pb-4">
               <CardTitle className="text-xl font-semibold text-indigo-900">Detalles de pago</CardTitle>
               <CardDescription className="text-gray-600 mt-1">
                 Configura el anticipo, mensualidades y otros detalles de pago
@@ -270,7 +271,7 @@ const NuevaCotizacion = () => {
                       const numericValue = e.target.value.replace(/[^0-9]/g, '');
                       setAnticipoAmount(Number(numericValue));
                     }}
-                    className="border border-gray-300 shadow-sm"
+                    className="border-2 border-gray-300 shadow-sm"
                   />
                 </div>
                 <div className="space-y-3">
@@ -280,7 +281,7 @@ const NuevaCotizacion = () => {
                     type="number"
                     value={numberOfPayments}
                     onChange={(e) => setNumberOfPayments(Number(e.target.value))}
-                    className="border border-gray-300 shadow-sm"
+                    className="border-2 border-gray-300 shadow-sm"
                   />
                 </div>
               </div>
@@ -293,7 +294,7 @@ const NuevaCotizacion = () => {
                       id="startDate"
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal border border-gray-300 shadow-sm",
+                        "w-full justify-start text-left font-normal border-2 border-gray-300 shadow-sm",
                         !startDate && "text-muted-foreground"
                       )}
                     >
@@ -334,7 +335,7 @@ const NuevaCotizacion = () => {
                         const numericValue = e.target.value.replace(/[^0-9]/g, '');
                         setFiniquitoAmount(Number(numericValue));
                       }}
-                      className="border border-gray-300 shadow-sm"
+                      className="border-2 border-gray-300 shadow-sm"
                     />
                   </div>
                   
@@ -346,7 +347,7 @@ const NuevaCotizacion = () => {
                           id="finiquitoDate"
                           variant="outline"
                           className={cn(
-                            "w-full justify-start text-left font-normal border border-gray-300 shadow-sm",
+                            "w-full justify-start text-left font-normal border-2 border-gray-300 shadow-sm",
                             !finiquitoDate && "text-muted-foreground"
                           )}
                         >
@@ -375,7 +376,7 @@ const NuevaCotizacion = () => {
                   placeholder="Agrega cualquier detalle o condición adicional..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="border border-gray-300 shadow-sm min-h-[80px]"
+                  className="border-2 border-gray-300 shadow-sm min-h-[80px]"
                 />
               </div>
             </CardContent>
@@ -386,7 +387,7 @@ const NuevaCotizacion = () => {
               type="button" 
               variant="outline" 
               onClick={() => navigate('/dashboard/cotizaciones')}
-              className="mr-2 border border-gray-300"
+              className="mr-2 border-2 border-gray-300"
             >
               Cancelar
             </Button>
