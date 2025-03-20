@@ -157,9 +157,17 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
         return false;
       }
       
+      // Extract plan features safely
       const planFeatures = subscription.subscription_plans.features || {};
-      const resourceType = planFeatures.tipo;
-      const resourceLimit = planFeatures.max_recursos;
+      let resourceType: 'desarrollo' | 'prototipo' | undefined = undefined;
+      let resourceLimit: number | undefined = undefined;
+      
+      // Check if features is an object (not array) and assign properties safely
+      if (planFeatures && typeof planFeatures === 'object' && !Array.isArray(planFeatures)) {
+        const featuresObj = planFeatures as { [key: string]: Json };
+        resourceType = featuresObj.tipo as 'desarrollo' | 'prototipo' | undefined;
+        resourceLimit = typeof featuresObj.max_recursos === 'number' ? featuresObj.max_recursos : undefined;
+      }
       
       if (resourceType !== 'desarrollo' && resourceType !== undefined) {
         toast({
@@ -202,9 +210,17 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       
       if (!subscription) return 0;
       
+      // Extract plan features safely
       const planFeatures = subscription.subscription_plans.features || {};
-      const resourceType = planFeatures.tipo;
-      const precioUnidad = planFeatures.precio_por_unidad || 0;
+      let resourceType: 'desarrollo' | 'prototipo' | undefined = undefined;
+      let precioUnidad: number = 0;
+      
+      // Check if features is an object (not array) and assign properties safely
+      if (planFeatures && typeof planFeatures === 'object' && !Array.isArray(planFeatures)) {
+        const featuresObj = planFeatures as { [key: string]: Json };
+        resourceType = featuresObj.tipo as 'desarrollo' | 'prototipo' | undefined;
+        precioUnidad = typeof featuresObj.precio_por_unidad === 'number' ? featuresObj.precio_por_unidad : 0;
+      }
       
       if (resourceType !== 'desarrollo') return 0;
       

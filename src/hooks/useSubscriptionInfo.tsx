@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 export interface SubscriptionPlan {
   id: string;
@@ -86,11 +87,13 @@ export const useSubscriptionInfo = () => {
       
       // Check if features is an object (not array) and assign properties safely
       if (planFeatures && typeof planFeatures === 'object' && !Array.isArray(planFeatures)) {
+        const featuresObj = planFeatures as { [key: string]: Json };
+        
         features = {
-          tipo: planFeatures.tipo as 'desarrollo' | 'prototipo' | undefined,
-          precio_por_unidad: planFeatures.precio_por_unidad as number | undefined,
-          max_vendedores: planFeatures.max_vendedores as number | undefined,
-          max_recursos: planFeatures.max_recursos as number | undefined
+          tipo: featuresObj.tipo as 'desarrollo' | 'prototipo' | undefined,
+          precio_por_unidad: typeof featuresObj.precio_por_unidad === 'number' ? featuresObj.precio_por_unidad : undefined,
+          max_vendedores: typeof featuresObj.max_vendedores === 'number' ? featuresObj.max_vendedores : undefined,
+          max_recursos: typeof featuresObj.max_recursos === 'number' ? featuresObj.max_recursos : undefined
         };
       }
       
