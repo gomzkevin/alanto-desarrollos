@@ -8,32 +8,28 @@ import { formatCurrency } from '@/lib/utils';
 interface UnidadTableRowProps {
   unidad: any;
   onEdit: (unidad: any) => void;
-  onDelete: (unidad: any) => void;
+  onSell: (unidad: any) => void;
+  isDisabled?: boolean;
 }
 
-export const UnidadTableRow = memo(({ unidad, onEdit, onDelete }: UnidadTableRowProps) => {
+export const UnidadTableRow = memo(({ unidad, onEdit, onSell, isDisabled = false }: UnidadTableRowProps) => {
+  // Determinar el precio a mostrar (precio de lista)
+  const precioLista = unidad.prototipo?.precio || 0;
+  
   return (
     <TableRow key={unidad.id}>
       <TableCell className="font-medium">{unidad.numero}</TableCell>
       <TableCell>{unidad.nivel || '-'}</TableCell>
       <TableCell><StatusBadge estado={unidad.estado} /></TableCell>
       <TableCell>
-        {unidad.precio_venta 
-          ? formatCurrency(unidad.precio_venta) 
-          : '-'}
+        {formatCurrency(precioLista)}
       </TableCell>
-      <TableCell>{unidad.comprador_nombre || '-'}</TableCell>
-      <TableCell>{unidad.vendedor_nombre || '-'}</TableCell>
-      <TableCell>
-        {unidad.fecha_venta 
-          ? new Date(unidad.fecha_venta).toLocaleDateString('es-MX') 
-          : '-'}
-      </TableCell>
-      <TableCell>
+      <TableCell className="text-right">
         <UnidadActions 
           unidad={unidad} 
           onEdit={onEdit} 
-          onDelete={onDelete} 
+          onSell={onSell}
+          isDisabled={isDisabled}
         />
       </TableCell>
     </TableRow>

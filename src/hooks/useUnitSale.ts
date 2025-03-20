@@ -1,44 +1,94 @@
 
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useRouter } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 export const useUnitSale = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const router = useRouter();
+  const { toast } = useToast();
 
-  // Función simplificada para buscar la venta asociada a una unidad
-  const fetchVentaId = useCallback(async (unidadId: string): Promise<string | null> => {
-    if (!unidadId) return null;
+  // Función para crear una venta y redireccionar
+  const createSaleAndRedirect = async (unidad: any) => {
+    if (!unidad || !unidad.id) {
+      toast({
+        title: "Error",
+        description: "No se puede crear una venta sin una unidad válida",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setIsLoading(true);
-    setError(null);
     
     try {
-      console.log(`Buscando venta para unidad_id: ${unidadId}`);
-      
-      const { data, error } = await supabase
+      // Verificar si ya existe una venta para esta unidad
+      const { data: existingVenta, error: searchError } = await supabase
         .from('ventas')
         .select('id')
-        .eq('unidad_id', unidadId)
+        .eq('unidad_id', unidad.id)
         .maybeSingle();
-
-      if (error) {
-        console.error('Error al buscar venta por unidad_id:', error);
-        throw error;
+      
+      if (searchError) throw searchError;
+      
+      let ventaId;
+      
+      if (existingVenta) {
+        // Si ya existe una venta, usamos ese ID
+        ventaId = existingVenta.id;
+        console.log('Venta existente encontrada:', ventaId);
+      } else {
+        // Si no existe, creamos una nueva venta
+        const { data: newVenta, error: createError } = await supabase
+          .from('ventas')
+          .insert({
+            unidad_id: unidad.id,
+            precio_total: unidad.precio_venta || unidad.prototipo?.precio || 0,
+            estado: 'en_proceso',
+            es_fraccional: false
+          })
+          .select('id')
+          .single();
+        
+        if (createError) throw createError;
+        
+        // Actualizamos el estado de la unidad
+        const { error: updateError } = await supabase
+          .from('unidades')
+          .update({ estado: 'en_proceso' })
+          .eq('id', unidad.id);
+        
+        if (updateError) throw updateError;
+        
+        ventaId = newVenta.id;
+        console.log('Nueva venta creada:', ventaId);
       }
       
-      console.log('Resultado de búsqueda de venta:', data);
-      return data?.id || null;
+      // Redirigimos a la página de detalle de la venta
+      if (ventaId) {
+        toast({
+          title: "Venta creada",
+          description: "Redirigiendo al detalle de la venta..."
+        });
+        
+        setTimeout(() => {
+          router.navigate(`/dashboard/ventas/${ventaId}`);
+        }, 500);
+      }
     } catch (err) {
-      console.error('Error en fetchVentaId:', err);
-      setError(err instanceof Error ? err : new Error('Error desconocido'));
-      return null;
+      console.error('Error en createSaleAndRedirect:', err);
+      toast({
+        title: "Error al crear la venta",
+        description: err instanceof Error ? err.message : "Error desconocido",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  };
 
-  return { fetchVentaId, isLoading, error };
+  return { createSaleAndRedirect, isLoading };
 };
 
 export default useUnitSale;

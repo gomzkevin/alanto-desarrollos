@@ -9,11 +9,8 @@ export const UnidadTableHeader = () => {
         <TableHead>Número/ID</TableHead>
         <TableHead>Nivel</TableHead>
         <TableHead>Estado</TableHead>
-        <TableHead>Precio</TableHead>
-        <TableHead>Comprador</TableHead>
-        <TableHead>Vendedor</TableHead>
-        <TableHead>Fecha Venta</TableHead>
-        <TableHead className="w-[80px]">Acciones</TableHead>
+        <TableHead>Precio de Lista</TableHead>
+        <TableHead className="text-right">Acciones</TableHead>
       </TableRow>
     </TableHeader>
   );

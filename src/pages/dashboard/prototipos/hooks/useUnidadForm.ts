@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { formatCurrency } from '@/lib/utils';
 
 interface UseUnidadFormProps {
   unidad?: any;
@@ -15,17 +14,8 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
   const [formData, setFormData] = useState({
     numero: '',
     nivel: '',
-    estado: 'disponible',
-    precio_venta: '',
-    comprador_id: '',
-    comprador_nombre: '',
-    vendedor_id: '',
-    vendedor_nombre: '',
-    fecha_venta: ''
+    estado: 'disponible'
   });
-  
-  // Estado para el precio formateado (visual)
-  const [precioFormateado, setPrecioFormateado] = useState('');
   
   // Inicializar el formulario con los datos de la unidad cuando está en modo edición
   useEffect(() => {
@@ -36,19 +26,8 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
       setFormData({
         numero: unidad.numero || '',
         nivel: unidad.nivel || '',
-        estado: unidad.estado || 'disponible',
-        precio_venta: unidad.precio_venta || '',
-        comprador_id: unidad.comprador_id || '',
-        comprador_nombre: unidad.comprador_nombre || '',
-        vendedor_id: unidad.vendedor_id || '',
-        vendedor_nombre: unidad.vendedor_nombre || '',
-        fecha_venta: unidad.fecha_venta || ''
+        estado: unidad.estado || 'disponible'
       });
-      
-      // Formatear el precio para visualización
-      if (unidad.precio_venta) {
-        setPrecioFormateado(formatCurrency(unidad.precio_venta));
-      }
     }
   }, [unidad]);
   
@@ -56,41 +35,7 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // Caso especial para precio_venta: formatear para visualización
-    if (name === 'precio_venta') {
-      // Remover caracteres no numéricos para almacenar solo el valor
-      const numericValue = value.replace(/[^0-9]/g, '');
-      
-      // Actualizar el estado del formulario con el valor numérico
-      setFormData(prev => ({
-        ...prev,
-        [name]: numericValue
-      }));
-      
-      // Formatear el valor para visualización
-      if (numericValue) {
-        setPrecioFormateado(formatCurrency(Number(numericValue)));
-      } else {
-        setPrecioFormateado('');
-      }
-      return;
-    }
-    
-    // Caso especial: Si el estado cambia a disponible, resetear campos relacionados
-    if (name === 'estado' && value === 'disponible') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-        comprador_id: '',
-        comprador_nombre: '',
-        vendedor_id: '',
-        vendedor_nombre: '',
-        fecha_venta: ''
-      }));
-      return;
-    }
-    
-    // Actualización normal para otros campos
+    // Actualización normal para campos
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -104,9 +49,7 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
     try {
       // Preparar datos para enviar
       const dataToSubmit = {
-        ...formData,
-        // Si fecha_venta es vacío, establecer a null para compatibilidad con la base de datos
-        fecha_venta: formData.fecha_venta || null
+        ...formData
       };
       
       console.log("Enviando datos del formulario:", dataToSubmit);
@@ -120,7 +63,6 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
   
   return {
     formData,
-    precioFormateado,
     isEditing,
     handleChange,
     handleSubmit,

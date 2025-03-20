@@ -1,13 +1,15 @@
 
 import React, { useState, useCallback } from 'react';
-import { Table, TableBody, TableHeader, TableRow, TableHead } from "@/components/ui/table";
+import { Table, TableBody } from "@/components/ui/table";
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import UnidadTableRow from './components/UnidadTableRow';
+import UnidadTableHeader from './components/UnidadTableHeader';
 import EmptyUnidadState from './components/EmptyUnidadState';
 import UnidadDialogs from './components/UnidadDialogs';
 import { useToast } from "@/hooks/use-toast";
 import useLeads from "@/hooks/useLeads";
 import useUnidades from '@/hooks/useUnidades';
+import useUnitSale from '@/hooks/useUnitSale';
 
 export interface UnidadTableProps {
   prototipo: ExtendedPrototipo;
@@ -24,30 +26,16 @@ export const UnidadTable = ({
 }: UnidadTableProps) => {
   const { toast } = useToast();
   const { leads = [] } = useLeads();
-  const { 
-    createUnidad, 
-    updateUnidad, 
-    deleteUnidad,
-    refetch
-  } = useUnidades({ prototipo_id: prototipo.id });
+  const { createUnidad, updateUnidad, deleteUnidad, refetch } = useUnidades({ prototipo_id: prototipo.id });
+  const { createSaleAndRedirect, isLoading: isCreatingSale } = useUnitSale();
   
   // Estados simplificados
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isSellDialogOpen, setIsSellDialogOpen] = useState(false);
   const [currentUnidad, setCurrentUnidad] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Función para normalizar precios
-  const normalizePrice = useCallback((price: any): number | undefined => {
-    if (price === undefined || price === null) return undefined;
-    
-    if (typeof price === 'string') {
-      return parseFloat(price.replace(/[^0-9]/g, ''));
-    }
-    
-    return Number(price);
-  }, []);
 
   // Refrescar datos
   const handleRefresh = useCallback(() => {
@@ -64,19 +52,11 @@ export const UnidadTable = ({
     
     setIsSubmitting(true);
     try {
-      console.log('Creando unidad con datos:', data);
-      
       await createUnidad({
         prototipo_id: prototipo.id,
         numero: data.numero,
-        estado: data.estado,
-        nivel: data.nivel,
-        precio_venta: normalizePrice(data.precio_venta),
-        comprador_id: data.comprador_id,
-        comprador_nombre: data.comprador_nombre,
-        vendedor_id: data.vendedor_id,
-        vendedor_nombre: data.vendedor_nombre,
-        fecha_venta: data.fecha_venta
+        estado: data.estado || 'disponible',
+        nivel: data.nivel
       });
       
       toast({
@@ -96,7 +76,7 @@ export const UnidadTable = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [createUnidad, normalizePrice, handleRefresh, prototipo.id, toast, isSubmitting]);
+  }, [createUnidad, handleRefresh, prototipo.id, toast, isSubmitting]);
 
   // Editar unidad
   const handleEditUnidad = useCallback(async (data: any) => {
@@ -106,22 +86,11 @@ export const UnidadTable = ({
     try {
       const unidadId = currentUnidad.id;
       
-      console.log('Actualizando unidad:', {
-        id: unidadId,
-        data
-      });
-      
       await updateUnidad({
         id: unidadId,
         numero: data.numero,
-        estado: data.estado,
-        nivel: data.nivel,
-        precio_venta: normalizePrice(data.precio_venta),
-        comprador_id: data.comprador_id,
-        comprador_nombre: data.comprador_nombre,
-        vendedor_id: data.vendedor_id,
-        vendedor_nombre: data.vendedor_nombre,
-        fecha_venta: data.fecha_venta
+        estado: data.estado || 'disponible',
+        nivel: data.nivel
       });
       
       toast({
@@ -142,7 +111,7 @@ export const UnidadTable = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [currentUnidad, normalizePrice, handleRefresh, toast, updateUnidad, isSubmitting]);
+  }, [currentUnidad, handleRefresh, toast, updateUnidad, isSubmitting]);
 
   // Eliminar unidad
   const handleDeleteUnidad = useCallback(async () => {
@@ -173,18 +142,37 @@ export const UnidadTable = ({
     }
   }, [currentUnidad, deleteUnidad, handleRefresh, toast, isSubmitting]);
 
+  // Vender unidad
+  const handleSellUnidad = useCallback(async () => {
+    if (!currentUnidad) return;
+    
+    try {
+      await createSaleAndRedirect(currentUnidad);
+      setIsSellDialogOpen(false);
+      setCurrentUnidad(null);
+    } catch (error) {
+      console.error("Error en proceso de venta:", error);
+    }
+  }, [currentUnidad, createSaleAndRedirect]);
+
   // Funciones para abrir dialogs
   const openEditDialog = useCallback((unidad: any) => {
-    if (isSubmitting) return;
+    if (isSubmitting || isCreatingSale) return;
     setCurrentUnidad(unidad);
     setIsEditDialogOpen(true);
-  }, [isSubmitting]);
+  }, [isSubmitting, isCreatingSale]);
 
   const openDeleteDialog = useCallback((unidad: any) => {
-    if (isSubmitting) return;
+    if (isSubmitting || isCreatingSale) return;
     setCurrentUnidad(unidad);
     setIsDeleteDialogOpen(true);
-  }, [isSubmitting]);
+  }, [isSubmitting, isCreatingSale]);
+
+  const openSellDialog = useCallback((unidad: any) => {
+    if (isSubmitting || isCreatingSale) return;
+    setCurrentUnidad(unidad);
+    setIsSellDialogOpen(true);
+  }, [isSubmitting, isCreatingSale]);
   
   // Funciones para cerrar dialogs
   const closeEditDialog = useCallback(() => {
@@ -198,6 +186,12 @@ export const UnidadTable = ({
     setIsDeleteDialogOpen(false);
     setTimeout(() => setCurrentUnidad(null), 300);
   }, [isSubmitting]);
+
+  const closeSellDialog = useCallback(() => {
+    if (isCreatingSale) return;
+    setIsSellDialogOpen(false);
+    setTimeout(() => setCurrentUnidad(null), 300);
+  }, [isCreatingSale]);
 
   // Renderizar estado de carga si es necesario
   if (isLoading) {
@@ -217,25 +211,15 @@ export const UnidadTable = ({
       ) : (
         <div className="border rounded-md overflow-hidden">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Número</TableHead>
-                <TableHead>Nivel</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Precio Venta</TableHead>
-                <TableHead>Comprador</TableHead>
-                <TableHead>Vendedor</TableHead>
-                <TableHead>Fecha Venta</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
+            <UnidadTableHeader />
             <TableBody>
               {unidades.map((unidad) => (
                 <UnidadTableRow 
                   key={unidad.id}
                   unidad={unidad}
                   onEdit={openEditDialog}
-                  onDelete={openDeleteDialog}
+                  onSell={openSellDialog}
+                  isDisabled={isSubmitting || isCreatingSale}
                 />
               ))}
             </TableBody>
@@ -248,7 +232,7 @@ export const UnidadTable = ({
         <button
           className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90"
           onClick={() => setIsAddDialogOpen(true)}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isCreatingSale}
         >
           Agregar Unidad
         </button>
@@ -259,15 +243,18 @@ export const UnidadTable = ({
         isAddDialogOpen={isAddDialogOpen}
         isEditDialogOpen={isEditDialogOpen}
         isDeleteDialogOpen={isDeleteDialogOpen}
-        isSubmitting={isSubmitting}
+        isSellDialogOpen={isSellDialogOpen}
+        isSubmitting={isSubmitting || isCreatingSale}
         currentUnidad={currentUnidad}
         leads={leads}
         setIsAddDialogOpen={setIsAddDialogOpen}
         closeEditDialog={closeEditDialog}
         closeDeleteDialog={closeDeleteDialog}
+        closeSellDialog={closeSellDialog}
         handleAddUnidad={handleAddUnidad}
         handleEditUnidad={handleEditUnidad}
         handleDeleteUnidad={handleDeleteUnidad}
+        handleSellUnidad={handleSellUnidad}
       />
     </div>
   );
