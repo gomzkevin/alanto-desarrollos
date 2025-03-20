@@ -16,6 +16,8 @@ import LeadsPage from "./pages/dashboard/leads/Index";
 import CotizacionesPage from "./pages/dashboard/cotizaciones/Index";
 import NuevaCotizacionPage from "./pages/dashboard/cotizaciones/NuevaCotizacion";
 import PrototipoDetail from "./pages/dashboard/prototipos/PrototipoDetail";
+import VentasPage from "./pages/dashboard/ventas/Index";
+import VentaDetail from "./pages/dashboard/ventas/VentaDetail";
 import Auth from "./pages/auth/Auth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,6 +120,17 @@ const App = () => {
             <Route path="/dashboard/prototipos/:id" element={
               <ProtectedRoute>
                 <PrototipoDetail />
+              </ProtectedRoute>
+            } />
+            {/* Nuevas rutas de ventas */}
+            <Route path="/dashboard/ventas" element={
+              <ProtectedRoute>
+                <VentasPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/ventas/:ventaId" element={
+              <ProtectedRoute>
+                <VentaDetail />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
