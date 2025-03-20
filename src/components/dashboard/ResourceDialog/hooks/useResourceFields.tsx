@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -157,7 +156,6 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
             { name: 'imagen_url', label: 'Imagen', type: 'image-upload', bucket: 'prototipo-images', folder: 'prototipos' },
           ];
         case 'leads':
-          // Get substatus options based on the selected status
           const substatusOptions = selectedStatus && LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
             ? LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
             : [];
@@ -191,8 +189,7 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
             { 
               name: 'interes_en', 
               label: 'Interés en', 
-              type: 'interest-selector',
-              description: 'Selecciona un desarrollo o prototipo de interés'
+              type: 'interest-selector'
             },
             { name: 'ultimo_contacto', label: 'Última fecha de contacto', type: 'date' },
             { name: 'notas', label: 'Notas', type: 'textarea', placeholder: 'Escriba notas adicionales sobre el prospecto...' },

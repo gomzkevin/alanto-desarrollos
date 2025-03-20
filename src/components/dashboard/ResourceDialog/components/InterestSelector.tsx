@@ -103,7 +103,6 @@ export const InterestSelector: React.FC<InterestSelectorProps> = ({
   return (
     <div className="space-y-4">
       {label && <Label>{label}</Label>}
-      {description && <p className="text-sm text-gray-500 mb-2">{description}</p>}
       
       <div className="space-y-4">
         <Select
