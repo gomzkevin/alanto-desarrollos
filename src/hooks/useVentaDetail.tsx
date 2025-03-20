@@ -83,7 +83,7 @@ export const useVentaDetail = (ventaId?: string) => {
             comprador_id: item.comprador_id,
             nombre: item.comprador?.nombre || 'Comprador sin nombre',
             porcentaje: item.porcentaje_propiedad,
-            pagos_realizados: count || a0,
+            pagos_realizados: count || 0,
           };
         })
       );
