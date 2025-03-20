@@ -73,12 +73,12 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
           let montoPagado = 0;
           
           if (compradorIds.length > 0) {
-            // Get pagos for each comprador
+            // Get pagos for each comprador - now using 'registrado' instead of 'verificado'
             const { data: pagos, error: errorPagos } = await supabase
               .from('pagos')
               .select('monto, estado')
               .in('comprador_venta_id', compradorIds)
-              .eq('estado', 'verificado');
+              .eq('estado', 'registrado'); // Cambiado de 'verificado' a 'registrado'
             
             if (!errorPagos && pagos) {
               montoPagado = pagos.reduce((sum, pago) => sum + pago.monto, 0);

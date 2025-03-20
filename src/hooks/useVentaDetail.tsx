@@ -76,7 +76,7 @@ export const useVentaDetail = (ventaId?: string) => {
             .from('pagos')
             .select('id', { count: 'exact', head: true })
             .eq('comprador_venta_id', item.id)
-            .eq('estado', 'registrado');
+            .eq('estado', 'registrado'); // Cambiado de 'verificado' a 'registrado'
             
           return {
             id: item.id,
