@@ -116,22 +116,22 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
   };
 
   return (
-    <DialogContent className="max-w-4xl p-0 border-2 border-gray-300 shadow-lg rounded-lg divide-y divide-gray-200">
+    <DialogContent className="p-0 border-2 border-gray-300 shadow-lg rounded-lg max-h-[90vh] overflow-hidden flex flex-col">
       <form onSubmit={handleFormSubmit} className="flex flex-col h-full max-h-[90vh]">
         <DialogHeader 
           title={getResourceTitle()} 
           description={getResourceDescription()} 
         />
         
-        <div className="flex-1 overflow-auto">
-          <ScrollArea className="h-[calc(90vh-180px)]">
-            <div className="px-6 py-4">
-              {isLoading ? (
-                <div className="flex justify-center items-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <span className="ml-2">Cargando...</span>
-                </div>
-              ) : (
+        <div className="flex-1 overflow-hidden">
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2">Cargando...</span>
+            </div>
+          ) : (
+            <ScrollArea className="h-[calc(90vh-180px)]">
+              <div className="px-6 py-4">
                 <div className="space-y-6">
                   <GenericForm
                     resourceType={resourceType}
@@ -158,9 +158,9 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
                     formId="resource-form"
                   />
                 </div>
-              )}
-            </div>
-          </ScrollArea>
+              </div>
+            </ScrollArea>
+          )}
         </div>
         
         <DialogFooter 
