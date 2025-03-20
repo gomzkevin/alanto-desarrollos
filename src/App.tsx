@@ -1,11 +1,12 @@
+
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 
 // Pages
-import HomePage from '@/pages/HomePage';
-import AuthPage from '@/pages/AuthPage';
+import HomePage from '@/pages/Index';
+import AuthPage from '@/pages/auth/Auth';
 import DashboardPage from '@/pages/dashboard/Index';
 import LeadsPage from '@/pages/dashboard/leads/Index';
 import DesarrollosPage from '@/pages/dashboard/desarrollos/Index';
@@ -18,7 +19,7 @@ import VentaDetail from '@/pages/dashboard/ventas/VentaDetail';
 import PrototipoDetailPage from '@/pages/dashboard/prototipos/PrototipoDetail';
 import ConfiguracionPage from '@/pages/dashboard/configuracion/Index';
 import ProyeccionesPage from '@/pages/dashboard/proyecciones/Index';
-import NotFoundPage from '@/pages/NotFoundPage';
+import NotFoundPage from '@/pages/NotFound';
 
 const queryClient = new QueryClient();
 

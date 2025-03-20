@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 // Tipos básicos
 export interface Venta {
@@ -33,6 +34,7 @@ export interface VentasFilter {
 export const useVentas = (filters: VentasFilter = {}) => {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const { toast } = useToast();
 
   // Consulta para obtener las ventas
   const fetchVentas = async (): Promise<Venta[]> => {
@@ -82,15 +84,35 @@ export const useVentas = (filters: VentasFilter = {}) => {
   });
 
   // Función para crear una venta
-  const createVenta = async (ventaData: Omit<Venta, 'id' | 'fecha_actualizacion' | 'fecha_inicio'> & { precio_total: number; unidad_id: string }) => {
+  const createVenta = async (ventaData: {
+    unidad_id: string;
+    precio_total: number;
+    es_fraccional: boolean;
+    estado?: string;
+  }) => {
     setIsCreating(true);
     try {
       const { data, error } = await supabase
         .from('ventas')
-        .insert(ventaData)
+        .insert({
+          unidad_id: ventaData.unidad_id,
+          precio_total: ventaData.precio_total,
+          es_fraccional: ventaData.es_fraccional,
+          estado: ventaData.estado || 'en_proceso'
+        })
         .select();
 
       if (error) throw error;
+      
+      // También actualizar el estado de la unidad si es necesario
+      const { error: unidadError } = await supabase
+        .from('unidades')
+        .update({ estado: 'en_proceso' })
+        .eq('id', ventaData.unidad_id);
+        
+      if (unidadError) {
+        console.error('Error updating unidad estado:', unidadError);
+      }
       
       await refetch();
       return data;

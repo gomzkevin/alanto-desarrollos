@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,7 +45,7 @@ export const usePagos = (compradorVentaId?: string) => {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data || [];
+      return data as Pago[] || [];
     } catch (error) {
       console.error('Error al obtener pagos:', error);
       toast({

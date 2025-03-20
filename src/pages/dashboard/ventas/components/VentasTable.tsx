@@ -1,170 +1,111 @@
 
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { 
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Search, Eye, CreditCard } from "lucide-react";
-import { useVentas, VentasFilter } from "@/hooks/useVentas";
-import { formatCurrency } from "@/lib/utils";
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useVentas } from '@/hooks/useVentas';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { formatCurrency } from '@/lib/utils';
+import { VentaProgress } from './VentaProgress';
 
-const VentasTable = () => {
-  const [filters, setFilters] = useState<VentasFilter>({
-    estado: 'todos'
-  });
-  const [searchQuery, setSearchQuery] = useState('');
+interface VentasTableProps {
+  refreshTrigger?: number;
+}
+
+export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
+  const { ventas, isLoading, refetch } = useVentas();
+  const navigate = useNavigate();
   
-  const { ventas, isLoading } = useVentas(filters);
-  
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFilters(prev => ({ ...prev, busqueda: searchQuery }));
-  };
-  
-  const handleEstadoChange = (value: string) => {
-    setFilters(prev => ({ ...prev, estado: value }));
-  };
-  
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      refetch();
+    }
+  }, [refreshTrigger, refetch]);
+
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
+      case 'en_proceso':
+        return <Badge variant="secondary">En Proceso</Badge>;
       case 'completada':
         return <Badge variant="success">Completada</Badge>;
-      case 'en_proceso':
-        return <Badge variant="warning">En proceso</Badge>;
+      case 'cancelada':
+        return <Badge variant="destructive">Cancelada</Badge>;
       default:
         return <Badge>{estado}</Badge>;
     }
   };
 
+  const handleRowClick = (ventaId: string) => {
+    navigate(`/dashboard/ventas/${ventaId}`);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p className="text-muted-foreground">Cargando ventas...</p>
+      </div>
+    );
+  }
+
+  if (ventas.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-center">
+        <h3 className="text-xl font-semibold mb-2">No hay ventas registradas</h3>
+        <p className="text-muted-foreground mb-4">
+          Crea tu primera venta para comenzar a dar seguimiento a tus transacciones
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle>Lista de ventas</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <form onSubmit={handleSearch} className="flex w-full max-w-sm items-center space-x-2">
-              <Input
-                placeholder="Buscar por desarrollo o unidad..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1"
-              />
-              <Button type="submit" variant="secondary" size="icon">
-                <Search className="h-4 w-4" />
-              </Button>
-            </form>
-            
-            <div className="flex space-x-2">
-              <Select 
-                defaultValue="todos"
-                onValueChange={handleEstadoChange}
+    <Card className="overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-muted/50">
+              <th className="text-left p-4 font-medium">Desarrollo / Unidad</th>
+              <th className="text-left p-4 font-medium">Tipo</th>
+              <th className="text-left p-4 font-medium">Precio Total</th>
+              <th className="text-left p-4 font-medium">Progreso</th>
+              <th className="text-left p-4 font-medium">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ventas.map((venta) => (
+              <tr 
+                key={venta.id} 
+                className="border-t hover:bg-muted/30 cursor-pointer"
+                onClick={() => handleRowClick(venta.id)}
               >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filtrar por estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="todos">Todos los estados</SelectItem>
-                    <SelectItem value="en_proceso">En proceso</SelectItem>
-                    <SelectItem value="completada">Completada</SelectItem>
-                    <SelectItem value="cancelada">Cancelada</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-muted-foreground">Cargando ventas...</p>
-            </div>
-          ) : ventas.length === 0 ? (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-muted-foreground">No se encontraron ventas con los filtros actuales</p>
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Desarrollo / Unidad</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Precio Total</TableHead>
-                    <TableHead>Progreso</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {ventas.map((venta) => (
-                    <TableRow key={venta.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">
-                            {venta.unidad?.prototipo?.desarrollo?.nombre || 'Desarrollo'} 
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {venta.unidad?.prototipo?.nombre || 'Prototipo'} - Unidad {venta.unidad?.numero || 'N/A'}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {venta.es_fraccional ? 'Fraccional' : 'Individual'}
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(venta.precio_total)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <Progress value={venta.progreso || 0} className="h-2" />
-                          <p className="text-xs text-right">{venta.progreso || 0}%</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getEstadoBadge(venta.estado)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" asChild>
-                            <Link to={`/dashboard/ventas/${venta.id}`}>
-                              <Eye className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <Button variant="ghost" size="icon" asChild>
-                            <Link to={`/dashboard/ventas/${venta.id}?tab=pagos`}>
-                              <CreditCard className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
-      </CardContent>
+                <td className="p-4">
+                  <div>
+                    <p className="font-medium">{venta.unidad?.prototipo?.desarrollo?.nombre || 'Desarrollo'}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {venta.unidad?.prototipo?.nombre || 'Prototipo'} - Unidad {venta.unidad?.numero || 'N/A'}
+                    </p>
+                  </div>
+                </td>
+                <td className="p-4">
+                  {venta.es_fraccional ? (
+                    <Badge variant="outline">Fraccional</Badge>
+                  ) : (
+                    <Badge variant="outline">Individual</Badge>
+                  )}
+                </td>
+                <td className="p-4">{formatCurrency(venta.precio_total)}</td>
+                <td className="p-4 w-[200px]">
+                  <VentaProgress 
+                    progreso={venta.progreso || 0} 
+                    montoTotal={venta.precio_total} 
+                    montoPagado={(venta.precio_total * (venta.progreso || 0)) / 100}
+                  />
+                </td>
+                <td className="p-4">{getEstadoBadge(venta.estado)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 };
