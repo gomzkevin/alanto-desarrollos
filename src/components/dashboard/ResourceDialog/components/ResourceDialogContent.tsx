@@ -115,8 +115,16 @@ export const ResourceDialogContent: React.FC<ResourceDialogContentProps> = ({
     await saveResource();
   };
 
+  // Determine dialog class based on resource type
+  const getDialogClass = () => {
+    // Only cotizaciones need the wider dialog
+    return resourceType === 'cotizaciones' 
+      ? "max-w-4xl" 
+      : "max-w-lg";
+  };
+
   return (
-    <DialogContent className="p-0 border-2 border-gray-300 shadow-lg rounded-lg max-h-[90vh] overflow-hidden flex flex-col">
+    <DialogContent className={`p-0 border-2 border-gray-300 shadow-lg rounded-lg max-h-[90vh] overflow-hidden flex flex-col ${getDialogClass()}`}>
       <form onSubmit={handleFormSubmit} className="flex flex-col h-full max-h-[90vh]">
         <DialogHeader 
           title={getResourceTitle()} 
