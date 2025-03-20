@@ -15,7 +15,10 @@ const LoadingSpinner = ({ size = 'md', className }: LoadingSpinnerProps) => {
   };
 
   return (
-    <Loader2 className={cn(`animate-spin ${sizeClasses[size]}`, className)} />
+    <Loader2 
+      className={cn(`animate-spin text-primary ${sizeClasses[size]}`, className)} 
+      aria-hidden="true"
+    />
   );
 };
 
