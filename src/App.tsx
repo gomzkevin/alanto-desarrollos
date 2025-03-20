@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
+import { supabase } from '@/integrations/supabase/client';
 
 // Pages
 import HomePage from '@/pages/Index';
@@ -21,10 +22,66 @@ import ConfiguracionPage from '@/pages/dashboard/configuracion/Index';
 import ProyeccionesPage from '@/pages/dashboard/proyecciones/Index';
 import NotFoundPage from '@/pages/NotFound';
 
-const queryClient = new QueryClient();
+// Configurar el cliente QueryClient con manejo de errores mejorado
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      retryDelay: 1000,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error checking auth session:", error);
+          setIsLoggedIn(false);
+          return;
+        }
+        
+        setIsLoggedIn(!!data.session);
+        
+        // Suscribirse a cambios de autenticación
+        const { data: authListener } = supabase.auth.onAuthStateChange(
+          (event, session) => {
+            console.log("Auth state changed:", event);
+            setIsLoggedIn(!!session);
+          }
+        );
+        
+        return () => {
+          authListener.subscription.unsubscribe();
+        };
+      } catch (err) {
+        console.error("Unexpected error checking auth:", err);
+        setIsLoggedIn(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
+
+  // Mostrar un loader mientras se verifica la autenticación
+  if (isLoggedIn === null) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+          <p className="text-slate-600">Cargando aplicación...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Router>

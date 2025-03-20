@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -26,9 +27,10 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [attemptedAuth, setAttemptedAuth] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { isLoading, userId, userEmail, userName } = useUserRole();
+  const { isLoading, userId, userEmail, userName, authChecked } = useUserRole();
   
   const getUserInitials = () => {
     if (userName) {
@@ -46,33 +48,55 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   
   useEffect(() => {
     const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
+      if (attemptedAuth) return;
+      
+      try {
+        setAttemptedAuth(true);
+        const { data } = await supabase.auth.getSession();
+        
+        if (!data.session) {
+          console.log("No session found, redirecting to auth");
+          toast({
+            title: "Sesión expirada",
+            description: "Por favor inicia sesión para continuar",
+          });
+          navigate('/auth');
+        } else {
+          console.log("Session found:", data.session.user.id);
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
         toast({
-          title: "Sesión expirada",
-          description: "Por favor inicia sesión para continuar",
+          title: "Error de autenticación",
+          description: "Hubo un problema al verificar tu sesión",
+          variant: "destructive"
         });
-        navigate('/auth');
       }
     };
     
     checkAuth();
-  }, [navigate]);
+  }, [navigate, attemptedAuth]);
   
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [location.pathname]);
 
-  if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Cargando...</div>;
+  // Mejora en la lógica para mostrar estados de carga
+  if (isLoading || !authChecked) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+          <p className="text-slate-600">Cargando...</p>
+        </div>
+      </div>
+    );
   }
   
-  if (!userId) {
-    useEffect(() => {
-      navigate('/auth');
-    }, [navigate]);
-    
-    return <div className="flex h-screen items-center justify-center">Redirigiendo...</div>;
+  if (!userId && authChecked) {
+    console.log("No userId but authChecked, redirecting to auth");
+    navigate('/auth');
+    return null;
   }
 
   const navigation = [
@@ -88,6 +112,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {/* Mobile sidebar overlay */}
       <div className={cn(
         "fixed inset-0 z-40 lg:hidden",
         isSidebarOpen ? "block" : "hidden"
@@ -97,6 +122,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           onClick={() => setIsSidebarOpen(false)}
         ></div>
         
+        {/* Mobile sidebar */}
         <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out">
           <div className="flex items-center justify-between h-16 px-4 border-b">
             <div className="text-lg font-semibold text-indigo-600">AirbnbInvest</div>
@@ -133,6 +159,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </div>
       
+      {/* Desktop sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
         <div className="flex flex-col w-64 border-r border-slate-200 bg-white">
           <div className="flex items-center h-16 px-4 border-b">
@@ -166,6 +193,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </div>
       
+      {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">
         <div className="bg-white border-b border-slate-200 z-10">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6">

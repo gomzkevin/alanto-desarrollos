@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 
 interface UserData {
   id: string;
@@ -20,23 +20,26 @@ export const useUserRole = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [empresaId, setEmpresaId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
-      setIsLoading(true);
       try {
+        setIsLoading(true);
+        
         // Get the current user
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         
         if (authError) {
           console.error('Error fetching auth user:', authError);
+          setAuthChecked(true);
           setIsLoading(false);
           return;
         }
         
         if (!user) {
           console.log('No authenticated user found');
+          setAuthChecked(true);
           setIsLoading(false);
           return;
         }
@@ -54,6 +57,7 @@ export const useUserRole = () => {
         
         if (userError) {
           console.error('Error fetching user data:', userError);
+          setAuthChecked(true);
           setIsLoading(false);
           return;
         }
@@ -74,6 +78,8 @@ export const useUserRole = () => {
         } else {
           console.log('No user data found in usuarios table');
         }
+        
+        setAuthChecked(true);
       } catch (error) {
         console.error('Error in fetchUserData:', error);
         toast({
@@ -151,6 +157,7 @@ export const useUserRole = () => {
     canCreateResource,
     empresaId,
     isLoading,
+    authChecked,
     role: userRole // Alias for compatibility
   };
 };

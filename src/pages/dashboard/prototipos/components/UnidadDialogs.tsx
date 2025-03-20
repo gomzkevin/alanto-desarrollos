@@ -33,7 +33,7 @@ export const UnidadDialogs = ({
   handleEditUnidad,
   handleDeleteUnidad
 }: UnidadDialogsProps) => {
-  // Función simple para prevenir cierres mientras se está enviando
+  // Función para prevenir cierres mientras se está enviando
   const safeCloseAddDialog = () => {
     if (!isSubmitting) setIsAddDialogOpen(false);
   };
@@ -44,18 +44,20 @@ export const UnidadDialogs = ({
       <Dialog 
         open={isAddDialogOpen} 
         onOpenChange={open => {
-          if (!open) safeCloseAddDialog();
+          if (!open && !isSubmitting) safeCloseAddDialog();
         }}
       >
         <DialogContent className="sm:max-w-md">
           <DialogTitle>Agregar Unidad</DialogTitle>
           <DialogDescription>Ingresa los datos de la nueva unidad</DialogDescription>
-          <UnidadForm 
-            onSubmit={handleAddUnidad}
-            onCancel={safeCloseAddDialog}
-            leads={leads || []}
-            isSubmitting={isSubmitting}
-          />
+          {isAddDialogOpen && (
+            <UnidadForm 
+              onSubmit={handleAddUnidad}
+              onCancel={safeCloseAddDialog}
+              leads={leads || []}
+              isSubmitting={isSubmitting}
+            />
+          )}
         </DialogContent>
       </Dialog>
       

@@ -6,7 +6,7 @@ export const useUnitSale = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  // Función simple para buscar la venta asociada a una unidad
+  // Función simplificada para buscar la venta asociada a una unidad
   const fetchVentaId = useCallback(async (unidadId: string): Promise<string | null> => {
     if (!unidadId) return null;
     
@@ -28,12 +28,7 @@ export const useUnitSale = () => {
       }
       
       console.log('Resultado de búsqueda de venta:', data);
-      
-      if (data) {
-        return data.id;
-      }
-      
-      return null;
+      return data?.id || null;
     } catch (err) {
       console.error('Error en fetchVentaId:', err);
       setError(err instanceof Error ? err : new Error('Error desconocido'));

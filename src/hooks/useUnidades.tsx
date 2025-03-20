@@ -15,36 +15,41 @@ import {
 } from './unidades/unidadCrud';
 
 /**
- * Simplified hook for unidades management with stable rendering
+ * Hook para gestión de unidades con renderizado estable
  */
 export const useUnidades = (params?: UseUnidadesParams) => {
   const prototipoId = params?.prototipo_id;
   const queryClient = useQueryClient();
 
-  // Stable fetch function that doesn't change on rerenders
+  // Función estable para obtener unidades
   const fetchUnidades = useCallback(async (): Promise<Unidad[]> => {
     if (!prototipoId) return [];
     
     console.log(`Fetching unidades for prototipo ${prototipoId}`);
     
-    const { data, error } = await supabase
-      .from('unidades')
-      .select(`
-        *,
-        prototipo:prototipos(id, nombre, precio)
-      `)
-      .eq('prototipo_id', prototipoId);
+    try {
+      const { data, error } = await supabase
+        .from('unidades')
+        .select(`
+          *,
+          prototipo:prototipos(id, nombre, precio)
+        `)
+        .eq('prototipo_id', prototipoId);
 
-    if (error) {
-      console.error('Error fetching unidades:', error);
-      throw error;
+      if (error) {
+        console.error('Error fetching unidades:', error);
+        throw error;
+      }
+
+      console.log(`Successfully fetched ${data?.length || 0} unidades`);
+      return data as Unidad[] || [];
+    } catch (err) {
+      console.error('Error en fetchUnidades:', err);
+      return [];
     }
-
-    console.log(`Successfully fetched ${data?.length || 0} unidades`);
-    return data as Unidad[] || [];
   }, [prototipoId]);
 
-  // Use React Query with extremely stable configuration to prevent rerenders
+  // Usar React Query con configuración estable para prevenir rerenders
   const { 
     data: unidades = [], 
     isLoading, 
@@ -54,18 +59,18 @@ export const useUnidades = (params?: UseUnidadesParams) => {
     queryKey: ['unidades', prototipoId],
     queryFn: fetchUnidades,
     enabled: !!prototipoId,
-    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes (reduced from 10)
-    refetchOnWindowFocus: false, 
-    gcTime: 10 * 60 * 1000, // Keep inactive data for 10 minutes (reduced from 15)
+    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
+    refetchOnWindowFocus: false,
+    gcTime: 10 * 60 * 1000, // Keep inactive data for 10 minutes
   });
 
-  // CRUD operations hooks with stable references
+  // Hooks CRUD con referencias estables
   const createMutation = useCreateUnidad(prototipoId);
   const updateMutation = useUpdateUnidad(prototipoId);
   const deleteMutation = useDeleteUnidad(prototipoId);
   const createMultipleUnidades = useCreateMultipleUnidades();
 
-  // Función mejorada para invalidar cache y forzar refetch
+  // Función para invalidar caché y forzar refetch
   const forceRefetchUnidades = useCallback(() => {
     if (prototipoId) {
       // Invalidar la consulta
