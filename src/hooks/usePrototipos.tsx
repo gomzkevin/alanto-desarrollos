@@ -2,6 +2,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
+import { useSubscriptionInfo } from './useSubscriptionInfo';
+import { toast } from '@/components/ui/use-toast';
 
 export type Prototipo = Tables<"prototipos">;
 
@@ -18,6 +20,7 @@ type FetchPrototiposOptions = {
 
 export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
   const { limit, desarrolloId, withDesarrollo = false } = options;
+  const { subscriptionInfo } = useSubscriptionInfo();
   
   // Function to fetch prototipos
   const fetchPrototipos = async (): Promise<ExtendedPrototipo[]> => {
@@ -88,11 +91,54 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
     queryFn: fetchPrototipos
   });
 
+  // Check if can add more prototipos based on subscription limits
+  const canAddPrototipo = () => {
+    if (!subscriptionInfo.isActive) {
+      toast({
+        title: "Suscripción requerida",
+        description: "Necesitas una suscripción activa para crear prototipos.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (subscriptionInfo.resourceType !== 'prototipo' && subscriptionInfo.resourceType !== null) {
+      toast({
+        title: "Plan incompatible",
+        description: "Tu plan actual no permite la creación de prototipos. Considera cambiar a un plan por prototipo.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (subscriptionInfo.resourceLimit !== null && subscriptionInfo.resourceCount >= subscriptionInfo.resourceLimit) {
+      toast({
+        title: "Límite alcanzado",
+        description: `Has alcanzado el límite de ${subscriptionInfo.resourceLimit} prototipos de tu plan. Contacta a soporte para aumentar tu límite.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  // Calculate billing amount for prototipos
+  const calculateBillingAmount = () => {
+    if (!subscriptionInfo.isActive || subscriptionInfo.resourceType !== 'prototipo') {
+      return 0;
+    }
+    
+    return queryResult.data?.length || 0 * (subscriptionInfo.currentPlan?.features.precio_por_unidad || 0);
+  };
+
   return {
     prototipos: queryResult.data || [],
     isLoading: queryResult.isLoading,
     error: queryResult.error,
-    refetch: queryResult.refetch
+    refetch: queryResult.refetch,
+    canAddPrototipo,
+    calculateBillingAmount
   };
 };
 

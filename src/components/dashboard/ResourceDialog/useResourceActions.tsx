@@ -5,6 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { ResourceType, FormValues } from './types';
 import { getCurrentUserId } from '@/lib/supabase';
 import useUserRole from '@/hooks/useUserRole';
+import useDesarrollos from '@/hooks/useDesarrollos';
+import usePrototipos from '@/hooks/usePrototipos';
 
 interface UseResourceActionsProps {
   resourceType: ResourceType;
@@ -27,6 +29,8 @@ export default function useResourceActions({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const { empresaId } = useUserRole();
+  const { canAddDesarrollo } = useDesarrollos({ empresaId });
+  const { canAddPrototipo } = usePrototipos();
 
   // Save resource function
   const saveResource = async (values: FormValues) => {
@@ -35,6 +39,17 @@ export default function useResourceActions({
 
     try {
       console.log('Saving resource:', resourceType, values);
+      
+      // Verificar límites de suscripción antes de crear un nuevo recurso
+      if (!resourceId) {
+        if (resourceType === 'desarrollos' && !canAddDesarrollo()) {
+          setIsLoading(false);
+          return false;
+        } else if (resourceType === 'prototipos' && !canAddPrototipo()) {
+          setIsLoading(false);
+          return false;
+        }
+      }
       
       // Prepare the data to be saved
       let data = { ...values };

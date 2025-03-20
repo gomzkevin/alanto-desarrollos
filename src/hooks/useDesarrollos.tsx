@@ -2,6 +2,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, Json } from '@/integrations/supabase/types';
+import { useSubscriptionInfo } from './useSubscriptionInfo';
+import { toast } from '@/components/ui/use-toast';
 
 export type Desarrollo = Tables<"desarrollos"> & {
   amenidades?: string[] | null;
@@ -15,11 +17,12 @@ export type ExtendedDesarrollo = Desarrollo & {
 type FetchDesarrollosOptions = {
   limit?: number;
   withPrototipos?: boolean;
-  empresaId?: number | null; // Changed from userId to empresaId
+  empresaId?: number | null;
 };
 
 export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   const { limit, withPrototipos = false, empresaId = null } = options;
+  const { subscriptionInfo } = useSubscriptionInfo();
   
   // Function to fetch desarrollos
   const fetchDesarrollos = async (): Promise<ExtendedDesarrollo[]> => {
@@ -133,13 +136,56 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     staleTime: 0 // Force a fresh fetch on each component mount
   });
 
+  // Check if can add more desarrollos based on subscription limits
+  const canAddDesarrollo = () => {
+    if (!subscriptionInfo.isActive) {
+      toast({
+        title: "Suscripción requerida",
+        description: "Necesitas una suscripción activa para crear desarrollos.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (subscriptionInfo.resourceType !== 'desarrollo' && subscriptionInfo.resourceType !== null) {
+      toast({
+        title: "Plan incompatible",
+        description: "Tu plan actual no permite la creación de desarrollos. Considera cambiar a un plan por desarrollo.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (subscriptionInfo.resourceLimit !== null && subscriptionInfo.resourceCount >= subscriptionInfo.resourceLimit) {
+      toast({
+        title: "Límite alcanzado",
+        description: `Has alcanzado el límite de ${subscriptionInfo.resourceLimit} desarrollos de tu plan. Contacta a soporte para aumentar tu límite.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  // Calculate billing amount for desarrollos
+  const calculateBillingAmount = () => {
+    if (!subscriptionInfo.isActive || subscriptionInfo.resourceType !== 'desarrollo') {
+      return 0;
+    }
+    
+    return queryResult.data?.length || 0 * (subscriptionInfo.currentPlan?.features.precio_por_unidad || 0);
+  };
+
   return {
     desarrollos: queryResult.data || [],
     isLoading: queryResult.isLoading,
     error: queryResult.error,
     refetch: queryResult.refetch,
     empresaId, // Expose empresaId for reference
-    isFetched: queryResult.isFetched
+    isFetched: queryResult.isFetched,
+    canAddDesarrollo,
+    calculateBillingAmount
   };
 };
 
