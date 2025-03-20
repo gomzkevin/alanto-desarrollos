@@ -87,8 +87,8 @@ export const isEmailConfirmed = async (email: string): Promise<boolean> => {
     }
     
     // Find user with matching email
-    // Fix TypeScript error by properly typing the users array
-    const user = users.find(u => u.email === email);
+    // Explicitly type the users array to fix TypeScript error
+    const user = users.find((u: { email?: string }) => u.email === email);
     if (!user) {
       console.log("No se encontró usuario con email:", email);
       return false;
