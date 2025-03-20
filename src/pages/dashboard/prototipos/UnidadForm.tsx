@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import SearchableEntitySelect from './components/SearchableEntitySelect';
 import useVendedores from './hooks/useVendedores';
@@ -33,7 +33,8 @@ export const UnidadForm = ({
   const { toast } = useToast();
   const [showRedirectAlert, setShowRedirectAlert] = useState(false);
   const [ventaId, setVentaId] = useState<string | null>(null);
-  const [isSubmittingInternal, setIsSubmittingInternal] = useState(false);
+  
+  // Eliminamos isSubmittingInternal y usamos solo el isSubmitting del padre
   
   const {
     formData,
@@ -46,7 +47,15 @@ export const UnidadForm = ({
     unidad, 
     onSubmit: async (data) => {
       try {
-        setIsSubmittingInternal(true);
+        // Primero dejamos que se complete la actualización de la unidad
+        // y esperamos que termine antes de continuar
+        await onSubmit(data);
+        
+        // Mostramos el toast DESPUÉS de que la operación se haya completado
+        toast({
+          title: "Unidad actualizada",
+          description: `La unidad ${data.numero} ha sido actualizada correctamente.`
+        });
         
         // Si estamos editando y cambiando a un estado que genera venta
         const creatingVenta = isEditing && 
@@ -58,47 +67,51 @@ export const UnidadForm = ({
         console.log('New unidad estado:', data.estado);
         console.log('Will create venta?', creatingVenta);
         
-        // Primero dejamos que se complete la actualización de la unidad
-        await onSubmit(data);
-        
-        toast({
-          title: "Unidad actualizada",
-          description: `La unidad ${data.numero} ha sido actualizada correctamente.`
-        });
-        
-        // Si se creará una venta, consultamos para obtener su ID
+        // Si se creará una venta, consultamos solo DESPUÉS de que la actualización se complete
         if (creatingVenta) {
           console.log('Checking for created venta for unidad:', unidad?.id);
-          // Esperamos un momento para que el trigger de Supabase tenga tiempo de ejecutarse
-          setTimeout(async () => {
-            try {
-              const { data: ventaData, error } = await supabase
+          
+          try {
+            // En lugar de setTimeout, usamos una búsqueda asincrónica 
+            // e intentamos varias veces con un pequeño retraso entre intentos
+            let attempts = 0;
+            let ventaData = null;
+            
+            while (attempts < 5 && !ventaData) {
+              attempts++;
+              console.log(`Attempt ${attempts} to find created venta...`);
+              
+              const { data: result, error } = await supabase
                 .from('ventas')
                 .select('id')
                 .eq('unidad_id', unidad.id)
                 .limit(1)
-                .single();
+                .maybeSingle();
               
               if (error) {
                 console.error('Error al buscar la venta creada:', error);
-                setIsSubmittingInternal(false);
-                return;
               }
               
-              console.log('Found venta data:', ventaData);
-              
-              if (ventaData) {
-                setVentaId(ventaData.id);
-                setShowRedirectAlert(true);
+              if (result) {
+                ventaData = result;
+                break;
               }
-              setIsSubmittingInternal(false);
-            } catch (error) {
-              console.error('Error al buscar la venta creada:', error);
-              setIsSubmittingInternal(false);
+              
+              // Esperamos un poco antes del siguiente intento
+              if (!result && attempts < 5) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
             }
-          }, 1500); // Esperar para que el trigger de Supabase tenga tiempo
-        } else {
-          setIsSubmittingInternal(false);
+            
+            console.log('Found venta data:', ventaData);
+            
+            if (ventaData) {
+              setVentaId(ventaData.id);
+              setShowRedirectAlert(true);
+            }
+          } catch (error) {
+            console.error('Error al buscar la venta creada:', error);
+          }
         }
       } catch (error) {
         console.error('Error en el procesamiento del formulario:', error);
@@ -107,7 +120,6 @@ export const UnidadForm = ({
           description: "No se pudo actualizar la unidad. Intente nuevamente.",
           variant: "destructive"
         });
-        setIsSubmittingInternal(false);
       }
     }, 
     onCancel 
@@ -116,7 +128,7 @@ export const UnidadForm = ({
   // Fix the type error by explicitly specifying the form event type
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isSubmitting || isSubmittingInternal) return;
+    if (isSubmitting) return;
     
     // Registrar el estado previo y nuevo para debugging
     console.log('Form submission - Current estado:', unidad?.estado);
@@ -188,7 +200,6 @@ export const UnidadForm = ({
       <div className="space-y-2">
         <Label htmlFor="numero">Número *</Label>
         {isEditing ? (
-          // Read-only input for editing existing units - applying proper read-only styling
           <Input
             id="numero"
             name="numero"
@@ -198,7 +209,6 @@ export const UnidadForm = ({
             className="bg-gray-100 text-gray-800 cursor-not-allowed"
           />
         ) : (
-          // Editable input for new units
           <Input
             id="numero"
             name="numero"
@@ -206,7 +216,7 @@ export const UnidadForm = ({
             onChange={handleChange}
             placeholder="Ej. A101"
             required
-            disabled={isSubmitting || isSubmittingInternal}
+            disabled={isSubmitting}
           />
         )}
       </div>
@@ -219,7 +229,7 @@ export const UnidadForm = ({
           value={formData.nivel}
           onChange={handleChange}
           placeholder="Ej. 1"
-          disabled={isSubmitting || isSubmittingInternal}
+          disabled={isSubmitting}
         />
       </div>
       
@@ -231,7 +241,7 @@ export const UnidadForm = ({
           onValueChange={(value) => handleChange({
             target: { name: 'estado', value }
           } as React.ChangeEvent<HTMLSelectElement>)}
-          disabled={isSubmitting || isSubmittingInternal}
+          disabled={isSubmitting}
         >
           <SelectTrigger>
             <SelectValue placeholder="Selecciona un estado" />
@@ -259,7 +269,7 @@ export const UnidadForm = ({
           onChange={handleChange}
           placeholder="Ej. $1,500,000"
           className="font-medium"
-          disabled={isSubmitting || isSubmittingInternal}
+          disabled={isSubmitting}
         />
       </div>
       
@@ -272,7 +282,7 @@ export const UnidadForm = ({
             displayValue={formData.comprador_nombre}
             onSelect={handleLeadSelect}
             placeholder="Seleccionar comprador"
-            disabled={isSubmitting || isSubmittingInternal}
+            disabled={isSubmitting}
           />
           
           <SearchableEntitySelect
@@ -282,7 +292,7 @@ export const UnidadForm = ({
             displayValue={formData.vendedor_nombre}
             onSelect={handleVendedorSelect}
             placeholder="Seleccionar vendedor"
-            disabled={isSubmitting || isSubmittingInternal}
+            disabled={isSubmitting}
           />
           
           <div className="space-y-2">
@@ -296,7 +306,7 @@ export const UnidadForm = ({
               value={formData.fecha_venta ? formData.fecha_venta.slice(0, 10) : ''}
               onChange={handleChange}
               className="w-full"
-              disabled={isSubmitting || isSubmittingInternal}
+              disabled={isSubmitting}
             />
           </div>
         </>
@@ -307,15 +317,15 @@ export const UnidadForm = ({
           type="button"
           variant="outline"
           onClick={onCancel}
-          disabled={isSubmitting || isSubmittingInternal}
+          disabled={isSubmitting}
         >
           Cancelar
         </Button>
         <Button 
           type="submit"
-          disabled={!formData.numero || isSubmitting || isSubmittingInternal}
+          disabled={!formData.numero || isSubmitting}
         >
-          {isSubmitting || isSubmittingInternal ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
+          {isSubmitting ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
         </Button>
       </div>
     </form>

@@ -27,12 +27,12 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
   // State to track the formatted price display
   const [precioFormateado, setPrecioFormateado] = useState('');
   
-  // Initialize form with unidad data if editing - with cleanup on unmount
+  // Initialize form with unidad data if editing
   useEffect(() => {
-    let isMounted = true;
-    
-    if (unidad && isMounted) {
+    // No necesitamos la bandera isMounted ya que podemos usar una función de cleanup
+    if (unidad) {
       console.log("Setting form data from unidad:", unidad);
+      
       // Set the raw form data
       setFormData({
         numero: unidad.numero || '',
@@ -47,12 +47,12 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
       });
       
       // Format the price for display
-      if (unidad.precio_venta && isMounted) {
+      if (unidad.precio_venta) {
         setPrecioFormateado(formatCurrency(unidad.precio_venta));
       }
     }
     
-    return () => { isMounted = false; };
+    // No necesitamos un return cleanup ya que no hay suscripciones
   }, [unidad]);
   
   // Handle input changes with stable callback
@@ -113,6 +113,7 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
       fecha_venta: formData.fecha_venta || null
     };
     
+    // Llamamos a onSubmit directamente sin manejar estados adicionales aquí
     onSubmit(dataToSubmit);
   }, [formData, onSubmit]);
   

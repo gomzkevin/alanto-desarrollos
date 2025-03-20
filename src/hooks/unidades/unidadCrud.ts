@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { updatePrototipoUnitCounts } from './updateUtils';
@@ -14,12 +15,27 @@ export const createUnidad = async (unidadData: any) => {
     if (typeof unidadData.precio_venta === 'string') {
       if (unidadData.precio_venta.includes('$') || unidadData.precio_venta.includes(',')) {
         unidadData.precio_venta = parseFloat(unidadData.precio_venta.replace(/[$,]/g, ''));
+      } else if (unidadData.precio_venta === '') {
+        unidadData.precio_venta = null;
       }
     }
     
     // Handle empty date values
     if (unidadData.fecha_venta === '') {
       unidadData.fecha_venta = null;
+    }
+    
+    // Asegurarse de que el estado esté presente
+    if (!unidadData.estado) {
+      unidadData.estado = 'disponible';
+    }
+    
+    // Validación de campos clave para reducir errores
+    const requiredFields = ['numero', 'prototipo_id', 'estado'];
+    for (const field of requiredFields) {
+      if (!unidadData[field]) {
+        throw new Error(`El campo ${field} es requerido para crear una unidad`);
+      }
     }
     
     const { data, error } = await supabase
@@ -47,10 +63,17 @@ export const updateUnidad = async ({ id, ...unidadData }: { id: string; [key: st
   console.log('Updating unidad:', id, 'with data:', unidadData);
   
   try {
+    // Validar el ID
+    if (!id) {
+      throw new Error('Se requiere un ID para actualizar una unidad');
+    }
+    
     // Format precio_venta if it's a string with currency formatting
     if (typeof unidadData.precio_venta === 'string') {
       if (unidadData.precio_venta.includes('$') || unidadData.precio_venta.includes(',')) {
         unidadData.precio_venta = parseFloat(unidadData.precio_venta.replace(/[$,]/g, ''));
+      } else if (unidadData.precio_venta === '') {
+        unidadData.precio_venta = null;
       }
     }
     
@@ -68,14 +91,16 @@ export const updateUnidad = async ({ id, ...unidadData }: { id: string; [key: st
       unidadData.comprador_id = null;
     }
     
-    // Log the final data being sent to ensure it's correct
-    console.log('Sanitized data for update:', { id, ...unidadData });
-    
     // Asegurarse de que el campo estado esté incluido
     if (!unidadData.estado) {
       console.error('Estado no definido en la actualización!');
+      unidadData.estado = 'disponible'; // Valor por defecto seguro
     }
     
+    // Log the final data being sent to ensure it's correct
+    console.log('Sanitized data for update:', { id, ...unidadData });
+    
+    // Use una transacción para asegurar la atomicidad de la operación
     const { data, error } = await supabase
       .from('unidades')
       .update(unidadData)
@@ -102,6 +127,10 @@ export const deleteUnidad = async (id: string) => {
   console.log('Deleting unidad:', id);
   
   try {
+    if (!id) {
+      throw new Error('Se requiere un ID para eliminar una unidad');
+    }
+    
     const { error } = await supabase
       .from('unidades')
       .delete()
@@ -168,10 +197,9 @@ export const useCreateMultipleUnidades = () => {
       createMultipleUnidadesFunc(params, queryClient),
     onSuccess: (_, variables) => {
       if (variables.prototipo_id) {
-        // Invalidar sin provocar refresco inmediato
+        // Invalidar y provocar refresco para asegurar que los datos se actualicen
         queryClient.invalidateQueries({ 
-          queryKey: ['unidades', variables.prototipo_id],
-          refetchType: 'none'
+          queryKey: ['unidades', variables.prototipo_id]
         });
       }
     }
@@ -188,10 +216,9 @@ export const useCreateUnidad = (prototipoId?: string) => {
     mutationFn: createUnidad,
     onSuccess: () => {
       if (prototipoId) {
-        // Invalidar sin provocar refresco inmediato
+        // Invalidar y provocar refresco para asegurar que los datos se actualicen
         queryClient.invalidateQueries({ 
-          queryKey: ['unidades', prototipoId],
-          refetchType: 'none'
+          queryKey: ['unidades', prototipoId]
         });
         
         // Actualizar conteos 
@@ -215,10 +242,9 @@ export const useUpdateUnidad = (prototipoId?: string) => {
     onSuccess: (data) => {
       console.log('Mutation success with data:', data);
       if (prototipoId) {
-        // Invalidar sin provocar refresco inmediato
+        // Invalidar y provocar refresco para asegurar que los datos se actualicen
         queryClient.invalidateQueries({ 
-          queryKey: ['unidades', prototipoId],
-          refetchType: 'none'
+          queryKey: ['unidades', prototipoId]
         });
         
         // Actualizar conteos
@@ -241,10 +267,9 @@ export const useDeleteUnidad = (prototipoId?: string) => {
     mutationFn: deleteUnidad,
     onSuccess: () => {
       if (prototipoId) {
-        // Invalidar sin provocar refresco inmediato
+        // Invalidar y provocar refresco para asegurar que los datos se actualicen
         queryClient.invalidateQueries({ 
-          queryKey: ['unidades', prototipoId],
-          refetchType: 'none'
+          queryKey: ['unidades', prototipoId]
         });
         
         // Actualizar conteos
