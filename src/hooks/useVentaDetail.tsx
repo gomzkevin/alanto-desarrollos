@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Venta } from './useVentas';
-import { usePagos } from './usePagos';
+import { Pago } from './usePagos';
 import { useState, useEffect } from 'react';
 
 interface Comprador {
@@ -16,7 +16,7 @@ interface Comprador {
 
 export const useVentaDetail = (ventaId?: string) => {
   const [compradores, setCompradores] = useState<Comprador[]>([]);
-  const [compradorVentaId, setCompradorVentaId] = useState<string>('');
+  const [pagos, setPagos] = useState<Pago[]>([]);
   const [loading, setLoading] = useState(false);
   
   // Fetch venta details
@@ -68,11 +68,6 @@ export const useVentaDetail = (ventaId?: string) => {
         .eq('venta_id', ventaId);
 
       if (error) throw error;
-      
-      // Get first comprador_venta_id for payments
-      if (data && data.length > 0) {
-        setCompradorVentaId(data[0].id);
-      }
 
       // Count pagos for each comprador
       const compradoresWithPagos = await Promise.all(
@@ -115,8 +110,41 @@ export const useVentaDetail = (ventaId?: string) => {
     }
   }, [compradoresData]);
 
-  // Use pagos hook with the first comprador's id
-  const { pagos, isLoading: isPagosLoading, refetch: refetchPagos } = usePagos(compradorVentaId);
+  // Fetch all pagos for this venta (regardless of comprador)
+  const fetchPagos = async (): Promise<Pago[]> => {
+    if (!ventaId || !compradoresData.length) return [];
+    
+    try {
+      // Get all comprador_venta_ids for this venta
+      const compradorVentaIds = compradoresData.map(c => c.id);
+      
+      if (!compradorVentaIds.length) return [];
+      
+      const { data, error } = await supabase
+        .from('pagos')
+        .select('*')
+        .in('comprador_venta_id', compradorVentaIds)
+        .order('fecha', { ascending: false });
+
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error al obtener pagos de la venta:', error);
+      return [];
+    }
+  };
+
+  const { data: pagosData = [], isLoading: isPagosLoading, refetch: refetchPagos } = useQuery({
+    queryKey: ['pagos-venta', ventaId, compradoresData],
+    queryFn: fetchPagos,
+    enabled: !!ventaId && compradoresData.length > 0,
+  });
+
+  // Update pagos in state when data changes
+  useEffect(() => {
+    setPagos(pagosData);
+  }, [pagosData]);
 
   // Calculate payment progress
   const montoPagado = pagos.reduce((total, pago) => {
@@ -133,6 +161,8 @@ export const useVentaDetail = (ventaId?: string) => {
     await refetchCompradores();
     await refetchPagos();
   };
+
+  const compradorVentaId = compradores.length > 0 ? compradores[0].id : '';
 
   return {
     venta,

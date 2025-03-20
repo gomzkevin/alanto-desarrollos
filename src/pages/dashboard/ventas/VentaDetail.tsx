@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -89,7 +88,6 @@ const VentaDetail = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Información de la Venta card */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xl">Información de la Venta</CardTitle>
@@ -103,7 +101,6 @@ const VentaDetail = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                {/* Venta properties */}
                 <div>
                   <p className="text-sm text-muted-foreground">ID de Venta</p>
                   <p className="font-medium">{venta.id}</p>
@@ -196,12 +193,13 @@ const VentaDetail = () => {
             <InfoTab 
               venta={venta} 
               compradores={compradores} 
+              pagos={pagos}
               onAddComprador={() => setOpenCompradorDialog(true)}
             />
           </TabsContent>
           
           <TabsContent value="pagos" className="space-y-4">
-            {compradorVentaId ? (
+            {compradores.length > 0 ? (
               <PagosTab 
                 ventaId={venta.id} 
                 compradorVentaId={compradorVentaId}
