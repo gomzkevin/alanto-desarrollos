@@ -1,74 +1,131 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/toaster';
-import { ThemeProvider } from '@/components/ui/theme-provider';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Index from "./pages/Index";
+import Dashboard from "./pages/dashboard/Index";
+import PropertiesPage from "./pages/dashboard/propiedades/Index";
+import { ProyeccionesPage } from "./pages/dashboard/proyecciones/Index";
+import NotFound from "./pages/NotFound";
+import DesarrollosPage from "./pages/dashboard/desarrollos/Index";
+import DesarrolloDetailPage from "./pages/dashboard/desarrollos/DesarrolloDetail";
+import ConfiguracionPage from "./pages/dashboard/configuracion/Index";
+import LeadsPage from "./pages/dashboard/leads/Index";
+import CotizacionesPage from "./pages/dashboard/cotizaciones/Index";
+import NuevaCotizacionPage from "./pages/dashboard/cotizaciones/NuevaCotizacion";
+import PrototipoDetail from "./pages/dashboard/prototipos/PrototipoDetail";
+import Auth from "./pages/auth/Auth";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-import HomePage from './pages/Index';
-import DashboardPage from './pages/dashboard/Index';
-import NotFoundPage from './pages/NotFound';
+const queryClient = new QueryClient();
 
-// Auth Pages
-import AuthPage from './pages/auth/Auth';
+const App = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-// Dashboard Pages
-import DesarrollosPage from './pages/dashboard/desarrollos/Index';
-import DesarrolloDetailPage from './pages/dashboard/desarrollos/DesarrolloDetail';
-import PrototipoDetail from './pages/dashboard/prototipos/PrototipoDetail';
-import CotizacionesPage from './pages/dashboard/cotizaciones/Index';
-import NuevaCotizacionPage from './pages/dashboard/cotizaciones/NuevaCotizacion';
-import LeadsPage from './pages/dashboard/leads/Index';
-import PropiedadesPage from './pages/dashboard/propiedades/Index';
-import ProyeccionesPage from './pages/dashboard/proyecciones/Index';
-import ConfiguracionPage from './pages/dashboard/configuracion/Index';
+  useEffect(() => {
+    // Verificar sesión al cargar
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data.session);
+    };
+    
+    checkSession();
+    
+    // Escuchar cambios en la autenticación
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
-// Nuevas páginas de ventas
-import VentasPage from './pages/dashboard/ventas/Index';
-import VentaDetail from './pages/dashboard/ventas/VentaDetail';
+  // Componente para proteger rutas
+  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    if (isAuthenticated === null) {
+      // Aún cargando estado de autenticación
+      return <div className="flex h-screen items-center justify-center">Cargando...</div>;
+    }
+    
+    if (!isAuthenticated) {
+      // Redireccionar si no está autenticado
+      return <Navigate to="/auth" replace />;
+    }
+    
+    return <>{children}</>;
+  };
 
-// Crear un cliente de consulta para React Query
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000, // 1 minuto
-      retry: 1,
-    },
-  },
-});
-
-function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-        <Router>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/auth/*" element={<AuthPage />} />
-            
-            {/* Dashboard Routes */}
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/dashboard/desarrollos" element={<DesarrollosPage />} />
-            <Route path="/dashboard/desarrollos/:id" element={<DesarrolloDetailPage />} />
-            <Route path="/dashboard/prototipos/:id" element={<PrototipoDetail />} />
-            <Route path="/dashboard/cotizaciones" element={<CotizacionesPage />} />
-            <Route path="/dashboard/cotizaciones/nueva" element={<NuevaCotizacionPage />} />
-            <Route path="/dashboard/leads" element={<LeadsPage />} />
-            <Route path="/dashboard/propiedades" element={<PropiedadesPage />} />
-            <Route path="/dashboard/proyecciones" element={<ProyeccionesPage />} />
-            <Route path="/dashboard/configuracion" element={<ConfiguracionPage />} />
-            
-            {/* Nuevas rutas de ventas */}
-            <Route path="/dashboard/ventas" element={<VentasPage />} />
-            <Route path="/dashboard/ventas/:ventaId" element={<VentaDetail />} />
-            
-            {/* 404 Route */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Router>
+      <TooltipProvider>
         <Toaster />
-      </ThemeProvider>
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            
+            {/* Rutas protegidas */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/propiedades" element={
+              <ProtectedRoute>
+                <PropertiesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/desarrollos" element={
+              <ProtectedRoute>
+                <DesarrollosPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/desarrollos/:id" element={
+              <ProtectedRoute>
+                <DesarrolloDetailPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/proyecciones" element={
+              <ProtectedRoute>
+                <ProyeccionesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/leads" element={
+              <ProtectedRoute>
+                <LeadsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/cotizaciones" element={
+              <ProtectedRoute>
+                <CotizacionesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/cotizaciones/nueva" element={
+              <ProtectedRoute>
+                <NuevaCotizacionPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/configuracion" element={
+              <ProtectedRoute>
+                <ConfiguracionPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/prototipos/:id" element={
+              <ProtectedRoute>
+                <PrototipoDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;
