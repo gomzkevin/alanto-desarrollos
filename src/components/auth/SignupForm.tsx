@@ -26,17 +26,17 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
       const result = await signUpWithEmailPassword(email, password);
       
       if (result.success) {
-        if (result.autoSignIn) {
+        if (result.user || result.autoSignIn) {
           toast({
             title: "Registro e inicio de sesión exitosos",
-            description: "Has sido registrado e iniciado sesión automáticamente (modo desarrollo)",
+            description: result.message || "Has sido registrado e iniciado sesión automáticamente",
           });
           navigate("/dashboard");
           if (onSuccess) onSuccess();
         } else {
           toast({
             title: "Registro exitoso",
-            description: "Por favor, revisa tu correo electrónico para confirmar tu cuenta",
+            description: result.message || "Por favor, revisa tu correo electrónico para confirmar tu cuenta",
           });
         }
       } else {
