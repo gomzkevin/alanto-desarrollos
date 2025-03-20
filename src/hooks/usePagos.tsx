@@ -112,14 +112,19 @@ export const usePagos = (compradorVentaId?: string) => {
   const updatePagoEstado = async (id: string, actualizacion: ActualizacionPago) => {
     setIsUpdating(true);
     try {
-      // Utilizar simplemente el id para la actualización, sin incluir joins que podrían causar ambigüedad
+      console.log('Actualizando pago:', id, 'con datos:', actualizacion);
+      
+      // Simplificar la consulta para evitar ambigüedades con columnas
       const { data, error } = await supabase
         .from('pagos')
         .update(actualizacion)
         .eq('id', id)
-        .select('*'); // Seleccionar todos los campos en lugar de hacer joins que podrían causar ambigüedad
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error detallado:', error);
+        throw error;
+      }
       
       await refetch();
       return data;
