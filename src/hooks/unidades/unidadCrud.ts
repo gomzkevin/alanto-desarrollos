@@ -253,7 +253,8 @@ export const useUpdateUnidad = (prototipoId?: string) => {
       if (prototipoId) {
         // Invalidar y provocar refresco para asegurar que los datos se actualicen
         queryClient.invalidateQueries({ 
-          queryKey: ['unidades', prototipoId]
+          queryKey: ['unidades', prototipoId],
+          exact: true // Solo invalidar la consulta exacta
         });
         
         // Actualizar conteos
@@ -278,7 +279,8 @@ export const useDeleteUnidad = (prototipoId?: string) => {
       if (prototipoId) {
         // Invalidar y provocar refresco para asegurar que los datos se actualicen
         queryClient.invalidateQueries({ 
-          queryKey: ['unidades', prototipoId]
+          queryKey: ['unidades', prototipoId],
+          exact: true // Solo invalidar la consulta exacta
         });
         
         // Actualizar conteos

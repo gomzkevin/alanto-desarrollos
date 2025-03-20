@@ -1,15 +1,13 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Table, TableBody, TableHeader, TableRow, TableHead } from "@/components/ui/table";
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import UnidadTableRow from './components/UnidadTableRow';
 import EmptyUnidadState from './components/EmptyUnidadState';
 import UnidadDialogs from './components/UnidadDialogs';
-import UnidadSaleAlert from './components/UnidadSaleAlert';
 import { useToast } from "@/hooks/use-toast";
 import useLeads from "@/hooks/useLeads";
 import useUnidades from '@/hooks/useUnidades';
-import useUnitSale from '@/hooks/useUnitSale';
 
 export interface UnidadTableProps {
   prototipo: ExtendedPrototipo;
@@ -29,7 +27,8 @@ export const UnidadTable = ({
   const { 
     createUnidad, 
     updateUnidad, 
-    deleteUnidad
+    deleteUnidad,
+    refetch
   } = useUnidades({ prototipo_id: prototipo.id });
   
   // Estados simplificados
@@ -38,11 +37,6 @@ export const UnidadTable = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentUnidad, setCurrentUnidad] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Estado para la alerta de venta creada
-  const [showSaleAlert, setShowSaleAlert] = useState(false);
-  const [editedUnidadId, setEditedUnidadId] = useState<string | undefined>(undefined);
-  const { ventaId } = useUnitSale(editedUnidadId);
   
   // Función para normalizar precios
   const normalizePrice = useCallback((price: any): number | undefined => {
@@ -55,7 +49,16 @@ export const UnidadTable = ({
     return Number(price);
   }, []);
 
-  // Agregar unidad - simplificado
+  // Refrescar datos
+  const handleRefresh = useCallback(() => {
+    if (onRefresh) {
+      onRefresh();
+    } else {
+      refetch();
+    }
+  }, [onRefresh, refetch]);
+
+  // Agregar unidad
   const handleAddUnidad = useCallback(async (data: any) => {
     if (isSubmitting) return;
     
@@ -82,10 +85,7 @@ export const UnidadTable = ({
       });
       
       setIsAddDialogOpen(false);
-      
-      if (onRefresh) {
-        setTimeout(onRefresh, 500);
-      }
+      handleRefresh();
     } catch (error: any) {
       console.error("Error creating unidad:", error);
       toast({
@@ -96,22 +96,18 @@ export const UnidadTable = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [createUnidad, normalizePrice, onRefresh, prototipo.id, toast, isSubmitting]);
+  }, [createUnidad, normalizePrice, handleRefresh, prototipo.id, toast, isSubmitting]);
 
-  // Editar unidad - simplificado
+  // Editar unidad
   const handleEditUnidad = useCallback(async (data: any) => {
     if (!currentUnidad || isSubmitting) return;
     
     setIsSubmitting(true);
     try {
       const unidadId = currentUnidad.id;
-      const prevEstado = currentUnidad.estado;
-      const newEstado = data.estado;
       
       console.log('Actualizando unidad:', {
         id: unidadId,
-        estadoPrevio: prevEstado,
-        estadoNuevo: newEstado,
         data
       });
       
@@ -128,33 +124,14 @@ export const UnidadTable = ({
         fecha_venta: data.fecha_venta
       });
       
+      toast({
+        title: "Unidad actualizada",
+        description: "La unidad ha sido actualizada exitosamente"
+      });
+      
       setIsEditDialogOpen(false);
-      
-      // Check if a sale might have been created
-      const possibleSaleCreation = 
-        (prevEstado === 'disponible') && 
-        (newEstado === 'apartado' || newEstado === 'en_proceso');
-      
-      if (possibleSaleCreation) {
-        setEditedUnidadId(unidadId);
-      }
-      
-      if (onRefresh) {
-        setTimeout(onRefresh, 500);
-      }
-      
-      setTimeout(() => {
-        setCurrentUnidad(null);
-        
-        if (possibleSaleCreation && ventaId) {
-          setShowSaleAlert(true);
-          // Auto-hide after some time
-          setTimeout(() => {
-            setShowSaleAlert(false);
-            setEditedUnidadId(undefined);
-          }, 8000);
-        }
-      }, 500);
+      setCurrentUnidad(null);
+      handleRefresh();
     } catch (error: any) {
       console.error("Error updating unidad:", error);
       toast({
@@ -165,9 +142,9 @@ export const UnidadTable = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [currentUnidad, normalizePrice, onRefresh, toast, updateUnidad, isSubmitting, ventaId]);
+  }, [currentUnidad, normalizePrice, handleRefresh, toast, updateUnidad, isSubmitting]);
 
-  // Eliminar unidad - simplificado
+  // Eliminar unidad
   const handleDeleteUnidad = useCallback(async () => {
     if (!currentUnidad || isSubmitting) return;
     
@@ -182,14 +159,8 @@ export const UnidadTable = ({
       });
       
       setIsDeleteDialogOpen(false);
-      
-      if (onRefresh) {
-        setTimeout(onRefresh, 500);
-      }
-      
-      setTimeout(() => {
-        setCurrentUnidad(null);
-      }, 500);
+      setCurrentUnidad(null);
+      handleRefresh();
     } catch (error: any) {
       console.error("Error deleting unidad:", error);
       toast({
@@ -200,7 +171,7 @@ export const UnidadTable = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [currentUnidad, deleteUnidad, onRefresh, toast, isSubmitting]);
+  }, [currentUnidad, deleteUnidad, handleRefresh, toast, isSubmitting]);
 
   // Funciones para abrir dialogs
   const openEditDialog = useCallback((unidad: any) => {
@@ -228,12 +199,6 @@ export const UnidadTable = ({
     setTimeout(() => setCurrentUnidad(null), 300);
   }, [isSubmitting]);
 
-  // Verificar si hay unidades
-  const hasUnidades = useMemo(() => 
-    unidades && unidades.length > 0, 
-    [unidades]
-  );
-
   // Renderizar estado de carga si es necesario
   if (isLoading) {
     return (
@@ -246,15 +211,8 @@ export const UnidadTable = ({
 
   return (
     <div className="space-y-4">
-      {/* Alerta de creación de venta */}
-      <UnidadSaleAlert 
-        isVisible={showSaleAlert}
-        unidadId={editedUnidadId}
-        ventaId={ventaId}
-        onClose={() => setShowSaleAlert(false)}
-      />
-      
-      {!hasUnidades ? (
+      {/* Tabla o estado vacío */}
+      {!unidades || unidades.length === 0 ? (
         <EmptyUnidadState onAddClick={() => setIsAddDialogOpen(true)} />
       ) : (
         <div className="border rounded-md overflow-hidden">

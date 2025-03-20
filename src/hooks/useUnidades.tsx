@@ -54,11 +54,9 @@ export const useUnidades = (params?: UseUnidadesParams) => {
     queryKey: ['unidades', prototipoId],
     queryFn: fetchUnidades,
     enabled: !!prototipoId,
-    staleTime: 10 * 60 * 1000, // Cache data for 10 minutes to prevent frequent refetches
+    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes (reduced from 10)
     refetchOnWindowFocus: false, 
-    gcTime: 15 * 60 * 1000, // Keep inactive data for 15 minutes
-    refetchInterval: false,
-    retry: false
+    gcTime: 10 * 60 * 1000, // Keep inactive data for 10 minutes (reduced from 15)
   });
 
   // CRUD operations hooks with stable references
@@ -67,15 +65,20 @@ export const useUnidades = (params?: UseUnidadesParams) => {
   const deleteMutation = useDeleteUnidad(prototipoId);
   const createMultipleUnidades = useCreateMultipleUnidades();
 
-  // Function to invalidate unidades cache (but do not trigger immediate refetch)
-  const invalidateUnidades = useCallback(() => {
+  // Función mejorada para invalidar cache y forzar refetch
+  const forceRefetchUnidades = useCallback(() => {
     if (prototipoId) {
+      // Invalidar la consulta
       queryClient.invalidateQueries({ 
         queryKey: ['unidades', prototipoId],
-        refetchType: 'none' // Important: don't trigger immediate refetch
+        exact: true
       });
+      
+      // Forzar una recarga inmediata
+      return refetch();
     }
-  }, [prototipoId, queryClient]);
+    return Promise.resolve({ data: unidades });
+  }, [prototipoId, queryClient, refetch, unidades]);
 
   return {
     unidades,
@@ -85,8 +88,7 @@ export const useUnidades = (params?: UseUnidadesParams) => {
     updateUnidad: updateMutation.mutate,
     deleteUnidad: deleteMutation.mutate,
     createMultipleUnidades,
-    refetch,
-    invalidateUnidades,
+    refetch: forceRefetchUnidades,
     countUnidadesByStatus,
     countDesarrolloUnidadesByStatus
   };

@@ -26,8 +26,6 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
   
   // Estado para el precio formateado (visual)
   const [precioFormateado, setPrecioFormateado] = useState('');
-  // Estado para controlar el envío del formulario
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Inicializar el formulario con los datos de la unidad cuando está en modo edición
   useEffect(() => {
@@ -103,10 +101,6 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (isSubmitting) return;
-    
-    setIsSubmitting(true);
-    
     try {
       // Preparar datos para enviar
       const dataToSubmit = {
@@ -121,8 +115,6 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
       await onSubmit(dataToSubmit);
     } catch (error) {
       console.error("Error al enviar el formulario:", error);
-    } finally {
-      setIsSubmitting(false);
     }
   };
   
@@ -130,7 +122,6 @@ export const useUnidadForm = ({ unidad, onSubmit, onCancel }: UseUnidadFormProps
     formData,
     precioFormateado,
     isEditing,
-    isSubmitting,
     handleChange,
     handleSubmit,
     setFormData

@@ -9,8 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import useUnidadForm from './hooks/useUnidadForm';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import useUnitSale from '@/hooks/useUnitSale';
 import { useToast } from '@/hooks/use-toast';
 
 interface UnidadFormProps {
@@ -26,76 +24,44 @@ export const UnidadForm = ({
   onSubmit, 
   onCancel, 
   leads,
-  isSubmitting: externalIsSubmitting = false
+  isSubmitting = false
 }: UnidadFormProps) => {
   const { vendedores } = useVendedores();
-  const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Estado para la alerta de redirección
-  const [showRedirectAlert, setShowRedirectAlert] = useState(false);
-  const [targetVentaId, setTargetVentaId] = useState<string | null>(null);
+  // Estados locales del formulario
+  const [submitting, setSubmitting] = useState(false);
   
-  // Estado de seguimiento para creación de ventas
-  const [unidadModificada, setUnidadModificada] = useState<string | undefined>(undefined);
-  const { waitForVenta } = useUnitSale(unidadModificada);
+  // Combinar estados de carga
+  const isFormDisabled = isSubmitting || submitting;
   
   // Hook para el formulario
   const {
     formData,
     precioFormateado,
     isEditing,
-    isSubmitting: formIsSubmitting,
     handleChange,
     handleSubmit: originalHandleSubmit,
     setFormData
-  } = useUnidadForm({ 
-    unidad, 
+  } = useUnidadForm({
+    unidad,
     onSubmit: async (data) => {
+      if (isFormDisabled) return;
+      
       try {
-        // 1. Guardar el estado original para comparación
-        const estadoOriginal = unidad?.estado;
-        const estadoNuevo = data.estado;
+        setSubmitting(true);
         
-        // 2. Enviar la actualización al servidor
+        // Registrar para debug
+        console.log('Enviando formulario con datos:', data);
+        
+        // Enviar al servidor
         await onSubmit(data);
         
-        // 3. Mostrar mensaje de éxito
+        // Mensaje de éxito
         toast({
           title: "Cambios guardados",
           description: `La unidad ${data.numero} ha sido ${isEditing ? 'actualizada' : 'creada'} correctamente.`
         });
-        
-        // 4. Verificar si potencialmente se creará una venta (solo para ediciones)
-        const posibleCreacionVenta = isEditing && 
-          estadoOriginal === 'disponible' && 
-          (estadoNuevo === 'apartado' || estadoNuevo === 'en_proceso');
-        
-        console.log('Verificación de creación de venta:', {
-          isEditing,
-          estadoOriginal,
-          estadoNuevo,
-          posibleCreacionVenta
-        });
-        
-        // 5. Si es probable que se haya creado una venta, buscarla
-        if (posibleCreacionVenta && unidad?.id) {
-          setUnidadModificada(unidad.id);
-          
-          // Esperar a que se cree la venta (con reintentos)
-          const ventaEncontrada = await waitForVenta(unidad.id);
-          
-          if (ventaEncontrada) {
-            console.log(`Venta encontrada: ${ventaEncontrada}`);
-            setTargetVentaId(ventaEncontrada);
-            setShowRedirectAlert(true);
-          } else {
-            console.log('No se encontró venta después de la modificación');
-          }
-          
-          // Limpiar el seguimiento
-          setUnidadModificada(undefined);
-        }
       } catch (error) {
         console.error('Error al procesar el formulario:', error);
         toast({
@@ -103,32 +69,17 @@ export const UnidadForm = ({
           description: "No se pudieron guardar los cambios. Intente nuevamente.",
           variant: "destructive"
         });
+      } finally {
+        setSubmitting(false);
       }
-    }, 
-    onCancel 
+    },
+    onCancel
   });
-  
-  // Combinar estados de carga
-  const isFormDisabled = externalIsSubmitting || formIsSubmitting;
   
   // Manejar el envío del formulario
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     if (isFormDisabled) return;
-    
-    // Registrar datos para depuración
-    console.log('Enviando formulario:', {
-      estadoPrevio: unidad?.estado,
-      estadoNuevo: formData.estado
-    });
-    
     originalHandleSubmit(e);
-  };
-  
-  // Manejar redirección a la página de venta
-  const handleRedirectToVenta = () => {
-    if (targetVentaId) {
-      navigate(`/dashboard/ventas/${targetVentaId}`);
-    }
   };
   
   // Manejar selección de lead (comprador)
@@ -155,24 +106,6 @@ export const UnidadForm = ({
   
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Alerta de redirección a ventas */}
-      {showRedirectAlert && targetVentaId && (
-        <Alert className="bg-green-50 border-green-200 mb-4">
-          <InfoIcon className="h-4 w-4 text-green-500" />
-          <AlertDescription className="flex justify-between items-center">
-            <span>¡Se ha creado una venta! ¿Deseas ir a la página de detalle para completar la información?</span>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="ml-2 border-green-500 text-green-600 hover:bg-green-100"
-              onClick={handleRedirectToVenta}
-            >
-              Ir a la venta
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-
       {isEditing && (
         <Alert className="bg-blue-50 border-blue-200 mb-4">
           <InfoIcon className="h-4 w-4 text-blue-500" />
