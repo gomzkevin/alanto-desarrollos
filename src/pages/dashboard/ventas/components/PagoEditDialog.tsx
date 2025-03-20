@@ -56,6 +56,15 @@ export const PagoEditDialog = ({ open, onOpenChange, pago, onSuccess }: PagoEdit
     
     try {
       console.log('Enviando actualización de pago con estado:', estado);
+      console.log('Datos a enviar:', {
+        monto: parseFloat(monto),
+        fecha: fecha.toISOString(),
+        metodo_pago: metodoPago,
+        referencia,
+        estado,
+        notas,
+        comprobante_url: comprobanteUrl
+      });
       
       await updatePagoEstado(
         pago.id, 
