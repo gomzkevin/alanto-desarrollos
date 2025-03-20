@@ -130,19 +130,26 @@ export const tryConfirmEmail = async (userId: string, email: string, password: s
     // Si todos los métodos fallan, intentemos un enfoque directo
     // Esto es un último recurso y podría no funcionar en producción
     try {
-      // Correct structure: options object with data property inside
-      await supabase.auth.signInWithPassword({
+      // Fix the options structure to match Supabase's API requirements
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
-        options: {
+      });
+      
+      if (!signInError) {
+        // If login succeeds, try to update user metadata
+        const { error: updateError } = await supabase.auth.updateUser({
           data: {
             confirmed_at: new Date().toISOString(),
             email_confirmed: true
           }
-        }
-      });
+        });
+        
+        console.log("Intento de confirmación mediante inicio de sesión y actualización");
+        return !updateError;
+      }
       
-      return true;
+      return false;
     } catch (forceError) {
       console.log("Error al forzar confirmación:", forceError);
     }
