@@ -83,7 +83,7 @@ export const useVentaDetail = (ventaId?: string) => {
             comprador_id: item.comprador_id,
             nombre: item.comprador?.nombre || 'Comprador sin nombre',
             porcentaje: item.porcentaje_propiedad,
-            pagos_realizados: count || 0,
+            pagos_realizados: count || a0,
           };
         })
       );
@@ -128,7 +128,15 @@ export const useVentaDetail = (ventaId?: string) => {
 
       if (error) throw error;
       
-      return data || [];
+      // Map the data to ensure estados conform to the expected type
+      const typedPagos: Pago[] = (data || []).map(pago => ({
+        ...pago,
+        estado: (pago.estado === 'verificado' || pago.estado === 'registrado' || pago.estado === 'rechazado') 
+          ? pago.estado as 'verificado' | 'registrado' | 'rechazado'
+          : 'registrado' // Default value if it doesn't match expected values
+      }));
+      
+      return typedPagos;
     } catch (error) {
       console.error('Error al obtener pagos de la venta:', error);
       return [];
