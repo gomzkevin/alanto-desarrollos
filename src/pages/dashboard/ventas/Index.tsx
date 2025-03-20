@@ -1,18 +1,14 @@
 
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VentasTable } from './components/VentasTable';
 import VentasStatistics from './components/VentasStatistics';
-import { NuevaVentaDialog } from './components/NuevaVentaDialog';
 
 const VentasPage = () => {
-  const [showAddVentaDialog, setShowAddVentaDialog] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const handleVentaSuccess = () => {
+  const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
@@ -20,10 +16,9 @@ const VentasPage = () => {
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Ventas</h1>
-        <Button onClick={() => setShowAddVentaDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva Venta
-        </Button>
+        <div className="text-sm text-muted-foreground">
+          Las ventas se crean automáticamente al cambiar el estado de las unidades
+        </div>
       </div>
 
       <Tabs defaultValue="list" className="space-y-4">
@@ -40,12 +35,6 @@ const VentasPage = () => {
           <VentasStatistics />
         </TabsContent>
       </Tabs>
-
-      <NuevaVentaDialog
-        open={showAddVentaDialog}
-        onOpenChange={setShowAddVentaDialog}
-        onSuccess={handleVentaSuccess}
-      />
     </DashboardLayout>
   );
 };

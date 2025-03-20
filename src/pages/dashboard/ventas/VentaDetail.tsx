@@ -13,6 +13,7 @@ import { InfoTab } from './components/InfoTab';
 import { PagosTab } from './components/PagosTab';
 import { VentaProgress } from './components/VentaProgress';
 import { PagoDialog } from './components/PagoDialog';
+import { VentaInfoAlert } from './components/VentaInfoAlert';
 
 const VentaDetail = () => {
   const { ventaId } = useParams<{ ventaId: string }>();
@@ -74,9 +75,10 @@ const VentaDetail = () => {
               <CreditCard className="mr-2 h-4 w-4" />
               Registrar Pago
             </Button>
-            <Button variant="outline">Editar Venta</Button>
           </div>
         </div>
+
+        <VentaInfoAlert className="mb-4" />
 
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
