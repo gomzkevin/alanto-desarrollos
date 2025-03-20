@@ -144,7 +144,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Cliente</h3>
                 
-                <div className="flex items-center space-x-4 py-2">
+                <div className="flex items-center space-x-4 py-2 px-3 bg-gray-50 border border-gray-200 rounded-md">
                   <FormLabel htmlFor="isExistingClient" className="flex-1">Cliente existente</FormLabel>
                   <Switch 
                     id="isExistingClient" 
@@ -177,7 +177,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                             setFilteredLeads([]);
                           }
                         }}
-                        className="w-full pr-10"
+                        className="w-full pr-10 border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                       />
                       <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     </div>
@@ -200,7 +200,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                     )}
                     
                     {selectedLead && (
-                      <div className="mt-2 p-2 border rounded-md bg-gray-50">
+                      <div className="mt-2 p-3 border rounded-md bg-gray-50 border-gray-200 shadow-sm">
                         <div className="font-medium">{selectedLead.nombre}</div>
                         <div className="text-sm">
                           {selectedLead.email && <div>Email: {selectedLead.email}</div>}
@@ -210,7 +210,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-4 p-4 border border-gray-200 rounded-md bg-white shadow-sm">
                     <FormField
                       control={form.control}
                       name="nombre"
@@ -218,7 +218,11 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                         <FormItem>
                           <FormLabel>Nombre del cliente</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="Nombre completo" />
+                            <Input 
+                              {...field} 
+                              placeholder="Nombre completo" 
+                              className="border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                            />
                           </FormControl>
                         </FormItem>
                       )}
@@ -232,7 +236,12 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                           <FormItem>
                             <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="correo@ejemplo.com" type="email" />
+                              <Input 
+                                {...field} 
+                                placeholder="correo@ejemplo.com" 
+                                type="email" 
+                                className="border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                              />
                             </FormControl>
                           </FormItem>
                         )}
@@ -245,7 +254,11 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                           <FormItem>
                             <FormLabel>Teléfono</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="+52 55 1234 5678" />
+                              <Input 
+                                {...field} 
+                                placeholder="+52 55 1234 5678" 
+                                className="border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                              />
                             </FormControl>
                           </FormItem>
                         )}
@@ -256,7 +269,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                 
                 <h3 className="text-lg font-medium mt-6">Propiedad</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 rounded-md bg-white shadow-sm">
                   <FormField
                     control={form.control}
                     name="desarrollo_id"
@@ -268,7 +281,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                               <SelectValue placeholder="Seleccionar desarrollo" />
                             </SelectTrigger>
                           </FormControl>
@@ -295,7 +308,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                               <SelectValue placeholder="Seleccionar prototipo" />
                             </SelectTrigger>
                           </FormControl>
@@ -318,7 +331,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Detalles de pago</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 rounded-md bg-white shadow-sm">
                   <FormField
                     control={form.control}
                     name="monto_anticipo"
@@ -334,6 +347,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                               const numericValue = e.target.value.replace(/[^0-9]/g, '');
                               field.onChange(parseFloat(numericValue) || 0);
                             }}
+                            className="border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                           />
                         </FormControl>
                       </FormItem>
@@ -351,6 +365,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                             {...field} 
                             type="number" 
                             onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            className="border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                           />
                         </FormControl>
                       </FormItem>
@@ -358,7 +373,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                   />
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-4 p-4 border border-gray-200 rounded-md bg-white shadow-sm">
                   <FormItem>
                     <FormLabel>Fecha de inicio de pagos</FormLabel>
                     <Popover>
@@ -366,7 +381,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full justify-start text-left font-normal",
+                            "w-full justify-start text-left font-normal border border-gray-300 shadow-sm",
                             !startDate && "text-muted-foreground"
                           )}
                           type="button"
@@ -387,7 +402,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                   </FormItem>
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50 shadow-sm">
                   <FormField
                     control={form.control}
                     name="usar_finiquito"
@@ -406,7 +421,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                 </div>
 
                 {form.watch('usar_finiquito') && (
-                  <div className="space-y-4 mt-4">
+                  <div className="space-y-4 mt-4 p-4 border-l-2 border-indigo-200 pl-4 ml-2 bg-white border border-gray-200 rounded-md shadow-sm">
                     <FormField
                       control={form.control}
                       name="monto_finiquito"
@@ -422,6 +437,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                                 const numericValue = e.target.value.replace(/[^0-9]/g, '');
                                 field.onChange(parseFloat(numericValue) || 0);
                               }}
+                              className="border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                             />
                           </FormControl>
                         </FormItem>
@@ -435,7 +451,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full justify-start text-left font-normal",
+                              "w-full justify-start text-left font-normal border border-gray-300 shadow-sm",
                               !finiquitoDate && "text-muted-foreground"
                             )}
                             type="button"
@@ -463,26 +479,32 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Información adicional</h3>
                 
-                <FormField
-                  control={form.control}
-                  name="notas"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notas</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+                <div className="p-4 border border-gray-200 rounded-md bg-white shadow-sm">
+                  <FormField
+                    control={form.control}
+                    name="notas"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Notas</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field}
+                            className="border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" 
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
             </TabsContent>
             
-            <div className="px-6 py-4 border-t flex justify-end space-x-2">
+            <div className="px-6 py-4 border-t flex justify-end space-x-2 bg-gray-50">
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={onCancel}
+                className="border-gray-300"
               >
                 Cancelar
               </Button>
@@ -494,6 +516,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                   !form.watch('desarrollo_id') ||
                   !form.watch('prototipo_id')
                 }
+                className="bg-indigo-600 hover:bg-indigo-700"
               >
                 Guardar
               </Button>
