@@ -31,14 +31,21 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           description: "Bienvenido de nuevo",
         });
         
-        // After successful login, check if the user has a company and subscription
-        // For now, just redirect to dashboard
+        // After successful login, redirect to dashboard
         navigate("/dashboard");
         if (onSuccess) onSuccess();
       } else {
+        // Personalizar mensaje de error para hacerlo más amigable
+        let errorMessage = result.error;
+        if (errorMessage?.includes("Email not confirmed") || errorMessage?.includes("Correo no confirmado")) {
+          errorMessage = "Su correo electrónico no ha sido confirmado. Por favor revise su bandeja de entrada.";
+        } else if (errorMessage?.includes("Invalid login credentials")) {
+          errorMessage = "Credenciales incorrectas. Verifique su correo y contraseña.";
+        }
+        
         toast({
           title: "Error al iniciar sesión",
-          description: result.error,
+          description: errorMessage,
           variant: "destructive",
         });
       }
@@ -46,7 +53,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       console.error("Error en inicio de sesión:", error);
       toast({
         title: "Error al iniciar sesión",
-        description: "Ocurrió un error inesperado",
+        description: "Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde.",
         variant: "destructive",
       });
     } finally {

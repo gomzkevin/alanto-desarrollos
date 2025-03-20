@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 export function Auth() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [activeTab, setActiveTab] = useState("login");
 
   // Check if user is already authenticated
   useEffect(() => {
@@ -52,7 +53,11 @@ export function Auth() {
           <p className="text-slate-600">Plataforma de gestión de inversiones inmobiliarias</p>
         </div>
         
-        <Tabs defaultValue="login" className="w-full">
+        <Tabs 
+          value={activeTab} 
+          onValueChange={setActiveTab} 
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
             <TabsTrigger value="signup">Registrarse</TabsTrigger>
@@ -66,7 +71,7 @@ export function Auth() {
                   Ingresa tus credenciales para acceder a tu cuenta
                 </CardDescription>
               </CardHeader>
-              <LoginForm />
+              <LoginForm onSuccess={() => console.log("Login exitoso")} />
             </Card>
           </TabsContent>
           
@@ -78,7 +83,7 @@ export function Auth() {
                   Regístrate para acceder a la plataforma
                 </CardDescription>
               </CardHeader>
-              <SignupForm />
+              <SignupForm onSuccess={() => setActiveTab("login")} />
             </Card>
           </TabsContent>
         </Tabs>
