@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CompradoresVenta, PlanPago, Pago } from '@/hooks/useVentas';
@@ -12,7 +11,7 @@ interface PagosTabProps {
   ventaId: string;
   onCreatePago: (params: { compradorId: string; pagoData: Omit<Pago, 'id' | 'created_at' | 'comprador_venta_id'> }) => void;
   onUpdatePagoEstado: (params: { pagoId: string; estado: string }) => void;
-  onUpsertPlanPago: (params: { compradorId: string; planData: Omit<PlanPago, 'id' | 'created_at'> }) => void;
+  onUpsertPlanPago: (params: { compradorId: string; planData: Omit<PlanPago, 'id' | 'created_at' | 'comprador_venta_id'> }) => void;
   isUpdating: boolean;
 }
 

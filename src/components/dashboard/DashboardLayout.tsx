@@ -11,12 +11,12 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useMobile } from '@/hooks/useMobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const { userRole, isAdmin } = useUserRole();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
 
   useEffect(() => {
