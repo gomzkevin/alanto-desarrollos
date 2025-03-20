@@ -27,7 +27,6 @@ export const NuevaVentaDialog = ({ open, onOpenChange, onSuccess }: NuevaVentaDi
   const { createVenta, isCreating } = useVentas();
   const { toast } = useToast();
 
-  // Fetch unidades available for sale
   const fetchUnidades = async () => {
     try {
       const { data, error } = await supabase
@@ -71,7 +70,6 @@ export const NuevaVentaDialog = ({ open, onOpenChange, onSuccess }: NuevaVentaDi
   const handleUnidadChange = (value: string) => {
     setUnidadId(value);
     
-    // Find the selected unidad to get its price
     const selectedUnidad = unidades.find(u => u.id === value);
     if (selectedUnidad && selectedUnidad.prototipo) {
       setPrecioTotal(selectedUnidad.prototipo.precio || 0);
@@ -93,7 +91,6 @@ export const NuevaVentaDialog = ({ open, onOpenChange, onSuccess }: NuevaVentaDi
     setLoading(true);
     
     try {
-      // Create the venta object with required properties explicitly defined
       await createVenta({
         unidad_id: unidadId,
         precio_total: precioTotal,
