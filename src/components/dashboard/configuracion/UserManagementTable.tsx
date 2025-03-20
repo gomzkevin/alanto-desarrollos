@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -32,7 +33,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -41,7 +41,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MoreHorizontal, Plus, User } from "lucide-react";
+import { 
+  MoreHorizontal, 
+  Plus, 
+  User, 
+  Loader2, 
+  Check, 
+  AlertCircle, 
+  X 
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -60,6 +68,7 @@ type User = {
 export function UserManagementTable() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isNewUserDialogOpen, setIsNewUserDialogOpen] = useState(false);
   const [newUser, setNewUser] = useState({
     nombre: "",
@@ -70,6 +79,7 @@ export function UserManagementTable() {
   const [activeSubscription, setActiveSubscription] = useState<any>(null);
   const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(true);
   const { isAdmin, userId, empresaId } = useUserRole();
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Fetch subscription status
   useEffect(() => {
@@ -144,9 +154,41 @@ export function UserManagementTable() {
     }
   }, [userId, empresaId]);
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!newUser.nombre.trim()) {
+      errors.nombre = "El nombre es obligatorio";
+    }
+    
+    if (!newUser.email.trim()) {
+      errors.email = "El correo electrónico es obligatorio";
+    } else if (!/\S+@\S+\.\S+/.test(newUser.email)) {
+      errors.email = "El correo electrónico no es válido";
+    }
+    
+    if (!newUser.password.trim()) {
+      errors.password = "La contraseña es obligatoria";
+    } else if (newUser.password.length < 6) {
+      errors.password = "La contraseña debe tener al menos 6 caracteres";
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleNewUserChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewUser((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear validation error when field is updated
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleRoleChange = (value: string) => {
@@ -162,10 +204,15 @@ export function UserManagementTable() {
       });
       return;
     }
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
 
     // Check if within subscription limits
     if (activeSubscription?.subscription_plans?.features?.max_vendedores) {
-      const vendedorCount = users.filter(u => u.rol === 'vendedor').length;
+      const vendedorCount = users.filter(u => u.rol === 'vendedor' && u.activo).length;
       const maxVendedores = activeSubscription.subscription_plans.features.max_vendedores;
       
       if (vendedorCount >= maxVendedores && newUser.rol === 'vendedor') {
@@ -179,11 +226,11 @@ export function UserManagementTable() {
     }
 
     try {
-      setIsLoading(true);
+      setIsCreatingUser(true);
 
       // First, try to register the user using our auth service
       console.log("Creating user with email:", newUser.email);
-      const authResult = await signUpWithEmailPassword(newUser.email, newUser.password);
+      const authResult = await signUpWithEmailPassword(newUser.email, newUser.password, empresaId || undefined);
 
       if (!authResult.success) {
         throw new Error(authResult.error || "No se pudo crear el usuario");
@@ -222,6 +269,7 @@ export function UserManagementTable() {
         email: newUser.email,
         rol: newUser.rol,
         empresa_id: empresaId,
+        activo: true
       };
       
       console.log("Creating user record with data:", userData);
@@ -240,6 +288,7 @@ export function UserManagementTable() {
       toast({
         title: "Usuario creado",
         description: "El usuario ha sido creado exitosamente.",
+        variant: "success",
       });
 
       // Reset form and close dialog
@@ -268,7 +317,7 @@ export function UserManagementTable() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsCreatingUser(false);
     }
   };
 
@@ -301,6 +350,7 @@ export function UserManagementTable() {
       toast({
         title: "Usuario actualizado",
         description: `El usuario ha sido ${!currentStatus ? "activado" : "desactivado"} exitosamente.`,
+        variant: "success",
       });
     } catch (error) {
       console.error("Error updating user:", error);
@@ -332,7 +382,7 @@ export function UserManagementTable() {
       return true; // Si no hay límite establecido, permitir agregar
     }
     
-    const vendedorCount = users.filter(u => u.rol === 'vendedor').length;
+    const vendedorCount = users.filter(u => u.rol === 'vendedor' && u.activo).length;
     const maxVendedores = activeSubscription.subscription_plans.features.max_vendedores;
     
     return vendedorCount < maxVendedores;
@@ -347,7 +397,7 @@ export function UserManagementTable() {
             Administra los usuarios que tienen acceso a la plataforma.
             {activeSubscription?.subscription_plans?.features?.max_vendedores && (
               <p className="mt-1">
-                Vendedores: {users.filter(u => u.rol === 'vendedor').length} / 
+                Vendedores activos: {users.filter(u => u.rol === 'vendedor' && u.activo).length} / 
                 {activeSubscription.subscription_plans.features.max_vendedores}
               </p>
             )}
@@ -384,7 +434,11 @@ export function UserManagementTable() {
                   placeholder="Nombre completo"
                   value={newUser.nombre}
                   onChange={handleNewUserChange}
+                  className={validationErrors.nombre ? "border-red-500" : ""}
                 />
+                {validationErrors.nombre && (
+                  <p className="text-sm text-red-500">{validationErrors.nombre}</p>
+                )}
               </div>
               <div className="grid w-full items-center gap-2">
                 <Label htmlFor="email">Correo Electrónico</Label>
@@ -395,7 +449,11 @@ export function UserManagementTable() {
                   placeholder="correo@ejemplo.com"
                   value={newUser.email}
                   onChange={handleNewUserChange}
+                  className={validationErrors.email ? "border-red-500" : ""}
                 />
+                {validationErrors.email && (
+                  <p className="text-sm text-red-500">{validationErrors.email}</p>
+                )}
               </div>
               <div className="grid w-full items-center gap-2">
                 <Label htmlFor="password">Contraseña</Label>
@@ -406,7 +464,11 @@ export function UserManagementTable() {
                   placeholder="Contraseña segura"
                   value={newUser.password}
                   onChange={handleNewUserChange}
+                  className={validationErrors.password ? "border-red-500" : ""}
                 />
+                {validationErrors.password && (
+                  <p className="text-sm text-red-500">{validationErrors.password}</p>
+                )}
               </div>
               <div className="grid w-full items-center gap-2">
                 <Label htmlFor="rol">Rol</Label>
@@ -430,14 +492,16 @@ export function UserManagementTable() {
               </Button>
               <Button 
                 onClick={createNewUser} 
-                disabled={
-                  !newUser.nombre || 
-                  !newUser.email || 
-                  !newUser.password || 
-                  isLoading
-                }
+                disabled={isCreatingUser}
               >
-                {isLoading ? "Creando..." : "Crear Usuario"}
+                {isCreatingUser ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  "Crear Usuario"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -446,7 +510,8 @@ export function UserManagementTable() {
       <CardContent>
         {isLoading ? (
           <div className="flex justify-center py-6">
-            <p>Cargando usuarios...</p>
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="ml-2">Cargando usuarios...</p>
           </div>
         ) : users.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 text-center">
@@ -483,8 +548,17 @@ export function UserManagementTable() {
                     <TableCell>
                       <Badge 
                         variant={user.activo ? "success" : "destructive"}
+                        className="flex w-fit items-center"
                       >
-                        {user.activo ? 'Activo' : 'Inactivo'}
+                        {user.activo ? (
+                          <>
+                            <Check className="mr-1 h-3 w-3" /> Activo
+                          </>
+                        ) : (
+                          <>
+                            <X className="mr-1 h-3 w-3" /> Inactivo
+                          </>
+                        )}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">

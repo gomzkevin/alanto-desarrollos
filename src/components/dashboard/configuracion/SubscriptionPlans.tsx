@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Check } from "lucide-react";
+import { Check, Building, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,8 +22,9 @@ interface SubscriptionPlan {
   price: number;
   interval: 'month' | 'year';
   features: {
+    tipo?: 'desarrollo' | 'prototipo';
+    precio_por_unidad?: number;
     max_vendedores?: number;
-    max_desarrollos?: number;
     [key: string]: any;
   };
 }
@@ -218,37 +219,39 @@ export function SubscriptionPlans() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {plans.map((plan) => {
             const isCurrentPlan = currentSubscription?.plan_id === plan.id;
+            const planIcon = plan.features?.tipo === 'desarrollo' ? Building : Home;
             
             return (
               <Card key={plan.id} className={isCurrentPlan ? "border-2 border-indigo-500" : ""}>
                 <CardHeader>
-                  <CardTitle className="flex justify-between items-center">
-                    {plan.name}
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      {React.createElement(planIcon, { className: "h-5 w-5" })}
+                      {plan.name}
+                    </CardTitle>
                     {isCurrentPlan && (
                       <Badge variant="outline" className="ml-2 bg-indigo-50 text-indigo-700 border-indigo-200">
                         Activo
                       </Badge>
                     )}
-                  </CardTitle>
+                  </div>
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="mt-2 flex items-baseline text-2xl font-semibold">
                     ${plan.price}
                     <span className="ml-1 text-sm font-normal text-slate-500">
-                      /{plan.interval === 'month' ? 'mes' : 'año'}
+                      /{plan.interval === 'month' ? 'mes' : 'año'} por {plan.features?.tipo === 'desarrollo' ? 'desarrollo' : 'prototipo'}
                     </span>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm">
-                    {plan.features?.max_desarrollos && (
-                      <li className="flex items-center">
-                        <Check className="h-4 w-4 mr-2 text-green-500" />
-                        Hasta {plan.features.max_desarrollos} desarrollos
-                      </li>
-                    )}
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 mr-2 text-green-500" />
+                      Precio: ${plan.features?.precio_por_unidad} por cada {plan.features?.tipo === 'desarrollo' ? 'desarrollo' : 'prototipo'}
+                    </li>
                     {plan.features?.max_vendedores && (
                       <li className="flex items-center">
                         <Check className="h-4 w-4 mr-2 text-green-500" />
