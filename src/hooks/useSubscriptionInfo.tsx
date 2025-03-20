@@ -59,6 +59,8 @@ export const useSubscriptionInfo = () => {
         return getDefaultSubscriptionInfo();
       }
 
+      console.log('Fetching subscription info for userId:', userId, 'empresaId:', empresaId);
+
       // Get the active subscription
       const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
@@ -73,8 +75,11 @@ export const useSubscriptionInfo = () => {
       }
 
       if (!subscription) {
+        console.log('No active subscription found');
         return getDefaultSubscriptionInfo();
       }
+
+      console.log('Subscription data:', subscription);
 
       // Extract plan features safely
       const planFeatures = subscription.subscription_plans.features || {};
@@ -106,42 +111,86 @@ export const useSubscriptionInfo = () => {
         features: features
       };
 
+      console.log('Extracted plan:', plan);
+
       // Get resource type and count from the plan
       const resourceType = plan.features.tipo || null;
+      console.log('Resource type:', resourceType);
       
-      // Instead of directly using the hooks, fetch resource counts directly
+      // Get resource counts - improved version with better error handling and more precise queries
       let resourceCount = 0;
-      if (resourceType === 'desarrollo' && empresaId) {
-        const { count, error } = await supabase
-          .from('desarrollos')
-          .select('count')
-          .eq('empresa_id', empresaId);
-          
-        if (!error && count) {
-          resourceCount = parseInt(count as unknown as string);
+      
+      try {
+        if (resourceType === 'desarrollo' && empresaId) {
+          // For desarrollo plans, count desarrollos filtered by empresa_id
+          const { count, error: countError } = await supabase
+            .from('desarrollos')
+            .select('*', { count: 'exact', head: true })
+            .eq('empresa_id', empresaId);
+            
+          if (countError) {
+            console.error('Error counting desarrollos:', countError);
+          } else if (count !== null) {
+            resourceCount = count;
+            console.log(`Found ${count} desarrollos for empresa_id ${empresaId}`);
+          }
+        } else if (resourceType === 'prototipo') {
+          // For prototipo plans, count all prototipos associated with the empresa's desarrollos
+          if (empresaId) {
+            // First, get all desarrollo_ids for this empresa
+            const { data: desarrollos, error: desarError } = await supabase
+              .from('desarrollos')
+              .select('id')
+              .eq('empresa_id', empresaId);
+              
+            if (desarError) {
+              console.error('Error getting empresa desarrollos:', desarError);
+            } else if (desarrollos && desarrollos.length > 0) {
+              // Get all desarrollo IDs
+              const desarrolloIds = desarrollos.map(d => d.id);
+              console.log('Desarrollo IDs for this empresa:', desarrolloIds);
+              
+              // Count prototipos associated with these desarrollos
+              const { count: protoCount, error: protoError } = await supabase
+                .from('prototipos')
+                .select('*', { count: 'exact', head: true })
+                .in('desarrollo_id', desarrolloIds);
+                
+              if (protoError) {
+                console.error('Error counting prototipos:', protoError);
+              } else if (protoCount !== null) {
+                resourceCount = protoCount;
+                console.log(`Found ${protoCount} prototipos for the empresa's desarrollos`);
+              }
+            } else {
+              console.log('No desarrollos found for this empresa, so 0 prototipos');
+            }
+          }
         }
-      } else if (resourceType === 'prototipo') {
-        const { count, error } = await supabase
-          .from('prototipos')
-          .select('count');
-          
-        if (!error && count) {
-          resourceCount = parseInt(count as unknown as string);
-        }
+      } catch (countError) {
+        console.error('Error in resource counting:', countError);
       }
       
-      // Get vendor count for the company
-      const { data: vendors, error: vendorError } = await supabase
-        .from('usuarios')
-        .select('count')
-        .eq('empresa_id', empresaId)
-        .eq('rol', 'vendedor');
-        
-      if (vendorError) {
-        console.error('Error counting vendors:', vendorError);
+      // Get vendor count for the company with improved error handling
+      let vendorCount = 0;
+      try {
+        if (empresaId) {
+          const { count: vendors, error: vendorError } = await supabase
+            .from('usuarios')
+            .select('*', { count: 'exact', head: true })
+            .eq('empresa_id', empresaId)
+            .eq('rol', 'vendedor');
+            
+          if (vendorError) {
+            console.error('Error counting vendors:', vendorError);
+          } else if (vendors !== null) {
+            vendorCount = vendors;
+            console.log(`Found ${vendors} vendors for empresa_id ${empresaId}`);
+          }
+        }
+      } catch (vendorCountError) {
+        console.error('Error in vendor counting:', vendorCountError);
       }
-      
-      const vendorCount = vendors ? parseInt(vendors[0]?.count as unknown as string || '0') : 0;
       
       // Resource limit from plan features
       const resourceLimit = plan.features.max_recursos || null;
@@ -161,6 +210,15 @@ export const useSubscriptionInfo = () => {
       const percentUsed = resourceLimit ? Math.min(100, (resourceCount / resourceLimit) * 100) : 0;
       const isOverVendorLimit = vendorLimit !== null && vendorCount > vendorLimit;
       
+      console.log('Final subscription info:', {
+        resourceCount,
+        resourceLimit,
+        resourceType,
+        vendorCount,
+        vendorLimit,
+        currentBilling
+      });
+
       return {
         currentPlan: plan,
         isActive: subscription.status === 'active',
