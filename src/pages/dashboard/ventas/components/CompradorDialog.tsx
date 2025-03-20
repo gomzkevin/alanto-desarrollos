@@ -173,14 +173,14 @@ export const CompradorDialog = ({
           <DialogTitle>Agregar comprador a la venta</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="comprador">Comprador *</Label>
+        <form onSubmit={handleSubmit} className="space-y-5 p-6">
+          <div className="space-y-3">
+            <Label htmlFor="comprador" className="text-gray-700">Comprador <span className="text-red-500">*</span></Label>
             <Select
               value={compradorId}
               onValueChange={setCompradorId}
             >
-              <SelectTrigger>
+              <SelectTrigger id="comprador">
                 <SelectValue placeholder="Seleccionar comprador" />
               </SelectTrigger>
               <SelectContent>
@@ -193,8 +193,8 @@ export const CompradorDialog = ({
             </Select>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="porcentaje">Porcentaje de propiedad {esVentaFraccional ? '' : '(100%)'}</Label>
+          <div className="space-y-3">
+            <Label htmlFor="porcentaje" className="text-gray-700">Porcentaje de propiedad {esVentaFraccional ? '' : '(100%)'}</Label>
             <Input
               id="porcentaje"
               type="number"
@@ -205,20 +205,20 @@ export const CompradorDialog = ({
               disabled={!esVentaFraccional}
               required
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-500">
               {esVentaFraccional ? 
                 'Porcentaje de la propiedad que corresponde a este comprador' : 
                 'En ventas individuales, el comprador adquiere el 100% de la propiedad'}
             </p>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="vendedor">Vendedor asignado</Label>
+          <div className="space-y-3">
+            <Label htmlFor="vendedor" className="text-gray-700">Vendedor asignado</Label>
             <Select
               value={vendedorId}
               onValueChange={setVendedorId}
             >
-              <SelectTrigger>
+              <SelectTrigger id="vendedor">
                 <SelectValue placeholder="Seleccionar vendedor (opcional)" />
               </SelectTrigger>
               <SelectContent>

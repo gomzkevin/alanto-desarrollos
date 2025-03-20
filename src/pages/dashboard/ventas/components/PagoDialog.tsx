@@ -90,10 +90,10 @@ export const PagoDialog = ({ open, onOpenChange, compradorVentaId, onSuccess }: 
           <DialogTitle>Registrar nuevo pago</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5 p-6">
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="monto">Monto *</Label>
+            <div className="space-y-3">
+              <Label htmlFor="monto" className="text-gray-700">Monto <span className="text-red-500">*</span></Label>
               <Input
                 id="monto"
                 type="number"
@@ -105,11 +105,12 @@ export const PagoDialog = ({ open, onOpenChange, compradorVentaId, onSuccess }: 
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="fecha">Fecha *</Label>
+            <div className="space-y-3">
+              <Label htmlFor="fecha" className="text-gray-700">Fecha <span className="text-red-500">*</span></Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
+                    id="fecha"
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
@@ -120,12 +121,13 @@ export const PagoDialog = ({ open, onOpenChange, compradorVentaId, onSuccess }: 
                     {fecha ? format(fecha, "PP") : <span>Seleccionar fecha</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0 pointer-events-auto">
                   <Calendar
                     mode="single"
                     selected={fecha}
                     onSelect={(date) => date && setFecha(date)}
                     initialFocus
+                    className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
@@ -133,13 +135,13 @@ export const PagoDialog = ({ open, onOpenChange, compradorVentaId, onSuccess }: 
           </div>
           
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="metodo-pago">Método de pago *</Label>
+            <div className="space-y-3">
+              <Label htmlFor="metodo-pago" className="text-gray-700">Método de pago <span className="text-red-500">*</span></Label>
               <Select 
                 value={metodoPago} 
                 onValueChange={setMetodoPago}
               >
-                <SelectTrigger>
+                <SelectTrigger id="metodo-pago">
                   <SelectValue placeholder="Selecciona un método" />
                 </SelectTrigger>
                 <SelectContent>
@@ -151,8 +153,8 @@ export const PagoDialog = ({ open, onOpenChange, compradorVentaId, onSuccess }: 
               </Select>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="referencia">Referencia</Label>
+            <div className="space-y-3">
+              <Label htmlFor="referencia" className="text-gray-700">Referencia</Label>
               <Input
                 id="referencia"
                 placeholder="Número de referencia"
@@ -162,8 +164,8 @@ export const PagoDialog = ({ open, onOpenChange, compradorVentaId, onSuccess }: 
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="comprobante">Comprobante URL</Label>
+          <div className="space-y-3">
+            <Label htmlFor="comprobante" className="text-gray-700">Comprobante URL</Label>
             <Input
               id="comprobante"
               placeholder="URL del comprobante"
@@ -172,8 +174,8 @@ export const PagoDialog = ({ open, onOpenChange, compradorVentaId, onSuccess }: 
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="notas">Notas</Label>
+          <div className="space-y-3">
+            <Label htmlFor="notas" className="text-gray-700">Notas</Label>
             <Textarea
               id="notas"
               placeholder="Observaciones o notas adicionales"

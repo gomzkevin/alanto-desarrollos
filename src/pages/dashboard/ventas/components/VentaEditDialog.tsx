@@ -69,9 +69,9 @@ export const VentaEditDialog = ({
           <DialogTitle>Editar información de venta</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="precio-total">Precio de Venta *</Label>
+        <form onSubmit={handleSubmit} className="space-y-5 p-6">
+          <div className="space-y-3">
+            <Label htmlFor="precio-total" className="text-gray-700">Precio de Venta <span className="text-red-500">*</span></Label>
             <Input
               id="precio-total"
               type="number"
@@ -83,13 +83,13 @@ export const VentaEditDialog = ({
             />
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3 pt-2">
             <Switch
               id="es-fraccional"
               checked={esFraccional}
               onCheckedChange={setEsFraccional}
             />
-            <Label htmlFor="es-fraccional">Venta fraccional</Label>
+            <Label htmlFor="es-fraccional" className="text-gray-700 cursor-pointer">Venta fraccional</Label>
           </div>
           
           <DialogFooter>
