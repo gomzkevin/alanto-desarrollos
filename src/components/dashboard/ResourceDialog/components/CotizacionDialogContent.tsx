@@ -90,7 +90,8 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
       <form onSubmit={handleFormSubmit} className="flex flex-col h-full max-h-[90vh]">
         <DialogHeader 
           title={getResourceTitle()} 
-          description={getResourceDescription()} 
+          description={getResourceDescription()}
+          className="px-8 py-6"
         />
         
         <div className="flex-1 overflow-hidden">
@@ -101,8 +102,8 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
             </div>
           ) : (
             <ScrollArea className="h-[calc(90vh-180px)]">
-              <div className="px-6 py-4">
-                <div className="space-y-6">
+              <div className="px-8 py-6">
+                <div className="space-y-8">
                   <GenericForm
                     resourceType="cotizaciones"
                     fields={fields}
@@ -126,6 +127,7 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
                     onDesarrolloSelect={onDesarrolloSelect}
                     onDateChange={handleDateChange}
                     formId="resource-form"
+                    className="gap-y-6"
                   />
                 </div>
               </div>
@@ -140,6 +142,7 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
             await saveResource();
           }}
           isSubmitting={isSubmitting}
+          className="px-8 py-6"
         />
       </form>
     </DialogContent>
