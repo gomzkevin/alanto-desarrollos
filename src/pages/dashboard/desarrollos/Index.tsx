@@ -9,7 +9,6 @@ import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Tables } from '@/integrations/supabase/types';
 import useUnidades from '@/hooks/useUnidades';
-import { getCurrentUserId } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
 type Desarrollo = Tables<"desarrollos">;
@@ -18,24 +17,26 @@ const DesarrollosPage = () => {
   const navigate = useNavigate();
   const [openDialog, setOpenDialog] = useState(false);
   const [desarrollosWithRealCounts, setDesarrollosWithRealCounts] = useState<Desarrollo[]>([]);
+  const [hasTriedInitialLoad, setHasTriedInitialLoad] = useState(false);
   
   // Get user info from useUserRole hook
   const { 
     userId,
+    empresaId,
     isAdmin,
     isLoading: isUserLoading 
   } = useUserRole();
   
-  // Remove the separate loading state to prevent race conditions
-  // and directly use the desarrollos query with userId from the hook
+  // Use empresa_id instead of user_id for filtering desarrollos
   const { 
     desarrollos = [], 
     isLoading, 
     error,
-    refetch 
+    refetch,
+    isFetched
   } = useDesarrollos({ 
     withPrototipos: true,
-    userId // Use userId directly from the hook
+    empresaId // Use empresaId instead of userId
   });
   
   const { countDesarrolloUnidadesByStatus } = useUnidades();
@@ -43,6 +44,15 @@ const DesarrollosPage = () => {
   const canCreateResource = () => {
     return isAdmin();
   };
+
+  // Force a refetch when empresaId becomes available
+  useEffect(() => {
+    if (empresaId !== null && !hasTriedInitialLoad) {
+      console.log('Empresa ID available, forcing refetch:', empresaId);
+      refetch();
+      setHasTriedInitialLoad(true);
+    }
+  }, [empresaId, refetch, hasTriedInitialLoad]);
 
   // Update unit counts when desarrollos change
   useEffect(() => {
@@ -106,14 +116,17 @@ const DesarrollosPage = () => {
     ? normalizeDesarrollos(desarrollosWithRealCounts)
     : normalizeDesarrollos(desarrollos as Desarrollo[]);
 
-  // Simplified loading state determination - we're loading if either user or desarrollos are loading
-  const isActuallyLoading = isUserLoading || isLoading;
+  // Unified loading state
+  const isActuallyLoading = isUserLoading || (isLoading && !isFetched);
   
   // Add debug logs to help troubleshoot
   console.log('Desarrollo page render:', { 
     userId,
+    empresaId,
     isUserLoading,
     isLoading,
+    isFetched,
+    hasTriedInitialLoad,
     desarrollosCount: desarrollos.length,
     displayDesarrollosCount: displayDesarrollos.length
   });
@@ -142,7 +155,7 @@ const DesarrollosPage = () => {
             onSuccess={refetch}
             open={openDialog}
             onClose={() => setOpenDialog(false)}
-            defaultValues={userId ? { user_id: userId } : undefined}
+            defaultValues={empresaId ? { empresa_id: empresaId } : undefined}
           />
         </div>
 

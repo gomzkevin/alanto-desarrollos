@@ -5,7 +5,6 @@ import { Tables, Json } from '@/integrations/supabase/types';
 
 export type Desarrollo = Tables<"desarrollos"> & {
   amenidades?: string[] | null;
-  user_id?: string | null; // Added user_id field to match database
 };
 
 // Define extended type with prototipos relation
@@ -16,11 +15,11 @@ export type ExtendedDesarrollo = Desarrollo & {
 type FetchDesarrollosOptions = {
   limit?: number;
   withPrototipos?: boolean;
-  userId?: string | null; // Option to filter by user ID
+  empresaId?: number | null; // Changed from userId to empresaId
 };
 
 export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
-  const { limit, withPrototipos = false, userId = null } = options;
+  const { limit, withPrototipos = false, empresaId = null } = options;
   
   // Function to fetch desarrollos
   const fetchDesarrollos = async (): Promise<ExtendedDesarrollo[]> => {
@@ -30,10 +29,11 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       // Build the select query
       let query = supabase.from('desarrollos').select('*');
       
-      // Filter by user ID if provided using the string filter method to avoid type recursion
-      if (userId) {
-        // Use string literals for column and operator to avoid TypeScript recursion
-        query = query.filter('user_id', 'eq', userId);
+      // Filter by empresa_id if provided
+      if (empresaId) {
+        // Filter desarrollos by empresa_id instead of user_id
+        query = query.eq('empresa_id', empresaId);
+        console.log(`Filtering desarrollos by empresa_id: ${empresaId}`);
       }
       
       // Apply limit if provided
@@ -125,11 +125,11 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   };
 
   // Use React Query to fetch and cache the data
-  // Set staleTime to 0 to ensure data is always fresh on initial load
   const queryResult = useQuery({
-    queryKey: ['desarrollos', limit, withPrototipos, userId],
+    queryKey: ['desarrollos', limit, withPrototipos, empresaId],
     queryFn: fetchDesarrollos,
-    enabled: true, // Always enable the query, even if userId is null
+    // Only enable when empresaId is available or we're not filtering by empresaId
+    enabled: empresaId !== null || options.empresaId === undefined,
     staleTime: 0 // Force a fresh fetch on each component mount
   });
 
@@ -137,7 +137,9 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     desarrollos: queryResult.data || [],
     isLoading: queryResult.isLoading,
     error: queryResult.error,
-    refetch: queryResult.refetch
+    refetch: queryResult.refetch,
+    empresaId, // Expose empresaId for reference
+    isFetched: queryResult.isFetched
   };
 };
 

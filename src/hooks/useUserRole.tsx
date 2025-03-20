@@ -50,11 +50,10 @@ export const useUserRole = () => {
           .from('usuarios')
           .select('*')
           .eq('auth_id', user.id)
-          .single();
+          .maybeSingle();
         
         if (userError) {
           console.error('Error fetching user data:', userError);
-          // If this is the first login, we may need to create the user record
           setIsLoading(false);
           return;
         }
@@ -69,7 +68,9 @@ export const useUserRole = () => {
           console.log('Admin status:', adminStatus);
           setIsAdmin(adminStatus);
           
+          // Important: Set empresaId for organization-based access
           setEmpresaId(userData.empresa_id);
+          console.log('Empresa ID set:', userData.empresa_id);
         } else {
           console.log('No user data found in usuarios table');
         }
@@ -100,7 +101,7 @@ export const useUserRole = () => {
           .from('usuarios')
           .select('*')
           .eq('auth_id', session.user.id)
-          .single();
+          .maybeSingle();
         
         if (!error && data) {
           console.log('User data from auth change:', data);
@@ -112,7 +113,9 @@ export const useUserRole = () => {
           console.log('Admin status after auth change:', adminStatus);
           setIsAdmin(adminStatus);
           
+          // Important: Set empresaId for organization-based access
           setEmpresaId(data.empresa_id);
+          console.log('Empresa ID after auth change:', data.empresa_id);
         }
       } else if (event === 'SIGNED_OUT') {
         // User signed out, clear their data

@@ -177,7 +177,7 @@ export type Database = {
           avance_porcentaje: number | null
           comision_operador: number | null
           descripcion: string | null
-          empresa_id: number | null
+          empresa_id: number
           es_gastos_fijos_porcentaje: boolean | null
           es_gastos_variables_porcentaje: boolean | null
           es_impuestos_porcentaje: boolean | null
@@ -204,7 +204,7 @@ export type Database = {
           avance_porcentaje?: number | null
           comision_operador?: number | null
           descripcion?: string | null
-          empresa_id?: number | null
+          empresa_id: number
           es_gastos_fijos_porcentaje?: boolean | null
           es_gastos_variables_porcentaje?: boolean | null
           es_impuestos_porcentaje?: boolean | null
@@ -231,7 +231,7 @@ export type Database = {
           avance_porcentaje?: number | null
           comision_operador?: number | null
           descripcion?: string | null
-          empresa_id?: number | null
+          empresa_id?: number
           es_gastos_fijos_porcentaje?: boolean | null
           es_gastos_variables_porcentaje?: boolean | null
           es_impuestos_porcentaje?: boolean | null
