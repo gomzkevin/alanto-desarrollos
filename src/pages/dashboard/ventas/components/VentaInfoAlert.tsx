@@ -1,27 +1,29 @@
 
 import React from 'react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 interface VentaInfoAlertProps {
   className?: string;
 }
 
-export const VentaInfoAlert = ({ className = '' }: VentaInfoAlertProps) => {
+export const VentaInfoAlert: React.FC<VentaInfoAlertProps> = ({ className }) => {
   return (
-    <Alert variant="default" className={`border-blue-200 bg-blue-50 ${className}`}>
+    <Alert 
+      variant="default" 
+      className={cn("border-blue-200 bg-blue-50", className)}
+    >
       <InfoIcon className="h-4 w-4 text-blue-500" />
-      <AlertTitle>Flujo de Ventas Automático</AlertTitle>
-      <AlertDescription className="text-sm">
+      <AlertTitle>Gestión automática de ventas</AlertTitle>
+      <AlertDescription>
         <p className="mb-2">
-          El sistema gestiona automáticamente las ventas basándose en los cambios de estado de las unidades:
+          Las ventas se crean automáticamente cuando se cambia el estado de una unidad a "apartado" o "en proceso".
         </p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Al cambiar una unidad a "apartado" o "en proceso", se crea una venta</li>
-          <li>Al asignar un comprador a una unidad, se asocia automáticamente a la venta</li>
-          <li>Los pagos registrados actualizan el progreso de la venta</li>
-          <li>Cuando los pagos completan el precio total, la venta se marca como "completada"</li>
-        </ul>
+        <p>
+          Para registrar pagos, primero debes asignar un comprador a la unidad desde la sección de Prototipos, y luego acceder 
+          a esta venta para gestionar sus pagos y detalles adicionales.
+        </p>
       </AlertDescription>
     </Alert>
   );

@@ -5,9 +5,11 @@ import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import UnidadTableRow from './components/UnidadTableRow';
 import EmptyUnidadState from './components/EmptyUnidadState';
 import UnidadDialogs from './components/UnidadDialogs';
+import UnidadSaleAlert from './components/UnidadSaleAlert';
 import { useToast } from "@/hooks/use-toast";
 import useLeads from "@/hooks/useLeads";
 import useUnidades from '@/hooks/useUnidades';
+import useUnitSale from '@/hooks/useUnitSale';
 
 export interface UnidadTableProps {
   prototipo: ExtendedPrototipo;
@@ -36,6 +38,11 @@ export const UnidadTable = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentUnidad, setCurrentUnidad] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Sale notification state
+  const [showSaleAlert, setShowSaleAlert] = useState(false);
+  const [editedUnidadId, setEditedUnidadId] = useState<string | undefined>(undefined);
+  const { ventaId, fetchVentaId } = useUnitSale(editedUnidadId);
   
   // Normalize price with a stable reference
   const normalizePrice = useCallback((price: any): number | undefined => {
@@ -98,6 +105,8 @@ export const UnidadTable = ({
     setIsSubmitting(true);
     try {
       const unidadId = currentUnidad.id;
+      const prevEstado = currentUnidad.estado;
+      const newEstado = data.estado;
       
       await updateUnidad({
         id: unidadId,
@@ -117,6 +126,11 @@ export const UnidadTable = ({
         description: "La unidad ha sido actualizada exitosamente"
       });
       
+      // Check if a sale should be created (status changed to apartado or en_proceso)
+      const shouldCheckForSale = 
+        (prevEstado === 'disponible') && 
+        (newEstado === 'apartado' || newEstado === 'en_proceso');
+      
       // Close dialog first, then clear state
       setIsEditDialogOpen(false);
       
@@ -124,6 +138,23 @@ export const UnidadTable = ({
       if (onRefresh) {
         setTimeout(() => {
           onRefresh();
+          
+          // If status changed to trigger sale creation, check for sale and show alert
+          if (shouldCheckForSale) {
+            setEditedUnidadId(unidadId);
+            setTimeout(async () => {
+              const newVentaId = await fetchVentaId(unidadId);
+              if (newVentaId) {
+                setShowSaleAlert(true);
+                // Auto-hide after some time
+                setTimeout(() => {
+                  setShowSaleAlert(false);
+                  setEditedUnidadId(undefined);
+                }, 15000);
+              }
+            }, 500);
+          }
+          
           // Clear the current unidad after refreshing
           setTimeout(() => setCurrentUnidad(null), 100);
         }, 300);
@@ -141,7 +172,7 @@ export const UnidadTable = ({
       // Reset submission state with delay
       setTimeout(() => setIsSubmitting(false), 100);
     }
-  }, [currentUnidad, normalizePrice, onRefresh, toast, updateUnidad, isSubmitting]);
+  }, [currentUnidad, normalizePrice, onRefresh, toast, updateUnidad, isSubmitting, fetchVentaId]);
 
   // Delete unidad handler with proper cleanup
   const handleDeleteUnidad = useCallback(async () => {
@@ -234,6 +265,14 @@ export const UnidadTable = ({
 
   return (
     <div className="space-y-4">
+      {/* Sale creation alert */}
+      <UnidadSaleAlert 
+        isVisible={showSaleAlert}
+        unidadId={editedUnidadId}
+        ventaId={ventaId}
+        onClose={() => setShowSaleAlert(false)}
+      />
+      
       {!hasUnidades ? (
         <EmptyUnidadState onAddClick={() => setIsAddDialogOpen(true)} />
       ) : (
