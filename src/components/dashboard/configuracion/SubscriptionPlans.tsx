@@ -119,8 +119,6 @@ export function SubscriptionPlans() {
   }, [userId]);
 
   const handleSubscribe = async (planId: string) => {
-    // For now, this will just create a mock subscription
-    // In a real implementation, this would redirect to Stripe
     try {
       // Check if user already has a subscription
       if (currentSubscription) {
@@ -143,7 +141,6 @@ export function SubscriptionPlans() {
       if (planError) throw planError;
       
       // For demo purposes, create a subscription directly
-      // In production, this would be handled by a Stripe webhook
       const { data: subscriptionData, error: subscriptionError } = await supabase
         .from('subscriptions')
         .insert({
@@ -158,7 +155,6 @@ export function SubscriptionPlans() {
       if (subscriptionError) throw subscriptionError;
       
       if (subscriptionData && subscriptionData.length > 0) {
-        // Properly type the subscription data 
         const typedSubscription: CurrentSubscription = {
           ...subscriptionData[0],
           subscription_plans: {
@@ -208,7 +204,7 @@ export function SubscriptionPlans() {
           Elige el plan que mejor se adapte a tus necesidades.
           {currentSubscription && (
             <div className="mt-2">
-              <Badge variant="success" className="bg-green-50 text-green-700 border-green-200">
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                 Plan activo: {currentSubscription.subscription_plans.name}
               </Badge>
               <p className="text-sm mt-1">
@@ -242,7 +238,7 @@ export function SubscriptionPlans() {
                   <div className="mt-2 flex items-baseline text-2xl font-semibold">
                     ${plan.price}
                     <span className="ml-1 text-sm font-normal text-slate-500">
-                      /{plan.interval === 'month' ? 'mes' : 'año'} por {plan.features?.tipo === 'desarrollo' ? 'desarrollo' : 'prototipo'}
+                      /{plan.interval === 'month' ? 'mes' : 'año'}
                     </span>
                   </div>
                 </CardHeader>
@@ -250,7 +246,7 @@ export function SubscriptionPlans() {
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-center">
                       <Check className="h-4 w-4 mr-2 text-green-500" />
-                      Precio: ${plan.features?.precio_por_unidad} por cada {plan.features?.tipo === 'desarrollo' ? 'desarrollo' : 'prototipo'}
+                      ${plan.features?.precio_por_unidad} por cada {plan.features?.tipo === 'desarrollo' ? 'desarrollo' : 'prototipo'}
                     </li>
                     {plan.features?.max_vendedores && (
                       <li className="flex items-center">
@@ -261,6 +257,12 @@ export function SubscriptionPlans() {
                     <li className="flex items-center">
                       <Check className="h-4 w-4 mr-2 text-green-500" />
                       Soporte por email
+                    </li>
+                    <li className="flex items-center">
+                      <Check className="h-4 w-4 mr-2 text-green-500" />
+                      {plan.features?.tipo === 'desarrollo' 
+                        ? 'Ideal para empresas con pocos desarrollos grandes' 
+                        : 'Perfecto para empresas con múltiples prototipos pequeños'}
                     </li>
                   </ul>
                 </CardContent>
