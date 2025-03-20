@@ -63,19 +63,32 @@ export const useSubscriptionInfo = () => {
         return getDefaultSubscriptionInfo();
       }
 
+      // Extract plan features safely
+      const planFeatures = subscription.subscription_plans.features || {};
+      let features = {
+        tipo: undefined as 'desarrollo' | 'prototipo' | undefined,
+        precio_por_unidad: undefined as number | undefined,
+        max_vendedores: undefined as number | undefined,
+        max_recursos: undefined as number | undefined
+      };
+      
+      // Check if features is an object (not array) and assign properties safely
+      if (planFeatures && typeof planFeatures === 'object' && !Array.isArray(planFeatures)) {
+        features = {
+          tipo: planFeatures.tipo as 'desarrollo' | 'prototipo' | undefined,
+          precio_por_unidad: planFeatures.precio_por_unidad as number | undefined,
+          max_vendedores: planFeatures.max_vendedores as number | undefined,
+          max_recursos: planFeatures.max_recursos as number | undefined
+        };
+      }
+      
       // Extract plan details
       const plan: SubscriptionPlan = {
         id: subscription.subscription_plans.id,
         name: subscription.subscription_plans.name,
         price: subscription.subscription_plans.price,
         interval: subscription.subscription_plans.interval as 'month' | 'year',
-        features: typeof subscription.subscription_plans.features === 'object' ? 
-          {
-            tipo: subscription.subscription_plans.features?.tipo as 'desarrollo' | 'prototipo' | undefined,
-            precio_por_unidad: subscription.subscription_plans.features?.precio_por_unidad as number | undefined,
-            max_vendedores: subscription.subscription_plans.features?.max_vendedores as number | undefined,
-            max_recursos: subscription.subscription_plans.features?.max_recursos as number | undefined
-          } : {}
+        features: features
       };
 
       // Get resource type and count from the plan
