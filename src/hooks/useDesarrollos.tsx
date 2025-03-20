@@ -2,7 +2,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, Json } from '@/integrations/supabase/types';
-import { useSubscriptionInfo } from './useSubscriptionInfo';
 import { toast } from '@/components/ui/use-toast';
 
 export type Desarrollo = Tables<"desarrollos"> & {
@@ -22,7 +21,6 @@ type FetchDesarrollosOptions = {
 
 export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   const { limit, withPrototipos = false, empresaId = null } = options;
-  const { subscriptionInfo } = useSubscriptionInfo();
   
   // Function to fetch desarrollos
   const fetchDesarrollos = async (): Promise<ExtendedDesarrollo[]> => {
@@ -137,44 +135,84 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   });
 
   // Check if can add more desarrollos based on subscription limits
-  const canAddDesarrollo = () => {
-    if (!subscriptionInfo.isActive) {
-      toast({
-        title: "Suscripción requerida",
-        description: "Necesitas una suscripción activa para crear desarrollos.",
-        variant: "destructive",
-      });
+  const canAddDesarrollo = async () => {
+    try {
+      // Fetch subscription data directly instead of using the hook
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return false;
+      
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*, subscription_plans(*)')
+        .eq('user_id', userData.user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      
+      if (!subscription) {
+        toast({
+          title: "Suscripción requerida",
+          description: "Necesitas una suscripción activa para crear desarrollos.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      const planFeatures = subscription.subscription_plans.features || {};
+      const resourceType = planFeatures.tipo;
+      const resourceLimit = planFeatures.max_recursos;
+      
+      if (resourceType !== 'desarrollo' && resourceType !== undefined) {
+        toast({
+          title: "Plan incompatible",
+          description: "Tu plan actual no permite la creación de desarrollos. Considera cambiar a un plan por desarrollo.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (resourceLimit !== undefined && queryResult.data && queryResult.data.length >= resourceLimit) {
+        toast({
+          title: "Límite alcanzado",
+          description: `Has alcanzado el límite de ${resourceLimit} desarrollos de tu plan. Contacta a soporte para aumentar tu límite.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error checking subscription:", error);
       return false;
     }
-
-    if (subscriptionInfo.resourceType !== 'desarrollo' && subscriptionInfo.resourceType !== null) {
-      toast({
-        title: "Plan incompatible",
-        description: "Tu plan actual no permite la creación de desarrollos. Considera cambiar a un plan por desarrollo.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (subscriptionInfo.resourceLimit !== null && subscriptionInfo.resourceCount >= subscriptionInfo.resourceLimit) {
-      toast({
-        title: "Límite alcanzado",
-        description: `Has alcanzado el límite de ${subscriptionInfo.resourceLimit} desarrollos de tu plan. Contacta a soporte para aumentar tu límite.`,
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    return true;
   };
 
   // Calculate billing amount for desarrollos
-  const calculateBillingAmount = () => {
-    if (!subscriptionInfo.isActive || subscriptionInfo.resourceType !== 'desarrollo') {
+  const calculateBillingAmount = async () => {
+    try {
+      // Fetch subscription data directly
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return 0;
+      
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*, subscription_plans(*)')
+        .eq('user_id', userData.user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      
+      if (!subscription) return 0;
+      
+      const planFeatures = subscription.subscription_plans.features || {};
+      const resourceType = planFeatures.tipo;
+      const precioUnidad = planFeatures.precio_por_unidad || 0;
+      
+      if (resourceType !== 'desarrollo') return 0;
+      
+      return (queryResult.data?.length || 0) * precioUnidad;
+    } catch (error) {
+      console.error("Error calculating billing:", error);
       return 0;
     }
-    
-    return queryResult.data?.length || 0 * (subscriptionInfo.currentPlan?.features.precio_por_unidad || 0);
   };
 
   return {

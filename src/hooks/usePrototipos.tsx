@@ -2,7 +2,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
-import { useSubscriptionInfo } from './useSubscriptionInfo';
 import { toast } from '@/components/ui/use-toast';
 
 export type Prototipo = Tables<"prototipos">;
@@ -20,7 +19,6 @@ type FetchPrototiposOptions = {
 
 export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
   const { limit, desarrolloId, withDesarrollo = false } = options;
-  const { subscriptionInfo } = useSubscriptionInfo();
   
   // Function to fetch prototipos
   const fetchPrototipos = async (): Promise<ExtendedPrototipo[]> => {
@@ -92,44 +90,84 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
   });
 
   // Check if can add more prototipos based on subscription limits
-  const canAddPrototipo = () => {
-    if (!subscriptionInfo.isActive) {
-      toast({
-        title: "Suscripción requerida",
-        description: "Necesitas una suscripción activa para crear prototipos.",
-        variant: "destructive",
-      });
+  const canAddPrototipo = async () => {
+    try {
+      // Fetch subscription data directly
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return false;
+      
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*, subscription_plans(*)')
+        .eq('user_id', userData.user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      
+      if (!subscription) {
+        toast({
+          title: "Suscripción requerida",
+          description: "Necesitas una suscripción activa para crear prototipos.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      const planFeatures = subscription.subscription_plans.features || {};
+      const resourceType = planFeatures.tipo;
+      const resourceLimit = planFeatures.max_recursos;
+      
+      if (resourceType !== 'prototipo' && resourceType !== undefined) {
+        toast({
+          title: "Plan incompatible",
+          description: "Tu plan actual no permite la creación de prototipos. Considera cambiar a un plan por prototipo.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (resourceLimit !== undefined && queryResult.data && queryResult.data.length >= resourceLimit) {
+        toast({
+          title: "Límite alcanzado",
+          description: `Has alcanzado el límite de ${resourceLimit} prototipos de tu plan. Contacta a soporte para aumentar tu límite.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error checking subscription:", error);
       return false;
     }
-
-    if (subscriptionInfo.resourceType !== 'prototipo' && subscriptionInfo.resourceType !== null) {
-      toast({
-        title: "Plan incompatible",
-        description: "Tu plan actual no permite la creación de prototipos. Considera cambiar a un plan por prototipo.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (subscriptionInfo.resourceLimit !== null && subscriptionInfo.resourceCount >= subscriptionInfo.resourceLimit) {
-      toast({
-        title: "Límite alcanzado",
-        description: `Has alcanzado el límite de ${subscriptionInfo.resourceLimit} prototipos de tu plan. Contacta a soporte para aumentar tu límite.`,
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    return true;
   };
 
   // Calculate billing amount for prototipos
-  const calculateBillingAmount = () => {
-    if (!subscriptionInfo.isActive || subscriptionInfo.resourceType !== 'prototipo') {
+  const calculateBillingAmount = async () => {
+    try {
+      // Fetch subscription data directly
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return 0;
+      
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*, subscription_plans(*)')
+        .eq('user_id', userData.user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      
+      if (!subscription) return 0;
+      
+      const planFeatures = subscription.subscription_plans.features || {};
+      const resourceType = planFeatures.tipo;
+      const precioUnidad = planFeatures.precio_por_unidad || 0;
+      
+      if (resourceType !== 'prototipo') return 0;
+      
+      return (queryResult.data?.length || 0) * precioUnidad;
+    } catch (error) {
+      console.error("Error calculating billing:", error);
       return 0;
     }
-    
-    return queryResult.data?.length || 0 * (subscriptionInfo.currentPlan?.features.precio_por_unidad || 0);
   };
 
   return {

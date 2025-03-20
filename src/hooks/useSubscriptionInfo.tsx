@@ -2,8 +2,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
-import useDesarrollos from './useDesarrollos';
-import usePrototipos from './usePrototipos';
 
 export interface SubscriptionPlan {
   id: string;
@@ -33,11 +31,25 @@ export interface SubscriptionInfo {
   isOverVendorLimit: boolean;
 }
 
+// Default empty subscription info
+const getDefaultSubscriptionInfo = (): SubscriptionInfo => ({
+  currentPlan: null,
+  isActive: false,
+  renewalDate: null,
+  resourceCount: 0,
+  resourceLimit: null,
+  resourceType: null,
+  currentBilling: 0,
+  isOverLimit: false,
+  percentUsed: 0,
+  vendorCount: 0,
+  vendorLimit: null,
+  isOverVendorLimit: false
+});
+
 export const useSubscriptionInfo = () => {
   const { userId, empresaId } = useUserRole();
-  const { desarrollos } = useDesarrollos({ empresaId });
-  const { prototipos } = usePrototipos({ withDesarrollo: true });
-
+  
   // Query to fetch the active subscription and plan details
   const { data: subscriptionInfo, isLoading, error } = useQuery({
     queryKey: ['subscriptionInfo', userId, empresaId],
@@ -94,12 +106,25 @@ export const useSubscriptionInfo = () => {
       // Get resource type and count from the plan
       const resourceType = plan.features.tipo || null;
       
-      // Count resources based on plan type
+      // Instead of directly using the hooks, fetch resource counts directly
       let resourceCount = 0;
-      if (resourceType === 'desarrollo') {
-        resourceCount = desarrollos.length;
+      if (resourceType === 'desarrollo' && empresaId) {
+        const { count, error } = await supabase
+          .from('desarrollos')
+          .select('count')
+          .eq('empresa_id', empresaId);
+          
+        if (!error && count) {
+          resourceCount = parseInt(count as unknown as string);
+        }
       } else if (resourceType === 'prototipo') {
-        resourceCount = prototipos.length;
+        const { count, error } = await supabase
+          .from('prototipos')
+          .select('count');
+          
+        if (!error && count) {
+          resourceCount = parseInt(count as unknown as string);
+        }
       }
       
       // Get vendor count for the company
@@ -149,22 +174,6 @@ export const useSubscriptionInfo = () => {
       };
     },
     enabled: !!userId,
-  });
-
-  // Default empty subscription info
-  const getDefaultSubscriptionInfo = (): SubscriptionInfo => ({
-    currentPlan: null,
-    isActive: false,
-    renewalDate: null,
-    resourceCount: 0,
-    resourceLimit: null,
-    resourceType: null,
-    currentBilling: 0,
-    isOverLimit: false,
-    percentUsed: 0,
-    vendorCount: 0,
-    vendorLimit: null,
-    isOverVendorLimit: false
   });
 
   return {
