@@ -9,8 +9,8 @@ interface VentaInfoAlertProps {
 
 export const VentaInfoAlert = ({ className = '' }: VentaInfoAlertProps) => {
   return (
-    <Alert variant="info" className={className}>
-      <InfoIcon className="h-4 w-4" />
+    <Alert variant="default" className={`border-blue-200 bg-blue-50 ${className}`}>
+      <InfoIcon className="h-4 w-4 text-blue-500" />
       <AlertTitle>Flujo de Ventas Automático</AlertTitle>
       <AlertDescription className="text-sm">
         <p className="mb-2">

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { VentaProgress } from './VentaProgress';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, InfoIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface VentasTableProps {
@@ -51,8 +51,8 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
   if (ventas.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center">
-        <Alert variant="info" className="mb-6 max-w-2xl">
-          <AlertCircle className="h-4 w-4" />
+        <Alert variant="default" className="mb-6 max-w-2xl border-blue-200 bg-blue-50">
+          <InfoIcon className="h-4 w-4 text-blue-500" />
           <AlertTitle>Información sobre ventas</AlertTitle>
           <AlertDescription>
             Las ventas se crean automáticamente cuando:
@@ -73,8 +73,8 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
 
   return (
     <div className="space-y-4">
-      <Alert variant="info" className="mb-2">
-        <AlertCircle className="h-4 w-4" />
+      <Alert variant="default" className="mb-2 border-blue-200 bg-blue-50">
+        <InfoIcon className="h-4 w-4 text-blue-500" />
         <AlertTitle>Gestión automática de ventas</AlertTitle>
         <AlertDescription>
           Las ventas se crean y gestionan automáticamente a partir de los cambios en unidades. 
