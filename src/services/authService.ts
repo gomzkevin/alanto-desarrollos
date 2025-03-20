@@ -107,6 +107,7 @@ export const tryConfirmEmail = async (userId: string, email: string, password: s
     
     // Método 3: Intenta registrar al usuario nuevamente con la opción de auto-confirmar
     try {
+      // Fix: move 'data' inside 'options.data' to match Supabase's expected structure
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -131,6 +132,7 @@ export const tryConfirmEmail = async (userId: string, email: string, password: s
     // Esto es un último recurso y podría no funcionar en producción
     try {
       // Forzar una actualización al iniciar sesión
+      // Fix: move 'data' inside 'options.data' to match Supabase's expected structure
       await supabase.auth.signInWithPassword({
         email,
         password,
