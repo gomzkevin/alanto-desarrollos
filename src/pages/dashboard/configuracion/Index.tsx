@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 export function ConfiguracionPage() {
-  const [activeTab, setActiveTab] = useState("perfil");
+  const [activeTab, setActiveTab] = useState<string>("perfil");
   const { isAdmin, userName, userEmail, isLoading: userLoading, userId } = useUserRole();
   const { toast } = useToast();
 
@@ -23,18 +23,10 @@ export function ConfiguracionPage() {
   // Set default tab based on user role
   useEffect(() => {
     console.log("Setting default tab based on admin status:", isAdmin());
-    if (isAdmin()) {
-      setActiveTab("perfil");
-    } else {
+    if (!isAdmin()) {
       setActiveTab("cuenta");
     }
   }, [isAdmin]);
-
-  // Handle tab change
-  const handleTabChange = (value: string) => {
-    console.log("Changing tab to:", value);
-    setActiveTab(value);
-  };
 
   // Simple account settings component for the "Mi Cuenta" tab
   const AccountSettings = () => {
@@ -106,7 +98,7 @@ export function ConfiguracionPage() {
 
         <Tabs 
           value={activeTab} 
-          onValueChange={handleTabChange} 
+          onValueChange={setActiveTab} 
           className="space-y-6"
         >
           <TabsList className="mb-6">
