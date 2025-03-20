@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { signInWithEmailPassword } from "@/services/authService";
+import { Link } from "react-router-dom";
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -36,10 +37,32 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         if (onSuccess) onSuccess();
       } else {
         // Personalizar mensaje de error para hacerlo más amigable
-        let errorMessage = result.error;
-        if (errorMessage?.includes("Email not confirmed") || errorMessage?.includes("Correo no confirmado")) {
-          errorMessage = "Su correo electrónico no ha sido confirmado. Por favor revise su bandeja de entrada.";
-        } else if (errorMessage?.includes("Invalid login credentials")) {
+        let errorMessage = result.error || "Error desconocido al iniciar sesión";
+        
+        if (errorMessage.includes("Email not confirmed") || errorMessage.includes("Correo no confirmado")) {
+          errorMessage = "Su correo electrónico no ha sido confirmado. Intentando confirmar automáticamente...";
+          
+          // Intentamos iniciar sesión nuevamente después de un breve retraso
+          setTimeout(async () => {
+            const retryResult = await signInWithEmailPassword(email, password, true);
+            if (retryResult.success) {
+              toast({
+                title: "Inicio de sesión exitoso",
+                description: "Bienvenido de nuevo",
+              });
+              navigate("/dashboard");
+              if (onSuccess) onSuccess();
+            } else {
+              toast({
+                title: "Error al iniciar sesión",
+                description: "No se pudo confirmar su correo automáticamente. Por favor, contacte al administrador.",
+                variant: "destructive",
+              });
+            }
+            setLoading(false);
+          }, 1500);
+          return;
+        } else if (errorMessage.includes("Invalid login credentials")) {
           errorMessage = "Credenciales incorrectas. Verifique su correo y contraseña.";
         }
         
@@ -48,6 +71,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           description: errorMessage,
           variant: "destructive",
         });
+        setLoading(false);
       }
     } catch (error) {
       console.error("Error en inicio de sesión:", error);
@@ -56,7 +80,6 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         description: "Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde.",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -88,8 +111,13 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       </CardContent>
       <CardFooter className="flex flex-col space-y-2">
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Cargando..." : "Iniciar Sesión"}
+          {loading ? "Procesando..." : "Iniciar Sesión"}
         </Button>
+        <div className="text-sm text-center mt-2">
+          <Link to="/" className="text-indigo-600 hover:text-indigo-800">
+            ¿Olvidó su contraseña?
+          </Link>
+        </div>
       </CardFooter>
     </form>
   );

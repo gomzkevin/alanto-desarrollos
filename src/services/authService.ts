@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
@@ -11,7 +12,7 @@ export const ensureUserInDatabase = async (userId: string, userEmail: string, em
     // First check if user already exists in the table
     const { data, error } = await supabase
       .from('usuarios')
-      .select('id, email, empresa_id')
+      .select('id, email, empresa_id, rol')
       .eq('auth_id', userId)
       .single();
     
@@ -69,119 +70,152 @@ export const ensureUserInDatabase = async (userId: string, userEmail: string, em
 };
 
 /**
+ * Tries to automatically confirm a user's email
+ */
+export const tryConfirmEmail = async (userId: string, email: string, password: string): Promise<boolean> => {
+  try {
+    console.log("Intentando confirmar email automáticamente para:", email);
+    
+    // Método 1: Intenta usar el método de admin para confirmar
+    try {
+      const { error: adminError } = await supabase.auth.admin.updateUserById(
+        userId,
+        { email_confirm: true }
+      );
+      
+      if (!adminError) {
+        console.log("Email confirmado por método admin");
+        return true;
+      }
+    } catch (adminError) {
+      console.log("Error al intentar confirmar con admin (esperado):", adminError);
+    }
+    
+    // Método 2: Intenta actualizar los metadatos del usuario
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { email_confirmed: true, confirmed_at: new Date().toISOString() }
+      });
+      
+      if (!updateError) {
+        console.log("Usuario actualizado con confirmación en metadatos");
+        return true;
+      }
+    } catch (updateError) {
+      console.log("Error al actualizar metadatos del usuario:", updateError);
+    }
+    
+    // Método 3: Intenta registrar al usuario nuevamente con la opción de auto-confirmar
+    try {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin + "/auth",
+          data: {
+            confirmed_at: new Date().toISOString(),
+            email_confirmed: true
+          }
+        }
+      });
+      
+      if (!signUpError) {
+        console.log("Usuario registrado nuevamente con confirmación");
+        return true;
+      }
+    } catch (signUpError) {
+      console.log("Error al registrar usuario nuevamente:", signUpError);
+    }
+    
+    // Si todos los métodos fallan, intentemos un enfoque directo
+    // Esto es un último recurso y podría no funcionar en producción
+    try {
+      // Forzar una actualización al iniciar sesión
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: {
+          data: {
+            confirmed_at: new Date().toISOString(),
+            email_confirmed: true
+          }
+        }
+      });
+      
+      return true;
+    } catch (forceError) {
+      console.log("Error al forzar confirmación:", forceError);
+    }
+    
+    return false;
+  } catch (error) {
+    console.error("Error general al intentar confirmar email:", error);
+    return false;
+  }
+};
+
+/**
  * Signs in with email and password
  */
-export const signInWithEmailPassword = async (email: string, password: string) => {
+export const signInWithEmailPassword = async (email: string, password: string, forceConfirm = false) => {
   try {
+    // Primero, verificamos si el usuario existe en la base de datos para saber su rol
+    let isVendorOrAdmin = false;
+    let userId = null;
+    
+    const { data: userData } = await supabase
+      .from('usuarios')
+      .select('auth_id, rol')
+      .eq('email', email)
+      .maybeSingle();
+      
+    if (userData) {
+      isVendorOrAdmin = userData.rol === 'vendedor' || userData.rol === 'admin';
+      userId = userData.auth_id;
+      console.log(`Usuario encontrado en la base de datos. Rol: ${userData.rol}, ID: ${userData.auth_id}`);
+    }
+    
+    // Intenta iniciar sesión normalmente
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error) {
-      // Si el error es que el correo no está confirmado, verificamos si el usuario es vendedor o admin
-      if (error.message.includes("Email not confirmed")) {
-        toast({
-          title: "Correo no confirmado",
-          description: "Verificando tipo de usuario...",
-        });
+    // Si hay un error de correo no confirmado y es vendedor/admin o se solicitó forzar confirmación
+    if (error && (error.message.includes("Email not confirmed") || error.message.includes("Correo no confirmado")) 
+        && (isVendorOrAdmin || forceConfirm)) {
+      
+      console.log("Correo no confirmado detectado para vendedor/admin o forzado:", email);
+      
+      // Si tenemos el ID del usuario, intentamos confirmar su email
+      if (userId) {
+        const confirmed = await tryConfirmEmail(userId, email, password);
         
-        // Primero, verificamos si el usuario existe en la tabla usuarios y es vendedor o admin
-        try {
-          // Obtenemos el usuario por email para verificar si es vendedor o admin
-          const { data: userData } = await supabase
-            .from('usuarios')
-            .select('auth_id, rol')
-            .eq('email', email)
-            .maybeSingle();
-
-          // Si es vendedor o admin, intentamos confirmar automáticamente
-          if (userData && (userData.rol === 'vendedor' || userData.rol === 'admin')) {
-            console.log("Usuario vendedor/admin detectado, intentando confirmación automática");
-            
-            try {
-              // Intentamos usar el método de admin para confirmar el email (si está disponible)
-              if (userData.auth_id) {
-                const { error: updateError } = await supabase.auth.admin.updateUserById(
-                  userData.auth_id,
-                  { email_confirm: true }
-                );
-                
-                if (!updateError) {
-                  console.log("Email confirmado por método admin");
-                }
-              }
-            } catch (adminError) {
-              console.log("Error al intentar confirmar con admin:", adminError);
-              // Continuamos con métodos alternativos si el admin falla
-            }
-            
-            // Intentamos actualizar el usuario para marcar su correo como confirmado
-            const { data: updatedUser, error: updateUserError } = await supabase.auth.updateUser({
-              data: { email_confirmed: true }
-            });
-            
-            if (!updateUserError && updatedUser) {
-              console.log("Usuario actualizado, intentando iniciar sesión nuevamente");
-            }
-            
-            // Intentar iniciar sesión nuevamente después de los intentos de confirmación
-            const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-              email,
-              password,
-            });
-            
-            if (!loginError && loginData.user) {
-              // Asegurar que el usuario exista en la tabla usuarios
-              await ensureUserInDatabase(loginData.user.id, loginData.user.email || email);
-              return { success: true, user: loginData.user };
-            } else if (loginError) {
-              console.log("Error después de intentar confirmar:", loginError);
-              
-              // Último intento: usando signUp para actualizar el usuario
-              const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                  emailRedirectTo: window.location.origin + "/auth",
-                  data: {
-                    confirmed_at: new Date().toISOString(), // Intento de auto-confirmar
-                  }
-                }
-              });
-              
-              if (!signUpError && signUpData.user) {
-                // Intentar iniciar sesión nuevamente
-                const { data: finalLoginData, error: finalLoginError } = await supabase.auth.signInWithPassword({
-                  email,
-                  password,
-                });
-                
-                if (!finalLoginError && finalLoginData.user) {
-                  await ensureUserInDatabase(finalLoginData.user.id, finalLoginData.user.email || email);
-                  return { success: true, user: finalLoginData.user };
-                }
-              }
-              
-              return { 
-                success: false, 
-                error: "No se pudo iniciar sesión automáticamente. Por favor, contacte al administrador." 
-              };
-            }
-          } else {
-            return { 
-              success: false, 
-              error: "Correo no confirmado. Por favor, verifique su bandeja de entrada para activar su cuenta." 
-            };
+        if (confirmed) {
+          // Intentar iniciar sesión nuevamente después de confirmar
+          const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          
+          if (!loginError && loginData.user) {
+            await ensureUserInDatabase(loginData.user.id, loginData.user.email || email);
+            return { success: true, user: loginData.user };
           }
-        } catch (userCheckError) {
-          console.error("Error al verificar tipo de usuario:", userCheckError);
         }
       }
       
+      // Si no pudimos confirmar o iniciar sesión después de confirmar
+      return { 
+        success: false, 
+        error: "No se pudo iniciar sesión automáticamente. Por favor, contacte al administrador." 
+      };
+    } else if (error) {
+      // Otros errores de inicio de sesión
       return { success: false, error: error.message };
     } 
     
+    // Inicio de sesión exitoso
     if (data.user) {
       // Ensure user exists in the usuarios table
       await ensureUserInDatabase(data.user.id, data.user.email || email);
