@@ -112,11 +112,12 @@ export const usePagos = (compradorVentaId?: string) => {
   const updatePagoEstado = async (id: string, actualizacion: ActualizacionPago) => {
     setIsUpdating(true);
     try {
+      // Utilizar simplemente el id para la actualización, sin incluir joins que podrían causar ambigüedad
       const { data, error } = await supabase
         .from('pagos')
         .update(actualizacion)
         .eq('id', id)
-        .select();
+        .select('*'); // Seleccionar todos los campos en lugar de hacer joins que podrían causar ambigüedad
 
       if (error) throw error;
       
