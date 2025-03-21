@@ -1,9 +1,8 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Stripe } from "https://esm.sh/stripe@12.18.0?target=deno";
 
 // Inicializar Stripe con la clave secreta de API
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || 'sk_test_51R4saiPGxxD3ciXynuLwEj9C344ivGAsOQrN45H6ZP3gw12aywXd9Tui4dzY8iqGPvXLdusBiIxGi4zjy17hI7AH00jfDMq5GL', {
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2023-10-16',
 });
 
@@ -11,30 +10,53 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || 'sk_test_51R4saiP
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req) => {
+  console.log('update-subscription función invocada:', new Date().toISOString());
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  
   // Manejar la petición de preflight OPTIONS
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    console.log('Respondiendo a preflight OPTIONS');
+    return new Response(null, { 
+      status: 204,
+      headers: corsHeaders 
+    });
   }
 
   try {
     console.log('Iniciando actualización de suscripción');
     
-    // Log the original request
-    const originalBody = await req.clone().text();
-    console.log('Request body (raw):', originalBody);
+    // Log de los headers recibidos
+    console.log('Headers recibidos:', JSON.stringify(Object.fromEntries(req.headers)));
     
-    const { subscriptionId, newPlanId, updateUsage = false, timestamp } = await req.json();
+    // Log del cuerpo de la solicitud
+    const bodyText = await req.clone().text();
+    console.log('Cuerpo de la solicitud (raw):', bodyText);
     
-    console.log('Request parsed:', { subscriptionId, newPlanId, updateUsage, timestamp });
+    const requestData = JSON.parse(bodyText);
+    console.log('Datos de solicitud parseados:', requestData);
+    
+    const { subscriptionId, newPlanId, updateUsage = false, timestamp } = requestData;
+    
+    console.log('Parámetros:', { subscriptionId, newPlanId, updateUsage, timestamp });
+    console.log('STRIPE_SECRET_KEY configurada:', !!Deno.env.get('STRIPE_SECRET_KEY'));
     
     if (!subscriptionId) {
       console.error('ID de suscripción faltante');
       return new Response(
-        JSON.stringify({ error: 'Falta el ID de suscripción' }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        JSON.stringify({ 
+          success: false, 
+          error: 'Falta el ID de suscripción',
+          timestamp: new Date().toISOString()
+        }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+        }
       );
     }
 
@@ -261,7 +283,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true,
         message: 'Suscripción actualizada correctamente',
-        subscription: updatedSubscription
+        subscription: updatedSubscription,
+        timestamp: new Date().toISOString()
       }),
       { 
         status: 200, 
@@ -272,9 +295,11 @@ serve(async (req) => {
     console.error('Error general al actualizar la suscripción:', error);
     return new Response(
       JSON.stringify({ 
+        success: false,
         error: 'Error al actualizar la suscripción',
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
+        timestamp: new Date().toISOString()
       }),
       { 
         status: 500, 
@@ -290,9 +315,12 @@ async function handleUsageUpdate(subscriptionId: string) {
   
   try {
     // 1. Obtener la suscripción actual de Stripe
+    console.log('Recuperando suscripción de Stripe');
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    console.log('Suscripción recuperada de Stripe:', subscription.id);
     
     // 2. Obtener la suscripción y el plan de Supabase
+    console.log('Consultando datos de suscripción en Supabase');
     const { data: supabaseData, error } = await fetch(
       `${Deno.env.get('SUPABASE_URL')}/rest/v1/subscriptions?stripe_subscription_id=eq.${subscriptionId}&select=*,subscription_plans(*)`,
       {
@@ -305,16 +333,26 @@ async function handleUsageUpdate(subscriptionId: string) {
       }
     ).then(r => r.json());
     
-    if (error || !supabaseData || supabaseData.length === 0) {
+    if (error) {
       console.error('Error al obtener datos de Supabase:', error);
       throw new Error('No se pudo encontrar la información de suscripción en Supabase');
     }
+    
+    if (!supabaseData || supabaseData.length === 0) {
+      console.error('No se encontraron datos en Supabase para la suscripción:', subscriptionId);
+      throw new Error('No se encontraron datos en Supabase para la suscripción');
+    }
+    
+    console.log('Datos recuperados de Supabase:', JSON.stringify(supabaseData[0]));
     
     const subData = supabaseData[0];
     const planFeatures = subData.subscription_plans.features;
     const planId = subData.plan_id;
     const empresaId = subData.empresa_id;
     const resourceType = planFeatures?.tipo || null;
+    
+    console.log('Tipo de recurso del plan:', resourceType);
+    console.log('ID de empresa:', empresaId);
     
     if (!resourceType) {
       throw new Error('El plan no tiene tipo de recurso definido');
@@ -442,6 +480,7 @@ async function handleUsageUpdate(subscriptionId: string) {
     
     console.log('Metadatos de suscripción actualizados en Stripe:', updatedSub.id);
     
+    console.log('Respuesta de éxito preparada');
     return new Response(
       JSON.stringify({
         success: true,
@@ -451,7 +490,8 @@ async function handleUsageUpdate(subscriptionId: string) {
           resourceType,
           pricePerUnit: precioUnidad,
           calculatedBilling: currentBilling
-        }
+        },
+        timestamp: new Date().toISOString()
       }),
       {
         status: 200,
@@ -462,8 +502,10 @@ async function handleUsageUpdate(subscriptionId: string) {
     console.error('Error al actualizar información de uso:', error);
     return new Response(
       JSON.stringify({
+        success: false,
         error: 'Error al actualizar información de uso',
-        message: error.message
+        message: error.message,
+        timestamp: new Date().toISOString()
       }),
       {
         status: 500,

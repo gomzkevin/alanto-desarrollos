@@ -21,6 +21,7 @@ export const initiateSubscription = async (planId: string, userId: string) => {
         userId,
         successUrl: `${window.location.origin}/dashboard/configuracion?success=true`,
         cancelUrl: `${window.location.origin}/dashboard/configuracion?canceled=true`,
+        timestamp: new Date().toISOString() // Para evitar cachés
       },
     });
 
@@ -55,7 +56,10 @@ export const initiateSubscription = async (planId: string, userId: string) => {
 export const cancelSubscription = async (subscriptionId: string) => {
   try {
     const { data, error } = await supabase.functions.invoke('cancel-subscription', {
-      body: { subscriptionId },
+      body: { 
+        subscriptionId,
+        timestamp: new Date().toISOString() // Para evitar cachés
+      },
     });
 
     if (error) {
@@ -130,42 +134,44 @@ export const updateUsageInformation = async (subscriptionId: string) => {
   try {
     console.log('Enviando solicitud de actualización de uso a Edge Function para:', subscriptionId);
     
-    // Add a random parameter to avoid caching issues
-    const cacheBreaker = `_=${Date.now()}`;
+    const timestamp = Date.now();
+    console.log('Timestamp de solicitud:', timestamp);
     
     const { data, error } = await supabase.functions.invoke('update-subscription', {
       body: { 
         subscriptionId, 
         updateUsage: true,
-        timestamp: new Date().toISOString() // Añadir marca de tiempo para evitar cachés
+        timestamp: timestamp
       },
     });
 
     if (error) {
       console.error('Error al actualizar la información de uso:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar la información de facturación",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (!data?.success) {
-      console.error('Respuesta sin éxito de la función:', data);
-      return false;
+      return {
+        success: false,
+        error: `Error en la llamada a la función: ${error.message}`
+      };
     }
 
     console.log('Respuesta de actualización de uso:', data);
     
-    return true;
+    if (!data?.success) {
+      console.error('Respuesta sin éxito de la función:', data);
+      return {
+        success: false,
+        error: data?.message || 'El servidor no respondió correctamente'
+      };
+    }
+    
+    return {
+      success: true,
+      data: data
+    };
   } catch (error) {
     console.error('Error en updateUsageInformation:', error);
-    toast({
-      title: "Error",
-      description: "Ocurrió un error al procesar tu solicitud",
-      variant: "destructive",
-    });
-    return false;
+    return {
+      success: false,
+      error: `Error: ${error.message || "Error desconocido"}`
+    };
   }
 };

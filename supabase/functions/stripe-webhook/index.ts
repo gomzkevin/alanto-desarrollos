@@ -3,25 +3,29 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Stripe } from "https://esm.sh/stripe@12.18.0?target=deno";
 
 // Inicializar Stripe con la clave secreta de API
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || 'sk_test_51R4saiPGxxD3ciXynuLwEj9C344ivGAsOQrN45H6ZP3gw12aywXd9Tui4dzY8iqGPvXLdusBiIxGi4zjy17hI7AH00jfDMq5GL', {
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2023-10-16',
 });
 
 // Definir los encabezados CORS para permitir peticiones desde cualquier origen
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req) => {
   // Log información general de la solicitud para depuración
-  console.log(`Webhook recibido: ${req.method} ${req.url}`);
+  console.log(`Webhook recibido: ${req.method} ${req.url} en ${new Date().toISOString()}`);
   console.log(`Headers: ${JSON.stringify(Object.fromEntries(req.headers))}`);
   
   // Manejar la petición de preflight OPTIONS
   if (req.method === 'OPTIONS') {
     console.log('Petición OPTIONS recibida, devolviendo headers CORS');
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 204,
+      headers: corsHeaders 
+    });
   }
 
   try {
@@ -35,23 +39,31 @@ serve(async (req) => {
       console.log(`Firma de Stripe recibida: ${signature.substring(0, 20)}...`);
     }
     
+    // Verificar que el webhook secret está configurado
+    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+    if (!webhookSecret) {
+      console.log('Error: STRIPE_WEBHOOK_SECRET no está configurado');
+      return new Response(JSON.stringify({ 
+        error: 'Webhook secret not configured',
+        timestamp: new Date().toISOString() 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    } else {
+      console.log('STRIPE_WEBHOOK_SECRET está configurado correctamente');
+    }
+    
     // Clonar la request para poder leer el cuerpo más de una vez
     const bodyText = await req.text();
     console.log(`Cuerpo de la petición: ${bodyText.substring(0, 200)}...`);
     
     if (!signature) {
-      return new Response(JSON.stringify({ error: 'No signature provided' }), {
+      return new Response(JSON.stringify({ 
+        error: 'No signature provided',
+        timestamp: new Date().toISOString() 
+      }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
-    }
-
-    // Verificar que el evento proviene de Stripe
-    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
-    if (!webhookSecret) {
-      console.log('Error: STRIPE_WEBHOOK_SECRET no está configurado');
-      return new Response(JSON.stringify({ error: 'Webhook secret not configured' }), {
-        status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
@@ -63,7 +75,10 @@ serve(async (req) => {
       console.log(`Evento construido exitosamente: ${event.type}`);
     } catch (err) {
       console.log(`Error al verificar webhook: ${err.message}`);
-      return new Response(JSON.stringify({ error: `Webhook Error: ${err.message}` }), {
+      return new Response(JSON.stringify({ 
+        error: `Webhook Error: ${err.message}`,
+        timestamp: new Date().toISOString() 
+      }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
@@ -100,12 +115,20 @@ serve(async (req) => {
     }
 
     // Responder con éxito
-    return new Response(JSON.stringify({ received: true, type: event.type }), {
+    return new Response(JSON.stringify({ 
+      received: true, 
+      type: event.type,
+      timestamp: new Date().toISOString() 
+    }), {
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   } catch (error) {
     console.error('Error procesando webhook:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error', details: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error', 
+      details: error.message,
+      timestamp: new Date().toISOString() 
+    }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });

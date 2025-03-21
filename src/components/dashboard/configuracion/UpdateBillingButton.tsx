@@ -24,12 +24,22 @@ export function UpdateBillingButton() {
     }
     
     // Get the active subscription from database
-    const { data: activeSubscription } = await supabase
+    const { data: activeSubscription, error: subError } = await supabase
       .from('subscriptions')
       .select('stripe_subscription_id')
       .eq('user_id', userId)
       .eq('status', 'active')
       .maybeSingle();
+      
+    if (subError) {
+      console.error("Error consultando suscripción:", subError);
+      toast({
+        title: "Error",
+        description: "Error al consultar información de la suscripción",
+        variant: "destructive",
+      });
+      return;
+    }
       
     if (!activeSubscription?.stripe_subscription_id) {
       toast({
@@ -44,9 +54,11 @@ export function UpdateBillingButton() {
       setIsLoading(true);
       
       console.log("Actualizando facturación para:", activeSubscription.stripe_subscription_id);
-      const success = await updateUsageInformation(activeSubscription.stripe_subscription_id);
+      const result = await updateUsageInformation(activeSubscription.stripe_subscription_id);
       
-      if (success) {
+      console.log("Resultado de actualización:", result);
+      
+      if (result.success) {
         toast({
           title: "Facturación actualizada",
           description: "La información de facturación ha sido actualizada en base al uso actual",
@@ -55,13 +67,13 @@ export function UpdateBillingButton() {
         // Refresh subscription info after update
         await refetch();
       } else {
-        throw new Error("No se recibió confirmación de éxito del servidor");
+        throw new Error(result.error || "No se recibió confirmación de éxito del servidor");
       }
     } catch (error) {
       console.error("Error actualizando facturación:", error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar la información de facturación",
+        description: error.message || "No se pudo actualizar la información de facturación",
         variant: "destructive",
       });
     } finally {
