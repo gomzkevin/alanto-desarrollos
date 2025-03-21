@@ -17,8 +17,9 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { initiateSubscription, cancelSubscription, updateSubscription, updateUsageInformation } from "@/lib/stripe";
+import { initiateSubscription, cancelSubscription, updateSubscription } from "@/lib/stripe";
 import { useLocation, useNavigate } from "react-router-dom";
+import { UpdateBillingButton } from "./UpdateBillingButton";
 
 interface SubscriptionPlan {
   id: string;
@@ -148,7 +149,6 @@ export function SubscriptionPlans() {
   const handleSubscribe = async (planId: string) => {
     try {
       if (currentSubscription) {
-        // If user already has a subscription, update it instead of creating a new one
         if (!currentSubscription.stripe_subscription_id) {
           toast({
             title: "Error",
@@ -160,7 +160,6 @@ export function SubscriptionPlans() {
         
         setProcessingPlanId(planId);
         
-        // Call the updateSubscription function to change the plan
         const success = await updateSubscription(
           currentSubscription.stripe_subscription_id, 
           planId
@@ -172,7 +171,6 @@ export function SubscriptionPlans() {
             description: "Tu plan de suscripción ha sido actualizado correctamente.",
           });
           
-          // Reload subscription data
           window.location.reload();
         }
         
@@ -181,8 +179,8 @@ export function SubscriptionPlans() {
 
       setProcessingPlanId(planId);
       
-      // For new subscriptions, initiate the subscription process
-      await initiateSubscription(planId);
+      // Pass userId to initiateSubscription
+      await initiateSubscription(planId, userId);
     } catch (error) {
       console.error("Error subscribing to plan:", error);
       toast({
@@ -224,20 +222,6 @@ export function SubscriptionPlans() {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const updateUsageInformation = async (subscriptionId: string) => {
-    try {
-      // Implement logic to update usage information here
-      console.log("Updating usage information for subscription:", subscriptionId);
-    } catch (error) {
-      console.error("Error updating usage information:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar la información de uso.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -379,16 +363,7 @@ export function SubscriptionPlans() {
           <CardFooter>
             <div className="w-full space-y-2">
               <div className="flex gap-2 w-full">
-                {currentSubscription?.stripe_subscription_id && (
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => updateUsageInformation(currentSubscription.stripe_subscription_id)}
-                    disabled={isLoading}
-                  >
-                    Actualizar facturación
-                  </Button>
-                )}
+                <UpdateBillingButton />
                 <Button 
                   variant={currentSubscription?.status === 'active_canceling' ? "outline" : "default"} 
                   className="flex-1"
@@ -514,4 +489,3 @@ export function SubscriptionPlans() {
 }
 
 export default SubscriptionPlans;
-
