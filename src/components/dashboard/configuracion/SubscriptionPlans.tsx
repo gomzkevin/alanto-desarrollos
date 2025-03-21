@@ -17,6 +17,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { initiateSubscription, cancelSubscription } from "@/lib/stripe";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface SubscriptionPlan {
   id: string;
@@ -30,6 +32,7 @@ interface SubscriptionPlan {
     max_vendedores?: number;
     [key: string]: any;
   };
+  stripe_price_id?: string;
 }
 
 interface CurrentSubscription {
@@ -38,14 +41,40 @@ interface CurrentSubscription {
   current_period_end: string;
   plan_id: string;
   subscription_plans: SubscriptionPlan;
+  stripe_subscription_id?: string;
 }
 
 export function SubscriptionPlans() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
   const { userId } = useUserRole();
   const { subscriptionInfo } = useSubscriptionInfo();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Verificar parámetros de URL para mensajes de éxito o cancelación
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const success = searchParams.get('success');
+    const canceled = searchParams.get('canceled');
+    
+    if (success) {
+      toast({
+        title: "Suscripción completada",
+        description: "Tu suscripción ha sido activada correctamente.",
+      });
+      navigate('/dashboard/configuracion', { replace: true });
+    } else if (canceled) {
+      toast({
+        title: "Suscripción cancelada",
+        description: "Has cancelado el proceso de suscripción.",
+        variant: "destructive",
+      });
+      navigate('/dashboard/configuracion', { replace: true });
+    }
+  }, [location, navigate]);
 
   // Helper function to ensure features is always an object
   const normalizeFeatures = (features: any): SubscriptionPlan['features'] => {
@@ -133,55 +162,49 @@ export function SubscriptionPlans() {
         return;
       }
 
-      // Simulate subscription creation
-      setIsLoading(true);
+      setProcessingPlanId(planId);
       
-      const { data: planData, error: planError } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('id', planId)
-        .single();
-        
-      if (planError) throw planError;
+      // Iniciar el proceso de suscripción con Stripe
+      await initiateSubscription(planId);
       
-      // For demo purposes, create a subscription directly
-      const { data: subscriptionData, error: subscriptionError } = await supabase
-        .from('subscriptions')
-        .insert({
-          user_id: userId,
-          plan_id: planId,
-          status: 'active',
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 days
-        })
-        .select('*, subscription_plans(*)');
-      
-      if (subscriptionError) throw subscriptionError;
-      
-      if (subscriptionData && subscriptionData.length > 0) {
-        const typedSubscription: CurrentSubscription = {
-          ...subscriptionData[0],
-          subscription_plans: {
-            ...subscriptionData[0].subscription_plans,
-            interval: subscriptionData[0].subscription_plans.interval === 'year' 
-              ? 'year' 
-              : 'month' as 'month' | 'year',
-            features: normalizeFeatures(subscriptionData[0].subscription_plans.features)
-          }
-        };
-        
-        setCurrentSubscription(typedSubscription);
-      }
-      
-      toast({
-        title: "Suscripción activada",
-        description: `Te has suscrito al plan ${planData.name} correctamente.`,
-      });
     } catch (error) {
       console.error("Error subscribing to plan:", error);
       toast({
         title: "Error",
         description: "Ocurrió un error al procesar la suscripción.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingPlanId(null);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!currentSubscription?.stripe_subscription_id) {
+      toast({
+        title: "Error",
+        description: "No se encontró información de suscripción.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const success = await cancelSubscription(currentSubscription.stripe_subscription_id);
+      
+      if (success) {
+        // Actualizar el UI para mostrar que la suscripción será cancelada
+        setCurrentSubscription({
+          ...currentSubscription,
+          status: 'active_canceling',
+        });
+      }
+    } catch (error) {
+      console.error("Error canceling subscription:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo cancelar la suscripción.",
         variant: "destructive",
       });
     } finally {
@@ -304,14 +327,21 @@ export function SubscriptionPlans() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Estado:</span>
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                      Activo
+                    <Badge variant="outline" className={
+                      currentSubscription?.status === 'active_canceling' 
+                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : "bg-green-50 text-green-700 border-green-200"
+                    }>
+                      {currentSubscription?.status === 'active_canceling' 
+                        ? 'Cancelación programada' 
+                        : 'Activo'}
                     </Badge>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Próxima renovación:</span>
                     <span>
                       {subscriptionInfo.renewalDate?.toLocaleDateString() || 'No disponible'}
+                      {currentSubscription?.status === 'active_canceling' && " (No se renovará)"}
                     </span>
                   </div>
                 </div>
@@ -319,9 +349,23 @@ export function SubscriptionPlans() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button variant="outline" className="w-full">
-              Gestionar Suscripción
-            </Button>
+            <div className="w-full space-y-2">
+              <Button 
+                variant={currentSubscription?.status === 'active_canceling' ? "outline" : "default"} 
+                className="w-full"
+                onClick={handleCancelSubscription}
+                disabled={currentSubscription?.status === 'active_canceling' || isLoading}
+              >
+                {currentSubscription?.status === 'active_canceling' 
+                  ? 'Cancelación programada' 
+                  : 'Cancelar Suscripción'}
+              </Button>
+              {currentSubscription?.status === 'active_canceling' && (
+                <p className="text-xs text-center text-gray-500">
+                  Tu suscripción permanecerá activa hasta el final del período actual.
+                </p>
+              )}
+            </div>
           </CardFooter>
         </Card>
       )}
@@ -334,11 +378,16 @@ export function SubscriptionPlans() {
             Elige el plan que mejor se adapte a tus necesidades.
             {currentSubscription && (
               <div className="mt-2">
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <Badge variant="outline" className={
+                  currentSubscription.status === 'active_canceling' 
+                    ? "bg-amber-50 text-amber-700 border-amber-200"
+                    : "bg-green-50 text-green-700 border-green-200"
+                }>
                   Plan activo: {currentSubscription.subscription_plans.name}
+                  {currentSubscription.status === 'active_canceling' && " (Cancelación programada)"}
                 </Badge>
                 <p className="text-sm mt-1">
-                  Tu suscripción se renovará el {new Date(currentSubscription.current_period_end).toLocaleDateString()}
+                  Tu suscripción {currentSubscription.status === 'active_canceling' ? 'estará activa hasta' : 'se renovará el'} {new Date(currentSubscription.current_period_end).toLocaleDateString()}
                 </p>
               </div>
             )}
@@ -399,10 +448,20 @@ export function SubscriptionPlans() {
                   <CardFooter>
                     <Button 
                       className="w-full" 
-                      disabled={isCurrentPlan || isLoading}
+                      disabled={isCurrentPlan || isLoading || processingPlanId === plan.id}
                       onClick={() => handleSubscribe(plan.id)}
                     >
-                      {isCurrentPlan ? 'Plan Actual' : 'Suscribirse'}
+                      {processingPlanId === plan.id ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Procesando...
+                        </>
+                      ) : (
+                        isCurrentPlan ? 'Plan Actual' : 'Suscribirse'
+                      )}
                     </Button>
                   </CardFooter>
                 </Card>
