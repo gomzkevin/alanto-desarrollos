@@ -216,7 +216,7 @@ export function SubscriptionPlans() {
 
   return (
     <div className="space-y-6">
-      {(user?.role === 'admin' || user?.is_company_admin) && (
+      {(user.isAdmin() || user.userRole === 'admin') && (
         <Card>
           <CardHeader>
             <CardTitle>Herramientas de Administración</CardTitle>
