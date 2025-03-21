@@ -88,8 +88,14 @@ export const cancelSubscription = async (subscriptionId: string) => {
 // Función para modificar una suscripción
 export const updateSubscription = async (subscriptionId: string, newPlanId: string) => {
   try {
+    console.log('Cambiando plan de suscripción:', { subscriptionId, newPlanId });
     const { data, error } = await supabase.functions.invoke('update-subscription', {
-      body: { subscriptionId, newPlanId },
+      body: { 
+        subscriptionId, 
+        newPlanId,
+        // Adding a timestamp to prevent caching
+        timestamp: new Date().toISOString()
+      },
     });
 
     if (error) {
@@ -123,6 +129,10 @@ export const updateSubscription = async (subscriptionId: string, newPlanId: stri
 export const updateUsageInformation = async (subscriptionId: string) => {
   try {
     console.log('Enviando solicitud de actualización de uso a Edge Function para:', subscriptionId);
+    
+    // Add a random parameter to avoid caching issues
+    const cacheBreaker = `_=${Date.now()}`;
+    
     const { data, error } = await supabase.functions.invoke('update-subscription', {
       body: { 
         subscriptionId, 

@@ -14,18 +14,32 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Log información general de la solicitud para depuración
+  console.log(`Webhook recibido: ${req.method} ${req.url}`);
+  console.log(`Headers: ${JSON.stringify(Object.fromEntries(req.headers))}`);
+  
   // Manejar la petición de preflight OPTIONS
   if (req.method === 'OPTIONS') {
+    console.log('Petición OPTIONS recibida, devolviendo headers CORS');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     // Obtener el cuerpo de la petición y la firma
     const signature = req.headers.get('stripe-signature');
-    const body = await req.text();
     
+    // Log para depuración
     if (!signature) {
       console.log('No se encontró firma de Stripe en el encabezado');
+    } else {
+      console.log(`Firma de Stripe recibida: ${signature.substring(0, 20)}...`);
+    }
+    
+    // Clonar la request para poder leer el cuerpo más de una vez
+    const bodyText = await req.text();
+    console.log(`Cuerpo de la petición: ${bodyText.substring(0, 200)}...`);
+    
+    if (!signature) {
       return new Response(JSON.stringify({ error: 'No signature provided' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -45,7 +59,8 @@ serve(async (req) => {
     // Construir el evento desde el cuerpo y la firma
     let event;
     try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      event = stripe.webhooks.constructEvent(bodyText, signature, webhookSecret);
+      console.log(`Evento construido exitosamente: ${event.type}`);
     } catch (err) {
       console.log(`Error al verificar webhook: ${err.message}`);
       return new Response(JSON.stringify({ error: `Webhook Error: ${err.message}` }), {
@@ -55,6 +70,7 @@ serve(async (req) => {
     }
 
     console.log('Evento de Stripe recibido:', event.type);
+    console.log('Datos del evento:', JSON.stringify(event.data.object).substring(0, 300) + '...');
 
     // Manejar diferentes tipos de eventos
     switch (event.type) {
@@ -84,12 +100,12 @@ serve(async (req) => {
     }
 
     // Responder con éxito
-    return new Response(JSON.stringify({ received: true }), {
+    return new Response(JSON.stringify({ received: true, type: event.type }), {
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   } catch (error) {
     console.error('Error procesando webhook:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    return new Response(JSON.stringify({ error: 'Internal server error', details: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
@@ -110,6 +126,8 @@ async function handleSubscriptionChange(subscription: any) {
     cancel_at_period_end: subscription.cancel_at_period_end,
   };
 
+  console.log('Datos a actualizar:', JSON.stringify(dataToUpdate));
+
   // Buscar al usuario basado en el cliente de Stripe
   const { data: supabaseResponse, error } = await fetch(
     `${Deno.env.get('SUPABASE_URL')}/rest/v1/subscriptions?stripe_customer_id=eq.${subscription.customer}`,
@@ -128,9 +146,12 @@ async function handleSubscriptionChange(subscription: any) {
     return;
   }
 
+  console.log('Respuesta de Supabase:', JSON.stringify(supabaseResponse));
+
   // Si encontramos la suscripción, actualizarla
   if (supabaseResponse && supabaseResponse.length > 0) {
     const subscriptionId = supabaseResponse[0].id;
+    console.log(`Actualizando suscripción existente con ID: ${subscriptionId}`);
     
     await fetch(
       `${Deno.env.get('SUPABASE_URL')}/rest/v1/subscriptions?id=eq.${subscriptionId}`,

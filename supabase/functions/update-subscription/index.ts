@@ -21,7 +21,14 @@ serve(async (req) => {
 
   try {
     console.log('Iniciando actualización de suscripción');
+    
+    // Log the original request
+    const originalBody = await req.clone().text();
+    console.log('Request body (raw):', originalBody);
+    
     const { subscriptionId, newPlanId, updateUsage = false, timestamp } = await req.json();
+    
+    console.log('Request parsed:', { subscriptionId, newPlanId, updateUsage, timestamp });
     
     if (!subscriptionId) {
       console.error('ID de suscripción faltante');
@@ -423,16 +430,17 @@ async function handleUsageUpdate(subscriptionId: string) {
     }
     
     // 6. Actualizar los metadatos de la suscripción
-    await stripe.subscriptions.update(subscriptionId, {
+    const updatedSub = await stripe.subscriptions.update(subscriptionId, {
       metadata: {
         plan_id: planId,
         resource_count: resourceCount.toString(),
         resource_type: resourceType,
-        calculated_billing: currentBilling.toString()
+        calculated_billing: currentBilling.toString(),
+        last_updated: new Date().toISOString()
       }
     });
     
-    console.log('Metadatos de suscripción actualizados en Stripe');
+    console.log('Metadatos de suscripción actualizados en Stripe:', updatedSub.id);
     
     return new Response(
       JSON.stringify({

@@ -10,7 +10,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 export function UpdateBillingButton() {
   const [isLoading, setIsLoading] = useState(false);
-  const { subscriptionInfo } = useSubscriptionInfo();
+  const { subscriptionInfo, refetch } = useSubscriptionInfo();
   const { userId } = useUserRole();
   
   const handleUpdateBilling = async () => {
@@ -51,6 +51,9 @@ export function UpdateBillingButton() {
           title: "Facturación actualizada",
           description: "La información de facturación ha sido actualizada en base al uso actual",
         });
+        
+        // Refresh subscription info after update
+        await refetch();
       } else {
         throw new Error("No se recibió confirmación de éxito del servidor");
       }
