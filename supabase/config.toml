@@ -34,8 +34,13 @@ smtp_port = 54325
 pop3_port = 54326
 
 [storage]
-# The port used for the storage service
-port = 54327
+# The storage configuration section
+file_size_limit = "50MiB"
+
+# Configure Storage
+[storage.buckets]
+# The name of the storage bucket
+prototipo_images = { public = true }
 
 [auth]
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used in emails
@@ -55,16 +60,10 @@ double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in
 enable_confirmations = false
 
-# Configure Storage
-[storage.buckets]
-# The name of the storage bucket
-prototipo_images = { public = true }
-
-# Configure Edge Functions
 [functions]
-# The port used for the Functions service
+# The Functions configuration section
 port = 54328
 
 [functions.serve]
-# The maximum number of concurrent Functions
+# The serve configuration subsection
 max_concurrent = 50
