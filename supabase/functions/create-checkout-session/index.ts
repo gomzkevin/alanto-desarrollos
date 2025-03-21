@@ -13,6 +13,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Mapeo de IDs de planes a productos de Stripe
+const STRIPE_PRODUCTS = {
+  desarrollo: 'prod_RyqU9V2MUpdoAE', // Plan por Desarrollo
+  prototipo: 'prod_RyqQdayNykeJTM',  // Plan por Prototipos
+};
+
 serve(async (req) => {
   // Manejar la petición de preflight OPTIONS
   if (req.method === 'OPTIONS') {
@@ -111,6 +117,13 @@ serve(async (req) => {
       customerId = customer.id;
     }
 
+    // Determinar qué producto de Stripe usar según el tipo de plan
+    let stripeProductId;
+    if (plan.features && typeof plan.features === 'object' && plan.features.tipo) {
+      // Usar el tipo del plan para obtener el ID de producto correspondiente
+      stripeProductId = STRIPE_PRODUCTS[plan.features.tipo];
+    }
+
     // Crear una sesión de checkout de Stripe
     let session;
     if (plan.stripe_price_id) {
@@ -131,8 +144,34 @@ serve(async (req) => {
           planId: planId,
         },
       });
+    } else if (stripeProductId) {
+      // Si tenemos un ID de producto basado en el tipo de plan, crear un precio nuevo
+      session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        line_items: [
+          {
+            price_data: {
+              currency: 'mxn',
+              product: stripeProductId,
+              unit_amount: Math.round(plan.price * 100), // Stripe usa centavos
+              recurring: {
+                interval: plan.interval === 'month' ? 'month' : 'year',
+                usage_type: 'licensed', // o 'metered' dependiendo de tu caso
+              },
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata: {
+          userId: userId,
+          planId: planId,
+        },
+      });
     } else {
-      // Si no tiene ID de precio de Stripe, crear un precio temporal
+      // Si no hay ID de producto o precio, crear un producto temporal
       session = await stripe.checkout.sessions.create({
         customer: customerId,
         line_items: [
