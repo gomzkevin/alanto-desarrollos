@@ -1,11 +1,68 @@
 
+# This is the Supabase configuration file
+
+# The project ID is used to identify your project in Supabase
 project_id = "bftuoerxiyocfputahrx"
 
 [api]
-# Igual que la URL del proyecto
-url = "https://bftuoerxiyocfputahrx.supabase.co"
-service_role = ""
+# The port used for the API service
+port = 54321
+# Schemas to expose in your API
+schemas = ["public", "storage", "auth"]
+# Extra schemas to add to the search_path of every request
+extra_search_path = ["public", "extensions"]
+# The maximum number of rows returns from a view, table, or stored procedure
+max_rows = 1000
 
-[storage.prototipo-images]
-public = true
+[db]
+# The port used for the database connection
+port = 54322
+# The database major version to use
+major_version = 15
 
+[studio]
+# The port used for the Studio service
+port = 54323
+
+# Email testing server
+[inbucket]
+# The port used for the email testing server web interface
+port = 54324
+# The port used for the SMTP server
+smtp_port = 54325
+# The port used for the POP3 server
+pop3_port = 54326
+
+[storage]
+# The port used for the storage service
+port = 54327
+
+[auth]
+# The base URL of your website. Used as an allow-list for redirects and for constructing URLs used in emails
+site_url = "http://localhost:3000"
+# A list of URLs that auth can redirect to
+additional_redirect_urls = ["https://localhost:3000"]
+# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week)
+jwt_expiry = 3600
+# Allow/disallow new user signups to your project
+enable_signup = true
+
+[auth.email]
+# Allow/disallow new user signups via email to your project
+enable_signup = true
+# If enabled, a user will be required to confirm any email change on both the old, and new email
+double_confirm_changes = true
+# If enabled, users need to confirm their email address before signing in
+enable_confirmations = false
+
+# Configure Storage
+[storage.buckets]
+# The name of the storage bucket
+prototipo_images = { public = true }
+
+# Configure Edge Functions
+[functions]
+# The port used for the Functions service
+port = 54328
+# The maximum number of concurrent Functions
+max_concurrent = 50
