@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Check, Building, Home, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,10 +17,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { initiateSubscription, cancelSubscription } from "@/lib/stripe";
+import { initiateSubscription, cancelSubscription, updateSubscription } from "@/lib/stripe";
 import { useLocation, useNavigate } from "react-router-dom";
-import { TestSubscriptionCreator } from "./TestSubscriptionCreator";
-import { StripeSubscriptionConnector } from "./StripeSubscriptionConnector";
 
 interface SubscriptionPlan {
   id: string;
@@ -54,7 +53,6 @@ export function SubscriptionPlans() {
   const { subscriptionInfo } = useSubscriptionInfo();
   const location = useLocation();
   const navigate = useNavigate();
-  const user = useUserRole();
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -150,15 +148,40 @@ export function SubscriptionPlans() {
   const handleSubscribe = async (planId: string) => {
     try {
       if (currentSubscription) {
-        toast({
-          title: "Ya tienes una suscripción activa",
-          description: "Contacta a soporte para cambiar de plan.",
-        });
+        // If user already has a subscription, update it instead of creating a new one
+        if (!currentSubscription.stripe_subscription_id) {
+          toast({
+            title: "Error",
+            description: "No se encontró información de suscripción en Stripe.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        setProcessingPlanId(planId);
+        
+        // Call the updateSubscription function to change the plan
+        const success = await updateSubscription(
+          currentSubscription.stripe_subscription_id, 
+          planId
+        );
+        
+        if (success) {
+          toast({
+            title: "Plan actualizado",
+            description: "Tu plan de suscripción ha sido actualizado correctamente.",
+          });
+          
+          // Reload subscription data
+          window.location.reload();
+        }
+        
         return;
       }
 
       setProcessingPlanId(planId);
       
+      // For new subscriptions, initiate the subscription process
       await initiateSubscription(planId);
     } catch (error) {
       console.error("Error subscribing to plan:", error);
@@ -217,23 +240,6 @@ export function SubscriptionPlans() {
 
   return (
     <div className="space-y-6">
-      {(user.isAdmin() || user.userRole === 'admin') && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Herramientas de Administración</CardTitle>
-            <CardDescription>
-              Estas herramientas son solo para administradores
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              <TestSubscriptionCreator />
-              <StripeSubscriptionConnector />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {subscriptionInfo.isActive && subscriptionInfo.currentPlan && (
         <Card>
           <CardHeader>
