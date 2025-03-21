@@ -16,6 +16,7 @@ export const initiateSubscription = async (planId: string, userId: string) => {
 
     // Llamar a una función API para crear una sesión de Stripe
     const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+      method: 'POST',  // Explicitly set method to POST
       body: {
         planId,
         userId,
@@ -56,6 +57,7 @@ export const initiateSubscription = async (planId: string, userId: string) => {
 export const cancelSubscription = async (subscriptionId: string) => {
   try {
     const { data, error } = await supabase.functions.invoke('cancel-subscription', {
+      method: 'POST',  // Explicitly set method to POST
       body: { 
         subscriptionId,
         timestamp: new Date().toISOString() // Para evitar cachés
@@ -94,6 +96,7 @@ export const updateSubscription = async (subscriptionId: string, newPlanId: stri
   try {
     console.log('Cambiando plan de suscripción:', { subscriptionId, newPlanId });
     const { data, error } = await supabase.functions.invoke('update-subscription', {
+      method: 'POST',  // Explicitly set method to POST
       body: { 
         subscriptionId, 
         newPlanId,
@@ -138,6 +141,7 @@ export const updateUsageInformation = async (subscriptionId: string) => {
     console.log('Timestamp de solicitud:', timestamp);
     
     const { data, error } = await supabase.functions.invoke('update-subscription', {
+      method: 'POST',  // Explicitly set method to POST
       body: { 
         subscriptionId, 
         updateUsage: true,

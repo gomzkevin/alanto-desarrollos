@@ -31,11 +31,20 @@ enable_signup = true
 [functions]
 [functions.stripe-webhook]
 verify_jwt = false
+http_method = ["POST"]
+
 [functions.update-subscription]
 verify_jwt = false
+http_method = ["POST"]
+
 [functions.create-checkout-session]
 verify_jwt = false
+http_method = ["POST"]
+
 [functions.cancel-subscription]
 verify_jwt = false
+http_method = ["POST"]
+
 [functions.create-test-subscription]
 verify_jwt = false
+http_method = ["POST"]

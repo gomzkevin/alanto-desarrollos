@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Stripe } from "https://esm.sh/stripe@12.18.0?target=deno";
 
@@ -27,6 +28,22 @@ serve(async (req) => {
     });
   }
 
+  // Verificar que solo aceptamos solicitudes POST
+  if (req.method !== 'POST') {
+    console.error(`Método no permitido: ${req.method}. Solo se acepta POST.`);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'Método no permitido. Solo se acepta POST.',
+        timestamp: new Date().toISOString()
+      }),
+      { 
+        status: 405, 
+        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+      }
+    );
+  }
+
   try {
     console.log('Iniciando actualización de suscripción');
     
@@ -37,8 +54,24 @@ serve(async (req) => {
     const bodyText = await req.clone().text();
     console.log('Cuerpo de la solicitud (raw):', bodyText);
     
-    const requestData = JSON.parse(bodyText);
-    console.log('Datos de solicitud parseados:', requestData);
+    let requestData;
+    try {
+      requestData = JSON.parse(bodyText);
+      console.log('Datos de solicitud parseados:', requestData);
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Invalid JSON in request body',
+          timestamp: new Date().toISOString()
+        }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+        }
+      );
+    }
     
     const { subscriptionId, newPlanId, updateUsage = false, timestamp } = requestData;
     

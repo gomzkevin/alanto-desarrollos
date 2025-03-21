@@ -73,7 +73,7 @@ export function UpdateBillingButton() {
       console.error("Error actualizando facturación:", error);
       toast({
         title: "Error",
-        description: error.message || "No se pudo actualizar la información de facturación",
+        description: "Error al actualizar la facturación. Por favor, inténtalo de nuevo más tarde.",
         variant: "destructive",
       });
     } finally {
