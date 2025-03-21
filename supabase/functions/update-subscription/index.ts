@@ -51,28 +51,39 @@ serve(async (req) => {
     }
 
     const plan = planData[0];
+    
+    // Obtener detalles de la suscripción actual
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    
+    // Determinar el tipo de producto basado en las características del plan
+    let productId = null;
+    if (plan.features && typeof plan.features === 'object' && plan.features.tipo) {
+      // Mapear el tipo de plan a un producto de Stripe
+      if (plan.features.tipo === 'desarrollo') {
+        productId = 'prod_RyqU9V2MUpdoAE'; // Plan por Desarrollo
+      } else if (plan.features.tipo === 'prototipo') {
+        productId = 'prod_RyqQdayNykeJTM'; // Plan por Prototipos
+      }
+    }
+
+    if (!productId) {
+      return new Response(
+        JSON.stringify({ error: 'No se pudo determinar el producto para este plan' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+    
     let priceId = plan.stripe_price_id;
 
-    // Si no tenemos un stripe_price_id, necesitamos crear un nuevo precio
-    if (!priceId) {
-      // Determinar el tipo de producto basado en las características del plan
-      let productId = null;
-      if (plan.features && typeof plan.features === 'object' && plan.features.tipo) {
-        // Mapear el tipo de plan a un producto de Stripe
-        if (plan.features.tipo === 'desarrollo') {
-          productId = 'prod_RyqU9V2MUpdoAE'; // Plan por Desarrollo
-        } else if (plan.features.tipo === 'prototipo') {
-          productId = 'prod_RyqQdayNykeJTM'; // Plan por Prototipos
-        }
-      }
-
-      if (!productId) {
-        return new Response(
-          JSON.stringify({ error: 'No se pudo determinar el producto para este plan' }),
-          { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-        );
-      }
-
+    // Si no tenemos un stripe_price_id o estamos cambiando de tipo de plan, creamos un nuevo precio
+    const currentItemPrice = await stripe.prices.retrieve(subscription.items.data[0].price.id);
+    const currentProductId = currentItemPrice.product;
+    
+    // Si estamos cambiando de tipo de producto (desarrollo a prototipo o viceversa)
+    // o si no tenemos un price_id, necesitamos crear un nuevo precio
+    if (!priceId || currentProductId !== productId) {
+      console.log(`Creando nuevo precio para cambio de plan. Producto actual: ${currentProductId}, Nuevo producto: ${productId}`);
+      
       // Crear un nuevo precio en Stripe
       const price = await stripe.prices.create({
         product: productId,
@@ -104,9 +115,6 @@ serve(async (req) => {
       );
     }
 
-    // Actualizar la suscripción en Stripe
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    
     // Actualizar la suscripción en Stripe
     const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: false,
