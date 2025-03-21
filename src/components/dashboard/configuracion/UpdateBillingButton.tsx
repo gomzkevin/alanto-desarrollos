@@ -4,12 +4,22 @@ import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
 import { updateUsageInformation } from "@/lib/stripe";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
-import { RefreshCcw } from "lucide-react";
+import { RefreshCcw, Power } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function UpdateBillingButton() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeactivating, setIsDeactivating] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { subscriptionInfo, refetch } = useSubscriptionInfo();
   const { userId } = useUserRole();
   
@@ -80,6 +90,63 @@ export function UpdateBillingButton() {
       setIsLoading(false);
     }
   };
+
+  const handleDeactivateSubscription = async () => {
+    try {
+      setIsDeactivating(true);
+      
+      // Get the active subscription from database
+      const { data: activeSubscription, error: subError } = await supabase
+        .from('subscriptions')
+        .select('id, stripe_subscription_id')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle();
+        
+      if (subError) {
+        console.error("Error consultando suscripción:", subError);
+        throw new Error("Error al consultar información de la suscripción");
+      }
+        
+      if (!activeSubscription?.id) {
+        throw new Error("No se pudo encontrar una suscripción activa");
+      }
+      
+      // Mark the subscription as inactive in the database
+      const { error: updateError } = await supabase
+        .from('subscriptions')
+        .update({ 
+          status: 'inactive', 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', activeSubscription.id);
+      
+      if (updateError) {
+        console.error("Error desactivando suscripción:", updateError);
+        throw new Error("Error al desactivar la suscripción");
+      }
+      
+      // Refresh subscription info after update
+      await refetch();
+      
+      toast({
+        title: "Suscripción desactivada",
+        description: "La suscripción ha sido desactivada con éxito. Ahora puedes iniciar una nueva suscripción.",
+      });
+      
+      setDialogOpen(false);
+      
+    } catch (error) {
+      console.error("Error desactivando suscripción:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al desactivar la suscripción",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeactivating(false);
+    }
+  };
   
   // Don't show the button if there's no active subscription
   if (!subscriptionInfo.isActive || !subscriptionInfo.currentPlan) {
@@ -87,16 +154,54 @@ export function UpdateBillingButton() {
   }
   
   return (
-    <Button 
-      variant="outline" 
-      size="sm"
-      onClick={handleUpdateBilling}
-      disabled={isLoading}
-      className="ml-2"
-    >
-      <RefreshCcw className="mr-2 h-4 w-4" />
-      {isLoading ? "Actualizando..." : "Actualizar Facturación"}
-    </Button>
+    <>
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={handleUpdateBilling}
+          disabled={isLoading}
+        >
+          <RefreshCcw className="mr-2 h-4 w-4" />
+          {isLoading ? "Actualizando..." : "Actualizar Facturación"}
+        </Button>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setDialogOpen(true)}
+          className="text-red-500 hover:text-red-600 hover:border-red-300"
+        >
+          <Power className="mr-2 h-4 w-4" />
+          Desactivar Suscripción
+        </Button>
+      </div>
+      
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Desactivar Suscripción</DialogTitle>
+            <DialogDescription>
+              Esta acción desactivará tu suscripción actual en la base de datos para propósitos de prueba. 
+              La suscripción en Stripe no será cancelada, pero podrás iniciar una nueva suscripción.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeactivateSubscription}
+              disabled={isDeactivating}
+            >
+              {isDeactivating ? "Desactivando..." : "Confirmar Desactivación"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
