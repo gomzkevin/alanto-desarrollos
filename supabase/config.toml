@@ -21,19 +21,12 @@ smtp_port = 54325
 pop3_port = 54326
 
 [auth]
-port = 54327
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["https://localhost:3000"]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
 enable_signup = true
-
-[storage]
-port = 54328
-
-[vector]
-port = 54329
 
 [functions]
 [functions.stripe-webhook]
