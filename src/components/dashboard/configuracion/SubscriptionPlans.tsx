@@ -19,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { initiateSubscription, cancelSubscription } from "@/lib/stripe";
 import { useLocation, useNavigate } from "react-router-dom";
 import { TestSubscriptionCreator } from "./TestSubscriptionCreator";
+import { StripeSubscriptionConnector } from "./StripeSubscriptionConnector";
 
 interface SubscriptionPlan {
   id: string;
@@ -227,6 +228,7 @@ export function SubscriptionPlans() {
           <CardContent>
             <div className="flex flex-wrap gap-2">
               <TestSubscriptionCreator />
+              <StripeSubscriptionConnector />
             </div>
           </CardContent>
         </Card>
