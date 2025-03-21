@@ -61,6 +61,9 @@ export function SubscriptionPlans() {
     const success = searchParams.get('success');
     const canceled = searchParams.get('canceled');
     const refresh = searchParams.get('refresh');
+    const timestamp = searchParams.get('t');
+    
+    console.log("URL params:", { success, canceled, refresh, timestamp });
     
     if (success) {
       toast({
@@ -77,8 +80,17 @@ export function SubscriptionPlans() {
       navigate('/dashboard/configuracion', { replace: true });
     } else if (refresh) {
       // Force a refetch of subscription data
+      console.log("Forzando actualización de datos de suscripción debido a parámetro refresh");
       refetchSubscriptionInfo();
-      navigate('/dashboard/configuracion', { replace: true });
+      
+      // Remover el parámetro de refresh pero mantener la vista actual
+      const cleanParams = new URLSearchParams(location.search);
+      cleanParams.delete('refresh');
+      cleanParams.delete('t');
+      navigate({
+        pathname: location.pathname,
+        search: cleanParams.toString() 
+      }, { replace: true });
     }
   }, [location, navigate, refetchSubscriptionInfo]);
 

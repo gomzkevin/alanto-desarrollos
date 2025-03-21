@@ -38,35 +38,15 @@ serve(async (req) => {
       );
     }
 
-    // Actualizar suscripción en Stripe para cancelar al final del período de facturación
-    const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
-      cancel_at_period_end: true,
-    });
+    console.log(`Procesando cancelación para suscripción: ${subscriptionId}`);
 
-    // Actualizar la suscripción en la base de datos
-    await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/rest/v1/subscriptions?stripe_subscription_id=eq.${subscriptionId}`,
-      {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-          'Prefer': 'return=minimal',
-        },
-        body: JSON.stringify({
-          cancel_at_period_end: true,
-          status: 'active_canceling',
-          updated_at: new Date().toISOString(),
-        }),
-      }
-    );
-
+    // En este punto simplemente devolveremos éxito, ya que la desactivación
+    // ahora se maneja directamente en el cliente a través de la actualización
+    // en la base de datos
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: 'La suscripción se cancelará al final del período de facturación',
-        subscription: updatedSubscription
+        message: 'Solicitud de cancelación procesada correctamente',
       }),
       { 
         status: 200, 

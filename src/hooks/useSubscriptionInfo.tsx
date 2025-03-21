@@ -235,8 +235,10 @@ export const useSubscriptionInfo = () => {
       };
     },
     enabled: !!userId,
-    // Add a shorter stale time to ensure data is refreshed more frequently
-    staleTime: 10000, // 10 seconds
+    // Reducir staleTime para actualizar más frecuentemente
+    staleTime: 5000, // 5 segundos
+    // Añadir refetchInterval para actualizar automáticamente
+    refetchInterval: 10000, // 10 segundos
     refetchOnWindowFocus: true,
     refetchOnMount: true,
   });
@@ -245,7 +247,7 @@ export const useSubscriptionInfo = () => {
     subscriptionInfo: subscriptionInfo || getDefaultSubscriptionInfo(),
     isLoading,
     error,
-    refetch  // Add the refetch function to the return value
+    refetch  // Asegurarnos de incluir la función refetch en el retorno
   };
 };
 

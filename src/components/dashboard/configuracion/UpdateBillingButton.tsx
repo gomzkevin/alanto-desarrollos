@@ -142,11 +142,14 @@ export function UpdateBillingButton() {
       
       setDialogOpen(false);
       
-      // Force a complete refresh of the application
+      // Forzar refresco de información de suscripción antes de redirigir
+      await refetch();
+      
+      // Agregar un pequeño retraso antes de recargar
       setTimeout(() => {
-        console.log("Recargando página...");
-        window.location.href = '/dashboard/configuracion';
-      }, 1000);
+        // Usar query parameter para forzar un refresco completo
+        window.location.href = '/dashboard/configuracion?refresh=true&t=' + new Date().getTime();
+      }, 1500);
       
     } catch (error) {
       console.error("Error desactivando suscripción:", error);
