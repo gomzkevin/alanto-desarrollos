@@ -122,8 +122,13 @@ export const updateSubscription = async (subscriptionId: string, newPlanId: stri
 // Función para actualizar la información de uso actual
 export const updateUsageInformation = async (subscriptionId: string) => {
   try {
+    console.log('Enviando solicitud de actualización de uso a Edge Function para:', subscriptionId);
     const { data, error } = await supabase.functions.invoke('update-subscription', {
-      body: { subscriptionId, updateUsage: true },
+      body: { 
+        subscriptionId, 
+        updateUsage: true,
+        timestamp: new Date().toISOString() // Añadir marca de tiempo para evitar cachés
+      },
     });
 
     if (error) {
@@ -136,10 +141,12 @@ export const updateUsageInformation = async (subscriptionId: string) => {
       return false;
     }
 
-    toast({
-      title: "Información actualizada",
-      description: "La información de facturación ha sido actualizada exitosamente",
-    });
+    if (!data?.success) {
+      console.error('Respuesta sin éxito de la función:', data);
+      return false;
+    }
+
+    console.log('Respuesta de actualización de uso:', data);
     
     return true;
   } catch (error) {

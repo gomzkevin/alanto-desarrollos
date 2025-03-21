@@ -43,6 +43,7 @@ export function UpdateBillingButton() {
     try {
       setIsLoading(true);
       
+      console.log("Actualizando facturación para:", activeSubscription.stripe_subscription_id);
       const success = await updateUsageInformation(activeSubscription.stripe_subscription_id);
       
       if (success) {
@@ -50,6 +51,8 @@ export function UpdateBillingButton() {
           title: "Facturación actualizada",
           description: "La información de facturación ha sido actualizada en base al uso actual",
         });
+      } else {
+        throw new Error("No se recibió confirmación de éxito del servidor");
       }
     } catch (error) {
       console.error("Error actualizando facturación:", error);

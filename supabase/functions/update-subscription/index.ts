@@ -21,18 +21,19 @@ serve(async (req) => {
 
   try {
     console.log('Iniciando actualización de suscripción');
-    const { subscriptionId, newPlanId, updateUsage = false } = await req.json();
+    const { subscriptionId, newPlanId, updateUsage = false, timestamp } = await req.json();
     
-    if (!subscriptionId && !updateUsage) {
-      console.error('Parámetros faltantes:', { subscriptionId, newPlanId });
+    if (!subscriptionId) {
+      console.error('ID de suscripción faltante');
       return new Response(
-        JSON.stringify({ error: 'Faltan parámetros requeridos (subscriptionId, newPlanId)' }),
+        JSON.stringify({ error: 'Falta el ID de suscripción' }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 
     // Si es solo una actualización de uso, no necesitamos el newPlanId
-    if (updateUsage && subscriptionId) {
+    if (updateUsage) {
+      console.log(`Solicitud de actualización de uso recibida para suscripción: ${subscriptionId} (${timestamp})`);
       return await handleUsageUpdate(subscriptionId);
     }
 
