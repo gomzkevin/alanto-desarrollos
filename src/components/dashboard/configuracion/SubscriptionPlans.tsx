@@ -51,14 +51,16 @@ export function SubscriptionPlans() {
   const [isLoading, setIsLoading] = useState(true);
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
   const { userId } = useUserRole();
-  const { subscriptionInfo } = useSubscriptionInfo();
+  const { subscriptionInfo, refetch: refetchSubscriptionInfo } = useSubscriptionInfo();
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Revised useEffect for URL parameters and forced refresh
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const success = searchParams.get('success');
     const canceled = searchParams.get('canceled');
+    const refresh = searchParams.get('refresh');
     
     if (success) {
       toast({
@@ -73,8 +75,12 @@ export function SubscriptionPlans() {
         variant: "destructive",
       });
       navigate('/dashboard/configuracion', { replace: true });
+    } else if (refresh) {
+      // Force a refetch of subscription data
+      refetchSubscriptionInfo();
+      navigate('/dashboard/configuracion', { replace: true });
     }
-  }, [location, navigate]);
+  }, [location, navigate, refetchSubscriptionInfo]);
 
   const normalizeFeatures = (features: any): SubscriptionPlan['features'] => {
     if (!features) return {};
@@ -83,6 +89,8 @@ export function SubscriptionPlans() {
   };
 
   useEffect(() => {
+    console.log("Subscription status in SubscriptionPlans:", subscriptionInfo.isActive);
+    
     const fetchPlansAndSubscription = async () => {
       if (!userId) return;
       
@@ -106,6 +114,8 @@ export function SubscriptionPlans() {
 
         setPlans(typedPlans);
 
+        // Check explicitly for active subscriptions
+        console.log("Fetching active subscription for user:", userId);
         const { data: subData, error: subError } = await supabase
           .from('subscriptions')
           .select('*, subscription_plans(*)')
@@ -113,11 +123,14 @@ export function SubscriptionPlans() {
           .eq('status', 'active')
           .maybeSingle();
 
+        console.log("Subscription query result:", subData, subError);
+
         if (subError && subError.code !== 'PGRST116') {
           throw subError;
         }
 
         if (subData) {
+          console.log("Found active subscription:", subData);
           const typedSubscription: CurrentSubscription = {
             ...subData,
             subscription_plans: {
@@ -130,6 +143,9 @@ export function SubscriptionPlans() {
           };
           
           setCurrentSubscription(typedSubscription);
+        } else {
+          console.log("No active subscription found");
+          setCurrentSubscription(null);
         }
       } catch (error) {
         console.error("Error fetching subscription data:", error);
@@ -144,7 +160,7 @@ export function SubscriptionPlans() {
     };
 
     fetchPlansAndSubscription();
-  }, [userId]);
+  }, [userId, subscriptionInfo.isActive]);
 
   const handleSubscribe = async (planId: string) => {
     try {

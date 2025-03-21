@@ -235,6 +235,10 @@ export const useSubscriptionInfo = () => {
       };
     },
     enabled: !!userId,
+    // Add a shorter stale time to ensure data is refreshed more frequently
+    staleTime: 10000, // 10 seconds
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 
   return {

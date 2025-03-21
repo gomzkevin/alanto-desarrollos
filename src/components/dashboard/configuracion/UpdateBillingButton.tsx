@@ -114,21 +114,26 @@ export function UpdateBillingButton() {
         throw new Error("No se pudo encontrar una suscripción activa");
       }
       
-      console.log("Desactivando suscripción:", activeSubscription.id);
+      console.log("Desactivando suscripción ID:", activeSubscription.id);
       
-      // Mark the subscription as inactive in the database
-      const { error: updateError } = await supabase
+      // Mark the subscription as inactive in the database - adding a more explicit log
+      console.log("Estado antes de actualizar:", 'active', "cambiando a:", 'inactive');
+      
+      const { data: updateData, error: updateError } = await supabase
         .from('subscriptions')
         .update({ 
           status: 'inactive', 
           updated_at: new Date().toISOString() 
         })
-        .eq('id', activeSubscription.id);
+        .eq('id', activeSubscription.id)
+        .select();
       
       if (updateError) {
         console.error("Error desactivando suscripción:", updateError);
         throw new Error("Error al desactivar la suscripción");
       }
+      
+      console.log("Resultado de actualización:", updateData);
       
       toast({
         title: "Suscripción desactivada",
@@ -137,8 +142,11 @@ export function UpdateBillingButton() {
       
       setDialogOpen(false);
       
-      // Force a complete refresh to update the UI
-      navigate(0);
+      // Force a complete refresh of the application
+      setTimeout(() => {
+        console.log("Recargando página...");
+        window.location.href = '/dashboard/configuracion';
+      }, 1000);
       
     } catch (error) {
       console.error("Error desactivando suscripción:", error);
