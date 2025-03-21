@@ -29,5 +29,5 @@ enabled = true
 enabled = true
 
 [functions]
-[functions.serve]
-port = 54325
+enabled = true
+
