@@ -52,7 +52,7 @@ export const useSubscriptionInfo = () => {
   const { userId, empresaId } = useUserRole();
   
   // Query to fetch the active subscription and plan details
-  const { data: subscriptionInfo, isLoading, error } = useQuery({
+  const { data: subscriptionInfo, isLoading, error, refetch } = useQuery({
     queryKey: ['subscriptionInfo', userId, empresaId],
     queryFn: async (): Promise<SubscriptionInfo> => {
       if (!userId) {
@@ -240,7 +240,8 @@ export const useSubscriptionInfo = () => {
   return {
     subscriptionInfo: subscriptionInfo || getDefaultSubscriptionInfo(),
     isLoading,
-    error
+    error,
+    refetch  // Add the refetch function to the return value
   };
 };
 
