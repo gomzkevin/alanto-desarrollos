@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 
 export function UpdateBillingButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -22,6 +23,7 @@ export function UpdateBillingButton() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { subscriptionInfo, refetch } = useSubscriptionInfo();
   const { userId } = useUserRole();
+  const navigate = useNavigate();
   
   const handleUpdateBilling = async () => {
     if (!subscriptionInfo.currentPlan || !subscriptionInfo.isActive) {
@@ -112,6 +114,8 @@ export function UpdateBillingButton() {
         throw new Error("No se pudo encontrar una suscripción activa");
       }
       
+      console.log("Desactivando suscripción:", activeSubscription.id);
+      
       // Mark the subscription as inactive in the database
       const { error: updateError } = await supabase
         .from('subscriptions')
@@ -126,15 +130,15 @@ export function UpdateBillingButton() {
         throw new Error("Error al desactivar la suscripción");
       }
       
-      // Refresh subscription info after update
-      await refetch();
-      
       toast({
         title: "Suscripción desactivada",
         description: "La suscripción ha sido desactivada con éxito. Ahora puedes iniciar una nueva suscripción.",
       });
       
       setDialogOpen(false);
+      
+      // Force a complete refresh to update the UI
+      navigate(0);
       
     } catch (error) {
       console.error("Error desactivando suscripción:", error);
