@@ -64,5 +64,7 @@ prototipo_images = { public = true }
 [functions]
 # The port used for the Functions service
 port = 54328
+
+[functions.serve]
 # The maximum number of concurrent Functions
 max_concurrent = 50
