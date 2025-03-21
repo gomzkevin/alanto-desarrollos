@@ -1,13 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "@/components/ui/use-toast";
 
 // Función para iniciar una suscripción
-export const initiateSubscription = async (planId: string) => {
-  try {
-    const { userId } = useUserRole();
-    
+export const initiateSubscription = async (planId: string, userId: string) => {
+  try {    
     if (!userId) {
       toast({
         title: "Error",
