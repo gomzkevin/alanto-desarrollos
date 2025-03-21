@@ -121,3 +121,37 @@ export const updateSubscription = async (subscriptionId: string, newPlanId: stri
     return false;
   }
 };
+
+// Función para actualizar la información de uso actual
+export const updateUsageInformation = async (subscriptionId: string) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('update-subscription', {
+      body: { subscriptionId, updateUsage: true },
+    });
+
+    if (error) {
+      console.error('Error al actualizar la información de uso:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la información de facturación",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    toast({
+      title: "Información actualizada",
+      description: "La información de facturación ha sido actualizada exitosamente",
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error en updateUsageInformation:', error);
+    toast({
+      title: "Error",
+      description: "Ocurrió un error al procesar tu solicitud",
+      variant: "destructive",
+    });
+    return false;
+  }
+};

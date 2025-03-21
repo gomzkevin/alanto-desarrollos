@@ -21,14 +21,19 @@ serve(async (req) => {
 
   try {
     console.log('Iniciando actualización de suscripción');
-    const { subscriptionId, newPlanId } = await req.json();
+    const { subscriptionId, newPlanId, updateUsage = false } = await req.json();
     
-    if (!subscriptionId || !newPlanId) {
+    if (!subscriptionId && !updateUsage) {
       console.error('Parámetros faltantes:', { subscriptionId, newPlanId });
       return new Response(
         JSON.stringify({ error: 'Faltan parámetros requeridos (subscriptionId, newPlanId)' }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
+    }
+
+    // Si es solo una actualización de uso, no necesitamos el newPlanId
+    if (updateUsage && subscriptionId) {
+      return await handleUsageUpdate(subscriptionId);
     }
 
     console.log(`Actualizando suscripción ${subscriptionId} al plan ${newPlanId}`);
@@ -233,6 +238,17 @@ serve(async (req) => {
       // Continuamos aunque falle la actualización en Supabase, ya que la actualización en Stripe fue exitosa
     }
 
+    // Si acabamos de cambiar el plan, también actualizamos el uso
+    if (updatedSubscription) {
+      // Intentamos actualizar la información de uso inmediatamente después
+      try {
+        await handleUsageUpdate(subscriptionId);
+      } catch (usageError) {
+        console.error('Error al actualizar el uso después del cambio de plan:', usageError);
+        // No interrumpimos el flujo si falla, ya que el cambio de plan fue exitoso
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true,
@@ -259,3 +275,191 @@ serve(async (req) => {
     );
   }
 });
+
+// Función para manejar la actualización de uso y facturación
+async function handleUsageUpdate(subscriptionId: string) {
+  console.log(`Actualizando información de uso para suscripción: ${subscriptionId}`);
+  
+  try {
+    // 1. Obtener la suscripción actual de Stripe
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    
+    // 2. Obtener la suscripción y el plan de Supabase
+    const { data: supabaseData, error } = await fetch(
+      `${Deno.env.get('SUPABASE_URL')}/rest/v1/subscriptions?stripe_subscription_id=eq.${subscriptionId}&select=*,subscription_plans(*)`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+      }
+    ).then(r => r.json());
+    
+    if (error || !supabaseData || supabaseData.length === 0) {
+      console.error('Error al obtener datos de Supabase:', error);
+      throw new Error('No se pudo encontrar la información de suscripción en Supabase');
+    }
+    
+    const subData = supabaseData[0];
+    const planFeatures = subData.subscription_plans.features;
+    const planId = subData.plan_id;
+    const empresaId = subData.empresa_id;
+    const resourceType = planFeatures?.tipo || null;
+    
+    if (!resourceType) {
+      throw new Error('El plan no tiene tipo de recurso definido');
+    }
+    
+    // 3. Contar los recursos según el tipo de plan
+    let resourceCount = 0;
+    if (resourceType === 'desarrollo' && empresaId) {
+      // Contar desarrollos
+      const { count, error: countError } = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/rest/v1/desarrollos?empresa_id=eq.${empresaId}&select=count=exact`,
+        {
+          method: 'HEAD',
+          headers: {
+            'Content-Type': 'application/json',
+            'Apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            'Prefer': 'count=exact',
+          },
+        }
+      ).then(r => ({
+        count: parseInt(r.headers.get('content-range')?.split('/')[1] || '0', 10),
+        error: r.ok ? null : 'Error en conteo'
+      }));
+      
+      if (countError) {
+        console.error('Error al contar desarrollos:', countError);
+      } else {
+        resourceCount = count;
+      }
+    } else if (resourceType === 'prototipo' && empresaId) {
+      // Obtener desarrollos de la empresa
+      const { data: desarrollos, error: desarError } = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/rest/v1/desarrollos?empresa_id=eq.${empresaId}&select=id`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          },
+        }
+      ).then(r => r.json());
+      
+      if (desarError || !desarrollos) {
+        console.error('Error al obtener desarrollos:', desarError);
+      } else if (desarrollos.length > 0) {
+        // Obtener todos los IDs de desarrollos
+        const desarrolloIds = desarrollos.map((d: any) => d.id);
+        
+        // Contar prototipos
+        const { count, error: protoError } = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/rest/v1/prototipos?desarrollo_id=in.(${desarrolloIds.join(',')})&select=count=exact`,
+          {
+            method: 'HEAD',
+            headers: {
+              'Content-Type': 'application/json',
+              'Apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              'Prefer': 'count=exact',
+            },
+          }
+        ).then(r => ({
+          count: parseInt(r.headers.get('content-range')?.split('/')[1] || '0', 10),
+          error: r.ok ? null : 'Error en conteo'
+        }));
+        
+        if (protoError) {
+          console.error('Error al contar prototipos:', protoError);
+        } else {
+          resourceCount = count;
+        }
+      }
+    }
+    
+    console.log(`Recursos contados: ${resourceCount} ${resourceType}s`);
+    
+    // 4. Calcular precio adicional por unidad
+    const precioUnidad = planFeatures?.precio_por_unidad || 0;
+    const currentBilling = resourceCount * precioUnidad;
+    console.log(`Precio calculado: ${resourceCount} x $${precioUnidad} = $${currentBilling}`);
+    
+    // 5. Actualizar el invoice item en Stripe para reflejar el uso
+    const invoiceItems = await stripe.invoiceItems.list({
+      subscription: subscriptionId,
+      pending: true
+    });
+    
+    // Eliminar ítems de factura pendientes para esta suscripción para evitar duplicados
+    for (const item of invoiceItems.data) {
+      if (item.description?.includes('Cargo por recursos adicionales')) {
+        await stripe.invoiceItems.del(item.id);
+        console.log(`Eliminado ítem de factura previo: ${item.id}`);
+      }
+    }
+    
+    // Añadir nuevo ítem de factura si hay recursos adicionales
+    if (currentBilling > 0) {
+      const invoiceItem = await stripe.invoiceItems.create({
+        customer: subscription.customer as string,
+        subscription: subscriptionId,
+        amount: Math.round(currentBilling * 100), // Convertir a centavos
+        currency: 'mxn',
+        description: `Cargo por recursos adicionales - ${resourceCount} ${resourceType}s`,
+        metadata: {
+          resource_count: resourceCount.toString(),
+          resource_type: resourceType,
+          price_per_unit: precioUnidad.toString()
+        }
+      });
+      
+      console.log(`Ítem de factura creado: ${invoiceItem.id} por $${currentBilling}`);
+    }
+    
+    // 6. Actualizar los metadatos de la suscripción
+    await stripe.subscriptions.update(subscriptionId, {
+      metadata: {
+        plan_id: planId,
+        resource_count: resourceCount.toString(),
+        resource_type: resourceType,
+        calculated_billing: currentBilling.toString()
+      }
+    });
+    
+    console.log('Metadatos de suscripción actualizados en Stripe');
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'Información de uso actualizada correctamente',
+        usage: {
+          resourceCount,
+          resourceType,
+          pricePerUnit: precioUnidad,
+          calculatedBilling: currentBilling
+        }
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      }
+    );
+  } catch (error) {
+    console.error('Error al actualizar información de uso:', error);
+    return new Response(
+      JSON.stringify({
+        error: 'Error al actualizar información de uso',
+        message: error.message
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      }
+    );
+  }
+}

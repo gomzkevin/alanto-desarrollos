@@ -17,7 +17,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { initiateSubscription, cancelSubscription, updateSubscription } from "@/lib/stripe";
+import { initiateSubscription, cancelSubscription, updateSubscription, updateUsageInformation } from "@/lib/stripe";
 import { useLocation, useNavigate } from "react-router-dom";
 
 interface SubscriptionPlan {
@@ -227,6 +227,20 @@ export function SubscriptionPlans() {
     }
   };
 
+  const updateUsageInformation = async (subscriptionId: string) => {
+    try {
+      // Implement logic to update usage information here
+      console.log("Updating usage information for subscription:", subscriptionId);
+    } catch (error) {
+      console.error("Error updating usage information:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la información de uso.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -364,16 +378,28 @@ export function SubscriptionPlans() {
           </CardContent>
           <CardFooter>
             <div className="w-full space-y-2">
-              <Button 
-                variant={currentSubscription?.status === 'active_canceling' ? "outline" : "default"} 
-                className="w-full"
-                onClick={handleCancelSubscription}
-                disabled={currentSubscription?.status === 'active_canceling' || isLoading}
-              >
-                {currentSubscription?.status === 'active_canceling' 
-                  ? 'Cancelación programada' 
-                  : 'Cancelar Suscripción'}
-              </Button>
+              <div className="flex gap-2 w-full">
+                {currentSubscription?.stripe_subscription_id && (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => updateUsageInformation(currentSubscription.stripe_subscription_id)}
+                    disabled={isLoading}
+                  >
+                    Actualizar facturación
+                  </Button>
+                )}
+                <Button 
+                  variant={currentSubscription?.status === 'active_canceling' ? "outline" : "default"} 
+                  className="flex-1"
+                  onClick={handleCancelSubscription}
+                  disabled={currentSubscription?.status === 'active_canceling' || isLoading}
+                >
+                  {currentSubscription?.status === 'active_canceling' 
+                    ? 'Cancelación programada' 
+                    : 'Cancelar Suscripción'}
+                </Button>
+              </div>
               {currentSubscription?.status === 'active_canceling' && (
                 <p className="text-xs text-center text-gray-500">
                   Tu suscripción permanecerá activa hasta el final del período actual.
@@ -488,3 +514,4 @@ export function SubscriptionPlans() {
 }
 
 export default SubscriptionPlans;
+
