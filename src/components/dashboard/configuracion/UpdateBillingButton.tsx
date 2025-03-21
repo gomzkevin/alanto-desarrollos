@@ -61,7 +61,7 @@ export function UpdateBillingButton() {
       if (result.success) {
         toast({
           title: "Facturación actualizada",
-          description: "La información de facturación ha sido actualizada en base al uso actual",
+          description: "La información de uso ha sido actualizada correctamente",
         });
         
         // Refresh subscription info after update
