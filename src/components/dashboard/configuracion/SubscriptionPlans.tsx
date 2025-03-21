@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Check, Building, Home, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { initiateSubscription, cancelSubscription } from "@/lib/stripe";
 import { useLocation, useNavigate } from "react-router-dom";
+import { TestSubscriptionCreator } from "./TestSubscriptionCreator";
 
 interface SubscriptionPlan {
   id: string;
@@ -53,8 +53,8 @@ export function SubscriptionPlans() {
   const { subscriptionInfo } = useSubscriptionInfo();
   const location = useLocation();
   const navigate = useNavigate();
+  const user = useUserRole();
 
-  // Verificar parámetros de URL para mensajes de éxito o cancelación
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const success = searchParams.get('success');
@@ -76,11 +76,10 @@ export function SubscriptionPlans() {
     }
   }, [location, navigate]);
 
-  // Helper function to ensure features is always an object
   const normalizeFeatures = (features: any): SubscriptionPlan['features'] => {
     if (!features) return {};
     if (typeof features === 'object' && !Array.isArray(features)) return features;
-    return {}; // Default empty object if features is not in expected format
+    return {};
   };
 
   useEffect(() => {
@@ -90,7 +89,6 @@ export function SubscriptionPlans() {
       try {
         setIsLoading(true);
         
-        // Fetch plans
         const { data: plansData, error: plansError } = await supabase
           .from('subscription_plans')
           .select('*')
@@ -100,7 +98,6 @@ export function SubscriptionPlans() {
           throw plansError;
         }
 
-        // Convert and ensure proper typing
         const typedPlans: SubscriptionPlan[] = plansData?.map(plan => ({
           ...plan,
           interval: plan.interval === 'year' ? 'year' : 'month' as 'month' | 'year',
@@ -109,7 +106,6 @@ export function SubscriptionPlans() {
 
         setPlans(typedPlans);
 
-        // Fetch current subscription
         const { data: subData, error: subError } = await supabase
           .from('subscriptions')
           .select('*, subscription_plans(*)')
@@ -121,7 +117,6 @@ export function SubscriptionPlans() {
           throw subError;
         }
 
-        // If we have subscription data, properly type it
         if (subData) {
           const typedSubscription: CurrentSubscription = {
             ...subData,
@@ -153,7 +148,6 @@ export function SubscriptionPlans() {
 
   const handleSubscribe = async (planId: string) => {
     try {
-      // Check if user already has a subscription
       if (currentSubscription) {
         toast({
           title: "Ya tienes una suscripción activa",
@@ -164,9 +158,7 @@ export function SubscriptionPlans() {
 
       setProcessingPlanId(planId);
       
-      // Iniciar el proceso de suscripción con Stripe
       await initiateSubscription(planId);
-      
     } catch (error) {
       console.error("Error subscribing to plan:", error);
       toast({
@@ -194,7 +186,6 @@ export function SubscriptionPlans() {
       const success = await cancelSubscription(currentSubscription.stripe_subscription_id);
       
       if (success) {
-        // Actualizar el UI para mostrar que la suscripción será cancelada
         setCurrentSubscription({
           ...currentSubscription,
           status: 'active_canceling',
@@ -225,7 +216,22 @@ export function SubscriptionPlans() {
 
   return (
     <div className="space-y-6">
-      {/* Resumen de facturación */}
+      {(user?.role === 'admin' || user?.is_company_admin) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Herramientas de Administración</CardTitle>
+            <CardDescription>
+              Estas herramientas son solo para administradores
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <TestSubscriptionCreator />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {subscriptionInfo.isActive && subscriptionInfo.currentPlan && (
         <Card>
           <CardHeader>
@@ -370,7 +376,6 @@ export function SubscriptionPlans() {
         </Card>
       )}
 
-      {/* Planes disponibles */}
       <Card>
         <CardHeader>
           <CardTitle>Planes de Suscripción</CardTitle>
