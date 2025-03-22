@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ const LeadsPage = () => {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const { empresaId } = useUserRole();
   
+  // Pass empresaId to useLeads to filter correctly
   const { 
     leads, 
     isLoading, 
@@ -62,7 +64,8 @@ const LeadsPage = () => {
     empresa_id: empresaId
   });
   
-  const { desarrollos } = useDesarrollos();
+  // Use the empresaId for desarrollos and prototipos as well
+  const { desarrollos } = useDesarrollos({ empresaId });
   const { prototipos } = usePrototipos();
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {

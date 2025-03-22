@@ -27,7 +27,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     setErrorMessage(null);
     
     try {
-      // Fix here: Remove the third argument that's causing the error
+      // Fix here: Just pass email and password - remove the third argument that's causing the error
       const result = await signInWithEmailPassword(email, password);
       
       if (result.success) {
