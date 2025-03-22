@@ -42,19 +42,12 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
       );
       
       if (result.success) {
-        if (result.user || result.autoSignIn) {
-          toast({
-            title: "Registro e inicio de sesión exitosos",
-            description: result.message || "Has sido registrado e iniciado sesión automáticamente",
-          });
-          navigate("/dashboard");
-          if (onSuccess) onSuccess();
-        } else {
-          toast({
-            title: "Registro exitoso",
-            description: result.message || "Por favor, revisa tu correo electrónico para confirmar tu cuenta",
-          });
-        }
+        toast({
+          title: "Registro exitoso",
+          description: "Has sido registrado correctamente",
+        });
+        navigate("/dashboard");
+        if (onSuccess) onSuccess();
       } else {
         setError(result.error || "Error desconocido al registrarse");
       }

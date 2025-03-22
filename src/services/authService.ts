@@ -101,117 +101,18 @@ export const createEmpresa = async (nombre: string): Promise<number | null> => {
 };
 
 /**
- * Checks if a user's email is confirmed
- */
-export const isEmailConfirmed = async (email: string): Promise<boolean> => {
-  try {
-    // This was causing the TypeScript error:
-    // The Supabase API doesn't accept 'filter' in PageParams for listUsers
-    // Let's use a different approach that's compatible with the API
-    
-    // Try to get user by email using auth API
-    const { data: { users }, error } = await supabase.auth.admin.listUsers();
-    
-    if (error || !users) {
-      console.log("No se pudo obtener información de usuarios:", error);
-      return false;
-    }
-    
-    // Find user with matching email
-    // Fix TypeScript error by properly typing the users array
-    const user = users.find((u: { email?: string }) => u.email === email);
-    if (!user) {
-      console.log("No se encontró usuario con email:", email);
-      return false;
-    }
-    
-    return !!(user as any).email_confirmed_at;
-  } catch (error) {
-    console.log("Error al verificar confirmación de email:", error);
-    return false;
-  }
-};
-
-/**
- * Marked as deprecated - replaced with more direct approach
- * Tries to automatically confirm a user's email - this doesn't work with Supabase's restrictions
- */
-export const tryConfirmEmail = async (userId: string, email: string, password: string): Promise<boolean> => {
-  console.log("Esta función ya no se utiliza directamente. Se recomienda actualizar al enfoque de autoconfirmación durante el signup.");
-  return false;
-};
-
-/**
  * Signs in with email and password
  */
-export const signInWithEmailPassword = async (email: string, password: string, forceConfirm = false) => {
+export const signInWithEmailPassword = async (email: string, password: string) => {
   try {
-    // Primero, verificamos si el usuario existe en la base de datos para saber su rol
-    let isVendorOrAdmin = false;
-    let userId = null;
-    
-    // Intenta obtener información del usuario desde la tabla usuarios
-    const { data: userData } = await supabase
-      .from('usuarios')
-      .select('auth_id, rol')
-      .eq('email', email)
-      .maybeSingle();
-      
-    if (userData) {
-      isVendorOrAdmin = userData.rol === 'vendedor' || userData.rol === 'admin';
-      userId = userData.auth_id;
-      console.log(`Usuario encontrado en la base de datos. Rol: ${userData.rol}, ID: ${userData.auth_id}`);
-    }
-    
-    // Intenta iniciar sesión normalmente
+    // Intenta iniciar sesión
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    // Si hay un error de correo no confirmado
-    if (error && (error.message.includes("Email not confirmed") || error.message.includes("Correo no confirmado"))) {
-      console.log("Correo no confirmado detectado para usuario:", email);
-      
-      // Intentar alternativa para iniciar sesión (autoconfirmación en registro)
-      console.log("Intentando registro con autoconfirmación para:", email);
-      
-      // Para vendedores, intentamos un enfoque de registro automático 
-      // que aprovecha la opción de confirmación en los metadatos
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin + "/auth",
-          data: {
-            confirmed_at: new Date().toISOString(),
-            email_confirmed: true
-          }
-        }
-      });
-      
-      if (!signUpError && signUpData.user) {
-        console.log("Registro exitoso con datos de autoconfirmación:", signUpData.user.id);
-        
-        // Si es un usuario existente, intentar iniciar sesión inmediatamente
-        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (!loginError && loginData.user) {
-          await ensureUserInDatabase(loginData.user.id, loginData.user.email || email);
-          return { success: true, user: loginData.user };
-        }
-      }
-      
-      // Si todo lo anterior falla, regresamos un mensaje amigable
-      return { 
-        success: false, 
-        error: "No se pudo iniciar sesión. Por favor, contacte al administrador para verificar su cuenta." 
-      };
-    } else if (error) {
-      // Otros errores de inicio de sesión
+    if (error) {
+      // Manejo de errores
       let friendlyError = error.message;
       
       if (error.message.includes("Invalid login credentials")) {
@@ -254,79 +155,21 @@ export const signUpWithEmailPassword = async (
       console.log("Nueva empresa creada con ID:", empresaId);
     }
     
-    // First check if user already exists in auth system
-    const { data: existingUser, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    // If the user exists and can sign in with these credentials, return success
-    if (existingUser?.user) {
-      console.log("Usuario ya existía en auth, usando el existente:", existingUser.user.id);
-      // Ensure user exists in the usuarios table with empresa_id and specified role
-      await ensureUserInDatabase(existingUser.user.id, existingUser.user.email || email, empresaId, userRole);
-      return { success: true, user: existingUser.user, message: "Se utilizó un usuario existente" };
-    }
-    
-    // Si no pudo iniciar sesión, verificamos si es por correo no confirmado
-    if (signInError && signInError.message.includes("Email not confirmed")) {
-      // Intentamos obtener el usuario existente
-      const { data: userByEmail } = await supabase
-        .from('usuarios')
-        .select('auth_id, email')
-        .eq('email', email)
-        .maybeSingle();
-      
-      if (userByEmail && userByEmail.auth_id) {
-        // Intentamos actualizar el usuario para marcar su correo como confirmado y cambiar la contraseña
-        try {
-          // Actualizamos directamente su contraseña 
-          const { data: updatedUser, error: updateError } = await supabase.auth.admin.updateUserById(
-            userByEmail.auth_id,
-            { password, email_confirm: true }
-          );
-          
-          if (!updateError && updatedUser) {
-            // Intentar iniciar sesión con las nuevas credenciales
-            const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-              email,
-              password,
-            });
-            
-            if (!loginError && loginData.user) {
-              // Ensure user exists in the usuarios table with empresa_id and specified role
-              await ensureUserInDatabase(loginData.user.id, loginData.user.email || email, empresaId, userRole);
-              return { success: true, user: loginData.user, message: "Credenciales actualizadas" };
-            }
-          }
-        } catch (adminError) {
-          console.error("Error al intentar actualizar usuario:", adminError);
-        }
-      }
-    }
-    
-    // Si el usuario no existe o las credenciales son incorrectas, intentamos registrarlo
-    // con autoconfirmación aprovechando los metadatos
+    // Register the user with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: window.location.origin + "/auth",
-        data: {
-          confirmed_at: new Date().toISOString(), // Intento de marcar como confirmado automáticamente
-          user_role: userRole, // Almacenamos el rol en los metadatos de usuario
-          empresa: nombreEmpresa, // Guardar nombre de empresa en metadatos
-          email_confirmed: true
-        }
       }
     });
 
     if (error) {
-      // Si el error es que el usuario ya existe, pero no pudimos iniciar sesión, la contraseña debe ser diferente
+      // Si el error es que el usuario ya existe
       if (error.message.includes("already registered")) {
         return { 
           success: false, 
-          error: "Este correo electrónico ya está registrado con una contraseña diferente" 
+          error: "Este correo electrónico ya está registrado. Intente iniciar sesión." 
         };
       }
       
@@ -336,34 +179,27 @@ export const signUpWithEmailPassword = async (
     
     console.log("Usuario registrado en auth:", data.user?.id);
     
-    // Intentar iniciar sesión inmediatamente después del registro
-    try {
-      if (data.user) {
-        console.log("Intentando iniciar sesión inmediatamente después del registro");
-        // Intentamos iniciar sesión inmediatamente aprovechando 
-        // que los metadatos de confirmación ya están establecidos
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (!signInError && signInData.user) {
-          console.log("Inicio de sesión automático exitoso:", signInData.user.id);
-          // Ensure user exists in the usuarios table with empresa_id and specified role
-          await ensureUserInDatabase(signInData.user.id, signInData.user.email || email, empresaId, userRole);
-          return { success: true, user: signInData.user, autoSignIn: true };
-        }
-        
-        // Si no se puede iniciar sesión inmediatamente, aseguramos que el usuario existe en la tabla
-        console.log("No se pudo iniciar sesión automáticamente, registrando usuario en tabla usuarios");
-        await ensureUserInDatabase(data.user.id, data.user.email || email, empresaId, userRole);
-        return { success: true, user: data.user };
+    // If user was created successfully, try to sign them in immediately
+    if (data.user) {
+      // Try to sign in right away
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (!signInError && signInData.user) {
+        console.log("Inicio de sesión automático exitoso:", signInData.user.id);
+        // Ensure user exists in the usuarios table with empresa_id and specified role
+        await ensureUserInDatabase(signInData.user.id, signInData.user.email || email, empresaId, userRole);
+        return { success: true, user: signInData.user };
       }
-    } catch (signInError) {
-      console.error("Error al intentar iniciar sesión después del registro:", signInError);
+      
+      // If can't sign in immediately, ensure the user exists in the usuarios table
+      await ensureUserInDatabase(data.user.id, data.user.email || email, empresaId, userRole);
+      return { success: true, user: data.user };
     }
     
-    // Si llegamos aquí, el registro fue exitoso pero posiblemente necesite confirmar email
+    // If we get here, registration was successful but we couldn't sign in automatically
     return { 
       success: true, 
       message: "Usuario registrado. Por favor intenta iniciar sesión directamente." 
