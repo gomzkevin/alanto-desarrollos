@@ -15,14 +15,21 @@ export interface Venta {
   fecha_actualizacion: string;
   unidad_id: string;
   empresa_id?: number;
+  notas?: string | null;
   unidad?: {
+    id?: string;
     numero: string;
+    estado?: string;
+    nivel?: string | null;
     prototipo?: {
+      id?: string;
       nombre: string;
+      precio?: number;
       desarrollo?: {
         nombre: string;
+        ubicacion?: string | null;
         empresa_id?: number;
-        id?: string; // Agregado id para resolver error
+        id?: string;
       };
     };
   };
@@ -50,22 +57,33 @@ export const useVentas = (filters: VentasFilter = {}) => {
     try {
       console.log('Fetching ventas with filters:', { ...filters, effectiveEmpresaId });
       
-      // Query simplificado para evitar referencias circulares
-      const { data, error } = await supabase
-        .from('ventas')
-        .select(`
-          id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, 
-          unidad_id, empresa_id,
-          unidad:unidades(
-            numero,
-            prototipo:prototipos(
-              nombre,
-              desarrollo:desarrollos(
-                nombre, id, empresa_id
-              )
+      // Check for empresa_id column directly in the query
+      const hasEmpresaColumn = await supabase.rpc('has_column', {
+        table_name: 'ventas',
+        column_name: 'empresa_id'
+      });
+      
+      // Construct the query carefully to avoid type errors
+      let query = supabase.from('ventas').select(`
+        id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas,
+        ${hasEmpresaColumn.data ? 'empresa_id,' : ''}
+        unidad:unidades(
+          id, numero, estado, nivel,
+          prototipo:prototipos(
+            id, nombre, precio,
+            desarrollo:desarrollos(
+              id, nombre, ubicacion, empresa_id
             )
           )
-        `);
+        )
+      `);
+      
+      // Add empresa_id filter if available and column exists
+      if (effectiveEmpresaId && hasEmpresaColumn.data) {
+        query = query.eq('empresa_id', effectiveEmpresaId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error al obtener ventas:', error);
@@ -87,10 +105,17 @@ export const useVentas = (filters: VentasFilter = {}) => {
         );
       }
 
-      // Aplicar filtro de empresa_id en memoria (como respaldo al filtro en la consulta)
-      if (effectiveEmpresaId) {
+      // Aplicar filtro de empresa_id en memoria si no se pudo filtrar en la base de datos
+      if (effectiveEmpresaId && !hasEmpresaColumn.data) {
         filteredVentas = filteredVentas.filter(
-          venta => venta.empresa_id === effectiveEmpresaId
+          venta => {
+            // Si venta tiene empresa_id directamente
+            if (venta.empresa_id !== undefined) {
+              return venta.empresa_id === effectiveEmpresaId;
+            }
+            // O si el desarrollo tiene empresa_id
+            return venta.unidad?.prototipo?.desarrollo?.empresa_id === effectiveEmpresaId;
+          }
         );
       }
 
@@ -119,15 +144,27 @@ export const useVentas = (filters: VentasFilter = {}) => {
   }) => {
     setIsCreating(true);
     try {
+      // Check if empresa_id column exists
+      const hasEmpresaColumn = await supabase.rpc('has_column', {
+        table_name: 'ventas',
+        column_name: 'empresa_id'
+      });
+      
+      const ventaInsert: any = {
+        unidad_id: ventaData.unidad_id,
+        precio_total: ventaData.precio_total,
+        es_fraccional: ventaData.es_fraccional,
+        estado: ventaData.estado || 'en_proceso',
+      };
+      
+      // Only add empresa_id if the column exists
+      if (hasEmpresaColumn.data && effectiveEmpresaId) {
+        ventaInsert.empresa_id = effectiveEmpresaId;
+      }
+      
       const { data, error } = await supabase
         .from('ventas')
-        .insert({
-          unidad_id: ventaData.unidad_id,
-          precio_total: ventaData.precio_total,
-          es_fraccional: ventaData.es_fraccional,
-          estado: ventaData.estado || 'en_proceso',
-          empresa_id: effectiveEmpresaId
-        })
+        .insert(ventaInsert)
         .select();
 
       if (error) throw error;
@@ -156,17 +193,27 @@ export const useVentas = (filters: VentasFilter = {}) => {
   const updateVenta = async (id: string, updates: Partial<Omit<Venta, 'id'>>) => {
     setIsUpdating(true);
     try {
-      // Make sure we're not overriding the empresa_id
-      if (updates.empresa_id === undefined && effectiveEmpresaId) {
-        updates.empresa_id = effectiveEmpresaId;
+      // Check if empresa_id column exists
+      const hasEmpresaColumn = await supabase.rpc('has_column', {
+        table_name: 'ventas',
+        column_name: 'empresa_id'
+      });
+      
+      const ventaUpdates: any = {
+        ...updates,
+        fecha_actualizacion: new Date().toISOString()
+      };
+      
+      // Make sure we're not overriding the empresa_id if it doesn't exist
+      if (!hasEmpresaColumn.data) {
+        delete ventaUpdates.empresa_id;
+      } else if (updates.empresa_id === undefined && effectiveEmpresaId) {
+        ventaUpdates.empresa_id = effectiveEmpresaId;
       }
       
       const { data, error } = await supabase
         .from('ventas')
-        .update({
-          ...updates,
-          fecha_actualizacion: new Date().toISOString()
-        })
+        .update(ventaUpdates)
         .eq('id', id)
         .select();
 
