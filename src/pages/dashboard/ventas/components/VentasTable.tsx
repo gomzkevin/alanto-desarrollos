@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVentas } from '@/hooks/useVentas';
@@ -7,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { VentaProgress } from './VentaProgress';
 import { supabase } from '@/integrations/supabase/client';
+import useUserRole from '@/hooks/useUserRole';
 
 interface VentasTableProps {
   refreshTrigger?: number;
@@ -19,7 +19,8 @@ type VentaWithPayments = {
 }
 
 export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
-  const { ventas, isLoading, refetch } = useVentas();
+  const { empresaId } = useUserRole();
+  const { ventas, isLoading, refetch } = useVentas({ empresa_id: empresaId });
   const [ventasPayments, setVentasPayments] = useState<Record<string, VentaWithPayments>>({});
   const [loadingPayments, setLoadingPayments] = useState(false);
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
         
         if (errorCompradores) throw errorCompradores;
         
-        if (!compradoresVenta.length) {
+        if (!compradoresVenta || compradoresVenta.length === 0) {
           // No compradores found for any ventas
           const emptyPayments = ventaIds.reduce((acc, ventaId) => {
             acc[ventaId] = { id: ventaId, progreso: 0, montoPagado: 0 };

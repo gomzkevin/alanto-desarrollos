@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import useUserRole from '@/hooks/useUserRole';
 
 // Tipos básicos
 export interface Venta {
@@ -13,12 +14,14 @@ export interface Venta {
   fecha_inicio: string;
   fecha_actualizacion: string;
   unidad_id: string;
+  empresa_id?: number;
   unidad?: {
     numero: string;
     prototipo?: {
       nombre: string;
       desarrollo?: {
         nombre: string;
+        empresa_id?: number;
       };
     };
   };
@@ -29,16 +32,23 @@ export interface VentasFilter {
   desarrollo_id?: string;
   estado?: string;
   busqueda?: string;
+  empresa_id?: number | null;
 }
 
 export const useVentas = (filters: VentasFilter = {}) => {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
+  const { empresaId: userEmpresaId } = useUserRole();
+  
+  // Use the specified empresa_id or fall back to the user's empresa_id
+  const effectiveEmpresaId = filters.empresa_id !== undefined ? filters.empresa_id : userEmpresaId;
 
   // Consulta para obtener las ventas
   const fetchVentas = async (): Promise<Venta[]> => {
     try {
+      console.log('Fetching ventas with filters:', { ...filters, effectiveEmpresaId });
+      
       let query = supabase
         .from('ventas')
         .select(`
@@ -48,13 +58,20 @@ export const useVentas = (filters: VentasFilter = {}) => {
             prototipo:prototipos(
               nombre,
               desarrollo:desarrollos(
-                nombre
+                nombre,
+                empresa_id
               )
             )
           )
         `);
 
-      // Aplicar filtros si existen
+      // Filter by empresa_id if provided
+      if (effectiveEmpresaId) {
+        query = query.eq('empresa_id', effectiveEmpresaId);
+        console.log('Filtering ventas by empresa_id:', effectiveEmpresaId);
+      }
+        
+      // Apply other filters if they exist
       if (filters.desarrollo_id) {
         query = query.eq('unidad.prototipo.desarrollo.id', filters.desarrollo_id);
       }
@@ -79,7 +96,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
   };
 
   const { data = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['ventas', filters],
+    queryKey: ['ventas', filters, effectiveEmpresaId],
     queryFn: fetchVentas,
   });
 
@@ -98,7 +115,8 @@ export const useVentas = (filters: VentasFilter = {}) => {
           unidad_id: ventaData.unidad_id,
           precio_total: ventaData.precio_total,
           es_fraccional: ventaData.es_fraccional,
-          estado: ventaData.estado || 'en_proceso'
+          estado: ventaData.estado || 'en_proceso',
+          empresa_id: effectiveEmpresaId
         })
         .select();
 
@@ -128,6 +146,11 @@ export const useVentas = (filters: VentasFilter = {}) => {
   const updateVenta = async (id: string, updates: Partial<Omit<Venta, 'id'>>) => {
     setIsUpdating(true);
     try {
+      // Make sure we're not overriding the empresa_id
+      if (updates.empresa_id === undefined && effectiveEmpresaId) {
+        updates.empresa_id = effectiveEmpresaId;
+      }
+      
       const { data, error } = await supabase
         .from('ventas')
         .update({

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Venta } from './useVentas';
 import { Pago } from './usePagos';
 import { useState, useEffect } from 'react';
+import useUserRole from '@/hooks/useUserRole';
 
 interface Comprador {
   id: string;
@@ -18,13 +19,16 @@ export const useVentaDetail = (ventaId?: string) => {
   const [compradores, setCompradores] = useState<Comprador[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [loading, setLoading] = useState(false);
+  const { empresaId } = useUserRole();
   
   // Fetch venta details
   const fetchVentaDetail = async (): Promise<Venta | null> => {
     if (!ventaId) return null;
     
     try {
-      const { data, error } = await supabase
+      console.log('Fetching venta details with id:', ventaId, 'and empresa_id:', empresaId);
+      
+      let query = supabase
         .from('ventas')
         .select(`
           *,
@@ -36,10 +40,20 @@ export const useVentaDetail = (ventaId?: string) => {
             )
           )
         `)
-        .eq('id', ventaId)
-        .single();
+        .eq('id', ventaId);
+      
+      // Add empresa_id filter if available
+      if (empresaId) {
+        query = query.eq('empresa_id', empresaId);
+      }
+      
+      const { data, error } = await query.single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching venta details:', error);
+        return null;
+      }
+      
       return data;
     } catch (error) {
       console.error('Error al obtener detalles de venta:', error);
@@ -48,7 +62,7 @@ export const useVentaDetail = (ventaId?: string) => {
   };
 
   const { data: venta, isLoading: isVentaLoading, refetch: refetchVenta } = useQuery({
-    queryKey: ['venta', ventaId],
+    queryKey: ['venta', ventaId, empresaId],
     queryFn: fetchVentaDetail,
     enabled: !!ventaId,
   });
@@ -59,6 +73,16 @@ export const useVentaDetail = (ventaId?: string) => {
     
     setLoading(true);
     try {
+      // First verify the venta belongs to the user's empresa
+      if (empresaId && venta) {
+        const ventaEmpresaId = venta.empresa_id;
+        
+        if (ventaEmpresaId !== undefined && ventaEmpresaId !== empresaId) {
+          console.log('Venta does not belong to user empresa:', ventaEmpresaId, empresaId);
+          return [];
+        }
+      }
+      
       const { data, error } = await supabase
         .from('compradores_venta')
         .select(`
@@ -98,9 +122,9 @@ export const useVentaDetail = (ventaId?: string) => {
   };
 
   const { data: compradoresData = [], isLoading: isCompradoresLoading, refetch: refetchCompradores } = useQuery({
-    queryKey: ['compradores', ventaId],
+    queryKey: ['compradores', ventaId, venta?.empresa_id],
     queryFn: fetchCompradores,
-    enabled: !!ventaId,
+    enabled: !!ventaId && !!venta,
   });
 
   // Set compradores to state
