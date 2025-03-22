@@ -58,15 +58,15 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       // If relations are requested, fetch them for each cotizacion
       if (withRelations && cotizaciones && cotizaciones.length > 0) {
         // Get all unique IDs for related entities
-        const leadIds = [...new Set(cotizaciones.map(c => c.lead_id))];
-        const desarrolloIds = [...new Set(cotizaciones.map(c => c.desarrollo_id))];
-        const prototipoIds = [...new Set(cotizaciones.map(c => c.prototipo_id))];
+        const leadIds = [...new Set(cotizaciones.map(c => c.lead_id).filter(Boolean))];
+        const desarrolloIds = [...new Set(cotizaciones.map(c => c.desarrollo_id).filter(Boolean))];
+        const prototipoIds = [...new Set(cotizaciones.map(c => c.prototipo_id).filter(Boolean))];
         
         // Fetch all related entities in batch queries
         const [leadsResponse, desarrollosResponse, prototipesResponse] = await Promise.all([
-          supabase.from('leads').select('*').in('id', leadIds),
-          supabase.from('desarrollos').select('*').in('id', desarrolloIds),
-          supabase.from('prototipos').select('*').in('id', prototipoIds)
+          leadIds.length > 0 ? supabase.from('leads').select('*').in('id', leadIds) : { data: [], error: null },
+          desarrolloIds.length > 0 ? supabase.from('desarrollos').select('*').in('id', desarrolloIds) : { data: [], error: null },
+          prototipoIds.length > 0 ? supabase.from('prototipos').select('*').in('id', prototipoIds) : { data: [], error: null }
         ]);
         
         const leads = leadsResponse.error ? [] : leadsResponse.data;
