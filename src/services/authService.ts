@@ -70,6 +70,37 @@ export const ensureUserInDatabase = async (userId: string, userEmail: string, em
 };
 
 /**
+ * Creates a new empresa record and returns its ID
+ */
+export const createEmpresa = async (nombre: string): Promise<number | null> => {
+  try {
+    console.log('Creando nueva empresa:', nombre);
+    
+    // First create a base record in empresa_info
+    const { data, error } = await supabase
+      .from('empresa_info')
+      .insert({
+        nombre: nombre,
+        email: 'contacto@' + nombre.toLowerCase().replace(/[^a-z0-9]/g, '') + '.com',
+        sitio_web: 'www.' + nombre.toLowerCase().replace(/[^a-z0-9]/g, '') + '.com'
+      })
+      .select('id')
+      .single();
+      
+    if (error) {
+      console.error('Error al crear empresa:', error);
+      return null;
+    }
+    
+    console.log('Empresa creada exitosamente:', data);
+    return data.id;
+  } catch (error) {
+    console.error('Error en createEmpresa:', error);
+    return null;
+  }
+};
+
+/**
  * Checks if a user's email is confirmed
  */
 export const isEmailConfirmed = async (email: string): Promise<boolean> => {
@@ -207,9 +238,21 @@ export const signInWithEmailPassword = async (email: string, password: string, f
 /**
  * Signs up with email and password
  */
-export const signUpWithEmailPassword = async (email: string, password: string, empresaId?: number, userRole?: string) => {
+export const signUpWithEmailPassword = async (
+  email: string, 
+  password: string, 
+  empresaId?: number, 
+  userRole?: string,
+  nombreEmpresa?: string
+) => {
   try {
-    console.log("Iniciando registro con email:", email, "rol:", userRole);
+    console.log("Iniciando registro con email:", email, "rol:", userRole, "empresa:", nombreEmpresa);
+    
+    // Create new empresa if requested
+    if (nombreEmpresa && !empresaId) {
+      empresaId = await createEmpresa(nombreEmpresa);
+      console.log("Nueva empresa creada con ID:", empresaId);
+    }
     
     // First check if user already exists in auth system
     const { data: existingUser, error: signInError } = await supabase.auth.signInWithPassword({
@@ -272,6 +315,7 @@ export const signUpWithEmailPassword = async (email: string, password: string, e
         data: {
           confirmed_at: new Date().toISOString(), // Intento de marcar como confirmado automáticamente
           user_role: userRole, // Almacenamos el rol en los metadatos de usuario
+          empresa: nombreEmpresa, // Guardar nombre de empresa en metadatos
           email_confirmed: true
         }
       }
@@ -292,23 +336,26 @@ export const signUpWithEmailPassword = async (email: string, password: string, e
     
     console.log("Usuario registrado en auth:", data.user?.id);
     
-    // En modo desarrollo, intentamos iniciar sesión inmediatamente después del registro
+    // Intentar iniciar sesión inmediatamente después del registro
     try {
       if (data.user) {
-        // En entornos de desarrollo, podemos intentar iniciar sesión inmediatamente 
-        // aprovechando que los metadatos de confirmación ya están establecidos
+        console.log("Intentando iniciar sesión inmediatamente después del registro");
+        // Intentamos iniciar sesión inmediatamente aprovechando 
+        // que los metadatos de confirmación ya están establecidos
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         
         if (!signInError && signInData.user) {
+          console.log("Inicio de sesión automático exitoso:", signInData.user.id);
           // Ensure user exists in the usuarios table with empresa_id and specified role
           await ensureUserInDatabase(signInData.user.id, signInData.user.email || email, empresaId, userRole);
           return { success: true, user: signInData.user, autoSignIn: true };
         }
         
         // Si no se puede iniciar sesión inmediatamente, aseguramos que el usuario existe en la tabla
+        console.log("No se pudo iniciar sesión automáticamente, registrando usuario en tabla usuarios");
         await ensureUserInDatabase(data.user.id, data.user.email || email, empresaId, userRole);
         return { success: true, user: data.user };
       }
@@ -319,7 +366,7 @@ export const signUpWithEmailPassword = async (email: string, password: string, e
     // Si llegamos aquí, el registro fue exitoso pero posiblemente necesite confirmar email
     return { 
       success: true, 
-      message: "Usuario registrado. Verifique su correo electrónico para confirmar su cuenta." 
+      message: "Usuario registrado. Por favor intenta iniciar sesión directamente." 
     };
   } catch (error) {
     console.error("Error en registro:", error);

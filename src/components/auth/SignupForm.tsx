@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { signUpWithEmailPassword } from "@/services/authService";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface SignupFormProps {
   onSuccess?: () => void;
@@ -15,15 +16,30 @@ interface SignupFormProps {
 export function SignupForm({ onSuccess }: SignupFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [nombreEmpresa, setNombreEmpresa] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
+    
+    if (!nombreEmpresa.trim()) {
+      setError("Debes ingresar el nombre de tu empresa");
+      setLoading(false);
+      return;
+    }
     
     try {
-      const result = await signUpWithEmailPassword(email, password);
+      const result = await signUpWithEmailPassword(
+        email, 
+        password, 
+        undefined, // empresaId (se creará una nueva)
+        "admin", // Rol de administrador por defecto
+        nombreEmpresa // Nombre de la empresa a crear
+      );
       
       if (result.success) {
         if (result.user || result.autoSignIn) {
@@ -40,19 +56,11 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
           });
         }
       } else {
-        toast({
-          title: "Error al registrarse",
-          description: result.error,
-          variant: "destructive",
-        });
+        setError(result.error || "Error desconocido al registrarse");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error en registro:", error);
-      toast({
-        title: "Error al registrarse",
-        description: "Ocurrió un error inesperado",
-        variant: "destructive",
-      });
+      setError("Ocurrió un error inesperado al intentar registrarse");
     } finally {
       setLoading(false);
     }
@@ -61,6 +69,12 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   return (
     <form onSubmit={handleSignUp}>
       <CardContent className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertTitle>Error al registrarse</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         <div className="space-y-2">
           <Label htmlFor="signup-email">Correo electrónico</Label>
           <Input 
@@ -84,6 +98,17 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
           <p className="text-xs text-slate-500 mt-1">
             La contraseña debe tener al menos 6 caracteres
           </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="signup-empresa">Nombre de la empresa</Label>
+          <Input 
+            id="signup-empresa" 
+            type="text" 
+            placeholder="Nombre de tu empresa" 
+            value={nombreEmpresa}
+            onChange={(e) => setNombreEmpresa(e.target.value)}
+            required
+          />
         </div>
       </CardContent>
       <CardFooter className="flex flex-col space-y-2">
