@@ -62,16 +62,28 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         const desarrolloIds = [...new Set(cotizaciones.map(c => c.desarrollo_id).filter(Boolean))];
         const prototipoIds = [...new Set(cotizaciones.map(c => c.prototipo_id).filter(Boolean))];
         
-        // Fetch all related entities in batch queries
-        const [leadsResponse, desarrollosResponse, prototipesResponse] = await Promise.all([
-          leadIds.length > 0 ? supabase.from('leads').select('*').in('id', leadIds) : { data: [], error: null },
-          desarrolloIds.length > 0 ? supabase.from('desarrollos').select('*').in('id', desarrolloIds) : { data: [], error: null },
-          prototipoIds.length > 0 ? supabase.from('prototipos').select('*').in('id', prototipoIds) : { data: [], error: null }
-        ]);
+        // To avoid the "Type instantiation is excessively deep" error, we'll make sure
+        // we don't call .in() with empty arrays and handle each query with proper type checking
         
-        const leads = leadsResponse.error ? [] : leadsResponse.data;
-        const desarrollos = desarrollosResponse.error ? [] : desarrollosResponse.data;
-        const prototipos = prototipesResponse.error ? [] : prototipesResponse.data;
+        // Fetch leads if there are any to fetch
+        const leadsResponse = leadIds.length > 0 
+          ? await supabase.from('leads').select('*').in('id', leadIds) 
+          : { data: [], error: null };
+          
+        // Fetch desarrollos if there are any to fetch
+        const desarrollosResponse = desarrolloIds.length > 0 
+          ? await supabase.from('desarrollos').select('*').in('id', desarrolloIds) 
+          : { data: [], error: null };
+          
+        // Fetch prototipos if there are any to fetch
+        const prototipesResponse = prototipoIds.length > 0 
+          ? await supabase.from('prototipos').select('*').in('id', prototipoIds) 
+          : { data: [], error: null };
+        
+        // Extract data or empty arrays if there's an error
+        const leads = leadsResponse.error ? [] : leadsResponse.data || [];
+        const desarrollos = desarrollosResponse.error ? [] : desarrollosResponse.data || [];
+        const prototipos = prototipesResponse.error ? [] : prototipesResponse.data || [];
         
         // Map related entities to cotizaciones
         const extendedCotizaciones: ExtendedCotizacion[] = cotizaciones.map(cotizacion => {
