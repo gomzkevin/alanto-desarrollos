@@ -5,7 +5,29 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import useUserRole from '@/hooks/useUserRole';
 
-// Basic types
+// Basic types with simplified structures to avoid deep recursion
+export interface SimpleDesarrollo {
+  id?: string;
+  nombre: string;
+  ubicacion?: string | null;
+  empresa_id?: number;
+}
+
+export interface SimplePrototipo {
+  id?: string;
+  nombre: string;
+  precio?: number;
+  desarrollo?: SimpleDesarrollo;
+}
+
+export interface SimpleUnidad {
+  id?: string;
+  numero: string;
+  estado?: string;
+  nivel?: string | null;
+  prototipo?: SimplePrototipo;
+}
+
 export interface Venta {
   id: string;
   precio_total: number;
@@ -16,23 +38,7 @@ export interface Venta {
   unidad_id: string;
   empresa_id?: number;
   notas?: string | null;
-  unidad?: {
-    id?: string;
-    numero: string;
-    estado?: string;
-    nivel?: string | null;
-    prototipo?: {
-      id?: string;
-      nombre: string;
-      precio?: number;
-      desarrollo?: {
-        nombre: string;
-        ubicacion?: string | null;
-        empresa_id?: number;
-        id?: string;
-      };
-    };
-  };
+  unidad?: SimpleUnidad;
   progreso?: number;
 }
 
@@ -63,44 +69,62 @@ export const useVentas = (filters: VentasFilter = {}) => {
         column_name: 'empresa_id'
       });
       
-      // Construct the select query string based on column existence
-      let selectQuery = 'id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas';
-      
-      if (hasEmpresaColumn.data) {
-        selectQuery += ', empresa_id';
-      }
-      
-      // Add the relational data
-      selectQuery += `, unidad:unidades(
-        id, numero, estado, nivel,
-        prototipo:prototipos(
-          id, nombre, precio,
-          desarrollo:desarrollos(
-            id, nombre, ubicacion, empresa_id
-          )
-        )
-      )`;
-      
-      // Construct the query carefully to avoid type errors
-      let query = supabase.from('ventas').select(selectQuery);
+      // First fetch basic ventas data without relations
+      let query = supabase.from('ventas').select(
+        `id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas${
+          hasEmpresaColumn.data ? ', empresa_id' : ''
+        }`
+      );
       
       // Add empresa_id filter if available and column exists
       if (effectiveEmpresaId && hasEmpresaColumn.data) {
         query = query.eq('empresa_id', effectiveEmpresaId);
       }
 
-      const { data, error } = await query;
+      const { data: ventasData, error: ventasError } = await query;
 
-      if (error) {
-        console.error('Error al obtener ventas:', error);
+      if (ventasError) {
+        console.error('Error al obtener ventas básicas:', ventasError);
         return [];
       }
 
-      // Ensure we have an array to work with
-      let ventas = data || [];
+      // Now fetch the unidades separately to add the relations
+      if (!ventasData || ventasData.length === 0) {
+        return [];
+      }
       
-      // Aplicar filtros adicionales en memoria para evitar consultas complejas
-      let filteredVentas = ventas;
+      // Get all unidad_ids
+      const unidadIds = ventasData.map(venta => venta.unidad_id);
+      
+      // Fetch unidades with prototipos and desarrollos
+      const { data: unidadesData, error: unidadesError } = await supabase
+        .from('unidades')
+        .select(`
+          id, numero, estado, nivel,
+          prototipo:prototipos (
+            id, nombre, precio,
+            desarrollo:desarrollos (
+              id, nombre, ubicacion, empresa_id
+            )
+          )
+        `)
+        .in('id', unidadIds);
+        
+      if (unidadesError) {
+        console.error('Error al obtener unidades:', unidadesError);
+      }
+      
+      // Map unidades to ventas
+      const ventasWithUnidades = ventasData.map(venta => {
+        const unidad = unidadesData?.find(u => u.id === venta.unidad_id);
+        return {
+          ...venta,
+          unidad
+        };
+      });
+      
+      // Apply filters in memory 
+      let filteredVentas = ventasWithUnidades;
       
       if (filters.desarrollo_id) {
         filteredVentas = filteredVentas.filter(
@@ -114,21 +138,19 @@ export const useVentas = (filters: VentasFilter = {}) => {
         );
       }
 
-      // Aplicar filtro de empresa_id en memoria si no se pudo filtrar en la base de datos
+      // Apply empresa_id filter in memory if needed
       if (effectiveEmpresaId && !hasEmpresaColumn.data) {
-        filteredVentas = filteredVentas.filter(
-          venta => {
-            // Si venta tiene empresa_id directamente
-            if ('empresa_id' in venta && venta.empresa_id !== undefined) {
-              return venta.empresa_id === effectiveEmpresaId;
-            }
-            // O si el desarrollo tiene empresa_id
-            return venta.unidad?.prototipo?.desarrollo?.empresa_id === effectiveEmpresaId;
+        filteredVentas = filteredVentas.filter(venta => {
+          // If venta has empresa_id directly
+          if ('empresa_id' in venta && venta.empresa_id !== undefined) {
+            return venta.empresa_id === effectiveEmpresaId;
           }
-        );
+          // Or if the desarrollo has empresa_id
+          return venta.unidad?.prototipo?.desarrollo?.empresa_id === effectiveEmpresaId;
+        });
       }
 
-      // Calcular el progreso para cada venta
+      // Add mock progress (this would be calculated based on pagos in a real implementation)
       return filteredVentas.map(venta => ({
         ...venta,
         progreso: 30, // Este sería un valor calculado en base a los pagos

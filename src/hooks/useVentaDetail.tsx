@@ -1,10 +1,40 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Venta } from './useVentas';
-import { Pago } from './usePagos';
 import { useState, useEffect } from 'react';
 import useUserRole from '@/hooks/useUserRole';
+
+// Define simplified types to avoid deep recursion
+export interface SimpleUnidad {
+  id?: string;
+  numero: string;
+  estado?: string;
+  nivel?: string | null;
+  prototipo?: {
+    id?: string;
+    nombre: string;
+    precio?: number;
+    desarrollo?: {
+      nombre: string;
+      ubicacion?: string | null;
+      empresa_id?: number;
+      id?: string;
+    };
+  };
+}
+
+export interface Venta {
+  id: string;
+  precio_total: number;
+  estado: string;
+  es_fraccional: boolean;
+  fecha_inicio: string;
+  fecha_actualizacion: string;
+  unidad_id: string;
+  empresa_id?: number;
+  notas?: string | null;
+  unidad?: SimpleUnidad;
+}
 
 interface Comprador {
   id: string;
@@ -13,6 +43,19 @@ interface Comprador {
   porcentaje: number;
   pagos_realizados?: number;
   total_pagos?: number;
+}
+
+export interface Pago {
+  id: string;
+  comprador_venta_id: string;
+  monto: number;
+  fecha: string;
+  metodo_pago: string;
+  estado: 'registrado' | 'rechazado';
+  referencia?: string | null;
+  notas?: string | null;
+  comprobante_url?: string | null;
+  created_at: string;
 }
 
 export const useVentaDetail = (ventaId?: string) => {
@@ -34,51 +77,54 @@ export const useVentaDetail = (ventaId?: string) => {
         column_name: 'empresa_id'
       });
       
-      // Basic selection string
-      let selectString = `
+      // Build select query based on column existence
+      let query = supabase.from('ventas').select(`
         id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas
-      `;
-      
-      // Add empresa_id to selection if it exists
-      if (hasEmpresaColumn.data) {
-        selectString += `, empresa_id`;
-      }
-      
-      // Add related data
-      selectString += `, 
-        unidad:unidades(
-          id, numero, estado, nivel,
-          prototipo:prototipos(
-            id, nombre, precio,
-            desarrollo:desarrollos(
-              id, nombre, ubicacion
-            )
-          )
-        )
-      `;
-      
-      let query = supabase
-        .from('ventas')
-        .select(selectString)
-        .eq('id', ventaId);
+        ${hasEmpresaColumn.data ? ', empresa_id' : ''}
+      `).eq('id', ventaId);
       
       // Add empresa_id filter if available and column exists
       if (empresaId && hasEmpresaColumn.data) {
         query = query.eq('empresa_id', empresaId);
       }
       
-      const { data, error } = await query.maybeSingle();
-
-      if (error) {
-        console.error('Error fetching venta details:', error);
+      const { data: ventaData, error: ventaError } = await query.maybeSingle();
+      
+      if (ventaError) {
+        console.error('Error fetching venta details:', ventaError);
         return null;
       }
       
-      if (!data) {
+      if (!ventaData) {
         return null;
       }
       
-      return data as Venta;
+      // Fetch unidad information separately to avoid deep nesting
+      const { data: unidadData, error: unidadError } = await supabase
+        .from('unidades')
+        .select(`
+          id, numero, estado, nivel,
+          prototipo:prototipos (
+            id, nombre, precio,
+            desarrollo:desarrollos (
+              id, nombre, ubicacion, empresa_id
+            )
+          )
+        `)
+        .eq('id', ventaData.unidad_id)
+        .maybeSingle();
+        
+      if (unidadError) {
+        console.error('Error fetching unidad details:', unidadError);
+      }
+      
+      // Combine the data
+      const venta: Venta = {
+        ...ventaData,
+        unidad: unidadData || undefined
+      };
+      
+      return venta;
     } catch (error) {
       console.error('Error al obtener detalles de venta:', error);
       return null;

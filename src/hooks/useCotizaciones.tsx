@@ -6,29 +6,38 @@ import useUserRole from '@/hooks/useUserRole';
 
 export type Cotizacion = Tables<"cotizaciones">;
 
-// Define types with minimal properties to avoid circular references
-export type ExtendedCotizacion = Cotizacion & {
-  lead?: {
-    id: string;
-    nombre: string;
-    email?: string | null;
-    telefono?: string | null;
-    origen?: string | null;
-  } | null;
-  desarrollo?: {
-    id: string;
-    nombre: string;
-    ubicacion?: string | null;
-  } | null;
-  prototipo?: {
-    id: string;
-    nombre: string;
-    precio: number;
-  } | null;
+// Define simplified lead type to avoid recursive references
+export interface SimplifiedLead {
+  id: string;
+  nombre: string;
+  email?: string | null;
+  telefono?: string | null;
+  origen?: string | null;
+}
+
+// Define simplified desarrollo type
+export interface SimplifiedDesarrollo {
+  id: string;
+  nombre: string;
+  ubicacion?: string | null;
+}
+
+// Define simplified prototipo type
+export interface SimplifiedPrototipo {
+  id: string;
+  nombre: string;
+  precio: number;
+}
+
+// Define extended cotizacion with simplified related entities
+export interface ExtendedCotizacion extends Cotizacion {
+  lead?: SimplifiedLead | null;
+  desarrollo?: SimplifiedDesarrollo | null;
+  prototipo?: SimplifiedPrototipo | null;
   // These fields are now part of the database schema
   fecha_inicio_pagos?: string | null;
   fecha_finiquito?: string | null;
-};
+}
 
 type FetchCotizacionesOptions = {
   limit?: number;
