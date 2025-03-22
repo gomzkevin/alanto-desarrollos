@@ -6,7 +6,7 @@ import useUserRole from '@/hooks/useUserRole';
 
 export type Cotizacion = Tables<"cotizaciones">;
 
-// Define basic types without circular references
+// Define types with minimal properties to avoid circular references
 export type ExtendedCotizacion = Cotizacion & {
   lead?: {
     id: string;

@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import useUserRole from '@/hooks/useUserRole';
 
-// Tipos básicos
+// Basic types
 export interface Venta {
   id: string;
   precio_total: number;
@@ -63,20 +63,26 @@ export const useVentas = (filters: VentasFilter = {}) => {
         column_name: 'empresa_id'
       });
       
-      // Construct the query carefully to avoid type errors
-      let query = supabase.from('ventas').select(`
-        id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas,
-        ${hasEmpresaColumn.data ? 'empresa_id,' : ''}
-        unidad:unidades(
-          id, numero, estado, nivel,
-          prototipo:prototipos(
-            id, nombre, precio,
-            desarrollo:desarrollos(
-              id, nombre, ubicacion, empresa_id
-            )
+      // Construct the select query string based on column existence
+      let selectQuery = 'id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas';
+      
+      if (hasEmpresaColumn.data) {
+        selectQuery += ', empresa_id';
+      }
+      
+      // Add the relational data
+      selectQuery += `, unidad:unidades(
+        id, numero, estado, nivel,
+        prototipo:prototipos(
+          id, nombre, precio,
+          desarrollo:desarrollos(
+            id, nombre, ubicacion, empresa_id
           )
         )
-      `);
+      )`;
+      
+      // Construct the query carefully to avoid type errors
+      let query = supabase.from('ventas').select(selectQuery);
       
       // Add empresa_id filter if available and column exists
       if (effectiveEmpresaId && hasEmpresaColumn.data) {
@@ -90,8 +96,11 @@ export const useVentas = (filters: VentasFilter = {}) => {
         return [];
       }
 
+      // Ensure we have an array to work with
+      let ventas = data || [];
+      
       // Aplicar filtros adicionales en memoria para evitar consultas complejas
-      let filteredVentas = data || [];
+      let filteredVentas = ventas;
       
       if (filters.desarrollo_id) {
         filteredVentas = filteredVentas.filter(
@@ -110,7 +119,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
         filteredVentas = filteredVentas.filter(
           venta => {
             // Si venta tiene empresa_id directamente
-            if (venta.empresa_id !== undefined) {
+            if ('empresa_id' in venta && venta.empresa_id !== undefined) {
               return venta.empresa_id === effectiveEmpresaId;
             }
             // O si el desarrollo tiene empresa_id
