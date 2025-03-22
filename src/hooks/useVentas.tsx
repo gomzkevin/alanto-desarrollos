@@ -49,7 +49,8 @@ export const useVentas = (filters: VentasFilter = {}) => {
     try {
       console.log('Fetching ventas with filters:', { ...filters, effectiveEmpresaId });
       
-      let query = supabase
+      // Build the query using a simpler approach
+      const { data, error } = await supabase
         .from('ventas')
         .select(`
           *,
@@ -63,29 +64,31 @@ export const useVentas = (filters: VentasFilter = {}) => {
               )
             )
           )
-        `);
+        `)
+        .eq('empresa_id', effectiveEmpresaId || 0);
 
-      // Filter by empresa_id if provided
-      if (effectiveEmpresaId) {
-        query = query.eq('empresa_id', effectiveEmpresaId);
-        console.log('Filtering ventas by empresa_id:', effectiveEmpresaId);
+      if (error) {
+        console.error('Error al obtener ventas:', error);
+        return [];
       }
-        
-      // Apply other filters if they exist
+
+      // Aplicar filtros adicionales en memoria para evitar consultas complejas
+      let filteredVentas = data || [];
+      
       if (filters.desarrollo_id) {
-        query = query.eq('unidad.prototipo.desarrollo.id', filters.desarrollo_id);
+        filteredVentas = filteredVentas.filter(
+          venta => venta.unidad?.prototipo?.desarrollo?.id === filters.desarrollo_id
+        );
       }
 
       if (filters.estado && filters.estado !== 'todos') {
-        query = query.eq('estado', filters.estado);
+        filteredVentas = filteredVentas.filter(
+          venta => venta.estado === filters.estado
+        );
       }
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      // Calcular el progreso para cada venta (esto sería un cálculo real en la implementación final)
-      return (data || []).map(venta => ({
+      // Calcular el progreso para cada venta
+      return filteredVentas.map(venta => ({
         ...venta,
         progreso: 30, // Este sería un valor calculado en base a los pagos
       }));
@@ -100,7 +103,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
     queryFn: fetchVentas,
   });
 
-  // Función para crear una venta
+  // Function to create a venta
   const createVenta = async (ventaData: {
     unidad_id: string;
     precio_total: number;
@@ -142,7 +145,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
     }
   };
 
-  // Función para actualizar una venta
+  // Function to update a venta
   const updateVenta = async (id: string, updates: Partial<Omit<Venta, 'id'>>) => {
     setIsUpdating(true);
     try {

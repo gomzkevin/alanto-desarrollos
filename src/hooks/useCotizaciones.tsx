@@ -55,61 +55,67 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         throw new Error(error.message);
       }
       
-      // If relations are requested, fetch them for each cotizacion
+      // If relations are requested and we have cotizaciones, fetch related entities
       if (withRelations && cotizaciones && cotizaciones.length > 0) {
-        // Get all unique IDs for related entities
-        const leadIds = [...new Set(cotizaciones.map(c => c.lead_id).filter(Boolean))];
-        const desarrolloIds = [...new Set(cotizaciones.map(c => c.desarrollo_id).filter(Boolean))];
-        const prototipoIds = [...new Set(cotizaciones.map(c => c.prototipo_id).filter(Boolean))];
+        const extendedCotizaciones: ExtendedCotizacion[] = [...cotizaciones];
         
-        // Handle leads
-        let leads: Tables<"leads">[] = [];
+        // Get all unique IDs for related entities
+        const leadIds = cotizaciones
+          .map(c => c.lead_id)
+          .filter((id): id is string => id !== null && id !== undefined);
+          
+        const desarrolloIds = cotizaciones
+          .map(c => c.desarrollo_id)
+          .filter((id): id is string => id !== null && id !== undefined);
+          
+        const prototipoIds = cotizaciones
+          .map(c => c.prototipo_id)
+          .filter((id): id is string => id !== null && id !== undefined);
+        
+        // Only fetch leads if we have lead IDs
         if (leadIds.length > 0) {
-          const { data, error } = await supabase
+          const { data: leads } = await supabase
             .from('leads')
             .select('*')
             .in('id', leadIds);
-          
-          if (!error && data) {
-            leads = data;
+            
+          // Map leads to cotizaciones
+          if (leads && leads.length > 0) {
+            extendedCotizaciones.forEach(cotizacion => {
+              cotizacion.lead = leads.find(l => l.id === cotizacion.lead_id) || null;
+            });
           }
         }
         
-        // Handle desarrollos
-        let desarrollos: Tables<"desarrollos">[] = [];
+        // Only fetch desarrollos if we have desarrollo IDs
         if (desarrolloIds.length > 0) {
-          const { data, error } = await supabase
+          const { data: desarrollos } = await supabase
             .from('desarrollos')
             .select('*')
             .in('id', desarrolloIds);
-          
-          if (!error && data) {
-            desarrollos = data;
+            
+          // Map desarrollos to cotizaciones
+          if (desarrollos && desarrollos.length > 0) {
+            extendedCotizaciones.forEach(cotizacion => {
+              cotizacion.desarrollo = desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null;
+            });
           }
         }
         
-        // Handle prototipos
-        let prototipos: Tables<"prototipos">[] = [];
+        // Only fetch prototipos if we have prototipo IDs
         if (prototipoIds.length > 0) {
-          const { data, error } = await supabase
+          const { data: prototipos } = await supabase
             .from('prototipos')
             .select('*')
             .in('id', prototipoIds);
-          
-          if (!error && data) {
-            prototipos = data;
+            
+          // Map prototipos to cotizaciones
+          if (prototipos && prototipos.length > 0) {
+            extendedCotizaciones.forEach(cotizacion => {
+              cotizacion.prototipo = prototipos.find(p => p.id === cotizacion.prototipo_id) || null;
+            });
           }
         }
-        
-        // Map related entities to cotizaciones
-        const extendedCotizaciones: ExtendedCotizacion[] = cotizaciones.map(cotizacion => {
-          return {
-            ...cotizacion,
-            lead: leads.find(l => l.id === cotizacion.lead_id) || null,
-            desarrollo: desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null,
-            prototipo: prototipos.find(p => p.id === cotizacion.prototipo_id) || null
-          };
-        });
         
         console.log('Extended cotizaciones fetched:', extendedCotizaciones);
         return extendedCotizaciones;

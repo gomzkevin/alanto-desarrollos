@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VentasTable } from './components/VentasTable';
 import VentasStatistics from './components/VentasStatistics';
 import useUserRole from '@/hooks/useUserRole';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 
 const VentasPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -30,7 +32,10 @@ const VentasPage = () => {
         </TabsList>
         
         <TabsContent value="list" className="space-y-4">
-          <VentasTable refreshTrigger={refreshTrigger} />
+          <VentasTable 
+            refreshTrigger={refreshTrigger} 
+            empresa_id={empresaId}
+          />
         </TabsContent>
         
         <TabsContent value="stats">
