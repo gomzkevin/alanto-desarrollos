@@ -55,8 +55,12 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         throw new Error(error.message);
       }
       
+      if (!cotizaciones || cotizaciones.length === 0) {
+        return [];
+      }
+      
       // If relations are requested and we have cotizaciones, fetch related entities
-      if (withRelations && cotizaciones && cotizaciones.length > 0) {
+      if (withRelations) {
         const extendedCotizaciones: ExtendedCotizacion[] = [...cotizaciones];
         
         // Get all unique IDs for related entities
@@ -72,45 +76,48 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
           .map(c => c.prototipo_id)
           .filter((id): id is string => id !== null && id !== undefined);
         
-        // Only fetch leads if we have lead IDs
+        // Fetch leads if needed
         if (leadIds.length > 0) {
-          const { data: leads } = await supabase
+          const { data: leads, error: leadsError } = await supabase
             .from('leads')
             .select('*')
             .in('id', leadIds);
             
-          // Map leads to cotizaciones
-          if (leads && leads.length > 0) {
+          if (leadsError) {
+            console.error('Error fetching leads:', leadsError);
+          } else if (leads) {
             extendedCotizaciones.forEach(cotizacion => {
               cotizacion.lead = leads.find(l => l.id === cotizacion.lead_id) || null;
             });
           }
         }
         
-        // Only fetch desarrollos if we have desarrollo IDs
+        // Fetch desarrollos if needed
         if (desarrolloIds.length > 0) {
-          const { data: desarrollos } = await supabase
+          const { data: desarrollos, error: desarrollosError } = await supabase
             .from('desarrollos')
             .select('*')
             .in('id', desarrolloIds);
             
-          // Map desarrollos to cotizaciones
-          if (desarrollos && desarrollos.length > 0) {
+          if (desarrollosError) {
+            console.error('Error fetching desarrollos:', desarrollosError);
+          } else if (desarrollos) {
             extendedCotizaciones.forEach(cotizacion => {
               cotizacion.desarrollo = desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null;
             });
           }
         }
         
-        // Only fetch prototipos if we have prototipo IDs
+        // Fetch prototipos if needed
         if (prototipoIds.length > 0) {
-          const { data: prototipos } = await supabase
+          const { data: prototipos, error: prototipossError } = await supabase
             .from('prototipos')
             .select('*')
             .in('id', prototipoIds);
             
-          // Map prototipos to cotizaciones
-          if (prototipos && prototipos.length > 0) {
+          if (prototipossError) {
+            console.error('Error fetching prototipos:', prototipossError);
+          } else if (prototipos) {
             extendedCotizaciones.forEach(cotizacion => {
               cotizacion.prototipo = prototipos.find(p => p.id === cotizacion.prototipo_id) || null;
             });

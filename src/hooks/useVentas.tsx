@@ -49,8 +49,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
     try {
       console.log('Fetching ventas with filters:', { ...filters, effectiveEmpresaId });
       
-      // Build the query using a simpler approach
-      const { data, error } = await supabase
+      let query = supabase
         .from('ventas')
         .select(`
           *,
@@ -64,8 +63,14 @@ export const useVentas = (filters: VentasFilter = {}) => {
               )
             )
           )
-        `)
-        .eq('empresa_id', effectiveEmpresaId || 0);
+        `);
+
+      // Apply empresa_id filter
+      if (effectiveEmpresaId) {
+        query = query.eq('empresa_id', effectiveEmpresaId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error al obtener ventas:', error);

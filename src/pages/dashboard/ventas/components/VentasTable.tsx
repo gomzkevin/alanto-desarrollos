@@ -143,3 +143,5 @@ export const VentasTable: React.FC<VentasTableProps> = ({
     </Card>
   );
 };
+
+export default VentasTable;
