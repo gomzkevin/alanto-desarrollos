@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -244,7 +243,6 @@ export function UserManagementTable() {
 
       console.log("Creating user with role:", newUser.rol);
       
-      // Pass the selected role to the signup function
       const authResult = await signUpWithEmailPassword(
         newUser.email, 
         newUser.password, 
@@ -260,20 +258,22 @@ export function UserManagementTable() {
       
       if (authResult.user) {
         authUserId = authResult.user.id;
-      } else if (authResult.autoSignIn) {
+      } else {
         const { data } = await supabase.auth.getUser();
         authUserId = data.user?.id;
-      } else {
-        const { data: userData, error: userError } = await supabase
-          .from('usuarios')
-          .select('auth_id')
-          .eq('email', newUser.email)
-          .maybeSingle();
-          
-        if (!userError && userData?.auth_id) {
-          authUserId = userData.auth_id;
-        } else {
-          console.log("Could not find user ID, but will continue with user creation");
+        
+        if (!authUserId) {
+          const { data: userData, error: userError } = await supabase
+            .from('usuarios')
+            .select('auth_id')
+            .eq('email', newUser.email)
+            .maybeSingle();
+            
+          if (!userError && userData?.auth_id) {
+            authUserId = userData.auth_id;
+          } else {
+            console.log("Could not find user ID, but will continue with user creation");
+          }
         }
       }
       
@@ -289,7 +289,7 @@ export function UserManagementTable() {
             .from('usuarios')
             .update({
               nombre: newUser.nombre,
-              rol: newUser.rol, // Ensure role is explicitly set
+              rol: newUser.rol,
               activo: true,
               empresa_id: empresaId
             })
@@ -310,7 +310,7 @@ export function UserManagementTable() {
             auth_id: authUserId,
             nombre: newUser.nombre,
             email: newUser.email,
-            rol: newUser.rol, // Ensure role is explicitly set
+            rol: newUser.rol,
             empresa_id: empresaId,
             activo: true
           };
@@ -638,3 +638,4 @@ export function UserManagementTable() {
 }
 
 export default UserManagementTable;
+
