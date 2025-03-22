@@ -13,10 +13,12 @@ export type ExtendedCotizacion = Cotizacion & {
     nombre: string;
     email?: string | null;
     telefono?: string | null;
+    origen?: string | null;
   } | null;
   desarrollo?: {
     id: string;
     nombre: string;
+    ubicacion?: string | null;
   } | null;
   prototipo?: {
     id: string;
@@ -92,7 +94,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         if (leadIds.length > 0) {
           const { data: leads, error: leadsError } = await supabase
             .from('leads')
-            .select('id, nombre, email, telefono')
+            .select('id, nombre, email, telefono, origen')
             .in('id', leadIds);
             
           if (leadsError) {
@@ -108,7 +110,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         if (desarrolloIds.length > 0) {
           const { data: desarrollos, error: desarrollosError } = await supabase
             .from('desarrollos')
-            .select('id, nombre')
+            .select('id, nombre, ubicacion')
             .in('id', desarrolloIds);
             
           if (desarrollosError) {
