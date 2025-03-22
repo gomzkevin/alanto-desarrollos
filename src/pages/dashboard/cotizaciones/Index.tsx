@@ -727,7 +727,7 @@ const CotizacionesPage = () => {
           </div>
         ) : cotizaciones.length === 0 ? (
           <div className="text-center py-10">
-            <Plus className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+            <FileText className="h-12 w-12 text-slate-400 mx-auto mb-4" />
             <p className="text-slate-700 mb-4">No hay cotizaciones registradas</p>
             <Button onClick={handleNewCotizacion}>
               <Plus className="mr-2 h-4 w-4" />
@@ -835,3 +835,4 @@ const CotizacionesPage = () => {
 };
 
 export default CotizacionesPage;
+

@@ -8,9 +8,21 @@ export type Cotizacion = Tables<"cotizaciones">;
 
 // Define basic types without circular references
 export type ExtendedCotizacion = Cotizacion & {
-  lead?: Tables<"leads"> | null;
-  desarrollo?: Tables<"desarrollos"> | null;
-  prototipo?: Tables<"prototipos"> | null;
+  lead?: {
+    id: string;
+    nombre: string;
+    email?: string | null;
+    telefono?: string | null;
+  } | null;
+  desarrollo?: {
+    id: string;
+    nombre: string;
+  } | null;
+  prototipo?: {
+    id: string;
+    nombre: string;
+    precio: number;
+  } | null;
   // These fields are now part of the database schema
   fecha_inicio_pagos?: string | null;
   fecha_finiquito?: string | null;
@@ -80,7 +92,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         if (leadIds.length > 0) {
           const { data: leads, error: leadsError } = await supabase
             .from('leads')
-            .select('*')
+            .select('id, nombre, email, telefono')
             .in('id', leadIds);
             
           if (leadsError) {
@@ -96,7 +108,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         if (desarrolloIds.length > 0) {
           const { data: desarrollos, error: desarrollosError } = await supabase
             .from('desarrollos')
-            .select('*')
+            .select('id, nombre')
             .in('id', desarrolloIds);
             
           if (desarrollosError) {
@@ -112,7 +124,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         if (prototipoIds.length > 0) {
           const { data: prototipos, error: prototipossError } = await supabase
             .from('prototipos')
-            .select('*')
+            .select('id, nombre, precio')
             .in('id', prototipoIds);
             
           if (prototipossError) {

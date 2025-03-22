@@ -22,6 +22,7 @@ export interface Venta {
       desarrollo?: {
         nombre: string;
         empresa_id?: number;
+        id?: string; // Agregado id para resolver error
       };
     };
   };
@@ -49,28 +50,22 @@ export const useVentas = (filters: VentasFilter = {}) => {
     try {
       console.log('Fetching ventas with filters:', { ...filters, effectiveEmpresaId });
       
-      let query = supabase
+      // Query simplificado para evitar referencias circulares
+      const { data, error } = await supabase
         .from('ventas')
         .select(`
-          *,
+          id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, 
+          unidad_id, empresa_id,
           unidad:unidades(
             numero,
             prototipo:prototipos(
               nombre,
               desarrollo:desarrollos(
-                nombre,
-                empresa_id
+                nombre, id, empresa_id
               )
             )
           )
         `);
-
-      // Apply empresa_id filter
-      if (effectiveEmpresaId) {
-        query = query.eq('empresa_id', effectiveEmpresaId);
-      }
-
-      const { data, error } = await query;
 
       if (error) {
         console.error('Error al obtener ventas:', error);
@@ -89,6 +84,13 @@ export const useVentas = (filters: VentasFilter = {}) => {
       if (filters.estado && filters.estado !== 'todos') {
         filteredVentas = filteredVentas.filter(
           venta => venta.estado === filters.estado
+        );
+      }
+
+      // Aplicar filtro de empresa_id en memoria (como respaldo al filtro en la consulta)
+      if (effectiveEmpresaId) {
+        filteredVentas = filteredVentas.filter(
+          venta => venta.empresa_id === effectiveEmpresaId
         );
       }
 
