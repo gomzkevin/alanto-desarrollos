@@ -5,50 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import useUserRole from '@/hooks/useUserRole';
 import useSupabaseTableHelpers from './useSupabaseTableHelpers';
-
-// Basic types with simplified structures to avoid deep recursion
-export interface SimpleDesarrollo {
-  id: string;
-  nombre: string;
-  ubicacion?: string | null;
-  empresa_id?: number;
-}
-
-export interface SimplePrototipo {
-  id: string;
-  nombre: string;
-  precio?: number;
-  desarrollo?: SimpleDesarrollo | null;
-}
-
-export interface SimpleUnidad {
-  id: string;
-  numero: string;
-  estado?: string;
-  nivel?: string | null;
-  prototipo?: SimplePrototipo | null;
-}
-
-export interface Venta {
-  id: string;
-  precio_total: number;
-  estado: string;
-  es_fraccional: boolean;
-  fecha_inicio: string;
-  fecha_actualizacion: string;
-  unidad_id: string;
-  empresa_id?: number | null;
-  notas?: string | null;
-  unidad?: SimpleUnidad | null;
-  progreso?: number;
-}
-
-export interface VentasFilter {
-  desarrollo_id?: string;
-  estado?: string;
-  busqueda?: string;
-  empresa_id?: number | null;
-}
+import { Venta, VentasFilter, SimpleUnidad, SimplePrototipo, SimpleDesarrollo } from './types/venta.types';
 
 export const useVentas = (filters: VentasFilter = {}) => {
   const [isCreating, setIsCreating] = useState(false);
@@ -199,6 +156,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
               numero: unidad.numero || '',
               estado: unidad.estado,
               nivel: unidad.nivel,
+              prototipo_id: unidad.prototipo_id,
               prototipo: null
             };
             

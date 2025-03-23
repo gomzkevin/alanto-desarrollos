@@ -45,7 +45,7 @@ export interface Pago {
   monto: number;
   fecha: string;
   metodo_pago: string;
-  estado: 'registrado' | 'rechazado';
+  estado: 'registrado' | 'rechazado' | 'verificado';
   referencia?: string | null;
   notas?: string | null;
   comprobante_url?: string | null;
