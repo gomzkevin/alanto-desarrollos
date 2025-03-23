@@ -100,13 +100,21 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     return null;
   }
 
+  // Comprobar si hay una suscripción activa y registrar en consola para depuración
   const hasActiveSubscription = subscriptionInfo.isActive;
+  console.log("[DashboardLayout] Subscription status:", { 
+    isActive: hasActiveSubscription,
+    planName: subscriptionInfo.currentPlan?.name,
+    resourceType: subscriptionInfo.resourceType
+  });
   
+  // Configuración base del menú de navegación
   let navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3, current: location.pathname === '/dashboard' },
     { name: 'Configuración', href: '/dashboard/configuracion', icon: Settings, current: location.pathname === '/dashboard/configuracion' },
   ];
   
+  // Agregar módulos premium si hay una suscripción activa
   if (hasActiveSubscription) {
     const premiumNavigation = [
       { name: 'Desarrollos', href: '/dashboard/desarrollos', icon: Building2, current: location.pathname.includes('/dashboard/desarrollos') },
@@ -117,6 +125,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       { name: 'Proyecciones', href: '/dashboard/proyecciones', icon: Briefcase, current: location.pathname.includes('/dashboard/proyecciones') },
     ];
     
+    // Insertamos después del Dashboard y antes de Configuración
     navigation.splice(1, 0, ...premiumNavigation);
   }
   
@@ -223,6 +232,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </div>
             
             <div className="flex items-center">
+              {hasActiveSubscription && (
+                <div className="mr-4 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                  {subscriptionInfo.currentPlan?.name || 'Plan activo'}
+                </div>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">

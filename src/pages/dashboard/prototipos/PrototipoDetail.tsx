@@ -12,8 +12,12 @@ import PrototipoHeader from './components/PrototipoHeader';
 import PrototipoSpecs from './components/PrototipoSpecs';
 import PrototipoUnidades from './components/PrototipoUnidades';
 import useUnitCounts from './hooks/useUnitCounts';
+import useSubscriptionGuard from '@/hooks/useSubscriptionGuard';
 
 const PrototipoDetail = () => {
+  // La protección solo requiere una suscripción activa, sin importar el tipo
+  const { hasAccess, isLoading: isLoadingSubscription } = useSubscriptionGuard();
+  
   const { toast } = useToast();
   const { id, prototipo, isLoading, error, refetch, handleBack, updatePrototipoImage } = usePrototipoDetail();
   const [openAddUnidadDialog, setOpenAddUnidadDialog] = useState(false);
@@ -96,7 +100,8 @@ const PrototipoDetail = () => {
     }
   };
   
-  if (isLoading) {
+  // Si estamos cargando la verificación de suscripción, mostrar un skeleton
+  if (isLoadingSubscription) {
     return (
       <DashboardLayout>
         <div className="p-6 space-y-6">
@@ -116,7 +121,12 @@ const PrototipoDetail = () => {
     );
   }
   
-  if (error || !prototipo) {
+  // Si el usuario no tiene acceso, no renderizar nada y dejar que el hook redirija
+  if (!hasAccess) {
+    return null;
+  }
+  
+  if (isLoading || !prototipo) {
     return (
       <DashboardLayout>
         <div className="p-6">

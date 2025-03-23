@@ -30,11 +30,21 @@ export const useSubscriptionGuard = (options: UseSubscriptionGuardOptions = {}) 
     // No verificar nada hasta que la información de suscripción esté cargada
     if (isLoading) return;
     
+    // Para propósitos de debugging, registrar el estado de la suscripción
+    console.log("[useSubscriptionGuard] Subscription status:", {
+      isActive: subscriptionInfo.isActive,
+      currentPlan: subscriptionInfo.currentPlan?.name,
+      resourceType: subscriptionInfo.resourceType,
+      resourceCount: subscriptionInfo.resourceCount,
+      resourceLimit: subscriptionInfo.resourceLimit
+    });
+    
     // Verificar si el usuario tiene una suscripción activa
     const hasActiveSub = subscriptionInfo.isActive;
     
     // Si no tiene suscripción activa, mostrar mensaje y redirigir
     if (!hasActiveSub) {
+      console.log("[useSubscriptionGuard] No active subscription, redirecting");
       if (showToast) {
         toast({
           title: "Suscripción requerida",
@@ -50,11 +60,39 @@ export const useSubscriptionGuard = (options: UseSubscriptionGuardOptions = {}) 
     
     // Si se requieren características específicas, verificarlas
     if (requiredFeatures.length > 0) {
-      // Lógica para verificar características específicas
-      // Por ahora, si hay una suscripción activa, se considera que tiene acceso
+      // Verificación de características específicas del plan
+      // Por ahora, implementamos una lógica simple
+      let hasRequiredFeatures = true;
+      
+      for (const feature of requiredFeatures) {
+        // Ejemplo: verificar si tiene tipo específico de recurso
+        if (feature === 'prototipo' && subscriptionInfo.resourceType !== 'prototipo') {
+          hasRequiredFeatures = false;
+        }
+        else if (feature === 'desarrollo' && subscriptionInfo.resourceType !== 'desarrollo') {
+          hasRequiredFeatures = false;
+        }
+      }
+      
+      if (!hasRequiredFeatures) {
+        console.log("[useSubscriptionGuard] Missing required features:", requiredFeatures);
+        if (showToast) {
+          toast({
+            title: "Plan insuficiente",
+            description: "Tu plan actual no incluye esta funcionalidad",
+            variant: "destructive",
+          });
+        }
+        
+        navigate(redirectTo);
+        setHasAccess(false);
+        return;
+      }
+      
       setHasAccess(true);
     } else {
       // Si solo se requiere una suscripción activa
+      console.log("[useSubscriptionGuard] Access granted with active subscription");
       setHasAccess(true);
     }
   }, [isLoading, subscriptionInfo, navigate, redirectTo, showToast, requiredFeatures, toast]);
