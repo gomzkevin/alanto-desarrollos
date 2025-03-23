@@ -1,64 +1,9 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import useUserRole from '@/hooks/useUserRole';
 import useSupabaseTableHelpers from './useSupabaseTableHelpers';
-
-// Define simplified types to avoid deep recursion
-export interface SimpleUnidad {
-  id: string; // Made required to match with useVentas SimpleUnidad type
-  numero: string;
-  estado?: string;
-  nivel?: string | null;
-  prototipo_id?: string;
-  prototipo?: {
-    id: string; // Made required to match
-    nombre: string;
-    precio?: number;
-    desarrollo?: {
-      id: string; // Made required to match
-      nombre: string;
-      ubicacion?: string | null;
-      empresa_id?: number;
-    } | null;
-  } | null;
-}
-
-export interface Venta {
-  id: string;
-  precio_total: number;
-  estado: string;
-  es_fraccional: boolean;
-  fecha_inicio: string;
-  fecha_actualizacion: string;
-  unidad_id: string;
-  empresa_id?: number | null;
-  notas?: string | null;
-  unidad?: SimpleUnidad | null;
-}
-
-interface Comprador {
-  id: string;
-  comprador_id: string;
-  nombre: string;
-  porcentaje: number;
-  pagos_realizados?: number;
-  total_pagos?: number;
-}
-
-export interface Pago {
-  id: string;
-  comprador_venta_id: string;
-  monto: number;
-  fecha: string;
-  metodo_pago: string;
-  estado: 'registrado' | 'rechazado';
-  referencia?: string | null;
-  notas?: string | null;
-  comprobante_url?: string | null;
-  created_at: string;
-}
+import { Venta, Pago, Comprador, SimpleDesarrollo, SimplePrototipo, ExtendedPrototipo, ExtendedUnidad } from './types/venta.types';
 
 export const useVentaDetail = (ventaId?: string) => {
   const [compradores, setCompradores] = useState<Comprador[]>([]);
@@ -125,7 +70,7 @@ export const useVentaDetail = (ventaId?: string) => {
         if (unidadError) {
           console.error('Error fetching unidad details:', unidadError);
         } else if (unidadData) {
-          const unidad: SimpleUnidad = {
+          const unidad: ExtendedUnidad = {
             id: unidadData.id,
             numero: unidadData.numero || '',
             estado: unidadData.estado,
@@ -151,6 +96,7 @@ export const useVentaDetail = (ventaId?: string) => {
                 id: prototipoData.id,
                 nombre: prototipoData.nombre || '',
                 precio: prototipoData.precio,
+                desarrollo_id: prototipoData.desarrollo_id,
                 desarrollo: null
               };
               

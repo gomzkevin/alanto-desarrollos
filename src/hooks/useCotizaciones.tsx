@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import useUserRole from '@/hooks/useUserRole';
 import useSupabaseTableHelpers from './useSupabaseTableHelpers';
-import { ExtendedCotizacion, SimpleLead, SimpleDesarrollo, SimplePrototipo } from './types/venta.types';
+import { ExtendedCotizacion } from './types/venta.types';
 
 export type Cotizacion = Tables<"cotizaciones">;
 

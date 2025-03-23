@@ -86,7 +86,7 @@ export interface VentasFilter {
   empresa_id?: number | null;
 }
 
-// Simplified type for cotizaciones
+// Simplified type for cotizaciones - ensuring no circular references
 export interface ExtendedCotizacion {
   id: string;
   created_at: string;
