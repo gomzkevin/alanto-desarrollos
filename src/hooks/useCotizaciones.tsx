@@ -6,7 +6,7 @@ import useUserRole from '@/hooks/useUserRole';
 
 export type Cotizacion = Tables<"cotizaciones">;
 
-// Define simplified lead type to avoid recursive references
+// Define simplified lead type without circular references
 export interface SimplifiedLead {
   id: string;
   nombre: string;
@@ -85,7 +85,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       
       if (error) {
         console.error('Error fetching cotizaciones:', error);
-        throw new Error(error.message);
+        return [];
       }
       
       if (!cotizaciones || cotizaciones.length === 0) {
@@ -94,24 +94,36 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       
       // Type cast to our simplified ExtendedCotizacion type
       const basicCotizaciones: ExtendedCotizacion[] = cotizaciones.map(c => ({
-        ...c,
+        id: c.id,
+        created_at: c.created_at,
+        desarrollo_id: c.desarrollo_id,
+        fecha_finiquito: c.fecha_finiquito,
+        fecha_inicio_pagos: c.fecha_inicio_pagos,
+        lead_id: c.lead_id,
+        monto_anticipo: c.monto_anticipo,
+        monto_finiquito: c.monto_finiquito,
+        notas: c.notas,
+        numero_pagos: c.numero_pagos,
+        prototipo_id: c.prototipo_id,
+        usar_finiquito: c.usar_finiquito,
+        empresa_id: 'empresa_id' in c ? c.empresa_id : null,
         lead: null,
         desarrollo: null,
         prototipo: null
       }));
       
       // If relations are requested and we have cotizaciones, fetch related entities
-      if (withRelations) {
+      if (withRelations && basicCotizaciones.length > 0) {
         // Get all unique IDs for related entities
-        const leadIds = cotizaciones
+        const leadIds = basicCotizaciones
           .map(c => c.lead_id)
           .filter((id): id is string => id !== null && id !== undefined);
           
-        const desarrolloIds = cotizaciones
+        const desarrolloIds = basicCotizaciones
           .map(c => c.desarrollo_id)
           .filter((id): id is string => id !== null && id !== undefined);
           
-        const prototipoIds = cotizaciones
+        const prototipoIds = basicCotizaciones
           .map(c => c.prototipo_id)
           .filter((id): id is string => id !== null && id !== undefined);
         
@@ -167,7 +179,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       return basicCotizaciones;
     } catch (error) {
       console.error('Error in fetchCotizaciones:', error);
-      throw error;
+      return [];
     }
   };
 

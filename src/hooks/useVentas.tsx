@@ -17,7 +17,7 @@ export interface SimplePrototipo {
   id?: string;
   nombre: string;
   precio?: number;
-  desarrollo?: SimpleDesarrollo;
+  desarrollo?: SimpleDesarrollo | null;
 }
 
 export interface SimpleUnidad {
@@ -25,7 +25,7 @@ export interface SimpleUnidad {
   numero: string;
   estado?: string;
   nivel?: string | null;
-  prototipo?: SimplePrototipo;
+  prototipo?: SimplePrototipo | null;
 }
 
 export interface Venta {
@@ -36,9 +36,9 @@ export interface Venta {
   fecha_inicio: string;
   fecha_actualizacion: string;
   unidad_id: string;
-  empresa_id?: number;
+  empresa_id?: number | null;
   notas?: string | null;
-  unidad?: SimpleUnidad;
+  unidad?: SimpleUnidad | null;
   progreso?: number;
 }
 
@@ -100,12 +100,15 @@ export const useVentas = (filters: VentasFilter = {}) => {
         fecha_actualizacion: venta.fecha_actualizacion,
         unidad_id: venta.unidad_id,
         notas: venta.notas,
-        ...(hasEmpresaColumn.data && { empresa_id: venta.empresa_id }),
-        progreso: 30 // Default progress value
+        empresa_id: hasEmpresaColumn.data && 'empresa_id' in venta ? venta.empresa_id : null,
+        progreso: 30, // Default progress value
+        unidad: null
       }));
       
       // Get all unidad_ids
-      const unidadIds = ventas.map(venta => venta.unidad_id).filter(Boolean);
+      const unidadIds = ventas
+        .map(venta => venta.unidad_id)
+        .filter(Boolean);
       
       if (unidadIds.length === 0) {
         return ventas;
@@ -120,37 +123,47 @@ export const useVentas = (filters: VentasFilter = {}) => {
       if (unidadesError) {
         console.error('Error al obtener unidades:', unidadesError);
         // Continue with basic ventas data
-      } else if (unidadesData) {
+      } else if (unidadesData && unidadesData.length > 0) {
         // Get all prototipo_ids from unidades
         const prototipoIds = unidadesData
           .map(unidad => unidad.prototipo_id)
           .filter(Boolean);
           
-        // Fetch prototipos data
-        const { data: prototipossData, error: prototipossError } = await supabase
-          .from('prototipos')
-          .select('id, nombre, precio, desarrollo_id')
-          .in('id', prototipoIds);
-          
-        if (prototipossError) {
-          console.error('Error al obtener prototipos:', prototipossError);
-        }
+        // Initialize prototipossData and desarrollosData variables
+        let prototipossData: any[] = [];
+        let desarrollosData: any[] = [];
         
-        // Get all desarrollo_ids from prototipos
-        const desarrolloIds = prototipossData 
-          ? prototipossData
+        // Fetch prototipos data
+        if (prototipoIds.length > 0) {
+          const { data, error: prototipossError } = await supabase
+            .from('prototipos')
+            .select('id, nombre, precio, desarrollo_id')
+            .in('id', prototipoIds);
+            
+          if (prototipossError) {
+            console.error('Error al obtener prototipos:', prototipossError);
+          } else if (data) {
+            prototipossData = data;
+            
+            // Get all desarrollo_ids from prototipos
+            const desarrolloIds = data
               .map(prototipo => prototipo.desarrollo_id)
-              .filter(Boolean)
-          : [];
-              
-        // Fetch desarrollos data
-        const { data: desarrollosData, error: desarrollosError } = await supabase
-          .from('desarrollos')
-          .select('id, nombre, ubicacion, empresa_id')
-          .in('id', desarrolloIds);
-          
-        if (desarrollosError) {
-          console.error('Error al obtener desarrollos:', desarrollosError);
+              .filter(Boolean);
+                  
+            // Fetch desarrollos data
+            if (desarrolloIds.length > 0) {
+              const { data: desarrollos, error: desarrollosError } = await supabase
+                .from('desarrollos')
+                .select('id, nombre, ubicacion, empresa_id')
+                .in('id', desarrolloIds);
+                
+              if (desarrollosError) {
+                console.error('Error al obtener desarrollos:', desarrollosError);
+              } else if (desarrollos) {
+                desarrollosData = desarrollos;
+              }
+            }
+          }
         }
         
         // Map the related data to the ventas
@@ -158,30 +171,37 @@ export const useVentas = (filters: VentasFilter = {}) => {
           const unidad = unidadesData.find(u => u.id === venta.unidad_id);
           
           if (unidad) {
-            const prototipo = prototipossData?.find(p => p.id === unidad.prototipo_id);
-            let desarrollo = undefined;
-            
-            if (prototipo && prototipo.desarrollo_id) {
-              desarrollo = desarrollosData?.find(d => d.id === prototipo.desarrollo_id);
-            }
-            
-            venta.unidad = {
+            const unidadObj: SimpleUnidad = {
               id: unidad.id,
               numero: unidad.numero,
               estado: unidad.estado,
               nivel: unidad.nivel,
-              prototipo: prototipo ? {
+              prototipo: null
+            };
+            
+            const prototipo = prototipossData.find(p => p.id === unidad.prototipo_id);
+            if (prototipo) {
+              const prototipoObj: SimplePrototipo = {
                 id: prototipo.id,
                 nombre: prototipo.nombre,
                 precio: prototipo.precio,
-                desarrollo: desarrollo ? {
+                desarrollo: null
+              };
+              
+              unidadObj.prototipo = prototipoObj;
+              
+              const desarrollo = desarrollosData.find(d => d.id === prototipo.desarrollo_id);
+              if (desarrollo) {
+                prototipoObj.desarrollo = {
                   id: desarrollo.id,
                   nombre: desarrollo.nombre,
                   ubicacion: desarrollo.ubicacion,
                   empresa_id: desarrollo.empresa_id
-                } : undefined
-              } : undefined
-            };
+                };
+              }
+            }
+            
+            venta.unidad = unidadObj;
           }
         });
       }
@@ -205,7 +225,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
       if (effectiveEmpresaId && !hasEmpresaColumn.data) {
         filteredVentas = filteredVentas.filter(venta => {
           // If venta has empresa_id directly
-          if ('empresa_id' in venta && venta.empresa_id !== undefined) {
+          if (venta.empresa_id !== undefined && venta.empresa_id !== null) {
             return venta.empresa_id === effectiveEmpresaId;
           }
           // Or if the desarrollo has empresa_id
@@ -289,7 +309,8 @@ export const useVentas = (filters: VentasFilter = {}) => {
         column_name: 'empresa_id'
       });
       
-      const ventaUpdates: any = {
+      // Create a shallow copy of updates to modify
+      const ventaUpdates: Record<string, any> = {
         ...updates,
         fecha_actualizacion: new Date().toISOString()
       };

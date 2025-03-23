@@ -20,8 +20,8 @@ export interface SimpleUnidad {
       ubicacion?: string | null;
       empresa_id?: number;
       id?: string;
-    };
-  };
+    } | null;
+  } | null;
 }
 
 export interface Venta {
@@ -32,9 +32,9 @@ export interface Venta {
   fecha_inicio: string;
   fecha_actualizacion: string;
   unidad_id: string;
-  empresa_id?: number;
+  empresa_id?: number | null;
   notas?: string | null;
-  unidad?: SimpleUnidad;
+  unidad?: SimpleUnidad | null;
 }
 
 interface Comprador {
@@ -112,7 +112,8 @@ export const useVentaDetail = (ventaId?: string) => {
         fecha_inicio: ventaData.fecha_inicio,
         fecha_actualizacion: ventaData.fecha_actualizacion,
         unidad_id: ventaData.unidad_id,
-        notas: ventaData.notas
+        notas: ventaData.notas,
+        unidad: null
       };
       
       // Add empresa_id if it exists
@@ -131,7 +132,16 @@ export const useVentaDetail = (ventaId?: string) => {
         if (unidadError) {
           console.error('Error fetching unidad details:', unidadError);
         } else if (unidadData) {
-          venta.unidad = unidadData;
+          const unidad: SimpleUnidad = {
+            id: unidadData.id,
+            numero: unidadData.numero,
+            estado: unidadData.estado,
+            nivel: unidadData.nivel,
+            prototipo_id: unidadData.prototipo_id,
+            prototipo: null
+          };
+          
+          venta.unidad = unidad;
           
           // If we have a prototipo_id, fetch the prototipo
           if (unidadData.prototipo_id) {
@@ -147,7 +157,8 @@ export const useVentaDetail = (ventaId?: string) => {
               venta.unidad.prototipo = {
                 id: prototipoData.id,
                 nombre: prototipoData.nombre,
-                precio: prototipoData.precio
+                precio: prototipoData.precio,
+                desarrollo: null
               };
               
               // If we have a desarrollo_id, fetch the desarrollo
@@ -161,12 +172,14 @@ export const useVentaDetail = (ventaId?: string) => {
                 if (desarrolloError) {
                   console.error('Error fetching desarrollo details:', desarrolloError);
                 } else if (desarrolloData) {
-                  venta.unidad.prototipo.desarrollo = {
-                    id: desarrolloData.id,
-                    nombre: desarrolloData.nombre,
-                    ubicacion: desarrolloData.ubicacion,
-                    empresa_id: desarrolloData.empresa_id
-                  };
+                  if (venta.unidad?.prototipo) {
+                    venta.unidad.prototipo.desarrollo = {
+                      id: desarrolloData.id,
+                      nombre: desarrolloData.nombre,
+                      ubicacion: desarrolloData.ubicacion,
+                      empresa_id: desarrolloData.empresa_id
+                    };
+                  }
                 }
               }
             }
@@ -196,9 +209,9 @@ export const useVentaDetail = (ventaId?: string) => {
       // First verify the venta belongs to the user's empresa
       if (empresaId && venta) {
         // Check if venta has empresa_id property
-        const ventaEmpresaId = 'empresa_id' in venta ? venta.empresa_id : undefined;
+        const ventaEmpresaId = venta.empresa_id;
         
-        if (ventaEmpresaId !== undefined && ventaEmpresaId !== empresaId) {
+        if (ventaEmpresaId !== undefined && ventaEmpresaId !== null && ventaEmpresaId !== empresaId) {
           console.log('Venta does not belong to user empresa:', ventaEmpresaId, empresaId);
           return [];
         }
@@ -212,7 +225,14 @@ export const useVentaDetail = (ventaId?: string) => {
         `)
         .eq('venta_id', ventaId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching compradores:', error);
+        return [];
+      }
+
+      if (!data || data.length === 0) {
+        return [];
+      }
 
       // Count pagos for each comprador
       const compradoresWithPagos = await Promise.all(
@@ -222,6 +242,17 @@ export const useVentaDetail = (ventaId?: string) => {
             .select('id', { count: 'exact', head: true })
             .eq('comprador_venta_id', item.id)
             .eq('estado', 'registrado');
+            
+          if (pagosError) {
+            console.error('Error counting pagos:', pagosError);
+            return {
+              id: item.id,
+              comprador_id: item.comprador_id,
+              nombre: item.comprador?.nombre || 'Comprador sin nombre',
+              porcentaje: item.porcentaje_propiedad,
+              pagos_realizados: 0,
+            };
+          }
             
           return {
             id: item.id,
@@ -271,12 +302,27 @@ export const useVentaDetail = (ventaId?: string) => {
         .in('comprador_venta_id', compradorVentaIds)
         .order('fecha', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching pagos:', error);
+        return [];
+      }
+      
+      if (!data || data.length === 0) {
+        return [];
+      }
       
       // Map the data to ensure estados conform to the expected type
-      const typedPagos: Pago[] = (data || []).map(pago => ({
-        ...pago,
-        estado: pago.estado === 'rechazado' ? 'rechazado' : 'registrado'
+      const typedPagos: Pago[] = data.map(pago => ({
+        id: pago.id,
+        comprador_venta_id: pago.comprador_venta_id,
+        monto: pago.monto,
+        fecha: pago.fecha,
+        metodo_pago: pago.metodo_pago,
+        estado: pago.estado === 'rechazado' ? 'rechazado' : 'registrado',
+        referencia: pago.referencia,
+        notas: pago.notas,
+        comprobante_url: pago.comprobante_url,
+        created_at: pago.created_at
       }));
       
       return typedPagos;
@@ -302,7 +348,7 @@ export const useVentaDetail = (ventaId?: string) => {
     return pago.estado === 'registrado' ? total + pago.monto : total;
   }, 0);
 
-  const progreso = venta?.precio_total
+  const progreso = venta && venta.precio_total && venta.precio_total > 0
     ? Math.round((montoPagado / venta.precio_total) * 100)
     : 0;
 
