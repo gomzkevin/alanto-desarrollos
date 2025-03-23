@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/use-toast';
 import { Link } from 'react-router-dom';
-import { useCotizaciones } from '@/hooks/useCotizaciones';
+import useCotizaciones from '@/hooks/useCotizaciones';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog/AdminResourceDialog';
 import useDesarrollos from '@/hooks/useDesarrollos';

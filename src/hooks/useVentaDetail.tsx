@@ -1,4 +1,6 @@
+
 import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SimpleUnidad } from '@/hooks/useVentas';
 
@@ -43,6 +45,12 @@ export interface VentaDetallada {
 }
 
 const useVentaDetail = (ventaId: string | undefined) => {
+  const [compradores, setCompradores] = useState<VentaComprador[]>([]);
+  const [pagos, setPagos] = useState<any[]>([]);
+  const [montoPagado, setMontoPagado] = useState(0);
+  const [progreso, setProgreso] = useState(0);
+  const [compradorVentaId, setCompradorVentaId] = useState<string | null>(null);
+
   const fetchVentaDetail = async (): Promise<VentaDetallada | null> => {
     if (!ventaId) {
       return null;
@@ -76,7 +84,7 @@ const useVentaDetail = (ventaId: string | undefined) => {
       }
 
       // Fetch compradores
-      const { data: compradores, error: compradoresError } = await supabase
+      const { data: compradoresData, error: compradoresError } = await supabase
         .from('compradores_venta')
         .select('*, comprador:comprador_id(id, nombre, email, telefono), vendedor:vendedor_id(id, nombre, email)')
         .eq('venta_id', ventaId);
@@ -86,14 +94,14 @@ const useVentaDetail = (ventaId: string | undefined) => {
       }
 
       // Fetch total pagado
-      const { data: pagos, error: pagosError } = await supabase
+      const { data: pagosData, error: pagosError } = await supabase
         .from('pagos')
         .select('monto')
         .eq('venta_id', ventaId);
 
       let totalPagado = 0;
-      if (pagos && !pagosError) {
-        totalPagado = pagos.reduce((sum, pago) => sum + pago.monto, 0);
+      if (pagosData && !pagosError) {
+        totalPagado = pagosData.reduce((sum, pago) => sum + pago.monto, 0);
       } else if (pagosError) {
         console.error('Error fetching pagos:', pagosError);
       }
@@ -107,9 +115,9 @@ const useVentaDetail = (ventaId: string | undefined) => {
         fecha_actualizacion: venta.fecha_actualizacion,
         unidad_id: venta.unidad_id,
         notas: venta.notas,
-        empresa_id: venta.empresa_id,
+        empresa_id: venta.empresa_id, // This might be undefined but that's ok
         unidad: unidad || null,
-        compradores: compradores || [],
+        compradores: compradoresData || [],
         totalPagado: totalPagado,
       };
 
@@ -120,17 +128,71 @@ const useVentaDetail = (ventaId: string | undefined) => {
     }
   };
 
-  const { data: ventaDetail, isLoading, error, refetch } = useQuery({
+  const { data: venta, isLoading, error, refetch } = useQuery({
     queryKey: ['ventaDetail', ventaId],
     queryFn: fetchVentaDetail,
     enabled: !!ventaId, // Only run the query if ventaId is not undefined
   });
 
+  // Fetch additional data and calculate derived values
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!ventaId || !venta) return;
+
+      try {
+        // Fetch compradores
+        const { data: compradoresData } = await supabase
+          .from('compradores_venta')
+          .select('*, comprador:comprador_id(id, nombre, email, telefono), vendedor:vendedor_id(id, nombre, email)')
+          .eq('venta_id', ventaId);
+        
+        setCompradores(compradoresData || []);
+        
+        // Set the first comprador's ID for payments
+        if (compradoresData && compradoresData.length > 0) {
+          setCompradorVentaId(compradoresData[0].id);
+        }
+
+        // Fetch pagos for all compradores
+        const pagosPromises = compradoresData?.map(comprador => 
+          supabase
+            .from('pagos')
+            .select('*')
+            .eq('comprador_venta_id', comprador.id)
+        ) || [];
+
+        const pagosResults = await Promise.all(pagosPromises);
+        const allPagos = pagosResults.flatMap(result => result.data || []);
+        
+        setPagos(allPagos);
+        
+        // Calculate total paid
+        const totalPagado = allPagos.reduce((sum, pago) => sum + pago.monto, 0);
+        setMontoPagado(totalPagado);
+        
+        // Calculate progress percentage
+        if (venta.precio_total > 0) {
+          const progresoCalculado = Math.min(Math.round((totalPagado / venta.precio_total) * 100), 100);
+          setProgreso(progresoCalculado);
+        }
+      } catch (error) {
+        console.error('Error fetching additional data:', error);
+      }
+    };
+
+    fetchData();
+  }, [ventaId, venta]);
+
   return {
-    ventaDetail,
+    venta,
+    compradores,
+    pagos,
     isLoading,
     error,
+    montoPagado,
+    progreso,
     refetch,
+    compradorVentaId
   };
 };
 

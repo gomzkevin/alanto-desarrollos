@@ -5,6 +5,23 @@ import { ProyeccionResults } from './ProyeccionResults';
 import { ProyeccionSummary } from './ProyeccionSummary';
 import { ProyeccionTable } from './ProyeccionTable';
 
+export interface ProyeccionFiltersProps {
+  initialConfig: any;
+  onChange: (newConfig: any) => void;
+}
+
+export interface ProyeccionSummaryProps {
+  summaryData: any;
+}
+
+export interface ProyeccionResultsProps {
+  resultData: any;
+}
+
+export interface ProyeccionTableProps {
+  tableData: any[];
+}
+
 export interface ProyeccionViewProps {
   initialConfig: any;
 }
@@ -40,18 +57,17 @@ export const ProyeccionView: React.FC<ProyeccionViewProps> = ({ initialConfig })
 
   return (
     <div className="space-y-8">
-      <ProyeccionFilters config={config} onChange={handleConfigChange} />
+      <ProyeccionFilters initialConfig={config} onChange={handleConfigChange} />
       
       {results && (
         <>
-          <ProyeccionSummary results={results} />
-          <ProyeccionResults results={results} />
-          <ProyeccionTable data={results.monthlyProjection} />
+          <ProyeccionSummary summaryData={results} />
+          <ProyeccionResults resultData={results} />
+          <ProyeccionTable tableData={results.monthlyProjection} />
         </>
       )}
     </div>
   );
 };
 
-// Export both the component and its props type
 export default ProyeccionView;

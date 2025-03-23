@@ -16,3 +16,8 @@ export { default as useSubscriptionInfo } from './useSubscriptionInfo';
 export { default as useVentas } from './useVentas';
 export { default as useVentaDetail } from './useVentaDetail';
 export { default as usePagos } from './usePagos';
+
+// Export types from hooks
+export type { SimpleCotizacion } from './useCotizaciones';
+export type { VentaDetallada, VentaComprador, SimpleComprador, SimpleVendedor } from './useVentaDetail';
+export type { SimpleDesarrollo, SimplePrototipo, SimpleUnidad, Venta } from './useVentas';

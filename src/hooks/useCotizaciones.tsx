@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,15 +8,26 @@ import { SimpleDesarrollo, SimplePrototipo } from '@/hooks/useVentas';
 // Simplified type to avoid circular references
 export interface SimpleCotizacion {
   id: string;
-  nombre_cliente?: string;
-  email_cliente?: string;
-  telefono_cliente?: string;
-  estado?: string;
-  fecha_creacion?: string;
-  ultima_actualizacion?: string;
-  prototipo_id?: string;
+  lead_id?: string;
   desarrollo_id?: string;
-  created_by?: string;
+  prototipo_id?: string;
+  monto_anticipo?: number;
+  numero_pagos?: number;
+  usar_finiquito?: boolean;
+  monto_finiquito?: number;
+  fecha_inicio_pagos?: string;
+  fecha_finiquito?: string;
+  notas?: string;
+  estado?: string;
+  created_at?: string;
+  // Nested relations
+  lead?: {
+    id: string;
+    nombre?: string;
+    email?: string;
+    telefono?: string;
+    origen?: string;
+  };
   prototipo?: SimplePrototipo;
   desarrollo?: SimpleDesarrollo;
 }
@@ -24,6 +36,7 @@ export interface CotizacionesFilter {
   desarrollo_id?: string;
   estado?: string;
   busqueda?: string;
+  withRelations?: boolean;
 }
 
 const useCotizaciones = (filters: CotizacionesFilter = {}) => {
@@ -37,17 +50,18 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
         .from('cotizaciones')
         .select(`
           id,
-          nombre_cliente,
-          email_cliente,
-          telefono_cliente,
-          estado,
-          fecha_creacion,
-          ultima_actualizacion,
-          prototipo_id,
+          lead_id,
           desarrollo_id,
-          created_by,
-          prototipo: prototipos (id, nombre, precio, desarrollo_id),
-          desarrollo: desarrollos (id, nombre, ubicacion, empresa_id)
+          prototipo_id,
+          monto_anticipo,
+          numero_pagos,
+          usar_finiquito,
+          monto_finiquito,
+          fecha_inicio_pagos,
+          fecha_finiquito,
+          notas,
+          estado,
+          created_at
         `);
 
       if (filters.desarrollo_id) {
@@ -59,7 +73,26 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
       }
 
       if (filters.busqueda) {
-        query = query.ilike('nombre_cliente', `%${filters.busqueda}%`);
+        // We'll join with leads table to search by name
+        query = supabase
+          .from('cotizaciones')
+          .select(`
+            id,
+            lead_id,
+            desarrollo_id,
+            prototipo_id,
+            monto_anticipo,
+            numero_pagos,
+            usar_finiquito,
+            monto_finiquito,
+            fecha_inicio_pagos,
+            fecha_finiquito,
+            notas,
+            estado,
+            created_at,
+            lead:lead_id(id, nombre, email, telefono)
+          `)
+          .ilike('lead.nombre', `%${filters.busqueda}%`);
       }
 
       const { data, error } = await query;
@@ -69,20 +102,59 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
         return [];
       }
 
-      return data.map(cotizacion => ({
-        id: cotizacion.id,
-        nombre_cliente: cotizacion.nombre_cliente,
-        email_cliente: cotizacion.email_cliente,
-        telefono_cliente: cotizacion.telefono_cliente,
-        estado: cotizacion.estado,
-        fecha_creacion: cotizacion.fecha_creacion,
-        ultima_actualizacion: cotizacion.ultima_actualizacion,
-        prototipo_id: cotizacion.prototipo_id,
-        desarrollo_id: cotizacion.desarrollo_id,
-        created_by: cotizacion.created_by,
-        prototipo: cotizacion.prototipo,
-        desarrollo: cotizacion.desarrollo
-      }));
+      let cotizaciones = data || [];
+
+      // If withRelations is true, fetch the related data
+      if (filters.withRelations && cotizaciones.length > 0) {
+        const cotizacionesWithRelations = await Promise.all(
+          cotizaciones.map(async (cotizacion) => {
+            let leadData = null;
+            let prototipoData = null;
+            let desarrolloData = null;
+
+            // Fetch lead data if lead_id exists
+            if (cotizacion.lead_id) {
+              const { data: lead } = await supabase
+                .from('leads')
+                .select('id, nombre, email, telefono, origen')
+                .eq('id', cotizacion.lead_id)
+                .single();
+              leadData = lead;
+            }
+
+            // Fetch prototipo data if prototipo_id exists
+            if (cotizacion.prototipo_id) {
+              const { data: prototipo } = await supabase
+                .from('prototipos')
+                .select('id, nombre, precio, desarrollo_id')
+                .eq('id', cotizacion.prototipo_id)
+                .single();
+              prototipoData = prototipo;
+            }
+
+            // Fetch desarrollo data if desarrollo_id exists
+            if (cotizacion.desarrollo_id) {
+              const { data: desarrollo } = await supabase
+                .from('desarrollos')
+                .select('id, nombre, ubicacion, empresa_id')
+                .eq('id', cotizacion.desarrollo_id)
+                .single();
+              desarrolloData = desarrollo;
+            }
+
+            return {
+              ...cotizacion,
+              lead: leadData,
+              prototipo: prototipoData,
+              desarrollo: desarrolloData
+            };
+          })
+        );
+
+        return cotizacionesWithRelations;
+      }
+
+      return cotizaciones;
     } catch (error) {
       console.error('Error fetching cotizaciones:', error);
       return [];
@@ -94,19 +166,12 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
     queryFn: fetchCotizaciones,
   });
 
-  const createCotizacion = async (cotizacionData: {
-    nombre_cliente: string;
-    email_cliente: string;
-    telefono_cliente: string;
-    prototipo_id?: string;
-    desarrollo_id?: string;
-    estado?: string;
-  }) => {
+  const createCotizacion = async (cotizacionData: Partial<SimpleCotizacion>) => {
     setIsCreating(true);
     try {
       const { data, error } = await supabase
         .from('cotizaciones')
-        .insert([cotizacionData])
+        .insert(cotizacionData)
         .select();
 
       if (error) throw error;

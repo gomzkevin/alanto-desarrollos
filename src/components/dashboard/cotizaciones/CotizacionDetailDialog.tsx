@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -19,7 +20,7 @@ import {
   CardFooter 
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ExtendedCotizacion } from '@/hooks/useCotizaciones';
+import { SimpleCotizacion } from '@/hooks/useCotizaciones';
 import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
 import { generateAmortizationTable } from '@/utils/quotationPDF';
 import { Badge } from '@/components/ui/badge';
@@ -55,7 +56,7 @@ import { EditCotizacionButton } from '@/components/dashboard/EditCotizacionButto
 interface CotizacionDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  cotizacion: ExtendedCotizacion | null;
+  cotizacion: SimpleCotizacion | null;
 }
 
 const formatter = new Intl.NumberFormat('es-MX', {

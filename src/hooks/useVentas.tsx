@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -97,7 +98,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
           
           // Safely extract properties with type checking
           const ventaObj: Venta = {
-            id: venta.id || '',
+            id: String(venta.id || ''),
             precio_total: Number(venta.precio_total) || 0,
             estado: String(venta.estado || ''),
             es_fraccional: Boolean(venta.es_fraccional),
@@ -273,7 +274,8 @@ export const useVentas = (filters: VentasFilter = {}) => {
         column_name: 'empresa_id'
       });
       
-      const ventaInsert: Record<string, any> = {
+      // Create a proper object for insertion
+      const ventaInsert = {
         unidad_id: ventaData.unidad_id,
         precio_total: ventaData.precio_total,
         es_fraccional: ventaData.es_fraccional,
@@ -282,10 +284,9 @@ export const useVentas = (filters: VentasFilter = {}) => {
       
       // Only add empresa_id if the column exists
       if (hasEmpresaColumn.data && effectiveEmpresaId) {
-        ventaInsert.empresa_id = effectiveEmpresaId;
+        Object.assign(ventaInsert, { empresa_id: effectiveEmpresaId });
       }
       
-      // Fix the insert operation by passing an object, not an array
       const { data, error } = await supabase
         .from('ventas')
         .insert(ventaInsert)

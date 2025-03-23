@@ -129,7 +129,7 @@ const DesarrolloDetail = () => {
               
               <TabsContent value="imagenes" className="space-y-2">
                 {images && images.length > 0 ? (
-                  <DesarrolloImageCarousel imagenes={images} />
+                  <DesarrolloImageCarousel images={images} />
                 ) : (
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
