@@ -7,9 +7,25 @@ import { useUserRole } from './useUserRole';
 export type Cotizacion = Tables<"cotizaciones">;
 
 // Define simplified types without circular references
-export type SimpleLead = Pick<Tables<"leads">, 'id' | 'nombre' | 'email' | 'telefono' | 'origen'>;
-export type SimpleDesarrollo = Pick<Tables<"desarrollos">, 'id' | 'nombre' | 'ubicacion'>;
-export type SimplePrototipo = Pick<Tables<"prototipos">, 'id' | 'nombre' | 'precio'>;
+export type SimpleLead = {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+  origen: string;
+};
+
+export type SimpleDesarrollo = {
+  id: string;
+  nombre: string;
+  ubicacion: string;
+};
+
+export type SimplePrototipo = {
+  id: string;
+  nombre: string;
+  precio: number;
+};
 
 // Define extended cotizacion with simple related types
 export type ExtendedCotizacion = Cotizacion & {

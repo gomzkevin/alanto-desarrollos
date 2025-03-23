@@ -40,8 +40,8 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     error
   } = useSubscriptionInfo();
 
-  // Default empty objects for resourceLimits and resourceCounts
-  const resourceLimits: Record<string, number> = {};
+  // Default resource limits and counts
+  const subscriptionLimits: Record<string, number> = {};
   const resourceCounts: Record<string, number> = {};
 
   // Determine base subscription state
@@ -79,7 +79,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     hasValidEmpresa,
     isAdmin: isAdmin(),
     canAccess,
-    subscriptionLimits: resourceLimits,
+    subscriptionLimits,
     resourceCounts
   };
 
