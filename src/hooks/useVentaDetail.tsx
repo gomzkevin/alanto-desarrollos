@@ -116,38 +116,40 @@ const useVentaDetail = (ventaId: string | undefined) => {
           .select('*, comprador:comprador_id(id, nombre, email, telefono), vendedor:vendedor_id(id, nombre, email)')
           .eq('venta_id', ventaId);
         
-        setCompradores(compradoresData || []);
-        
-        // Set the first comprador's ID for payments
-        if (compradoresData && compradoresData.length > 0) {
-          setCompradorVentaId(compradoresData[0].id);
-        }
+        if (compradoresData) {
+          setCompradores(compradoresData);
+          
+          // Set the first comprador's ID for payments
+          if (compradoresData.length > 0) {
+            setCompradorVentaId(compradoresData[0].id);
+          }
 
-        // Fetch pagos for all compradores
-        const pagosPromises = compradoresData?.map(comprador => 
-          supabase
-            .from('pagos')
-            .select('*')
-            .eq('comprador_venta_id', comprador.id)
-        ) || [];
+          // Fetch pagos for all compradores
+          const pagosPromises = compradoresData.map(comprador => 
+            supabase
+              .from('pagos')
+              .select('*')
+              .eq('comprador_venta_id', comprador.id)
+          );
 
-        const pagosResults = await Promise.all(pagosPromises);
-        const allPagos = pagosResults.flatMap(result => result.data || []);
-        
-        setPagos(allPagos);
-        
-        // Calculate total paid
-        const totalPagado = allPagos.reduce((sum, pago) => {
-          // Ensure pago.monto is a number
-          const monto = typeof pago.monto === 'number' ? pago.monto : 0;
-          return sum + monto;
-        }, 0);
-        setMontoPagado(totalPagado);
-        
-        // Calculate progress percentage
-        if (venta.precio_total > 0) {
-          const progresoCalculado = Math.min(Math.round((totalPagado / venta.precio_total) * 100), 100);
-          setProgreso(progresoCalculado);
+          const pagosResults = await Promise.all(pagosPromises);
+          const allPagos = pagosResults.flatMap(result => result.data || []);
+          
+          setPagos(allPagos);
+          
+          // Calculate total paid
+          const totalPagado = allPagos.reduce((sum, pago) => {
+            // Ensure pago.monto is a number
+            const monto = typeof pago.monto === 'number' ? pago.monto : 0;
+            return sum + monto;
+          }, 0);
+          setMontoPagado(totalPagado);
+          
+          // Calculate progress percentage
+          if (venta.precio_total > 0) {
+            const progresoCalculado = Math.min(Math.round((totalPagado / venta.precio_total) * 100), 100);
+            setProgreso(progresoCalculado);
+          }
         }
       } catch (error) {
         console.error('Error fetching additional data:', error);

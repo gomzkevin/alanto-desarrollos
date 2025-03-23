@@ -54,7 +54,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
         return [];
       }
       
-      // Function to check if an item is a valid venta object
+      // Type guard to check if an item is a valid venta
       const isValidVenta = (item: any): item is Venta => {
         return item && typeof item === 'object' && 'id' in item;
       };

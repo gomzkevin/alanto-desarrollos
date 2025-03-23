@@ -3,34 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
-import { SimpleDesarrollo, SimplePrototipo } from './types';
-
-// Simplified type to avoid circular references
-export interface SimpleCotizacion {
-  id: string;
-  lead_id?: string;
-  desarrollo_id?: string;
-  prototipo_id?: string;
-  monto_anticipo?: number;
-  numero_pagos?: number;
-  usar_finiquito?: boolean;
-  monto_finiquito?: number;
-  fecha_inicio_pagos?: string;
-  fecha_finiquito?: string;
-  notas?: string;
-  estado?: string;
-  created_at?: string;
-  // Nested relations as optional objects
-  lead?: {
-    id: string;
-    nombre?: string;
-    email?: string;
-    telefono?: string;
-    origen?: string;
-  } | null;
-  prototipo?: SimplePrototipo | null;
-  desarrollo?: SimpleDesarrollo | null;
-}
+import { SimpleDesarrollo, SimplePrototipo, SimpleCotizacion } from './types';
 
 export interface CotizacionesFilter {
   desarrollo_id?: string;

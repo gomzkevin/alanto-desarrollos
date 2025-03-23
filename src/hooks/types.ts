@@ -77,3 +77,30 @@ export interface Venta {
   unidad?: SimpleUnidad | null;
   progreso?: number;
 }
+
+// Simplified Cotizacion type to avoid recursive dependencies
+export interface SimpleCotizacion {
+  id: string;
+  lead_id?: string;
+  desarrollo_id?: string;
+  prototipo_id?: string;
+  monto_anticipo?: number;
+  numero_pagos?: number;
+  usar_finiquito?: boolean;
+  monto_finiquito?: number;
+  fecha_inicio_pagos?: string;
+  fecha_finiquito?: string;
+  notas?: string;
+  estado?: string;
+  created_at?: string;
+  // Nested relations as optional objects
+  lead?: {
+    id: string;
+    nombre?: string;
+    email?: string;
+    telefono?: string;
+    origen?: string;
+  } | null;
+  prototipo?: SimplePrototipo | null;
+  desarrollo?: SimpleDesarrollo | null;
+}

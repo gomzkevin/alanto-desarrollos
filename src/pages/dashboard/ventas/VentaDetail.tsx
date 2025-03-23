@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -17,7 +16,6 @@ import { VentaEditDialog } from './components/VentaEditDialog';
 import { CompradorDialog } from './components/CompradorDialog';
 import { VentaComprador } from '@/hooks/types';
 
-// Interface matching InfoTab's expected format for compradores
 interface InfoTabComprador {
   id: string;
   comprador_id: string;
@@ -45,7 +43,6 @@ const VentaDetail = () => {
     compradorVentaId
   } = useVentaDetail(ventaId);
 
-  // Transform compradores to match InfoTab's expected format
   const formatCompradores = (compradores: VentaComprador[]): InfoTabComprador[] => {
     return compradores.map(c => ({
       id: c.id,
@@ -53,7 +50,7 @@ const VentaDetail = () => {
       nombre: c.comprador?.nombre || 'Sin nombre',
       porcentaje: c.porcentaje_propiedad,
       pagos_realizados: pagos.filter(p => p.comprador_venta_id === c.id).length,
-      total_pagos: 0 // This will be calculated elsewhere if needed
+      total_pagos: 0
     }));
   };
 
