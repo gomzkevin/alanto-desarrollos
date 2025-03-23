@@ -114,7 +114,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
           .map(unidad => unidad.prototipo_id)
           .filter(Boolean);
           
-        // Initialize prototipossData and desarrollosData variables
+        // Initialize empty arrays for prototipos and desarrollos
         let prototipossData: any[] = [];
         let desarrollosData: any[] = [];
         
@@ -171,6 +171,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
                 id: prototipo.id,
                 nombre: prototipo.nombre || '',
                 precio: prototipo.precio,
+                desarrollo_id: prototipo.desarrollo_id,
                 desarrollo: null
               };
               
@@ -225,11 +226,6 @@ export const useVentas = (filters: VentasFilter = {}) => {
       return [];
     }
   };
-
-  const { data = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['ventas', filters, effectiveEmpresaId],
-    queryFn: fetchVentas,
-  });
 
   // Function to create a venta
   const createVenta = async (ventaData: {
@@ -351,6 +347,11 @@ export const useVentas = (filters: VentasFilter = {}) => {
       setIsUpdating(false);
     }
   };
+
+  const { data = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['ventas', filters, effectiveEmpresaId],
+    queryFn: fetchVentas,
+  });
 
   return {
     ventas: data,

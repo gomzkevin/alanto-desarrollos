@@ -13,6 +13,7 @@ export interface SimplePrototipo {
   id: string;
   nombre: string;
   precio?: number;
+  desarrollo_id?: string;
   desarrollo?: SimpleDesarrollo | null;
 }
 
@@ -23,6 +24,14 @@ export interface SimpleUnidad {
   nivel?: string | null;
   prototipo_id?: string;
   prototipo?: SimplePrototipo | null;
+}
+
+export interface SimpleLead {
+  id: string;
+  nombre: string;
+  email?: string | null;
+  telefono?: string | null;
+  origen?: string | null;
 }
 
 export interface Venta {
@@ -68,28 +77,7 @@ export interface VentasFilter {
   empresa_id?: number | null;
 }
 
-// Simplified types for cotizaciones
-export interface SimplifiedLead {
-  id: string;
-  nombre: string;
-  email?: string | null;
-  telefono?: string | null;
-  origen?: string | null;
-}
-
-export interface SimplifiedDesarrollo {
-  id: string;
-  nombre: string;
-  ubicacion?: string | null;
-}
-
-export interface SimplifiedPrototipo {
-  id: string;
-  nombre: string;
-  precio: number;
-}
-
-// Stand-alone type without circular references 
+// Simplified type for cotizaciones
 export interface ExtendedCotizacion {
   id: string;
   created_at: string;
@@ -104,8 +92,8 @@ export interface ExtendedCotizacion {
   prototipo_id: string;
   usar_finiquito?: boolean | null;
   empresa_id?: number | null;
-  // Simple references instead of nested objects
-  lead?: SimplifiedLead | null;
-  desarrollo?: SimplifiedDesarrollo | null;
-  prototipo?: SimplifiedPrototipo | null;
+  // Simple references instead of recursive definitions
+  lead?: SimpleLead | null;
+  desarrollo?: SimpleDesarrollo | null;
+  prototipo?: SimplePrototipo | null;
 }
