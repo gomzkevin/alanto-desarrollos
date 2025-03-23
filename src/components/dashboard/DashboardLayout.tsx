@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -19,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 import LogoutButton from './LogoutButton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import useSubscriptionInfo from '@/hooks/useSubscriptionInfo';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

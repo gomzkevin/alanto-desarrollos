@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
@@ -6,7 +5,7 @@ import useUserRole from '@/hooks/useUserRole';
 
 export type Cotizacion = Tables<"cotizaciones">;
 
-// Define simplified lead type without circular references
+// Define simplified types to prevent circular references
 export interface SimplifiedLead {
   id: string;
   nombre: string;
@@ -15,14 +14,12 @@ export interface SimplifiedLead {
   origen?: string | null;
 }
 
-// Define simplified desarrollo type
 export interface SimplifiedDesarrollo {
   id: string;
   nombre: string;
   ubicacion?: string | null;
 }
 
-// Define simplified prototipo type
 export interface SimplifiedPrototipo {
   id: string;
   nombre: string;

@@ -1,3 +1,4 @@
+
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Subtitle, Title } from '@tremor/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +10,14 @@ import useChartData from '@/hooks/useChartData';
 import SubscriptionBanner from '@/components/dashboard/configuracion/SubscriptionBanner';
 
 const DashboardPage = () => {
-  const { stats, isLoading } = useDashboardMetrics();
+  const { metrics, isLoading } = useDashboardMetrics();
   const { userName } = useUserRole();
-  const { ventasChartData, chartDates } = useChartData();
+  const chartData = useChartData();
+
+  // Extract stats from metrics
+  const totalDesarrollos = metrics?.desarrollos?.length || 0;
+  const totalLeads = metrics?.leads || 0;
+  const totalVentas = metrics?.ventas || 0;
 
   return (
     <DashboardLayout>
@@ -40,7 +46,7 @@ const DashboardPage = () => {
               {isLoading ? (
                 <div className="animate-pulse h-8 bg-slate-200 rounded w-1/2"></div>
               ) : (
-                <Metric>{stats?.totalDesarrollos || 0}</Metric>
+                <Metric>{totalDesarrollos}</Metric>
               )}
             </CardContent>
           </Card>
@@ -60,7 +66,7 @@ const DashboardPage = () => {
               {isLoading ? (
                 <div className="animate-pulse h-8 bg-slate-200 rounded w-1/2"></div>
               ) : (
-                <Metric>{stats?.totalLeads || 0}</Metric>
+                <Metric>{totalLeads}</Metric>
               )}
             </CardContent>
           </Card>
@@ -80,7 +86,7 @@ const DashboardPage = () => {
               {isLoading ? (
                 <div className="animate-pulse h-8 bg-slate-200 rounded w-1/2"></div>
               ) : (
-                <Metric>${stats?.totalVentas?.toLocaleString() || 0}</Metric>
+                <Metric>${totalVentas?.toLocaleString() || 0}</Metric>
               )}
             </CardContent>
           </Card>
@@ -103,14 +109,11 @@ const DashboardPage = () => {
             ) : (
               <AreaChart
                 className="mt-4"
-                data={ventasChartData}
-                index="date"
-                categories={['Ventas']}
+                data={metrics?.salesData || []}
+                index="name"
+                categories={['ventas']}
                 colors={['indigo']}
                 showAnimation={true}
-                indexAxis="bottom"
-                valueAxis="left"
-                indexScaleType="time"
               />
             )}
           </CardContent>

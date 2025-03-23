@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -260,12 +259,12 @@ export const useVentas = (filters: VentasFilter = {}) => {
         column_name: 'empresa_id'
       });
       
-      const ventaInsert: Record<string, any> = {
+      const ventaInsert = {
         unidad_id: ventaData.unidad_id,
         precio_total: ventaData.precio_total,
         es_fraccional: ventaData.es_fraccional,
         estado: ventaData.estado || 'en_proceso',
-      };
+      } as Record<string, any>;
       
       // Only add empresa_id if the column exists
       if (hasEmpresaColumn.data && effectiveEmpresaId) {
@@ -274,7 +273,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
       
       const { data, error } = await supabase
         .from('ventas')
-        .insert(ventaInsert)
+        .insert([ventaInsert])
         .select();
 
       if (error) throw error;

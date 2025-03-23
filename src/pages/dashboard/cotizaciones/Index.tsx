@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from 'react';
-import { PlusIcon, FilterIcon } from 'lucide-react';
+import { PlusIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/use-toast';
@@ -9,11 +10,8 @@ import { Link } from 'react-router-dom';
 import { useCotizaciones } from '@/hooks/useCotizaciones';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog/AdminResourceDialog';
-import CotizacionDetailDialog from './CotizacionDetailDialog';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import useUserRole from '@/hooks/useUserRole';
-import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
-import EditCotizacionButton from '@/components/dashboard/EditCotizacionButton';
 import useSubscriptionGuard from '@/hooks/useSubscriptionGuard';
 
 export default function CotizacionesPage() {
@@ -87,7 +85,6 @@ export default function CotizacionesPage() {
                 buttonIcon={<PlusIcon className="h-4 w-4 mr-2" />}
               />
             )}
-            <ExportPDFButton data={filteredCotizaciones} filename="cotizaciones.pdf" />
           </div>
         </div>
         {isLoadingData ? (
@@ -127,26 +124,16 @@ export default function CotizacionesPage() {
                   </p>
                 </CardContent>
                 <CardFooter className="flex justify-between items-center">
-                  <CotizacionDetailDialog cotizacion={cotizacion} />
-                  {isAdmin() && (
-                    <EditCotizacionButton
-                      cotizacion={cotizacion}
-                      onSuccess={() => {
-                        toast({
-                          title: 'Cotización actualizada',
-                          description: 'La cotización se ha actualizado correctamente',
-                        });
-                        refetch();
-                      }}
-                    />
-                  )}
+                  <Link to={`/dashboard/cotizaciones/${cotizacion.id}`}>
+                    <Button variant="outline" size="sm">Ver detalles</Button>
+                  </Link>
                 </CardFooter>
               </Card>
             ))}
           </div>
         ) : (
           <Card>
-            <CardContent>
+            <CardContent className="pt-6">
               <p>No hay cotizaciones registradas.</p>
             </CardContent>
           </Card>
@@ -154,4 +141,4 @@ export default function CotizacionesPage() {
       </div>
     </DashboardLayout>
   );
-}
+};
