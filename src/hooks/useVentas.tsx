@@ -8,21 +8,21 @@ import useSupabaseTableHelpers from './useSupabaseTableHelpers';
 
 // Basic types with simplified structures to avoid deep recursion
 export interface SimpleDesarrollo {
-  id?: string;
+  id: string;
   nombre: string;
   ubicacion?: string | null;
   empresa_id?: number;
 }
 
 export interface SimplePrototipo {
-  id?: string;
+  id: string;
   nombre: string;
   precio?: number;
   desarrollo?: SimpleDesarrollo | null;
 }
 
 export interface SimpleUnidad {
-  id?: string;
+  id: string;
   numero: string;
   estado?: string;
   nivel?: string | null;
@@ -95,8 +95,8 @@ export const useVentas = (filters: VentasFilter = {}) => {
       }
       
       // Convert ventas data to proper Venta objects
-      const ventas: Venta[] = ventasData.map(venta => {
-        if (!venta) {
+      const ventas: Venta[] = ventasData.map(ventaItem => {
+        if (!ventaItem) {
           return {
             id: '',
             precio_total: 0,
@@ -110,29 +110,19 @@ export const useVentas = (filters: VentasFilter = {}) => {
           };
         }
         
-        // Type guard for venta object
-        const typedVenta = venta as {
-          id?: string;
-          precio_total?: number;
-          estado?: string;
-          es_fraccional?: boolean;
-          fecha_inicio?: string;
-          fecha_actualizacion?: string;
-          unidad_id?: string;
-          notas?: string | null;
-          empresa_id?: number | null;
-        };
+        // Safe access to properties using type assertion
+        const venta = ventaItem as any;
         
         return {
-          id: typedVenta.id || '',
-          precio_total: typedVenta.precio_total || 0,
-          estado: typedVenta.estado || '',
-          es_fraccional: typedVenta.es_fraccional || false,
-          fecha_inicio: typedVenta.fecha_inicio || '',
-          fecha_actualizacion: typedVenta.fecha_actualizacion || '',
-          unidad_id: typedVenta.unidad_id || '',
-          notas: typedVenta.notas,
-          empresa_id: hasEmpresaColumn && 'empresa_id' in typedVenta ? typedVenta.empresa_id : null,
+          id: venta.id || '',
+          precio_total: venta.precio_total || 0,
+          estado: venta.estado || '',
+          es_fraccional: venta.es_fraccional || false,
+          fecha_inicio: venta.fecha_inicio || '',
+          fecha_actualizacion: venta.fecha_actualizacion || '',
+          unidad_id: venta.unidad_id || '',
+          notas: venta.notas,
+          empresa_id: hasEmpresaColumn && 'empresa_id' in venta ? venta.empresa_id : null,
           progreso: 30, // Default progress value
           unidad: null
         };

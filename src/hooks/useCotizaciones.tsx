@@ -7,7 +7,7 @@ import useSupabaseTableHelpers from './useSupabaseTableHelpers';
 
 export type Cotizacion = Tables<"cotizaciones">;
 
-// Define simplified lead type without circular references
+// Define base types without circular references
 export interface SimplifiedLead {
   id: string;
   nombre: string;
@@ -16,21 +16,19 @@ export interface SimplifiedLead {
   origen?: string | null;
 }
 
-// Define simplified desarrollo type
 export interface SimplifiedDesarrollo {
   id: string;
   nombre: string;
   ubicacion?: string | null;
 }
 
-// Define simplified prototipo type
 export interface SimplifiedPrototipo {
   id: string;
   nombre: string;
   precio: number;
 }
 
-// Define extended cotizacion with simplified related entities
+// Use an extended type with non-circular references 
 export interface ExtendedCotizacion {
   id: string;
   created_at: string;
@@ -97,9 +95,8 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         return [];
       }
       
-      // Type cast to our simplified ExtendedCotizacion type - breaking circular references
+      // Map to our safe ExtendedCotizacion type
       const basicCotizaciones: ExtendedCotizacion[] = cotizaciones.map(c => {
-        // Ensure c is not null before accessing properties
         if (!c) return {
           id: '',
           created_at: '',
@@ -108,9 +105,6 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
           monto_anticipo: 0,
           numero_pagos: 0,
           prototipo_id: '',
-          lead: null,
-          desarrollo: null,
-          prototipo: null
         };
         
         return {
@@ -127,9 +121,6 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
           prototipo_id: c.prototipo_id || '',
           usar_finiquito: c.usar_finiquito,
           empresa_id: 'empresa_id' in c ? (c.empresa_id as number | null) : null,
-          lead: null,
-          desarrollo: null,
-          prototipo: null
         };
       });
       
@@ -138,15 +129,15 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         // Get all unique IDs for related entities
         const leadIds = basicCotizaciones
           .map(c => c.lead_id)
-          .filter((id): id is string => id !== null && id !== undefined);
+          .filter((id): id is string => Boolean(id));
           
         const desarrolloIds = basicCotizaciones
           .map(c => c.desarrollo_id)
-          .filter((id): id is string => id !== null && id !== undefined);
+          .filter((id): id is string => Boolean(id));
           
         const prototipoIds = basicCotizaciones
           .map(c => c.prototipo_id)
-          .filter((id): id is string => id !== null && id !== undefined);
+          .filter((id): id is string => Boolean(id));
         
         // Fetch leads if needed
         if (leadIds.length > 0) {
