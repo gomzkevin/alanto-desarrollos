@@ -11,3 +11,4 @@ export { useIsMobile } from './use-mobile';
 export { default as useChartData } from './useChartData';
 export { default as useDesarrolloStats } from './useDesarrolloStats';
 export { default as useUnidades } from './useUnidades';
+export { default as useSubscriptionAuth } from './useSubscriptionAuth';

@@ -158,7 +158,7 @@ export const useUserRole = () => {
     empresaId,
     isLoading,
     authChecked,
-    role: userRole // Alias for compatibility
+    role: userRole // Alias para compatibilidad
   };
 };
 

@@ -4,13 +4,46 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VentasTable } from './components/VentasTable';
 import VentasStatistics from './components/VentasStatistics';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useSubscriptionAuth } from '@/hooks/useSubscriptionAuth';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const VentasPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { isAuthorized, isLoading } = useSubscriptionAuth('Ventas');
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-1/3" />
+          <Skeleton className="h-8 w-full" />
+          <div className="grid gap-4">
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!isAuthorized) {
+    return (
+      <DashboardLayout>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Acceso restringido</AlertTitle>
+          <AlertDescription>
+            No tienes acceso al módulo de Ventas. Por favor, contacta al administrador o verifica que tu empresa tenga una suscripción activa.
+          </AlertDescription>
+        </Alert>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
