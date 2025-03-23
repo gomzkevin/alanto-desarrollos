@@ -10,6 +10,7 @@ export interface SimpleUnidad {
   numero: string;
   estado?: string;
   nivel?: string | null;
+  prototipo_id?: string;
   prototipo?: {
     id?: string;
     nombre: string;
@@ -19,8 +20,8 @@ export interface SimpleUnidad {
       ubicacion?: string | null;
       empresa_id?: number;
       id?: string;
-    };
-  };
+    } | null;
+  } | null;
 }
 
 export interface Venta {
@@ -31,9 +32,9 @@ export interface Venta {
   fecha_inicio: string;
   fecha_actualizacion: string;
   unidad_id: string;
-  empresa_id?: number;
+  empresa_id?: number | null;
   notas?: string | null;
-  unidad?: SimpleUnidad;
+  unidad?: SimpleUnidad | null;
 }
 
 interface Comprador {
@@ -77,18 +78,22 @@ export const useVentaDetail = (ventaId?: string) => {
         column_name: 'empresa_id'
       });
       
-      // Build select query based on column existence
-      let query = supabase.from('ventas').select(`
-        id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas
-        ${hasEmpresaColumn.data ? ', empresa_id' : ''}
-      `).eq('id', ventaId);
+      // Fetch basic venta information
+      const ventaQuery = supabase.from('ventas')
+        .select('id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas');
       
-      // Add empresa_id filter if available and column exists
-      if (empresaId && hasEmpresaColumn.data) {
-        query = query.eq('empresa_id', empresaId);
+      // Add empresa_id to the select if it exists
+      if (hasEmpresaColumn.data) {
+        ventaQuery.select('id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas, empresa_id');
       }
       
-      const { data: ventaData, error: ventaError } = await query.maybeSingle();
+      // Filter by id and empresa_id if necessary
+      ventaQuery.eq('id', ventaId);
+      if (empresaId && hasEmpresaColumn.data) {
+        ventaQuery.eq('empresa_id', empresaId);
+      }
+      
+      const { data: ventaData, error: ventaError } = await ventaQuery.maybeSingle();
       
       if (ventaError) {
         console.error('Error fetching venta details:', ventaError);
@@ -99,30 +104,88 @@ export const useVentaDetail = (ventaId?: string) => {
         return null;
       }
       
-      // Fetch unidad information separately to avoid deep nesting
-      const { data: unidadData, error: unidadError } = await supabase
-        .from('unidades')
-        .select(`
-          id, numero, estado, nivel,
-          prototipo:prototipos (
-            id, nombre, precio,
-            desarrollo:desarrollos (
-              id, nombre, ubicacion, empresa_id
-            )
-          )
-        `)
-        .eq('id', ventaData.unidad_id)
-        .maybeSingle();
-        
-      if (unidadError) {
-        console.error('Error fetching unidad details:', unidadError);
+      let venta: Venta = {
+        id: ventaData.id,
+        precio_total: ventaData.precio_total,
+        estado: ventaData.estado,
+        es_fraccional: ventaData.es_fraccional,
+        fecha_inicio: ventaData.fecha_inicio,
+        fecha_actualizacion: ventaData.fecha_actualizacion,
+        unidad_id: ventaData.unidad_id,
+        notas: ventaData.notas,
+        unidad: null
+      };
+      
+      // Add empresa_id if it exists
+      if ('empresa_id' in ventaData) {
+        venta.empresa_id = ventaData.empresa_id as number | null;
       }
       
-      // Combine the data
-      const venta: Venta = {
-        ...ventaData,
-        unidad: unidadData || undefined
-      };
+      // Fetch unidad information separately to avoid deep nesting
+      if (ventaData.unidad_id) {
+        const { data: unidadData, error: unidadError } = await supabase
+          .from('unidades')
+          .select('id, numero, estado, nivel, prototipo_id')
+          .eq('id', ventaData.unidad_id)
+          .maybeSingle();
+          
+        if (unidadError) {
+          console.error('Error fetching unidad details:', unidadError);
+        } else if (unidadData) {
+          const unidad: SimpleUnidad = {
+            id: unidadData.id,
+            numero: unidadData.numero,
+            estado: unidadData.estado,
+            nivel: unidadData.nivel,
+            prototipo_id: unidadData.prototipo_id,
+            prototipo: null
+          };
+          
+          venta.unidad = unidad;
+          
+          // If we have a prototipo_id, fetch the prototipo
+          if (unidadData.prototipo_id) {
+            const { data: prototipoData, error: prototipoError } = await supabase
+              .from('prototipos')
+              .select('id, nombre, precio, desarrollo_id')
+              .eq('id', unidadData.prototipo_id)
+              .maybeSingle();
+              
+            if (prototipoError) {
+              console.error('Error fetching prototipo details:', prototipoError);
+            } else if (prototipoData) {
+              venta.unidad.prototipo = {
+                id: prototipoData.id,
+                nombre: prototipoData.nombre,
+                precio: prototipoData.precio,
+                desarrollo: null
+              };
+              
+              // If we have a desarrollo_id, fetch the desarrollo
+              if (prototipoData.desarrollo_id) {
+                const { data: desarrolloData, error: desarrolloError } = await supabase
+                  .from('desarrollos')
+                  .select('id, nombre, ubicacion, empresa_id')
+                  .eq('id', prototipoData.desarrollo_id)
+                  .maybeSingle();
+                  
+                if (desarrolloError) {
+                  console.error('Error fetching desarrollo details:', desarrolloError);
+                } else if (desarrolloData) {
+                  if (venta.unidad?.prototipo) {
+                    venta.unidad.prototipo.desarrollo = {
+                      id: desarrolloData.id,
+                      nombre: desarrolloData.nombre,
+                      ubicacion: desarrolloData.ubicacion,
+                      empresa_id: desarrolloData.empresa_id as number
+                    };
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
       
       return venta;
     } catch (error) {
@@ -139,16 +202,16 @@ export const useVentaDetail = (ventaId?: string) => {
 
   // Fetch compradores with lead information
   const fetchCompradores = async (): Promise<Comprador[]> => {
-    if (!ventaId) return [];
+    if (!ventaId || !venta) return [];
     
     setLoading(true);
     try {
       // First verify the venta belongs to the user's empresa
       if (empresaId && venta) {
         // Check if venta has empresa_id property
-        const ventaEmpresaId = 'empresa_id' in venta ? venta.empresa_id : undefined;
+        const ventaEmpresaId = venta.empresa_id;
         
-        if (ventaEmpresaId !== undefined && ventaEmpresaId !== empresaId) {
+        if (ventaEmpresaId !== undefined && ventaEmpresaId !== null && ventaEmpresaId !== empresaId) {
           console.log('Venta does not belong to user empresa:', ventaEmpresaId, empresaId);
           return [];
         }
@@ -162,7 +225,14 @@ export const useVentaDetail = (ventaId?: string) => {
         `)
         .eq('venta_id', ventaId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching compradores:', error);
+        return [];
+      }
+
+      if (!data || data.length === 0) {
+        return [];
+      }
 
       // Count pagos for each comprador
       const compradoresWithPagos = await Promise.all(
@@ -172,6 +242,17 @@ export const useVentaDetail = (ventaId?: string) => {
             .select('id', { count: 'exact', head: true })
             .eq('comprador_venta_id', item.id)
             .eq('estado', 'registrado');
+            
+          if (pagosError) {
+            console.error('Error counting pagos:', pagosError);
+            return {
+              id: item.id,
+              comprador_id: item.comprador_id,
+              nombre: item.comprador?.nombre || 'Comprador sin nombre',
+              porcentaje: item.porcentaje_propiedad,
+              pagos_realizados: 0,
+            };
+          }
             
           return {
             id: item.id,
@@ -221,12 +302,27 @@ export const useVentaDetail = (ventaId?: string) => {
         .in('comprador_venta_id', compradorVentaIds)
         .order('fecha', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching pagos:', error);
+        return [];
+      }
+      
+      if (!data || data.length === 0) {
+        return [];
+      }
       
       // Map the data to ensure estados conform to the expected type
-      const typedPagos: Pago[] = (data || []).map(pago => ({
-        ...pago,
-        estado: pago.estado === 'rechazado' ? 'rechazado' : 'registrado'
+      const typedPagos: Pago[] = data.map(pago => ({
+        id: pago.id,
+        comprador_venta_id: pago.comprador_venta_id,
+        monto: pago.monto,
+        fecha: pago.fecha,
+        metodo_pago: pago.metodo_pago,
+        estado: pago.estado === 'rechazado' ? 'rechazado' : 'registrado',
+        referencia: pago.referencia,
+        notas: pago.notas,
+        comprobante_url: pago.comprobante_url,
+        created_at: pago.created_at
       }));
       
       return typedPagos;
@@ -252,7 +348,7 @@ export const useVentaDetail = (ventaId?: string) => {
     return pago.estado === 'registrado' ? total + pago.monto : total;
   }, 0);
 
-  const progreso = venta?.precio_total
+  const progreso = venta && venta.precio_total && venta.precio_total > 0
     ? Math.round((montoPagado / venta.precio_total) * 100)
     : 0;
 

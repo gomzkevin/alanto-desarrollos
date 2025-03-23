@@ -6,7 +6,7 @@ import useUserRole from '@/hooks/useUserRole';
 
 export type Cotizacion = Tables<"cotizaciones">;
 
-// Define simplified lead type to avoid recursive references
+// Define simplified lead type without circular references
 export interface SimplifiedLead {
   id: string;
   nombre: string;
@@ -30,13 +30,23 @@ export interface SimplifiedPrototipo {
 }
 
 // Define extended cotizacion with simplified related entities
-export interface ExtendedCotizacion extends Cotizacion {
+export interface ExtendedCotizacion {
+  id: string;
+  created_at: string;
+  desarrollo_id: string;
+  fecha_finiquito?: string | null;
+  fecha_inicio_pagos?: string | null;
+  lead_id: string;
+  monto_anticipo: number;
+  monto_finiquito?: number | null;
+  notas?: string | null;
+  numero_pagos: number;
+  prototipo_id: string;
+  usar_finiquito?: boolean | null;
+  empresa_id?: number | null;
   lead?: SimplifiedLead | null;
   desarrollo?: SimplifiedDesarrollo | null;
   prototipo?: SimplifiedPrototipo | null;
-  // These fields are now part of the database schema
-  fecha_inicio_pagos?: string | null;
-  fecha_finiquito?: string | null;
 }
 
 type FetchCotizacionesOptions = {
@@ -75,27 +85,45 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       
       if (error) {
         console.error('Error fetching cotizaciones:', error);
-        throw new Error(error.message);
+        return [];
       }
       
       if (!cotizaciones || cotizaciones.length === 0) {
         return [];
       }
       
+      // Type cast to our simplified ExtendedCotizacion type
+      const basicCotizaciones: ExtendedCotizacion[] = cotizaciones.map(c => ({
+        id: c.id,
+        created_at: c.created_at,
+        desarrollo_id: c.desarrollo_id,
+        fecha_finiquito: c.fecha_finiquito,
+        fecha_inicio_pagos: c.fecha_inicio_pagos,
+        lead_id: c.lead_id,
+        monto_anticipo: c.monto_anticipo,
+        monto_finiquito: c.monto_finiquito,
+        notas: c.notas,
+        numero_pagos: c.numero_pagos,
+        prototipo_id: c.prototipo_id,
+        usar_finiquito: c.usar_finiquito,
+        empresa_id: 'empresa_id' in c ? (c.empresa_id as number | null) : null,
+        lead: null,
+        desarrollo: null,
+        prototipo: null
+      }));
+      
       // If relations are requested and we have cotizaciones, fetch related entities
-      if (withRelations) {
-        const extendedCotizaciones: ExtendedCotizacion[] = [...cotizaciones];
-        
+      if (withRelations && basicCotizaciones.length > 0) {
         // Get all unique IDs for related entities
-        const leadIds = cotizaciones
+        const leadIds = basicCotizaciones
           .map(c => c.lead_id)
           .filter((id): id is string => id !== null && id !== undefined);
           
-        const desarrolloIds = cotizaciones
+        const desarrolloIds = basicCotizaciones
           .map(c => c.desarrollo_id)
           .filter((id): id is string => id !== null && id !== undefined);
           
-        const prototipoIds = cotizaciones
+        const prototipoIds = basicCotizaciones
           .map(c => c.prototipo_id)
           .filter((id): id is string => id !== null && id !== undefined);
         
@@ -109,7 +137,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
           if (leadsError) {
             console.error('Error fetching leads:', leadsError);
           } else if (leads) {
-            extendedCotizaciones.forEach(cotizacion => {
+            basicCotizaciones.forEach(cotizacion => {
               cotizacion.lead = leads.find(l => l.id === cotizacion.lead_id) || null;
             });
           }
@@ -125,7 +153,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
           if (desarrollosError) {
             console.error('Error fetching desarrollos:', desarrollosError);
           } else if (desarrollos) {
-            extendedCotizaciones.forEach(cotizacion => {
+            basicCotizaciones.forEach(cotizacion => {
               cotizacion.desarrollo = desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null;
             });
           }
@@ -141,21 +169,17 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
           if (prototipossError) {
             console.error('Error fetching prototipos:', prototipossError);
           } else if (prototipos) {
-            extendedCotizaciones.forEach(cotizacion => {
+            basicCotizaciones.forEach(cotizacion => {
               cotizacion.prototipo = prototipos.find(p => p.id === cotizacion.prototipo_id) || null;
             });
           }
         }
-        
-        console.log('Extended cotizaciones fetched:', extendedCotizaciones);
-        return extendedCotizaciones;
       }
       
-      console.log('Cotizaciones fetched:', cotizaciones);
-      return cotizaciones as ExtendedCotizacion[];
+      return basicCotizaciones;
     } catch (error) {
       console.error('Error in fetchCotizaciones:', error);
-      throw error;
+      return [];
     }
   };
 
