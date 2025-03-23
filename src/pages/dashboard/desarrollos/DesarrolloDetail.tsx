@@ -1,3 +1,4 @@
+
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, PlusIcon, Building2, Users, AreaChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import DesarrolloEditButton from '@/components/dashboard/DesarrolloEditButton';
 import useDesarrolloImagenes from '@/hooks/useDesarrolloImagenes';
 import useUserRole from '@/hooks/useUserRole';
 import useSubscriptionGuard from '@/hooks/useSubscriptionGuard';
+import useChartData from '@/hooks/useChartData';
 
 const DesarrolloDetailPage = () => {
   // Verificar suscripción activa
@@ -28,9 +30,10 @@ const DesarrolloDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const { desarrollos, isLoading: isLoadingDesarrollos, refetch: refetchDesarrollos } = useDesarrollos({ limit: 1 });
   const { prototipos, isLoading: isLoadingPrototipos, refetch: refetchPrototipos } = usePrototipos({ desarrolloId: id });
-  const { stats, isLoading: isLoadingStats } = useDesarrolloStats(id);
-  const { imagenes, isLoading: isLoadingImagenes } = useDesarrolloImagenes(id);
+  const { data: statsData, isLoading: isLoadingStats } = useDesarrolloStats(id);
+  const { images, isLoading: isLoadingImagenes } = useDesarrolloImagenes(id);
   const { isAdmin } = useUserRole();
+  const chartData = useChartData();
   
   const desarrollo = desarrollos.find(d => d.id === id);
   
@@ -130,8 +133,8 @@ const DesarrolloDetailPage = () => {
               </TabsList>
               
               <TabsContent value="imagenes" className="space-y-2">
-                {imagenes && imagenes.length > 0 ? (
-                  <DesarrolloImageCarousel imagenes={imagenes} />
+                {images && images.length > 0 ? (
+                  <DesarrolloImageCarousel images={images} />
                 ) : (
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
@@ -147,11 +150,7 @@ const DesarrolloDetailPage = () => {
                     prototipos.map((prototipo) => (
                       <PrototipoCard 
                         key={prototipo.id} 
-                        prototipo={prototipo} 
-                        onSuccess={() => {
-                          refetchPrototipos();
-                          refetchDesarrollos();
-                        }}
+                        prototipo={prototipo}
                       />
                     ))
                   ) : (
@@ -165,7 +164,7 @@ const DesarrolloDetailPage = () => {
               </TabsContent>
               
               <TabsContent value="estadisticas" className="space-y-2">
-                {stats ? (
+                {statsData ? (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       <Card>
@@ -173,7 +172,7 @@ const DesarrolloDetailPage = () => {
                           <CardTitle className="text-sm font-medium">Leads Totales</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-semibold">{stats.totalLeads}</div>
+                          <div className="text-2xl font-semibold">{statsData.totalLeads || 0}</div>
                           <p className="text-sm text-slate-500">Total de leads asociados a este desarrollo</p>
                         </CardContent>
                       </Card>
@@ -183,7 +182,7 @@ const DesarrolloDetailPage = () => {
                           <CardTitle className="text-sm font-medium">Leads Convertidos</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-semibold">{stats.convertedLeads}</div>
+                          <div className="text-2xl font-semibold">{statsData.convertedLeads || 0}</div>
                           <p className="text-sm text-slate-500">Leads convertidos en clientes</p>
                         </CardContent>
                       </Card>
@@ -193,7 +192,7 @@ const DesarrolloDetailPage = () => {
                           <CardTitle className="text-sm font-medium">Tasa de Conversión</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-semibold">{stats.conversionRate}%</div>
+                          <div className="text-2xl font-semibold">{statsData.conversionRate || 0}%</div>
                           <p className="text-sm text-slate-500">Porcentaje de leads convertidos</p>
                         </CardContent>
                       </Card>
@@ -205,39 +204,15 @@ const DesarrolloDetailPage = () => {
                         <CardDescription>Ventas realizadas en los últimos meses</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <AreaChart
-                          className="h-72 w-full"
-                          data={[
-                            {
-                              "date": "Ene 2023",
-                              "Ventas": 12000,
-                            },
-                            {
-                              "date": "Feb 2023",
-                              "Ventas": 15000,
-                            },
-                            {
-                              "date": "Mar 2023",
-                              "Ventas": 18000,
-                            },
-                            {
-                              "date": "Abr 2023",
-                              "Ventas": 20000,
-                            },
-                            {
-                              "date": "May 2023",
-                              "Ventas": 22000,
-                            },
-                            {
-                              "date": "Jun 2023",
-                              "Ventas": 25000,
-                            }
-                          ]}
-                          index="date"
-                          categories={["Ventas"]}
-                          colors={["blue"]}
-                          valueFormatter={(value: number) => `$ ${value.toLocaleString("en-US")}`}
-                        />
+                        <div className="h-72 w-full">
+                          {/* Use appropriate chart component here instead of AreaChart icon */}
+                          {chartData.map((item, index) => (
+                            <div key={index} className="flex justify-between mb-2">
+                              <span>{item.date}</span>
+                              <span>$ {item.Ventas.toLocaleString('en-US')}</span>
+                            </div>
+                          ))}
+                        </div>
                       </CardContent>
                     </Card>
                   </>

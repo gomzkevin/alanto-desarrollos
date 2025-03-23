@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -91,13 +92,13 @@ export const useVentas = (filters: VentasFilter = {}) => {
       
       // Convert ventas data to proper Venta objects
       const ventas: Venta[] = ventasData.map(venta => ({
-        id: venta.id,
-        precio_total: venta.precio_total,
-        estado: venta.estado,
-        es_fraccional: venta.es_fraccional,
-        fecha_inicio: venta.fecha_inicio,
-        fecha_actualizacion: venta.fecha_actualizacion,
-        unidad_id: venta.unidad_id,
+        id: venta.id || '',
+        precio_total: venta.precio_total || 0,
+        estado: venta.estado || '',
+        es_fraccional: venta.es_fraccional || false,
+        fecha_inicio: venta.fecha_inicio || '',
+        fecha_actualizacion: venta.fecha_actualizacion || '',
+        unidad_id: venta.unidad_id || '',
         notas: venta.notas,
         empresa_id: hasEmpresaColumn.data && 'empresa_id' in venta ? (venta.empresa_id as number | null) : null,
         progreso: 30, // Default progress value
@@ -273,7 +274,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
       
       const { data, error } = await supabase
         .from('ventas')
-        .insert([ventaInsert])
+        .insert(ventaInsert)
         .select();
 
       if (error) throw error;

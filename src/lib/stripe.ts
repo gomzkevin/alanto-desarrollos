@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
@@ -188,7 +189,7 @@ export const updateUsageInformation = async (subscriptionId: string) => {
     console.error('Error in updateUsageInformation:', error);
     return {
       success: false,
-      error: `Error: ${error.message || "Error desconocido"}`
+      error: `Error: ${error instanceof Error ? error.message : "Error desconocido"}`
     };
   }
 };
