@@ -110,8 +110,8 @@ export const useVentas = (filters: VentasFilter = {}) => {
           };
         }
         
-        // Safe access to properties using type assertion
-        const venta = ventaItem as any;
+        // Use type assertion for safe property access
+        const venta = ventaItem as Record<string, any>;
         
         return {
           id: venta.id || '',

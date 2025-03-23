@@ -7,7 +7,7 @@ import useSupabaseTableHelpers from './useSupabaseTableHelpers';
 
 export type Cotizacion = Tables<"cotizaciones">;
 
-// Define base types without circular references
+// Simplified primitive types without references to avoid circular references
 export interface SimplifiedLead {
   id: string;
   nombre: string;
@@ -28,7 +28,7 @@ export interface SimplifiedPrototipo {
   precio: number;
 }
 
-// Use an extended type with non-circular references 
+// Stand-alone type without circular references 
 export interface ExtendedCotizacion {
   id: string;
   created_at: string;
@@ -43,6 +43,7 @@ export interface ExtendedCotizacion {
   prototipo_id: string;
   usar_finiquito?: boolean | null;
   empresa_id?: number | null;
+  // Simple references instead of nested objects
   lead?: SimplifiedLead | null;
   desarrollo?: SimplifiedDesarrollo | null;
   prototipo?: SimplifiedPrototipo | null;

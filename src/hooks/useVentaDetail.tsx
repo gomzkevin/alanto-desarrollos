@@ -7,20 +7,20 @@ import useSupabaseTableHelpers from './useSupabaseTableHelpers';
 
 // Define simplified types to avoid deep recursion
 export interface SimpleUnidad {
-  id?: string;
+  id: string; // Made required to match with useVentas SimpleUnidad type
   numero: string;
   estado?: string;
   nivel?: string | null;
   prototipo_id?: string;
   prototipo?: {
-    id?: string;
+    id: string; // Made required to match
     nombre: string;
     precio?: number;
     desarrollo?: {
+      id: string; // Made required to match
       nombre: string;
       ubicacion?: string | null;
       empresa_id?: number;
-      id?: string;
     } | null;
   } | null;
 }

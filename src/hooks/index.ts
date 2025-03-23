@@ -16,3 +16,4 @@ export { default as useVentas } from './useVentas';
 export { default as useVentaDetail } from './useVentaDetail';
 export { default as usePagos } from './usePagos';
 export { default as useSupabaseTableHelpers } from './useSupabaseTableHelpers';
+export * from './types/venta.types';
