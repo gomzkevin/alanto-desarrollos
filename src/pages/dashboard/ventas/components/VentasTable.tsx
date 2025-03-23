@@ -1,146 +1,191 @@
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Table, TableBody, TableCaption, TableCell, 
-  TableHead, TableHeader, TableRow 
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { 
-  Select, SelectContent, SelectItem, 
-  SelectTrigger, SelectValue 
-} from '@/components/ui/select';
-import { Eye, Plus, RefreshCw } from 'lucide-react';
-import useVentas from '@/hooks/useVentas';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useVentas, VentasFilters } from '@/hooks';
+import { formatCurrency, formatDate } from '@/lib/utils';
+import { useUserRole } from '@/hooks/useUserRole';
+import { VentaStatusBadge } from './VentaStatusBadge';
+import { VentaActionsMenu } from './VentaActionsMenu';
+import { VentaFilterBar } from './VentaFilterBar';
+import { PlusCircle, FileDown } from 'lucide-react';
+import { CreateVentaDialog } from './CreateVentaDialog';
+import { useToast } from '@/hooks/use-toast';
+import { exportToExcel } from '@/lib/excel';
 
-interface VentasTableProps {
-  refreshTrigger?: number;
-  empresa_id?: number | null;
-}
-
-export const VentasTable: React.FC<VentasTableProps> = ({ 
-  refreshTrigger = 0,
-  empresa_id 
-}) => {
-  const navigate = useNavigate();
-  const [estadoFilter, setEstadoFilter] = useState<string>('todos');
-  
-  const { ventas, isLoading } = useVentas({
-    estado: estadoFilter !== 'todos' ? estadoFilter : undefined,
-    empresa_id
+export const VentasTable = () => {
+  const router = useRouter();
+  const { toast } = useToast();
+  const { empresaId } = useUserRole();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [filters, setFilters] = useState<VentasFilters>({
+    estado: 'todos',
+    fechaInicio: undefined,
+    fechaFin: undefined,
+    unidadId: undefined,
+    compradorId: undefined,
+    desarrolloId: undefined,
+    empresa_id: empresaId || undefined
   });
 
-  const handleViewVenta = (ventaId: string) => {
-    navigate(`/dashboard/ventas/${ventaId}`);
+  // Update filters when empresaId changes
+  useEffect(() => {
+    setFilters(prev => ({
+      ...prev,
+      empresa_id: empresaId || undefined
+    }));
+  }, [empresaId]);
+
+  const { ventas, isLoading, refetch } = useVentas(filters);
+
+  const handleFilterChange = (newFilters: Partial<VentasFilters>) => {
+    setFilters(prev => ({
+      ...prev,
+      ...newFilters
+    }));
   };
 
-  // Helper function to get badge color based on state
-  const getStatusColor = (estado: string) => {
-    switch (estado) {
-      case 'en_proceso':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'completada':
-        return 'bg-green-100 text-green-800';
-      case 'cancelada':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const handleRowClick = (ventaId: string) => {
+    router.push(`/dashboard/ventas/${ventaId}`);
+  };
+
+  const handleExportToExcel = () => {
+    if (ventas.length === 0) {
+      toast({
+        title: "No hay datos para exportar",
+        description: "Aplica otros filtros o crea nuevas ventas",
+        variant: "destructive"
+      });
+      return;
     }
-  };
 
-  // Helper function to format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-      minimumFractionDigits: 0
-    }).format(amount);
+    const data = ventas.map(venta => ({
+      'ID': venta.id,
+      'Unidad': venta.unidad ? venta.unidad.codigo : 'N/A',
+      'Prototipo': venta.unidad && venta.unidad.prototipo?.nombre ? venta.unidad.prototipo.nombre : 'N/A',
+      'Precio Total': formatCurrency(venta.precio_total),
+      'Estado': venta.estado,
+      'Fecha': formatDate(venta.fecha_inicio),
+      'Última Actualización': formatDate(venta.fecha_actualizacion),
+      'Es Fraccional': venta.es_fraccional ? 'Sí' : 'No',
+    }));
+
+    exportToExcel(data, 'Ventas', `Ventas_${new Date().toISOString().split('T')[0]}`);
+    
+    toast({
+      title: "Exportación exitosa",
+      description: "Los datos han sido exportados a Excel"
+    });
   };
 
   return (
-    <Card className="border shadow-sm">
-      <div className="p-4 flex justify-between items-center border-b">
-        <div className="flex items-center gap-2">
-          <Select
-            value={estadoFilter}
-            onValueChange={setEstadoFilter}
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold tracking-tight">Ventas</h2>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportToExcel}
+            disabled={isLoading || ventas.length === 0}
           >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filtrar por estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los estados</SelectItem>
-              <SelectItem value="en_proceso">En proceso</SelectItem>
-              <SelectItem value="completada">Completada</SelectItem>
-              <SelectItem value="cancelada">Cancelada</SelectItem>
-            </SelectContent>
-          </Select>
+            <FileDown className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={() => setIsCreateDialogOpen(true)}
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Nueva Venta
+          </Button>
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center items-center p-8">
-          <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-          <span className="ml-2 text-gray-500">Cargando ventas...</span>
-        </div>
-      ) : ventas.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-8 text-center">
-          <Plus className="h-12 w-12 text-gray-300 mb-2" />
-          <p className="text-gray-500 mb-4">No hay ventas registradas</p>
-          <p className="text-sm text-gray-400 mb-4">
-            Las ventas se crean automáticamente al cambiar el estado de las unidades
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
+      <VentaFilterBar 
+        filters={filters} 
+        onFilterChange={handleFilterChange} 
+      />
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Unidad</TableHead>
+              <TableHead>Prototipo</TableHead>
+              <TableHead>Precio Total</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Fecha</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              // Loading state
+              Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={`skeleton-${index}`}>
+                  <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-28" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                </TableRow>
+              ))
+            ) : ventas.length === 0 ? (
+              // Empty state
               <TableRow>
-                <TableHead>Unidad</TableHead>
-                <TableHead>Desarrollo</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  No se encontraron ventas con los filtros actuales
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {ventas.map((venta) => (
-                <TableRow key={venta.id}>
-                  <TableCell className="font-medium">
-                    {venta.unidad?.numero || "N/A"}
-                  </TableCell>
+            ) : (
+              // Data rows
+              ventas.map((venta) => (
+                <TableRow 
+                  key={venta.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleRowClick(venta.id)}
+                >
+                  <TableCell>{venta.unidad ? venta.unidad.codigo : 'N/A'}</TableCell>
+                  <TableCell>{venta.unidad && venta.unidad.prototipo?.nombre ? venta.unidad.prototipo.nombre : 'N/A'}</TableCell>
+                  <TableCell className="font-medium">{formatCurrency(venta.precio_total)}</TableCell>
                   <TableCell>
-                    {venta.unidad?.prototipo?.desarrollo?.nombre || "N/A"}
+                    <VentaStatusBadge estado={venta.estado} />
                   </TableCell>
-                  <TableCell>{formatCurrency(venta.precio_total)}</TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(venta.estado)}`}>
-                      {venta.estado.replace('_', ' ')}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(venta.fecha_inicio).toLocaleDateString('es-MX')}
-                  </TableCell>
+                  <TableCell>{formatDate(venta.fecha_inicio)}</TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewVenta(venta.id)}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      Ver
-                    </Button>
+                    <VentaActionsMenu 
+                      venta={venta} 
+                      onRefresh={refetch}
+                      onClick={(e) => e.stopPropagation()}
+                    />
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    </Card>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <CreateVentaDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSuccess={() => {
+          refetch();
+          setIsCreateDialogOpen(false);
+        }}
+      />
+    </div>
   );
 };
 

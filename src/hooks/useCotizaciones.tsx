@@ -76,8 +76,8 @@ export const useCotizaciones = (
       
       console.log(`Obtenidas ${data.length} cotizaciones`);
       
-      // Convertir los datos a SimpleCotizacion
-      return data as unknown as SimpleCotizacion[];
+      // Convertir y asegurar que los datos coincidan con SimpleCotizacion
+      return data as SimpleCotizacion[];
     } catch (error) {
       console.error('Error en fetchCotizaciones:', error);
       throw error;
@@ -106,15 +106,19 @@ export const useCotizaciones = (
     fecha_inicio_pagos?: string;
     fecha_finiquito?: string;
     notas?: string;
+    estado?: string;
   }) => {
     try {
+      // Preparar datos para inserción en Supabase
+      const insertData = {
+        ...cotizacionData,
+        created_at: new Date().toISOString(),
+        estado: cotizacionData.estado || 'pendiente'
+      };
+      
       const { data, error } = await supabase
         .from('cotizaciones')
-        .insert({
-          ...cotizacionData,
-          created_at: new Date().toISOString(),
-          estado: 'pendiente'
-        })
+        .insert(insertData)
         .select()
         .single();
       

@@ -31,4 +31,3 @@ export type {
   CotizacionesFilters,
   VentasFilters
 } from './types';
-

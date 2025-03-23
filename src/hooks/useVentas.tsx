@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Venta, VentasFilters, GenericStringError } from './types';
+import { Venta, VentasFilters } from './types';
 
 export const useVentas = (
   filters: VentasFilters = {},
@@ -63,27 +63,8 @@ export const useVentas = (
         return [];
       }
       
-      // Mapear los datos a nuestro tipo Venta
-      return data.map((item: any): Venta => {
-        // Asegurarse de que item no es un error antes de acceder a sus propiedades
-        if ('message' in item && typeof item.message === 'string') {
-          const error = item as unknown as GenericStringError;
-          console.error('Error en elemento de ventas:', error.message);
-          throw new Error(error.message);
-        }
-        
-        return {
-          id: item.id,
-          precio_total: item.precio_total,
-          estado: item.estado,
-          es_fraccional: item.es_fraccional,
-          fecha_inicio: item.fecha_inicio,
-          fecha_actualizacion: item.fecha_actualizacion,
-          unidad_id: item.unidad_id,
-          notas: item.notas,
-          empresa_id: item.empresa_id
-        };
-      });
+      // Convertir los datos a nuestro tipo Venta
+      return data as Venta[];
     } catch (error) {
       console.error('Error en fetchVentas:', error);
       throw error;

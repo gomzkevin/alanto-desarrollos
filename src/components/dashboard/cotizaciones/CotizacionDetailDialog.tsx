@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
   Dialog, 
@@ -20,7 +19,7 @@ import {
   CardFooter 
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { SimpleCotizacion } from '@/hooks/useCotizaciones';
+import { SimpleCotizacion } from '@/hooks/types';
 import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
 import { generateAmortizationTable } from '@/utils/quotationPDF';
 import { Badge } from '@/components/ui/badge';
@@ -220,11 +219,11 @@ const CotizacionDetailDialog = ({
 
       const table = generateAmortizationTable(
         cotizacion.prototipo.precio,
-        cotizacion.monto_anticipo,
+        cotizacion.monto_anticipo || 0,
         cotizacion.monto_finiquito || 0,
-        cotizacion.numero_pagos,
+        cotizacion.numero_pagos || 12,
         startDate,
-        cotizacion.usar_finiquito,
+        cotizacion.usar_finiquito || false,
         finiquitoDate
       );
 
@@ -410,13 +409,13 @@ const CotizacionDetailDialog = ({
                 <div className="bg-primary/5 rounded-lg p-4 flex flex-col items-center justify-center">
                   <CreditCard className="h-8 w-8 text-primary mb-2" />
                   <p className="text-sm text-muted-foreground">Anticipo</p>
-                  <p className="text-xl font-bold">{formatter.format(cotizacion.monto_anticipo)}</p>
+                  <p className="text-xl font-bold">{formatter.format(cotizacion.monto_anticipo || 0)}</p>
                 </div>
                 
                 <div className="bg-primary/5 rounded-lg p-4 flex flex-col items-center justify-center">
                   <Layers className="h-8 w-8 text-primary mb-2" />
                   <p className="text-sm text-muted-foreground">Mensualidades</p>
-                  <p className="text-xl font-bold">{cotizacion.numero_pagos}</p>
+                  <p className="text-xl font-bold">{cotizacion.numero_pagos || 0}</p>
                 </div>
                 
                 {cotizacion.usar_finiquito && cotizacion.monto_finiquito ? (

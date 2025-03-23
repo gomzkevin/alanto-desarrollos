@@ -84,7 +84,7 @@ const useVentaDetail = (ventaId: string | undefined) => {
       // Convert unidad to SimpleUnidad
       const simpleUnidad: SimpleUnidad | undefined = unidad ? {
         id: unidad.id,
-        codigo: unidad.numero || 'Sin código',
+        codigo: unidad.numero || 'Sin código',  // Use numero as codigo
         numero: unidad.numero,
         estado: unidad.estado,
         prototipo_id: unidad.prototipo_id,
@@ -97,7 +97,7 @@ const useVentaDetail = (ventaId: string | undefined) => {
         venta_id: c.venta_id,
         comprador_id: c.comprador_id,
         vendedor_id: c.vendedor_id,
-        porcentaje: c.porcentaje_propiedad || 0,
+        porcentaje: c.porcentaje_propiedad || 0,  // Assign porcentaje_propiedad to porcentaje
         porcentaje_propiedad: c.porcentaje_propiedad,
         monto_comprometido: c.monto_comprometido,
         comprador: c.comprador,
@@ -152,7 +152,7 @@ const useVentaDetail = (ventaId: string | undefined) => {
             venta_id: c.venta_id,
             comprador_id: c.comprador_id,
             vendedor_id: c.vendedor_id,
-            porcentaje: c.porcentaje_propiedad || 0,
+            porcentaje: c.porcentaje_propiedad || 0,  // Use porcentaje_propiedad as porcentaje
             porcentaje_propiedad: c.porcentaje_propiedad,
             monto_comprometido: c.monto_comprometido,
             comprador: c.comprador,

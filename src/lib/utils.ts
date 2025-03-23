@@ -1,4 +1,3 @@
-
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -20,6 +19,19 @@ export function formatCurrency(value: number | string | null | undefined): strin
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(numValue);
+}
+
+/**
+ * Parsea un string de moneda a un número
+ */
+export function parseCurrency(value: string | number): number {
+  if (typeof value === 'number') return value;
+  
+  // Eliminar símbolos de moneda, comas y espacios
+  const cleanValue = value.replace(/[$,\s]/g, '');
+  
+  // Convertir a número
+  return parseFloat(cleanValue) || 0;
 }
 
 /**
@@ -149,4 +161,3 @@ export function objectToQueryString(obj: Record<string, any>): string {
     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(obj[key])}`)
     .join('&');
 }
-
