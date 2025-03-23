@@ -90,7 +90,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
         return [];
       }
       
-      // Convert ventas data to proper Venta objects
+      // Convert ventas data to proper Venta objects with null checks
       const ventas: Venta[] = ventasData
         .filter(venta => venta !== null)
         .map(venta => {
@@ -274,8 +274,14 @@ export const useVentas = (filters: VentasFilter = {}) => {
         column_name: 'empresa_id'
       });
       
-      // Create a proper object for insertion
-      const ventaInsert = {
+      // Create a proper object with required fields for insertion
+      const ventaInsert: {
+        unidad_id: string;
+        precio_total: number;
+        es_fraccional: boolean;
+        estado?: string;
+        empresa_id?: number;
+      } = {
         unidad_id: ventaData.unidad_id,
         precio_total: ventaData.precio_total,
         es_fraccional: ventaData.es_fraccional,
@@ -284,7 +290,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
       
       // Only add empresa_id if the column exists
       if (hasEmpresaColumn.data && effectiveEmpresaId) {
-        Object.assign(ventaInsert, { empresa_id: effectiveEmpresaId });
+        ventaInsert.empresa_id = effectiveEmpresaId;
       }
       
       const { data, error } = await supabase

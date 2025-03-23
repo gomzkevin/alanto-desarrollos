@@ -38,7 +38,7 @@ export interface VentaDetallada {
   fecha_actualizacion: string;
   unidad_id: string;
   notas?: string;
-  empresa_id?: number;
+  empresa_id?: number | null;
   unidad?: SimpleUnidad;
   compradores?: VentaComprador[];
   totalPagado?: number;
@@ -71,6 +71,12 @@ const useVentaDetail = (ventaId: string | undefined) => {
       if (!venta) {
         return null;
       }
+
+      // Adding empresa_id with a default value of null if it's not in the database
+      const ventaWithEmpresaId = {
+        ...venta,
+        empresa_id: 'empresa_id' in venta ? venta.empresa_id : null
+      };
 
       // Fetch unidad details
       const { data: unidad, error: unidadError } = await supabase
@@ -115,8 +121,8 @@ const useVentaDetail = (ventaId: string | undefined) => {
         fecha_actualizacion: venta.fecha_actualizacion,
         unidad_id: venta.unidad_id,
         notas: venta.notas,
-        empresa_id: venta.empresa_id, // This might be undefined but that's ok
-        unidad: unidad || null,
+        empresa_id: ventaWithEmpresaId.empresa_id,
+        unidad: unidad || undefined,
         compradores: compradoresData || [],
         totalPagado: totalPagado,
       };

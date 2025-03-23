@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
-import { SimpleDesarrollo, SimplePrototipo } from '@/hooks/useVentas';
+import { SimpleDesarrollo, SimplePrototipo } from './useVentas';
 
 // Simplified type to avoid circular references
 export interface SimpleCotizacion {
@@ -20,7 +20,7 @@ export interface SimpleCotizacion {
   notas?: string;
   estado?: string;
   created_at?: string;
-  // Nested relations
+  // Nested relations as simple objects with minimal properties
   lead?: {
     id: string;
     nombre?: string;
@@ -102,12 +102,14 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
         return [];
       }
 
-      let cotizaciones = data || [];
+      let cotizaciones: SimpleCotizacion[] = data || [];
 
       // If withRelations is true, fetch the related data
       if (filters.withRelations && cotizaciones.length > 0) {
         const cotizacionesWithRelations = await Promise.all(
           cotizaciones.map(async (cotizacion) => {
+            if (!cotizacion) return null;
+            
             let leadData = null;
             let prototipoData = null;
             let desarrolloData = null;
@@ -147,11 +149,11 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
               lead: leadData,
               prototipo: prototipoData,
               desarrollo: desarrolloData
-            };
+            } as SimpleCotizacion;
           })
         );
 
-        return cotizacionesWithRelations;
+        return cotizacionesWithRelations.filter((c): c is SimpleCotizacion => c !== null);
       }
 
       return cotizaciones;
@@ -166,7 +168,19 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
     queryFn: fetchCotizaciones,
   });
 
-  const createCotizacion = async (cotizacionData: Partial<SimpleCotizacion>) => {
+  const createCotizacion = async (cotizacionData: {
+    lead_id: string;
+    desarrollo_id: string;
+    prototipo_id: string;
+    monto_anticipo: number;
+    numero_pagos: number;
+    usar_finiquito?: boolean;
+    monto_finiquito?: number;
+    fecha_inicio_pagos?: string;
+    fecha_finiquito?: string;
+    notas?: string;
+    estado?: string;
+  }) => {
     setIsCreating(true);
     try {
       const { data, error } = await supabase
@@ -194,7 +208,19 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
     }
   };
 
-  const updateCotizacion = async (id: string, updates: Partial<SimpleCotizacion>) => {
+  const updateCotizacion = async (id: string, updates: Partial<{
+    lead_id: string;
+    desarrollo_id: string;
+    prototipo_id: string;
+    monto_anticipo: number;
+    numero_pagos: number;
+    usar_finiquito: boolean;
+    monto_finiquito: number;
+    fecha_inicio_pagos: string;
+    fecha_finiquito: string;
+    notas: string;
+    estado: string;
+  }>) => {
     setIsUpdating(true);
     try {
       const { data, error } = await supabase
