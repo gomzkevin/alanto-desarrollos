@@ -1,10 +1,40 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Venta } from './useVentas';
-import { Pago } from './usePagos';
 import { useState, useEffect } from 'react';
 import useUserRole from '@/hooks/useUserRole';
+
+// Define simplified types to avoid deep recursion
+export interface SimpleUnidad {
+  id?: string;
+  numero: string;
+  estado?: string;
+  nivel?: string | null;
+  prototipo?: {
+    id?: string;
+    nombre: string;
+    precio?: number;
+    desarrollo?: {
+      nombre: string;
+      ubicacion?: string | null;
+      empresa_id?: number;
+      id?: string;
+    };
+  };
+}
+
+export interface Venta {
+  id: string;
+  precio_total: number;
+  estado: string;
+  es_fraccional: boolean;
+  fecha_inicio: string;
+  fecha_actualizacion: string;
+  unidad_id: string;
+  empresa_id?: number;
+  notas?: string | null;
+  unidad?: SimpleUnidad;
+}
 
 interface Comprador {
   id: string;
@@ -13,6 +43,19 @@ interface Comprador {
   porcentaje: number;
   pagos_realizados?: number;
   total_pagos?: number;
+}
+
+export interface Pago {
+  id: string;
+  comprador_venta_id: string;
+  monto: number;
+  fecha: string;
+  metodo_pago: string;
+  estado: 'registrado' | 'rechazado';
+  referencia?: string | null;
+  notas?: string | null;
+  comprobante_url?: string | null;
+  created_at: string;
 }
 
 export const useVentaDetail = (ventaId?: string) => {
@@ -28,35 +71,60 @@ export const useVentaDetail = (ventaId?: string) => {
     try {
       console.log('Fetching venta details with id:', ventaId, 'and empresa_id:', empresaId);
       
-      let query = supabase
-        .from('ventas')
-        .select(`
-          id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, empresa_id, notas,
-          unidad:unidades(
-            id, numero, estado, nivel,
-            prototipo:prototipos(
-              id, nombre, precio,
-              desarrollo:desarrollos(
-                id, nombre, ubicacion
-              )
-            )
-          )
-        `)
-        .eq('id', ventaId);
+      // First, check if the ventas table has empresa_id column
+      const hasEmpresaColumn = await supabase.rpc('has_column', {
+        table_name: 'ventas',
+        column_name: 'empresa_id'
+      });
       
-      // Add empresa_id filter if available
-      if (empresaId) {
+      // Build select query based on column existence
+      let query = supabase.from('ventas').select(`
+        id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas
+        ${hasEmpresaColumn.data ? ', empresa_id' : ''}
+      `).eq('id', ventaId);
+      
+      // Add empresa_id filter if available and column exists
+      if (empresaId && hasEmpresaColumn.data) {
         query = query.eq('empresa_id', empresaId);
       }
       
-      const { data, error } = await query.single();
-
-      if (error) {
-        console.error('Error fetching venta details:', error);
+      const { data: ventaData, error: ventaError } = await query.maybeSingle();
+      
+      if (ventaError) {
+        console.error('Error fetching venta details:', ventaError);
         return null;
       }
       
-      return data;
+      if (!ventaData) {
+        return null;
+      }
+      
+      // Fetch unidad information separately to avoid deep nesting
+      const { data: unidadData, error: unidadError } = await supabase
+        .from('unidades')
+        .select(`
+          id, numero, estado, nivel,
+          prototipo:prototipos (
+            id, nombre, precio,
+            desarrollo:desarrollos (
+              id, nombre, ubicacion, empresa_id
+            )
+          )
+        `)
+        .eq('id', ventaData.unidad_id)
+        .maybeSingle();
+        
+      if (unidadError) {
+        console.error('Error fetching unidad details:', unidadError);
+      }
+      
+      // Combine the data
+      const venta: Venta = {
+        ...ventaData,
+        unidad: unidadData || undefined
+      };
+      
+      return venta;
     } catch (error) {
       console.error('Error al obtener detalles de venta:', error);
       return null;
@@ -77,7 +145,8 @@ export const useVentaDetail = (ventaId?: string) => {
     try {
       // First verify the venta belongs to the user's empresa
       if (empresaId && venta) {
-        const ventaEmpresaId = venta.empresa_id;
+        // Check if venta has empresa_id property
+        const ventaEmpresaId = 'empresa_id' in venta ? venta.empresa_id : undefined;
         
         if (ventaEmpresaId !== undefined && ventaEmpresaId !== empresaId) {
           console.log('Venta does not belong to user empresa:', ventaEmpresaId, empresaId);
@@ -102,7 +171,7 @@ export const useVentaDetail = (ventaId?: string) => {
             .from('pagos')
             .select('id', { count: 'exact', head: true })
             .eq('comprador_venta_id', item.id)
-            .eq('estado', 'registrado'); // Cambiado de 'verificado' a 'registrado'
+            .eq('estado', 'registrado');
             
           return {
             id: item.id,
