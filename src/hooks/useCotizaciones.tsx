@@ -6,16 +6,11 @@ import { useUserRole } from './useUserRole';
 
 export type Cotizacion = Tables<"cotizaciones">;
 
-// Define simplified types without circular references
-export type SimpleLead = Pick<Tables<"leads">, 'id' | 'nombre' | 'correo' | 'telefono'>;
-export type SimpleDesarrollo = Pick<Tables<"desarrollos">, 'id' | 'nombre'>;
-export type SimplePrototipo = Pick<Tables<"prototipos">, 'id' | 'nombre'>;
-
-// Define extended cotizacion with simple related types
+// Define basic types without circular references
 export type ExtendedCotizacion = Cotizacion & {
-  lead?: SimpleLead | null;
-  desarrollo?: SimpleDesarrollo | null;
-  prototipo?: SimplePrototipo | null;
+  lead?: Tables<"leads"> | null;
+  desarrollo?: Tables<"desarrollos"> | null;
+  prototipo?: Tables<"prototipos"> | null;
   // These fields are now part of the database schema
   fecha_inicio_pagos?: string | null;
   fecha_finiquito?: string | null;
@@ -59,15 +54,15 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       // If relations are requested, fetch them for each cotizacion
       if (withRelations && cotizaciones && cotizaciones.length > 0) {
         // Get all unique IDs for related entities
-        const leadIds = [...new Set(cotizaciones.map(c => c.lead_id).filter(Boolean))];
-        const desarrolloIds = [...new Set(cotizaciones.map(c => c.desarrollo_id).filter(Boolean))];
-        const prototipoIds = [...new Set(cotizaciones.map(c => c.prototipo_id).filter(Boolean))];
+        const leadIds = [...new Set(cotizaciones.map(c => c.lead_id))];
+        const desarrolloIds = [...new Set(cotizaciones.map(c => c.desarrollo_id))];
+        const prototipoIds = [...new Set(cotizaciones.map(c => c.prototipo_id))];
         
         // Fetch all related entities in batch queries
         const [leadsResponse, desarrollosResponse, prototipesResponse] = await Promise.all([
-          leadIds.length > 0 ? supabase.from('leads').select('*').in('id', leadIds) : { data: [], error: null },
-          desarrolloIds.length > 0 ? supabase.from('desarrollos').select('*').in('id', desarrolloIds) : { data: [], error: null },
-          prototipoIds.length > 0 ? supabase.from('prototipos').select('*').in('id', prototipoIds) : { data: [], error: null }
+          supabase.from('leads').select('*').in('id', leadIds),
+          supabase.from('desarrollos').select('*').in('id', desarrolloIds),
+          supabase.from('prototipos').select('*').in('id', prototipoIds)
         ]);
         
         const leads = leadsResponse.error ? [] : leadsResponse.data;
