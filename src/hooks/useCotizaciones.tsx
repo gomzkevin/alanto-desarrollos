@@ -43,7 +43,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
   // Use the specified empresa_id or fall back to the user's empresa_id
   const effectiveEmpresaId = empresa_id !== undefined ? empresa_id : userEmpresaId;
   
-  // Function to fetch cotizaciones
+  // Function to fetch cotizaciones with simplified types to prevent recursion
   const fetchCotizaciones = async (): Promise<ExtendedCotizacion[]> => {
     console.log('Fetching cotizaciones with options:', {...options, effectiveEmpresaId});
     
