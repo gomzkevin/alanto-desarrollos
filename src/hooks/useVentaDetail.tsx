@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import useUserRole from '@/hooks/useUserRole';
+import useSupabaseTableHelpers from './useSupabaseTableHelpers';
 
 // Define simplified types to avoid deep recursion
 export interface SimpleUnidad {
@@ -64,6 +65,7 @@ export const useVentaDetail = (ventaId?: string) => {
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [loading, setLoading] = useState(false);
   const { empresaId } = useUserRole();
+  const { hasColumn } = useSupabaseTableHelpers();
   
   // Simplified fetch function to avoid deep type recursion
   const fetchVentaDetail = async (): Promise<Venta | null> => {
@@ -73,17 +75,14 @@ export const useVentaDetail = (ventaId?: string) => {
       console.log('Fetching venta details with id:', ventaId, 'and empresa_id:', empresaId);
       
       // First, check if the ventas table has empresa_id column
-      const hasEmpresaColumn = await supabase.rpc('has_column', {
-        table_name: 'ventas',
-        column_name: 'empresa_id'
-      });
+      const hasEmpresaColumn = await hasColumn('ventas', 'empresa_id');
       
       // Fetch basic venta information
       let ventaQuery = supabase.from('ventas').select('*');
       
       // Filter by id and empresa_id if necessary
       ventaQuery = ventaQuery.eq('id', ventaId);
-      if (empresaId && hasEmpresaColumn.data) {
+      if (empresaId && hasEmpresaColumn) {
         ventaQuery = ventaQuery.eq('empresa_id', empresaId);
       }
       
@@ -98,7 +97,7 @@ export const useVentaDetail = (ventaId?: string) => {
         return null;
       }
       
-      let venta: Venta = {
+      const venta: Venta = {
         id: ventaData.id,
         precio_total: ventaData.precio_total,
         estado: ventaData.estado,

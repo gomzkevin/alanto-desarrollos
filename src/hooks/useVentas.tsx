@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import useUserRole from '@/hooks/useUserRole';
+import useSupabaseTableHelpers from './useSupabaseTableHelpers';
 
 // Basic types with simplified structures to avoid deep recursion
 export interface SimpleDesarrollo {
@@ -54,6 +55,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
   const { empresaId: userEmpresaId } = useUserRole();
+  const { hasColumn } = useSupabaseTableHelpers();
   
   // Use the specified empresa_id or fall back to the user's empresa_id
   const effectiveEmpresaId = filters.empresa_id !== undefined ? filters.empresa_id : userEmpresaId;
@@ -64,21 +66,23 @@ export const useVentas = (filters: VentasFilter = {}) => {
       console.log('Fetching ventas with filters:', { ...filters, effectiveEmpresaId });
       
       // Check for empresa_id column directly in the query
-      const hasEmpresaColumn = await supabase.rpc('has_column', {
-        table_name: 'ventas',
-        column_name: 'empresa_id'
-      });
+      const hasEmpresaColumn = await hasColumn('ventas', 'empresa_id');
       
       // First fetch basic ventas data without relations
       let queryFields = 'id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas';
       
-      if (hasEmpresaColumn.data) {
+      if (hasEmpresaColumn) {
         queryFields += ', empresa_id';
       }
       
-      const { data: ventasData, error: ventasError } = await supabase
-        .from('ventas')
-        .select(queryFields);
+      let query = supabase.from('ventas').select(queryFields);
+      
+      // Apply empresa_id filter if applicable
+      if (effectiveEmpresaId && hasEmpresaColumn) {
+        query = query.eq('empresa_id', effectiveEmpresaId);
+      }
+      
+      const { data: ventasData, error: ventasError } = await query;
 
       if (ventasError) {
         console.error('Error al obtener ventas básicas:', ventasError);
@@ -115,7 +119,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
           fecha_actualizacion: venta.fecha_actualizacion,
           unidad_id: venta.unidad_id,
           notas: venta.notas,
-          empresa_id: hasEmpresaColumn.data && 'empresa_id' in venta ? (venta.empresa_id as number | null) : null,
+          empresa_id: hasEmpresaColumn && 'empresa_id' in venta ? (venta.empresa_id as number | null) : null,
           progreso: 30, // Default progress value
           unidad: null
         };
@@ -238,7 +242,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
       }
 
       // Apply empresa_id filter in memory if needed
-      if (effectiveEmpresaId && !hasEmpresaColumn.data) {
+      if (effectiveEmpresaId && !hasEmpresaColumn) {
         filteredVentas = filteredVentas.filter(venta => {
           // If venta has empresa_id directly
           if (venta.empresa_id !== undefined && venta.empresa_id !== null) {
@@ -271,10 +275,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
     setIsCreating(true);
     try {
       // Check if empresa_id column exists
-      const hasEmpresaColumn = await supabase.rpc('has_column', {
-        table_name: 'ventas',
-        column_name: 'empresa_id'
-      });
+      const hasEmpresaColumn = await hasColumn('ventas', 'empresa_id');
       
       // Create a properly typed object for the insert
       const ventaInsert: {
@@ -291,7 +292,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
       };
       
       // Only add empresa_id if the column exists
-      if (hasEmpresaColumn.data && effectiveEmpresaId) {
+      if (hasEmpresaColumn && effectiveEmpresaId) {
         ventaInsert.empresa_id = effectiveEmpresaId;
       }
       
@@ -327,10 +328,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
     setIsUpdating(true);
     try {
       // Check if empresa_id column exists
-      const hasEmpresaColumn = await supabase.rpc('has_column', {
-        table_name: 'ventas',
-        column_name: 'empresa_id'
-      });
+      const hasEmpresaColumn = await hasColumn('ventas', 'empresa_id');
       
       // Create a properly typed object for the update
       const ventaUpdates: {
@@ -362,7 +360,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
       }
       
       // Make sure we're not overriding the empresa_id if it doesn't exist
-      if (!hasEmpresaColumn.data) {
+      if (!hasEmpresaColumn) {
         delete ventaUpdates.empresa_id;
       } else if (updates.empresa_id === undefined && effectiveEmpresaId) {
         ventaUpdates.empresa_id = effectiveEmpresaId;

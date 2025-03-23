@@ -11,7 +11,7 @@ interface UnitCounts {
   con_anticipo: number;
 }
 
-export const useUnitCounts = (unidades: Unidad[]): UnitCounts => {
+export const useUnitCounts = (unidades: Unidad[] = []): UnitCounts => {
   const counts = useMemo(() => {
     if (!unidades || unidades.length === 0) {
       return {

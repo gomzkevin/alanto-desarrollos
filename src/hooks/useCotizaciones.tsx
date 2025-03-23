@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import useUserRole from '@/hooks/useUserRole';
+import useSupabaseTableHelpers from './useSupabaseTableHelpers';
 
 export type Cotizacion = Tables<"cotizaciones">;
 
@@ -58,6 +59,7 @@ type FetchCotizacionesOptions = {
 export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
   const { limit, withRelations = false, empresa_id } = options;
   const { empresaId: userEmpresaId } = useUserRole();
+  const { hasColumn } = useSupabaseTableHelpers();
   
   // Use the specified empresa_id or fall back to the user's empresa_id
   const effectiveEmpresaId = empresa_id !== undefined ? empresa_id : userEmpresaId;
@@ -67,11 +69,14 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
     console.log('Fetching cotizaciones with options:', {...options, effectiveEmpresaId});
     
     try {
+      // Check if empresa_id column exists
+      const hasEmpresaColumn = await hasColumn('cotizaciones', 'empresa_id');
+      
       // Build the basic query
       let query = supabase.from('cotizaciones').select('*');
       
-      // Filter by empresa_id if provided
-      if (effectiveEmpresaId) {
+      // Filter by empresa_id if provided and column exists
+      if (effectiveEmpresaId && hasEmpresaColumn) {
         query = query.eq('empresa_id', effectiveEmpresaId);
         console.log('Filtering cotizaciones by empresa_id:', effectiveEmpresaId);
       }
