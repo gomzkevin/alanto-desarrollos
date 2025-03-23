@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VentasTable } from './components/VentasTable';
@@ -10,13 +10,15 @@ import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const VentasPage = () => {
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  // Always call hooks at the top level, regardless of conditions
   const { isAuthorized, isLoading } = useSubscriptionAuth('Ventas');
+  const [refreshTrigger, setRefreshTrigger] = React.useState(0);
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  // Render loading state
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -31,6 +33,7 @@ const VentasPage = () => {
     );
   }
 
+  // Render unauthorized state
   if (!isAuthorized) {
     return (
       <DashboardLayout>
@@ -45,6 +48,7 @@ const VentasPage = () => {
     );
   }
 
+  // Render authorized state
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">

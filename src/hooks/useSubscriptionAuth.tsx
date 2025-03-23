@@ -12,9 +12,11 @@ import { useSubscriptionInfo } from './useSubscriptionInfo';
  */
 export const useSubscriptionAuth = (requiredModule?: string, redirectPath: string = '/dashboard') => {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const navigate = useNavigate();
+  
+  // Always call hooks at the top level, regardless of any conditions
   const { userId, empresaId, isAdmin, authChecked } = useUserRole();
   const { subscriptionInfo, isLoading: isLoadingSubscription } = useSubscriptionInfo();
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Solo verificar cuando tengamos toda la información necesaria
