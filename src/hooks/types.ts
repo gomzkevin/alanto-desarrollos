@@ -1,69 +1,7 @@
 
-// Basic types with simplified structures to avoid deep recursion
-export interface SimpleDesarrollo {
-  id?: string;
-  nombre: string;
-  ubicacion?: string | null;
-  empresa_id?: number;
-}
+import { Tables } from '@/integrations/supabase/types';
 
-export interface SimplePrototipo {
-  id?: string;
-  nombre: string;
-  precio?: number;
-  desarrollo_id?: string;
-  desarrollo?: SimpleDesarrollo | null;
-}
-
-export interface SimpleUnidad {
-  id?: string;
-  numero: string;
-  estado?: string;
-  nivel?: string | null;
-  prototipo_id?: string;
-  prototipo?: SimplePrototipo | null;
-}
-
-// Simplified types for compradores and vendedores
-export interface SimpleComprador {
-  id: string;
-  nombre?: string;
-  email?: string;
-  telefono?: string;
-}
-
-export interface SimpleVendedor {
-  id: string;
-  nombre?: string;
-  email?: string;
-}
-
-export interface VentaComprador {
-  id: string;
-  venta_id: string;
-  comprador_id: string;
-  vendedor_id?: string;
-  porcentaje_propiedad: number;
-  monto_comprometido: number;
-  comprador?: SimpleComprador;
-  vendedor?: SimpleVendedor;
-}
-
-export interface VentaDetallada {
-  id: string;
-  precio_total: number;
-  estado: string;
-  es_fraccional: boolean;
-  fecha_inicio: string;
-  fecha_actualizacion: string;
-  unidad_id: string;
-  notas?: string;
-  empresa_id?: number | null;
-  unidad?: SimpleUnidad;
-  compradores?: VentaComprador[];
-  totalPagado?: number;
-}
-
+// Definición para ventas
 export interface Venta {
   id: string;
   precio_total: number;
@@ -72,35 +10,73 @@ export interface Venta {
   fecha_inicio: string;
   fecha_actualizacion: string;
   unidad_id: string;
+  notas: string | null;
   empresa_id?: number | null;
-  notas?: string | null;
-  unidad?: SimpleUnidad | null;
-  progreso?: number;
 }
 
-// Simplified Cotizacion type to avoid recursive dependencies
+// Definición para unidades simplificadas
+export interface SimpleUnidad {
+  id: string;
+  codigo: string;
+  precio_venta?: number;
+  estado: string;
+  prototipo_id: string;
+}
+
+// Definición para compradores simplificados
+export interface SimpleComprador {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono?: string;
+}
+
+// Definición para vendedores simplificados
+export interface SimpleVendedor {
+  id: string;
+  nombre: string;
+  email: string;
+}
+
+// Definir relación compradores-venta
+export interface VentaComprador {
+  id: string;
+  venta_id: string;
+  comprador_id: string;
+  vendedor_id?: string;
+  porcentaje: number;
+  comprador?: SimpleComprador;
+  vendedor?: SimpleVendedor;
+}
+
+// Definir la venta con detalles
+export interface VentaDetallada extends Venta {
+  unidad?: SimpleUnidad;
+  compradores: VentaComprador[];
+  totalPagado: number;
+}
+
+// Definición para cotizaciones
 export interface SimpleCotizacion {
   id: string;
+  unidad_id: string;
+  precio_total: number;
+  enganche_porcentaje: number;
+  plazo_meses: number;
+  tasa_interes: number;
+  fecha_creacion: string;
+  estado: string;
+  nombre_cliente?: string;
+  email_cliente?: string;
+  telefono_cliente?: string;
+  observaciones?: string;
+  vendedor_id?: string;
   lead_id?: string;
-  desarrollo_id?: string;
   prototipo_id?: string;
-  monto_anticipo?: number;
-  numero_pagos?: number;
-  usar_finiquito?: boolean;
-  monto_finiquito?: number;
-  fecha_inicio_pagos?: string;
-  fecha_finiquito?: string;
-  notas?: string;
-  estado?: string;
-  created_at?: string;
-  // Nested relations as optional objects
-  lead?: {
-    id: string;
-    nombre?: string;
-    email?: string;
-    telefono?: string;
-    origen?: string;
-  } | null;
-  prototipo?: SimplePrototipo | null;
-  desarrollo?: SimpleDesarrollo | null;
+  desarrollo_id?: string;
+}
+
+// Error genérico para manejo de errores
+export interface GenericStringError {
+  message: string;
 }

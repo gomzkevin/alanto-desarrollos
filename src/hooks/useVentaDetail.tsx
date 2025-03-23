@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { SimpleUnidad, SimpleComprador, SimpleVendedor, VentaComprador, VentaDetallada } from './types';
+import { VentaDetallada, VentaComprador } from './types';
 
 const useVentaDetail = (ventaId: string | undefined) => {
   const [compradores, setCompradores] = useState<VentaComprador[]>([]);
@@ -148,11 +148,13 @@ const useVentaDetail = (ventaId: string | undefined) => {
             const monto = typeof pago.monto === 'number' ? pago.monto : 0;
             return sum + monto;
           }, 0);
+          
           setMontoPagado(totalPagado);
           
-          // Calculate progress percentage
-          if (venta.precio_total > 0) {
-            const progresoCalculado = Math.min(Math.round((totalPagado / venta.precio_total) * 100), 100);
+          // Calculate progress percentage (asegurar que sea un número)
+          const precioTotal = typeof venta.precio_total === 'number' ? venta.precio_total : 0;
+          if (precioTotal > 0) {
+            const progresoCalculado = Math.min(Math.round((totalPagado / precioTotal) * 100), 100);
             setProgreso(progresoCalculado);
           }
         }

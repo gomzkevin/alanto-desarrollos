@@ -61,16 +61,27 @@ export const useSubscriptionGuard = (options: UseSubscriptionGuardOptions = {}) 
     // Si se requieren características específicas, verificarlas
     if (requiredFeatures.length > 0) {
       // Verificación de características específicas del plan
-      // Por ahora, implementamos una lógica simple
       let hasRequiredFeatures = true;
       
       for (const feature of requiredFeatures) {
-        // Ejemplo: verificar si tiene tipo específico de recurso
-        if (feature === 'prototipo' && subscriptionInfo.resourceType !== 'prototipo') {
-          hasRequiredFeatures = false;
+        // Corrección: verificar características de manera más flexible
+        if (feature === 'prototipo') {
+          // Si requiere acceso a prototipos, verificar que el plan sea de tipo prototipo 
+          // o que no tenga restricción de tipo
+          if (subscriptionInfo.resourceType !== null && 
+              subscriptionInfo.resourceType !== 'prototipo') {
+            hasRequiredFeatures = false;
+            console.log("[useSubscriptionGuard] Plan type mismatch: required prototipo, got", subscriptionInfo.resourceType);
+          }
         }
-        else if (feature === 'desarrollo' && subscriptionInfo.resourceType !== 'desarrollo') {
-          hasRequiredFeatures = false;
+        else if (feature === 'desarrollo') {
+          // Si requiere acceso a desarrollos, verificar que el plan sea de tipo desarrollo
+          // o que no tenga restricción de tipo
+          if (subscriptionInfo.resourceType !== null && 
+              subscriptionInfo.resourceType !== 'desarrollo') {
+            hasRequiredFeatures = false;
+            console.log("[useSubscriptionGuard] Plan type mismatch: required desarrollo, got", subscriptionInfo.resourceType);
+          }
         }
       }
       

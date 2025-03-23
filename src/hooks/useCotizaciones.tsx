@@ -1,227 +1,257 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from "@/hooks/use-toast";
-import { SimpleDesarrollo, SimplePrototipo, SimpleCotizacion } from './types';
 
-export interface CotizacionesFilter {
-  desarrollo_id?: string;
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
+import { SimpleCotizacion } from './types';
+
+interface CotizacionesFilters {
   estado?: string;
-  busqueda?: string;
-  withRelations?: boolean;
+  leadId?: string;
+  unidadId?: string;
+  prototipoId?: string;
+  desarrolloId?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
 }
 
-const useCotizaciones = (filters: CotizacionesFilter = {}) => {
-  const [isCreating, setIsCreating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
+export const useCotizaciones = (
+  filters: CotizacionesFilters = {},
+  options: { limit?: number } = {}
+) => {
+  const { limit } = options;
   const { toast } = useToast();
-
+  const queryClient = useQueryClient();
+  const { empresaId } = useUserRole();
+  
+  // Use a stable empresa ID to avoid unnecessary refetches
+  const effectiveEmpresaId = empresaId || null;
+  
+  // Función para obtener cotizaciones con filtros
   const fetchCotizaciones = async (): Promise<SimpleCotizacion[]> => {
     try {
+      console.log('Fetching cotizaciones with filters:', filters);
+      
+      // Construir la consulta base
       let query = supabase
         .from('cotizaciones')
-        .select(`
-          id,
-          lead_id,
-          desarrollo_id,
-          prototipo_id,
-          monto_anticipo,
-          numero_pagos,
-          usar_finiquito,
-          monto_finiquito,
-          fecha_inicio_pagos,
-          fecha_finiquito,
-          notas,
-          created_at
-        `);
-
-      if (filters.desarrollo_id) {
-        query = query.eq('desarrollo_id', filters.desarrollo_id);
+        .select('*');
+      
+      // Aplicar filtros adicionales si se proporcionan
+      if (filters.estado) {
+        query = query.eq('estado', filters.estado);
       }
-
-      if (filters.estado && filters.estado !== 'todos') {
-        try {
-          query = query.eq('estado', filters.estado);
-        } catch (error) {
-          console.error('Error filtering by estado:', error);
-        }
+      
+      if (filters.leadId) {
+        query = query.eq('lead_id', filters.leadId);
       }
-
+      
+      if (filters.unidadId) {
+        query = query.eq('unidad_id', filters.unidadId);
+      }
+      
+      if (filters.prototipoId) {
+        query = query.eq('prototipo_id', filters.prototipoId);
+      }
+      
+      if (filters.desarrolloId) {
+        query = query.eq('desarrollo_id', filters.desarrolloId);
+      }
+      
+      if (filters.fechaInicio) {
+        query = query.gte('fecha_creacion', filters.fechaInicio);
+      }
+      
+      if (filters.fechaFin) {
+        query = query.lte('fecha_creacion', filters.fechaFin);
+      }
+      
+      // Aplicar límite si se proporciona
+      if (limit) {
+        query = query.limit(limit);
+      }
+      
+      // Ejecutar la consulta
       const { data, error } = await query;
-
+      
       if (error) {
-        console.error('Error fetching cotizaciones:', error);
+        console.error('Error al obtener cotizaciones:', error);
+        throw error;
+      }
+      
+      // Si no hay resultados, devolver array vacío
+      if (!data || data.length === 0) {
         return [];
       }
-
-      const cotizacionesData = data || [];
       
-      const isValidCotizacion = (item: any): item is SimpleCotizacion => {
-        return item && typeof item === 'object' && 'id' in item;
-      };
+      console.log(`Obtenidas ${data.length} cotizaciones`);
       
-      const validCotizaciones = cotizacionesData.filter(isValidCotizacion);
-
-      if (filters.withRelations && validCotizaciones.length > 0) {
-        const cotizacionesWithRelations = await Promise.all(
-          validCotizaciones.map(async (cotizacion) => {
-            let leadData = null;
-            let prototipoData = null;
-            let desarrolloData = null;
-
-            if (cotizacion.lead_id) {
-              try {
-                const { data: lead } = await supabase
-                  .from('leads')
-                  .select('id, nombre, email, telefono, origen')
-                  .eq('id', cotizacion.lead_id)
-                  .single();
-                leadData = lead;
-              } catch (error) {
-                console.error(`Error fetching lead for cotizacion ${cotizacion.id}:`, error);
-              }
-            }
-
-            if (cotizacion.prototipo_id) {
-              try {
-                const { data: prototipo } = await supabase
-                  .from('prototipos')
-                  .select('id, nombre, precio, desarrollo_id')
-                  .eq('id', cotizacion.prototipo_id)
-                  .single();
-                prototipoData = prototipo as SimplePrototipo | null;
-              } catch (error) {
-                console.error(`Error fetching prototipo for cotizacion ${cotizacion.id}:`, error);
-              }
-            }
-
-            if (cotizacion.desarrollo_id) {
-              try {
-                const { data: desarrollo } = await supabase
-                  .from('desarrollos')
-                  .select('id, nombre, ubicacion, empresa_id')
-                  .eq('id', cotizacion.desarrollo_id)
-                  .single();
-                desarrolloData = desarrollo as SimpleDesarrollo | null;
-              } catch (error) {
-                console.error(`Error fetching desarrollo for cotizacion ${cotizacion.id}:`, error);
-              }
-            }
-
-            return {
-              ...cotizacion,
-              lead: leadData,
-              prototipo: prototipoData,
-              desarrollo: desarrolloData
-            } as SimpleCotizacion;
-          })
-        );
-
-        return cotizacionesWithRelations;
-      }
-
-      return validCotizaciones;
+      // Mapear los datos a nuestro tipo SimpleCotizacion
+      return data as SimpleCotizacion[];
     } catch (error) {
-      console.error('Error fetching cotizaciones:', error);
-      return [];
+      console.error('Error en fetchCotizaciones:', error);
+      throw error;
     }
   };
-
-  const { data: cotizaciones = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['cotizaciones', filters],
-    queryFn: fetchCotizaciones,
-  });
-
+  
+  // Función para crear una cotización
   const createCotizacion = async (cotizacionData: {
-    lead_id: string;
+    unidad_id?: string;
+    precio_total: number;
+    enganche_porcentaje: number;
+    plazo_meses: number;
+    tasa_interes: number;
+    nombre_cliente?: string;
+    email_cliente?: string;
+    telefono_cliente?: string;
+    observaciones?: string;
+    vendedor_id?: string;
+    lead_id?: string;
+    prototipo_id?: string;
     desarrollo_id: string;
-    prototipo_id: string;
-    monto_anticipo: number;
-    numero_pagos: number;
-    usar_finiquito?: boolean;
-    monto_finiquito?: number;
-    fecha_inicio_pagos?: string;
-    fecha_finiquito?: string;
-    notas?: string;
-    estado?: string;
   }) => {
-    setIsCreating(true);
     try {
       const { data, error } = await supabase
         .from('cotizaciones')
-        .insert(cotizacionData)
-        .select();
-
-      if (error) throw error;
+        .insert({
+          ...cotizacionData,
+          fecha_creacion: new Date().toISOString(),
+          estado: 'pendiente'
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error al crear cotización:', error);
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error en createCotizacion:', error);
+      throw error;
+    }
+  };
+  
+  const createCotizacionMutation = useMutation({
+    mutationFn: createCotizacion,
+    onSuccess: () => {
+      // Invalidar queries para refrescar datos
+      queryClient.invalidateQueries({ queryKey: ['cotizaciones'] });
       toast({
         title: "Cotización creada",
-        description: "La cotización ha sido creada exitosamente",
+        description: "La cotización ha sido creada exitosamente"
       });
-      await refetch();
-      return data;
-    } catch (error) {
-      console.error('Error creating cotizacion:', error);
+    },
+    onError: (error) => {
       toast({
         title: "Error",
-        description: "No se pudo crear la cotización",
-        variant: "destructive",
+        description: `No se pudo crear la cotización: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+        variant: "destructive"
       });
+    }
+  });
+  
+  // Función para actualizar una cotización
+  const updateCotizacion = async (data: { 
+    id: string; 
+    estado?: string;
+    [key: string]: any;
+  }) => {
+    try {
+      const { id, ...updateData } = data;
+      
+      const { data: updatedData, error } = await supabase
+        .from('cotizaciones')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error al actualizar cotización:', error);
+        throw error;
+      }
+      
+      return updatedData;
+    } catch (error) {
+      console.error('Error en updateCotizacion:', error);
       throw error;
-    } finally {
-      setIsCreating(false);
     }
   };
-
-  const updateCotizacion = async (id: string, updates: Partial<{
-    lead_id: string;
-    desarrollo_id: string;
-    prototipo_id: string;
-    monto_anticipo: number;
-    numero_pagos: number;
-    usar_finiquito: boolean;
-    monto_finiquito: number;
-    fecha_inicio_pagos: string;
-    fecha_finiquito: string;
-    notas: string;
-    estado: string;
-  }>) => {
-    setIsUpdating(true);
-    try {
-      const { data, error } = await supabase
-        .from('cotizaciones')
-        .update(updates)
-        .eq('id', id)
-        .select();
-
-      if (error) throw error;
+  
+  const updateCotizacionMutation = useMutation({
+    mutationFn: updateCotizacion,
+    onSuccess: () => {
+      // Invalidar queries para refrescar datos
+      queryClient.invalidateQueries({ queryKey: ['cotizaciones'] });
       toast({
         title: "Cotización actualizada",
-        description: "La cotización ha sido actualizada exitosamente",
+        description: "La cotización ha sido actualizada exitosamente"
       });
-      await refetch();
-      return data;
-    } catch (error) {
-      console.error('Error updating cotizacion:', error);
+    },
+    onError: (error) => {
       toast({
         title: "Error",
-        description: "No se pudo actualizar la cotización",
-        variant: "destructive",
+        description: `No se pudo actualizar la cotización: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+        variant: "destructive"
       });
+    }
+  });
+  
+  // Función para eliminar una cotización
+  const deleteCotizacion = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('cotizaciones')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error al eliminar cotización:', error);
+        throw error;
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error en deleteCotizacion:', error);
       throw error;
-    } finally {
-      setIsUpdating(false);
     }
   };
+  
+  const deleteCotizacionMutation = useMutation({
+    mutationFn: deleteCotizacion,
+    onSuccess: () => {
+      // Invalidar queries para refrescar datos
+      queryClient.invalidateQueries({ queryKey: ['cotizaciones'] });
+      toast({
+        title: "Cotización eliminada",
+        description: "La cotización ha sido eliminada exitosamente"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo eliminar la cotización: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Use React Query to fetch and cache the data
+  const queryResult = useQuery({
+    queryKey: ['cotizaciones', filters, effectiveEmpresaId],
+    queryFn: fetchCotizaciones
+  });
 
   return {
-    cotizaciones,
-    isLoading,
-    error,
-    refetch,
-    createCotizacion,
-    updateCotizacion,
-    isCreating,
-    isUpdating
+    cotizaciones: queryResult.data || [],
+    isLoading: queryResult.isLoading,
+    error: queryResult.error,
+    refetch: queryResult.refetch,
+    createCotizacion: createCotizacionMutation.mutate,
+    updateCotizacion: updateCotizacionMutation.mutate,
+    deleteCotizacion: deleteCotizacionMutation.mutate
   };
 };
 

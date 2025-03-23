@@ -15,7 +15,8 @@ import useUnitCounts from './hooks/useUnitCounts';
 import useSubscriptionGuard from '@/hooks/useSubscriptionGuard';
 
 const PrototipoDetail = () => {
-  // La protección solo requiere una suscripción activa, sin importar el tipo
+  // Corregido: No estamos requiriendo características específicas del plan,
+  // solo verificamos que haya una suscripción activa
   const { hasAccess, isLoading: isLoadingSubscription } = useSubscriptionGuard();
   
   const { toast } = useToast();

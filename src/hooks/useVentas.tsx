@@ -1,347 +1,291 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from "@/hooks/use-toast";
-import useUserRole from '@/hooks/useUserRole';
-import { Venta, SimpleUnidad, SimplePrototipo, SimpleDesarrollo } from './types';
 
-export interface VentasFilter {
-  desarrollo_id?: string;
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Venta, GenericStringError } from './types';
+
+interface VentasFilters {
   estado?: string;
-  busqueda?: string;
-  empresa_id?: number | null;
+  fechaInicio?: string;
+  fechaFin?: string;
+  unidadId?: string;
+  compradorId?: string;
+  desarrolloId?: string;
 }
 
-export const useVentas = (filters: VentasFilter = {}) => {
-  const [isCreating, setIsCreating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const { toast } = useToast();
-  const { empresaId: userEmpresaId } = useUserRole();
+export const useVentas = (
+  filters: VentasFilters = {},
+  options: { limit?: number } = {}
+) => {
+  const queryClient = useQueryClient();
+  const { limit } = options;
+  const { empresaId } = useUserRole();
   
-  // Use the specified empresa_id or fall back to the user's empresa_id
-  const effectiveEmpresaId = filters.empresa_id !== undefined ? filters.empresa_id : userEmpresaId;
-
-  // Consulta para obtener las ventas
+  // Use a stable empresa ID to avoid unnecessary refetches
+  const effectiveEmpresaId = empresaId || null;
+  
+  // Función para obtener ventas con filtros
   const fetchVentas = async (): Promise<Venta[]> => {
     try {
-      console.log('Fetching ventas with filters:', { ...filters, effectiveEmpresaId });
-      
-      // Check for empresa_id column directly in the query
-      const hasEmpresaColumn = await supabase.rpc('has_column', {
-        table_name: 'ventas',
-        column_name: 'empresa_id'
-      });
-      
-      // First fetch basic ventas data without relations
-      let queryFields = 'id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas';
-      
-      if (hasEmpresaColumn.data) {
-        queryFields += ', empresa_id';
-      }
-      
-      const { data: ventasData, error: ventasError } = await supabase
+      // Construir la consulta base
+      let query = supabase
         .from('ventas')
-        .select(queryFields);
-
-      if (ventasError) {
-        console.error('Error al obtener ventas básicas:', ventasError);
+        .select('*');
+      
+      // Aplicar filtros de empresa si está disponible
+      if (effectiveEmpresaId) {
+        query = query.eq('empresa_id', effectiveEmpresaId);
+      }
+      
+      // Aplicar filtros adicionales si se proporcionan
+      if (filters.estado) {
+        query = query.eq('estado', filters.estado);
+      }
+      
+      if (filters.fechaInicio) {
+        query = query.gte('fecha_inicio', filters.fechaInicio);
+      }
+      
+      if (filters.fechaFin) {
+        query = query.lte('fecha_inicio', filters.fechaFin);
+      }
+      
+      if (filters.unidadId) {
+        query = query.eq('unidad_id', filters.unidadId);
+      }
+      
+      // Aplicar límite si se proporciona
+      if (limit) {
+        query = query.limit(limit);
+      }
+      
+      // Ejecutar la consulta
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error al obtener ventas:', error);
+        throw error;
+      }
+      
+      // Si no hay resultados, devolver array vacío
+      if (!data || data.length === 0) {
         return [];
       }
-
-      // If no ventas data, return empty array
-      if (!ventasData || ventasData.length === 0) {
-        return [];
-      }
       
-      // Type guard to check if an item is a valid venta
-      const isValidVenta = (item: any): item is Record<string, any> => {
-        return item && typeof item === 'object' && 'id' in item;
-      };
-      
-      // Convert ventas data to proper Venta objects with null checks
-      const ventas: Venta[] = ventasData
-        .filter(isValidVenta)
-        .map(venta => {
-          // Safely extract properties with type checking
-          const ventaObj: Venta = {
-            id: String(venta.id || ''),
-            precio_total: Number(venta.precio_total) || 0,
-            estado: String(venta.estado || ''),
-            es_fraccional: Boolean(venta.es_fraccional),
-            fecha_inicio: String(venta.fecha_inicio || ''),
-            fecha_actualizacion: String(venta.fecha_actualizacion || ''),
-            unidad_id: String(venta.unidad_id || ''),
-            notas: venta.notas ? String(venta.notas) : null,
-            progreso: 30, // Default progress value
-            unidad: null
-          };
-          
-          // Add empresa_id if the column exists and the value is in the data
-          if (hasEmpresaColumn.data && 'empresa_id' in venta) {
-            ventaObj.empresa_id = venta.empresa_id !== null ? Number(venta.empresa_id) : null;
-          }
-          
-          return ventaObj;
-        });
-        
-      // Get all unidad_ids
-      const unidadIds = ventas
-        .map(venta => venta.unidad_id)
-        .filter(Boolean);
-      
-      if (unidadIds.length === 0) {
-        return ventas;
-      }
-      
-      // Fetch unidades data
-      const { data: unidadesData, error: unidadesError } = await supabase
-        .from('unidades')
-        .select('id, numero, estado, nivel, prototipo_id')
-        .in('id', unidadIds);
-        
-      if (unidadesError) {
-        console.error('Error al obtener unidades:', unidadesError);
-        // Continue with basic ventas data
-      } else if (unidadesData && unidadesData.length > 0) {
-        // Get all prototipo_ids from unidades
-        const prototipoIds = unidadesData
-          .map(unidad => unidad.prototipo_id)
-          .filter(Boolean);
-          
-        // Initialize prototipossData and desarrollosData variables
-        let prototipossData: any[] = [];
-        let desarrollosData: any[] = [];
-        
-        // Fetch prototipos data
-        if (prototipoIds.length > 0) {
-          const { data, error: prototipossError } = await supabase
-            .from('prototipos')
-            .select('id, nombre, precio, desarrollo_id')
-            .in('id', prototipoIds);
-            
-          if (prototipossError) {
-            console.error('Error al obtener prototipos:', prototipossError);
-          } else if (data) {
-            prototipossData = data;
-            
-            // Get all desarrollo_ids from prototipos
-            const desarrolloIds = data
-              .map(prototipo => prototipo.desarrollo_id)
-              .filter(Boolean);
-                  
-            // Fetch desarrollos data
-            if (desarrolloIds.length > 0) {
-              const { data: desarrollos, error: desarrollosError } = await supabase
-                .from('desarrollos')
-                .select('id, nombre, ubicacion, empresa_id')
-                .in('id', desarrolloIds);
-                
-              if (desarrollosError) {
-                console.error('Error al obtener desarrollos:', desarrollosError);
-              } else if (desarrollos) {
-                desarrollosData = desarrollos;
-              }
-            }
-          }
+      // Mapear los datos a nuestro tipo Venta
+      return data.map((item): Venta => {
+        // Asegurarse de que item no es un error antes de acceder a sus propiedades
+        if ('message' in item && typeof item.message === 'string') {
+          const error = item as unknown as GenericStringError;
+          console.error('Error en elemento de ventas:', error.message);
+          throw new Error(error.message);
         }
         
-        // Map the related data to the ventas
-        ventas.forEach(venta => {
-          const unidad = unidadesData.find(u => u.id === venta.unidad_id);
-          
-          if (unidad) {
-            const unidadObj: SimpleUnidad = {
-              id: unidad.id,
-              numero: unidad.numero,
-              estado: unidad.estado,
-              nivel: unidad.nivel,
-              prototipo_id: unidad.prototipo_id,
-              prototipo: null
-            };
-            
-            const prototipo = prototipossData.find(p => p.id === unidad.prototipo_id);
-            if (prototipo) {
-              const prototipoObj: SimplePrototipo = {
-                id: prototipo.id,
-                nombre: prototipo.nombre,
-                precio: prototipo.precio,
-                desarrollo_id: prototipo.desarrollo_id,
-                desarrollo: null
-              };
-              
-              unidadObj.prototipo = prototipoObj;
-              
-              const desarrollo = desarrollosData.find(d => d.id === prototipo.desarrollo_id);
-              if (desarrollo) {
-                prototipoObj.desarrollo = {
-                  id: desarrollo.id,
-                  nombre: desarrollo.nombre,
-                  ubicacion: desarrollo.ubicacion,
-                  empresa_id: desarrollo.empresa_id as number
-                };
-              }
-            }
-            
-            venta.unidad = unidadObj;
-          }
-        });
-      }
-      
-      // Apply filters in memory 
-      let filteredVentas = [...ventas];
-      
-      if (filters.desarrollo_id) {
-        filteredVentas = filteredVentas.filter(
-          venta => venta.unidad?.prototipo?.desarrollo?.id === filters.desarrollo_id
-        );
-      }
-
-      if (filters.estado && filters.estado !== 'todos') {
-        filteredVentas = filteredVentas.filter(
-          venta => venta.estado === filters.estado
-        );
-      }
-
-      // Apply empresa_id filter in memory if needed
-      if (effectiveEmpresaId && !hasEmpresaColumn.data) {
-        filteredVentas = filteredVentas.filter(venta => {
-          // If venta has empresa_id directly
-          if (venta.empresa_id !== undefined && venta.empresa_id !== null) {
-            return venta.empresa_id === effectiveEmpresaId;
-          }
-          // Or if the desarrollo has empresa_id
-          return venta.unidad?.prototipo?.desarrollo?.empresa_id === effectiveEmpresaId;
-        });
-      }
-
-      return filteredVentas;
+        return {
+          id: item.id,
+          precio_total: item.precio_total,
+          estado: item.estado,
+          es_fraccional: item.es_fraccional,
+          fecha_inicio: item.fecha_inicio,
+          fecha_actualizacion: item.fecha_actualizacion,
+          unidad_id: item.unidad_id,
+          notas: item.notas,
+          empresa_id: item.empresa_id
+        };
+      });
     } catch (error) {
-      console.error('Error al obtener ventas:', error);
-      return [];
+      console.error('Error en fetchVentas:', error);
+      throw error;
     }
   };
-
+  
+  const updateVentaStatus = async ({ ventaId, newStatus }: { ventaId: string; newStatus: string }) => {
+    console.log(`Cambiando estado de venta ${ventaId} a ${newStatus}`);
+    
+    try {
+      const { data, error } = await supabase
+        .from('ventas')
+        .update({ estado: newStatus })
+        .eq('id', ventaId)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error al actualizar estado de venta:', error);
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error en updateVentaStatus:', error);
+      throw error;
+    }
+  };
+  
+  const updateVentaMutation = useMutation({
+    mutationFn: updateVentaStatus,
+    onSuccess: () => {
+      // Invalidar queries para refrescar datos
+      queryClient.invalidateQueries({ queryKey: ['ventas'] });
+      queryClient.invalidateQueries({ queryKey: ['ventaDetail'] });
+    },
+  });
+  
+  const deleteVenta = async (ventaId: string) => {
+    console.log(`Eliminando venta ${ventaId}`);
+    
+    try {
+      // Primero eliminar los registros de compradores_venta
+      const { error: compradorVentaError } = await supabase
+        .from('compradores_venta')
+        .delete()
+        .eq('venta_id', ventaId);
+      
+      if (compradorVentaError) {
+        console.error('Error al eliminar compradores de venta:', compradorVentaError);
+        throw compradorVentaError;
+      }
+      
+      // Luego eliminar los pagos asociados
+      const { error: pagosError } = await supabase
+        .from('pagos')
+        .delete()
+        .eq('venta_id', ventaId);
+      
+      if (pagosError) {
+        console.error('Error al eliminar pagos de venta:', pagosError);
+        throw pagosError;
+      }
+      
+      // Finalmente eliminar la venta
+      const { error: ventaError } = await supabase
+        .from('ventas')
+        .delete()
+        .eq('id', ventaId);
+      
+      if (ventaError) {
+        console.error('Error al eliminar venta:', ventaError);
+        throw ventaError;
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error en deleteVenta:', error);
+      throw error;
+    }
+  };
+  
+  const deleteVentaMutation = useMutation({
+    mutationFn: deleteVenta,
+    onSuccess: () => {
+      // Invalidar queries para refrescar datos
+      queryClient.invalidateQueries({ queryKey: ['ventas'] });
+    },
+  });
+  
   // Function to create a venta
   const createVenta = async (ventaData: {
     unidad_id: string;
     precio_total: number;
-    es_fraccional: boolean;
+    es_fraccional?: boolean;
     estado?: string;
+    notas?: string;
   }) => {
-    setIsCreating(true);
+    console.log('Creando nueva venta:', ventaData);
+    
     try {
-      // Check if empresa_id column exists
-      const hasEmpresaColumn = await supabase.rpc('has_column', {
-        table_name: 'ventas',
-        column_name: 'empresa_id'
-      });
-      
-      // Create a proper object with required fields for insertion
-      const ventaInsert: {
-        unidad_id: string;
-        precio_total: number;
-        es_fraccional: boolean;
-        estado?: string;
-        empresa_id?: number;
-      } = {
-        unidad_id: ventaData.unidad_id,
-        precio_total: ventaData.precio_total,
-        es_fraccional: ventaData.es_fraccional,
-        estado: ventaData.estado || 'en_proceso',
-      };
-      
-      // Only add empresa_id if the column exists
-      if (hasEmpresaColumn.data && effectiveEmpresaId) {
-        ventaInsert.empresa_id = effectiveEmpresaId;
-      }
-      
       const { data, error } = await supabase
         .from('ventas')
-        .insert(ventaInsert)
-        .select();
-
-      if (error) throw error;
+        .insert({
+          ...ventaData,
+          empresa_id: effectiveEmpresaId,
+          fecha_inicio: new Date().toISOString(),
+          fecha_actualizacion: new Date().toISOString(),
+          es_fraccional: ventaData.es_fraccional || false,
+          estado: ventaData.estado || 'en_proceso'
+        })
+        .select()
+        .single();
       
-      // También actualizar el estado de la unidad si es necesario
-      const { error: unidadError } = await supabase
-        .from('unidades')
-        .update({ estado: 'en_proceso' })
-        .eq('id', ventaData.unidad_id);
-        
-      if (unidadError) {
-        console.error('Error updating unidad estado:', unidadError);
+      if (error) {
+        console.error('Error al crear venta:', error);
+        throw error;
       }
       
-      await refetch();
       return data;
     } catch (error) {
-      console.error('Error al crear venta:', error);
+      console.error('Error en createVenta:', error);
       throw error;
-    } finally {
-      setIsCreating(false);
     }
   };
-
-  // Function to update a venta
-  const updateVenta = async (id: string, updates: Partial<Omit<Venta, 'id'>>) => {
-    setIsUpdating(true);
+  
+  const createVentaMutation = useMutation({
+    mutationFn: createVenta,
+    onSuccess: () => {
+      // Invalidar queries para refrescar datos
+      queryClient.invalidateQueries({ queryKey: ['ventas'] });
+    },
+  });
+  
+  // Modificar venta
+  const updateVenta = async (ventaData: {
+    id: string;
+    precio_total?: number;
+    es_fraccional?: boolean;
+    estado?: string;
+    notas?: string;
+  }) => {
+    console.log('Actualizando venta:', ventaData);
+    
     try {
-      // Check if empresa_id column exists
-      const hasEmpresaColumn = await supabase.rpc('has_column', {
-        table_name: 'ventas',
-        column_name: 'empresa_id'
-      });
-      
-      // Create a shallow copy of updates to modify
-      const ventaUpdates: Record<string, any> = {
-        ...updates,
-        fecha_actualizacion: new Date().toISOString()
-      };
-      
-      // Make sure we're not overriding the empresa_id if it doesn't exist
-      if (!hasEmpresaColumn.data) {
-        delete ventaUpdates.empresa_id;
-      } else if (updates.empresa_id === undefined && effectiveEmpresaId) {
-        ventaUpdates.empresa_id = effectiveEmpresaId;
-      }
-      
-      // Remove unidad field if it exists
-      if ('unidad' in ventaUpdates) {
-        delete ventaUpdates.unidad;
-      }
-      
-      // Remove progreso field if it exists
-      if ('progreso' in ventaUpdates) {
-        delete ventaUpdates.progreso;
-      }
+      const { id, ...updateData } = ventaData;
       
       const { data, error } = await supabase
         .from('ventas')
-        .update(ventaUpdates)
+        .update({
+          ...updateData,
+          fecha_actualizacion: new Date().toISOString()
+        })
         .eq('id', id)
-        .select();
-
-      if (error) throw error;
+        .select()
+        .single();
       
-      await refetch();
+      if (error) {
+        console.error('Error al actualizar venta:', error);
+        throw error;
+      }
+      
       return data;
     } catch (error) {
-      console.error('Error al actualizar venta:', error);
+      console.error('Error en updateVenta:', error);
       throw error;
-    } finally {
-      setIsUpdating(false);
     }
   };
+  
+  const updateVentaFullMutation = useMutation({
+    mutationFn: updateVenta,
+    onSuccess: () => {
+      // Invalidar queries para refrescar datos
+      queryClient.invalidateQueries({ queryKey: ['ventas'] });
+      queryClient.invalidateQueries({ queryKey: ['ventaDetail'] });
+    },
+  });
+  
+  // Use React Query to fetch and cache the data
+  const queryResult = useQuery({
+    queryKey: ['ventas', filters, effectiveEmpresaId],
+    queryFn: fetchVentas,
+  });
 
   return {
-    ventas: data,
-    isLoading,
-    error,
-    refetch,
-    createVenta,
-    updateVenta,
-    isCreating,
-    isUpdating
+    ventas: queryResult.data || [],
+    isLoading: queryResult.isLoading,
+    error: queryResult.error,
+    refetch: queryResult.refetch,
+    updateVentaStatus: updateVentaMutation.mutate,
+    deleteVenta: deleteVentaMutation.mutate,
+    createVenta: createVentaMutation.mutate,
+    updateVenta: updateVentaFullMutation.mutate
   };
 };
 
