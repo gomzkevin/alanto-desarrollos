@@ -111,13 +111,13 @@ export const useVentas = (filters: VentasFilter = {}) => {
         }
         
         return {
-          id: venta.id,
-          precio_total: venta.precio_total,
-          estado: venta.estado,
-          es_fraccional: venta.es_fraccional,
-          fecha_inicio: venta.fecha_inicio,
-          fecha_actualizacion: venta.fecha_actualizacion,
-          unidad_id: venta.unidad_id,
+          id: venta.id || '',
+          precio_total: venta.precio_total || 0,
+          estado: venta.estado || '',
+          es_fraccional: venta.es_fraccional || false,
+          fecha_inicio: venta.fecha_inicio || '',
+          fecha_actualizacion: venta.fecha_actualizacion || '',
+          unidad_id: venta.unidad_id || '',
           notas: venta.notas,
           empresa_id: hasEmpresaColumn && 'empresa_id' in venta ? (venta.empresa_id as number | null) : null,
           progreso: 30, // Default progress value

@@ -98,24 +98,40 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       }
       
       // Type cast to our simplified ExtendedCotizacion type
-      const basicCotizaciones: ExtendedCotizacion[] = cotizaciones.map(c => ({
-        id: c.id,
-        created_at: c.created_at,
-        desarrollo_id: c.desarrollo_id,
-        fecha_finiquito: c.fecha_finiquito,
-        fecha_inicio_pagos: c.fecha_inicio_pagos,
-        lead_id: c.lead_id,
-        monto_anticipo: c.monto_anticipo,
-        monto_finiquito: c.monto_finiquito,
-        notas: c.notas,
-        numero_pagos: c.numero_pagos,
-        prototipo_id: c.prototipo_id,
-        usar_finiquito: c.usar_finiquito,
-        empresa_id: 'empresa_id' in c ? (c.empresa_id as number | null) : null,
-        lead: null,
-        desarrollo: null,
-        prototipo: null
-      }));
+      const basicCotizaciones: ExtendedCotizacion[] = cotizaciones.map(c => {
+        // Ensure c is not null before accessing properties
+        if (!c) return {
+          id: '',
+          created_at: '',
+          desarrollo_id: '',
+          lead_id: '',
+          monto_anticipo: 0,
+          numero_pagos: 0,
+          prototipo_id: '',
+          lead: null,
+          desarrollo: null,
+          prototipo: null
+        };
+        
+        return {
+          id: c.id,
+          created_at: c.created_at,
+          desarrollo_id: c.desarrollo_id,
+          fecha_finiquito: c.fecha_finiquito,
+          fecha_inicio_pagos: c.fecha_inicio_pagos,
+          lead_id: c.lead_id,
+          monto_anticipo: c.monto_anticipo,
+          monto_finiquito: c.monto_finiquito,
+          notas: c.notas,
+          numero_pagos: c.numero_pagos,
+          prototipo_id: c.prototipo_id,
+          usar_finiquito: c.usar_finiquito,
+          empresa_id: 'empresa_id' in c ? (c.empresa_id as number | null) : null,
+          lead: null,
+          desarrollo: null,
+          prototipo: null
+        };
+      });
       
       // If relations are requested and we have cotizaciones, fetch related entities
       if (withRelations && basicCotizaciones.length > 0) {

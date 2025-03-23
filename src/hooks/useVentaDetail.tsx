@@ -98,13 +98,13 @@ export const useVentaDetail = (ventaId?: string) => {
       }
       
       const venta: Venta = {
-        id: ventaData.id,
-        precio_total: ventaData.precio_total,
-        estado: ventaData.estado,
-        es_fraccional: ventaData.es_fraccional,
-        fecha_inicio: ventaData.fecha_inicio,
-        fecha_actualizacion: ventaData.fecha_actualizacion,
-        unidad_id: ventaData.unidad_id,
+        id: ventaData.id || '',
+        precio_total: ventaData.precio_total || 0,
+        estado: ventaData.estado || '',
+        es_fraccional: ventaData.es_fraccional || false,
+        fecha_inicio: ventaData.fecha_inicio || '',
+        fecha_actualizacion: ventaData.fecha_actualizacion || '',
+        unidad_id: ventaData.unidad_id || '',
         notas: ventaData.notas,
         unidad: null
       };
