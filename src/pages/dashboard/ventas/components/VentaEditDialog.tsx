@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -125,8 +126,17 @@ export const VentaEditDialog = ({ open, onOpenChange, venta, onSuccess }: VentaE
                 </FormItem>
               )}
             />
+            
+            <DialogFooter>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+              </Button>
+            </DialogFooter>
           </form>
-        </DialogFooter>
+        </Form>
       </DialogContent>
     </Dialog>
   );

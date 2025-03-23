@@ -221,11 +221,6 @@ export const useVentas = (filters: VentasFilter = {}) => {
     }
   };
 
-  const { data = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['ventas', filters, effectiveEmpresaId],
-    queryFn: fetchVentas,
-  });
-
   // Function to create a venta
   const createVenta = async (ventaData: {
     unidad_id: string;

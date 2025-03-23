@@ -74,7 +74,6 @@ const useVentaDetail = (ventaId: string | undefined) => {
       let totalPagado = 0;
       if (pagosData && !pagosError) {
         totalPagado = pagosData.reduce((sum, pago) => {
-          // Ensure pago.monto is a number
           const monto = typeof pago.monto === 'number' ? pago.monto : 0;
           return sum + monto;
         }, 0);
