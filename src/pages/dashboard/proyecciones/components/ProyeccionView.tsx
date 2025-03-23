@@ -9,6 +9,15 @@ export interface ProyeccionViewProps {
   initialConfig: any;
 }
 
+export interface ProyeccionFiltersProps {
+  initialConfig: any;
+  onChange: (newConfig: any) => void;
+}
+
+export interface ProyeccionTableProps {
+  tableData: any[];
+}
+
 export const ProyeccionView: React.FC<ProyeccionViewProps> = ({ initialConfig }) => {
   const [config, setConfig] = useState(initialConfig);
   const [results, setResults] = useState<any>(null);

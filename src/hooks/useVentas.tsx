@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,7 +54,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
       }
       
       // Type guard to check if an item is a valid venta
-      const isValidVenta = (item: any): item is Venta => {
+      const isValidVenta = (item: any): item is Record<string, any> => {
         return item && typeof item === 'object' && 'id' in item;
       };
       

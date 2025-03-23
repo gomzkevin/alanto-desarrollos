@@ -1,103 +1,102 @@
 
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useDesarrollos, usePrototipos } from '@/hooks';
-import { useEffect } from 'react';
+import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
 
 export interface ProyeccionFiltersProps {
   initialConfig: any;
   onChange: (newConfig: any) => void;
 }
 
-export const ProyeccionFilters = ({
-  initialConfig,
-  onChange
-}: ProyeccionFiltersProps) => {
-  const selectedDesarrolloId = initialConfig?.desarrolloId || 'global';
-  const selectedPrototipoId = initialConfig?.prototipoId || 'global';
-  
-  const { desarrollos = [], isLoading: desarrollosLoading } = useDesarrollos();
-  const { prototipos = [], isLoading: prototiposLoading } = usePrototipos({ 
-    desarrolloId: selectedDesarrolloId !== 'global' ? selectedDesarrolloId : null
-  });
+export const ProyeccionFilters: React.FC<ProyeccionFiltersProps> = ({ 
+  initialConfig, 
+  onChange 
+}) => {
+  const [config, setConfig] = React.useState(initialConfig);
 
-  // Handle desarrollo change
-  const handleDesarrolloChange = (value: string) => {
-    onChange({
-      ...initialConfig,
-      desarrolloId: value,
-      prototipoId: 'global' // Reset prototipo when desarrollo changes
-    });
-  };
-  
-  // Handle prototipo change
-  const handlePrototipoChange = (value: string) => {
-    onChange({
-      ...initialConfig,
-      prototipoId: value
-    });
+  const handleConfigChange = (key: string, value: any) => {
+    const newConfig = { ...config, [key]: value };
+    setConfig(newConfig);
   };
 
-  // Reset prototipo selection when desarrollo changes
-  useEffect(() => {
-    // Only reset if a prototipo is selected and it's not global
-    if (selectedPrototipoId !== 'global' && selectedDesarrolloId !== 'global') {
-      // Check if the selected prototipo exists in the current desarrollo
-      const prototipoExists = prototipos.some(p => p.id === selectedPrototipoId);
-      
-      if (!prototipoExists) {
-        // Reset to global if the prototipo doesn't exist in the current desarrollo
-        handlePrototipoChange('global');
-      }
-    }
-  }, [selectedDesarrolloId, prototipos, selectedPrototipoId]);
+  const handleApplyFilters = () => {
+    onChange(config);
+  };
 
   return (
-    <div className="space-y-2 flex flex-col sm:items-end">
-      <div className="w-full sm:w-72">
-        <Select
-          value={selectedDesarrolloId}
-          onValueChange={handleDesarrolloChange}
-        >
-          <SelectTrigger className="bg-white border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all font-medium text-indigo-700 shadow-sm">
-            <SelectValue placeholder="Seleccionar desarrollo" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-indigo-100 shadow-md">
-            <SelectItem value="global" className="font-medium text-indigo-700">Todos los desarrollos</SelectItem>
-            {desarrollos.map((desarrollo) => (
-              <SelectItem key={desarrollo.id} value={desarrollo.id} className="text-slate-700 hover:text-indigo-600">
-                {desarrollo.nombre}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="w-full sm:w-72">
-        <Select
-          value={selectedPrototipoId}
-          onValueChange={handlePrototipoChange}
-          disabled={selectedDesarrolloId === 'global'}
-        >
-          <SelectTrigger className="bg-white border-teal-200 hover:border-teal-300 hover:bg-teal-50 transition-all font-medium text-teal-700 shadow-sm">
-            <SelectValue placeholder="Seleccionar prototipo" />
-          </SelectTrigger>
-          <SelectContent className="bg-white border-teal-100 shadow-md">
-            <SelectItem value="global" className="font-medium text-teal-700">Todos los prototipos</SelectItem>
-            {prototipos.map((prototipo) => (
-              <SelectItem key={prototipo.id} value={prototipo.id} className="text-slate-700 hover:text-teal-600">
-                {prototipo.nombre}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-slate-500 mt-1">
-          {selectedDesarrolloId === 'global' 
-            ? "Selecciona un desarrollo primero" 
-            : selectedPrototipoId !== 'global'
-              ? "Usando configuración específica de prototipo"
-              : "Usando configuración de desarrollo"}
-        </p>
-      </div>
-    </div>
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle>Configuración de Proyección</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <Label>Inversión Inicial</Label>
+            <Input 
+              type="number"
+              value={config.initialInvestment || 0}
+              onChange={(e) => handleConfigChange('initialInvestment', Number(e.target.value))}
+              placeholder="Inversión inicial"
+            />
+          </div>
+          
+          <div className="space-y-3">
+            <Label>Tasa de Interés Anual (%)</Label>
+            <Input 
+              type="number"
+              value={config.interestRate || 0}
+              onChange={(e) => handleConfigChange('interestRate', Number(e.target.value))}
+              placeholder="Tasa de interés"
+            />
+          </div>
+          
+          <div className="space-y-3">
+            <Label>Plazo (meses)</Label>
+            <Input 
+              type="number"
+              value={config.term || 12}
+              onChange={(e) => handleConfigChange('term', Number(e.target.value))}
+              placeholder="Plazo en meses"
+            />
+          </div>
+          
+          <div className="space-y-3">
+            <Label>Tipo de Proyección</Label>
+            <Select 
+              value={config.type || 'desarrollo'}
+              onValueChange={(value) => handleConfigChange('type', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="desarrollo">Desarrollo</SelectItem>
+                <SelectItem value="unidad">Unidad</SelectItem>
+                <SelectItem value="rentabilidad">Rentabilidad</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          <Label>Retorno Esperado (%): {config.expectedReturn || 10}%</Label>
+          <Slider 
+            value={[config.expectedReturn || 10]}
+            min={1}
+            max={30}
+            step={1}
+            onValueChange={(values) => handleConfigChange('expectedReturn', values[0])}
+          />
+        </div>
+        
+        <Button onClick={handleApplyFilters} className="w-full">
+          Calcular Proyección
+        </Button>
+      </CardContent>
+    </Card>
   );
 };

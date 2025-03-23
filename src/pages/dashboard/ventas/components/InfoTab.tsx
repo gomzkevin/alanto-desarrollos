@@ -1,8 +1,7 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Plus } from "lucide-react";
-import { Venta } from "@/hooks/useVentas";
+import { Venta } from "@/hooks/types";
 import { formatCurrency } from "@/lib/utils";
 import { Pago } from "@/hooks/usePagos";
 

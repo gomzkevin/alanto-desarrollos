@@ -21,7 +21,7 @@ export const ProyeccionResults: React.FC<ProyeccionResultsProps> = ({ resultData
       </CardHeader>
       <CardContent className="pt-4">
         <div className="h-72 w-full">
-          <ProyeccionChart data={chartData} />
+          <ProyeccionChart chartData={chartData} />
         </div>
         <Separator className="my-4" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
