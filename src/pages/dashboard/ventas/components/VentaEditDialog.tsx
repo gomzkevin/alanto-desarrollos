@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { useVentas, Venta } from "@/hooks/useVentas";
+import { useVentas } from "@/hooks/useVentas";
 import { useToast } from "@/hooks/use-toast";
+import { Venta } from "@/hooks/types";
 
 interface VentaEditDialogProps {
   open: boolean;

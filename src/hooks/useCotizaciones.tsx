@@ -49,32 +49,6 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
         }
       }
 
-      if (filters.busqueda) {
-        // We'll join with leads table to search by name
-        try {
-          query = supabase
-            .from('cotizaciones')
-            .select(`
-              id,
-              lead_id,
-              desarrollo_id,
-              prototipo_id,
-              monto_anticipo,
-              numero_pagos,
-              usar_finiquito,
-              monto_finiquito,
-              fecha_inicio_pagos,
-              fecha_finiquito,
-              notas,
-              created_at,
-              lead:lead_id(id, nombre, email, telefono)
-            `)
-            .ilike('lead.nombre', `%${filters.busqueda}%`);
-        } catch (error) {
-          console.error('Error filtering with busqueda:', error);
-        }
-      }
-
       const { data, error } = await query;
 
       if (error) {
@@ -143,16 +117,19 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
               }
             }
 
-            return {
+            // Safely create a new object with all the relationship data
+            const cotizacionWithRelations: SimpleCotizacion = {
               ...cotizacion,
               lead: leadData,
-              prototipo: prototipoData,
-              desarrollo: desarrolloData
-            } as SimpleCotizacion;
+              prototipo: prototipoData as SimplePrototipo | null,
+              desarrollo: desarrolloData as SimpleDesarrollo | null
+            };
+
+            return cotizacionWithRelations;
           })
         );
 
-        return cotizacionesWithRelations.filter((c): c is SimpleCotizacion => c !== null);
+        return cotizacionesWithRelations;
       }
 
       return validCotizaciones;

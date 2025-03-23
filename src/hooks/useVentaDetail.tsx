@@ -32,6 +32,12 @@ const useVentaDetail = (ventaId: string | undefined) => {
         return null;
       }
 
+      // Type check venta object
+      if (typeof venta !== 'object') {
+        console.error('Venta data is not an object:', venta);
+        return null;
+      }
+
       // Check if empresa_id exists in the venta object
       const ventaWithEmpresaId = {
         ...venta,

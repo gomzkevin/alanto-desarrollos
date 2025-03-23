@@ -5,23 +5,6 @@ import { ProyeccionResults } from './ProyeccionResults';
 import { ProyeccionSummary } from './ProyeccionSummary';
 import { ProyeccionTable } from './ProyeccionTable';
 
-export interface ProyeccionFiltersProps {
-  initialConfig: any;
-  onChange: (newConfig: any) => void;
-}
-
-export interface ProyeccionSummaryProps {
-  summaryData: any;
-}
-
-export interface ProyeccionResultsProps {
-  resultData: any;
-}
-
-export interface ProyeccionTableProps {
-  tableData: any[];
-}
-
 export interface ProyeccionViewProps {
   initialConfig: any;
 }

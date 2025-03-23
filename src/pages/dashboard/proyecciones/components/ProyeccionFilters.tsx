@@ -3,23 +3,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useDesarrollos, usePrototipos } from '@/hooks';
 import { useEffect } from 'react';
 
-interface ProyeccionFiltersProps {
-  selectedDesarrolloId: string;
-  selectedPrototipoId: string;
-  onDesarrolloChange: (value: string) => void;
-  onPrototipoChange: (value: string) => void;
+export interface ProyeccionFiltersProps {
+  initialConfig: any;
+  onChange: (newConfig: any) => void;
 }
 
 export const ProyeccionFilters = ({
-  selectedDesarrolloId,
-  selectedPrototipoId,
-  onDesarrolloChange,
-  onPrototipoChange
+  initialConfig,
+  onChange
 }: ProyeccionFiltersProps) => {
+  const selectedDesarrolloId = initialConfig?.desarrolloId || 'global';
+  const selectedPrototipoId = initialConfig?.prototipoId || 'global';
+  
   const { desarrollos = [], isLoading: desarrollosLoading } = useDesarrollos();
   const { prototipos = [], isLoading: prototiposLoading } = usePrototipos({ 
     desarrolloId: selectedDesarrolloId !== 'global' ? selectedDesarrolloId : null
   });
+
+  // Handle desarrollo change
+  const handleDesarrolloChange = (value: string) => {
+    onChange({
+      ...initialConfig,
+      desarrolloId: value,
+      prototipoId: 'global' // Reset prototipo when desarrollo changes
+    });
+  };
+  
+  // Handle prototipo change
+  const handlePrototipoChange = (value: string) => {
+    onChange({
+      ...initialConfig,
+      prototipoId: value
+    });
+  };
 
   // Reset prototipo selection when desarrollo changes
   useEffect(() => {
@@ -30,17 +46,17 @@ export const ProyeccionFilters = ({
       
       if (!prototipoExists) {
         // Reset to global if the prototipo doesn't exist in the current desarrollo
-        onPrototipoChange('global');
+        handlePrototipoChange('global');
       }
     }
-  }, [selectedDesarrolloId, prototipos, selectedPrototipoId, onPrototipoChange]);
+  }, [selectedDesarrolloId, prototipos, selectedPrototipoId]);
 
   return (
     <div className="space-y-2 flex flex-col sm:items-end">
       <div className="w-full sm:w-72">
         <Select
           value={selectedDesarrolloId}
-          onValueChange={onDesarrolloChange}
+          onValueChange={handleDesarrolloChange}
         >
           <SelectTrigger className="bg-white border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all font-medium text-indigo-700 shadow-sm">
             <SelectValue placeholder="Seleccionar desarrollo" />
@@ -59,7 +75,7 @@ export const ProyeccionFilters = ({
       <div className="w-full sm:w-72">
         <Select
           value={selectedPrototipoId}
-          onValueChange={onPrototipoChange}
+          onValueChange={handlePrototipoChange}
           disabled={selectedDesarrolloId === 'global'}
         >
           <SelectTrigger className="bg-white border-teal-200 hover:border-teal-300 hover:bg-teal-50 transition-all font-medium text-teal-700 shadow-sm">
