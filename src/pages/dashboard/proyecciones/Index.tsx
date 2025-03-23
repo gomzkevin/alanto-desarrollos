@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { fetchFinancialConfig } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import ProyeccionView from './components/ProyeccionView';
+import { ProyeccionView } from './components/ProyeccionView';
 import useSubscriptionGuard from '@/hooks/useSubscriptionGuard';
 
 const ProyeccionesPage = () => {
@@ -21,9 +21,9 @@ const ProyeccionesPage = () => {
       } catch (error) {
         console.error('Error al cargar configuración financiera:', error);
         toast({
-          title: 'Error',
-          description: 'No se pudo cargar la configuración financiera',
-          variant: 'destructive',
+          title: "Error",
+          description: "No se pudo cargar la configuración financiera",
+          variant: "destructive",
         });
       } finally {
         setLoading(false);

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from "@/hooks/use-toast";
 import useUserRole from '@/hooks/useUserRole';
 
 // Basic types with simplified structures to avoid deep recursion
@@ -91,23 +91,32 @@ export const useVentas = (filters: VentasFilter = {}) => {
       }
       
       // Convert ventas data to proper Venta objects
-      const ventas: Venta[] = ventasData.map(venta => {
-        if (!venta) return null;
-        
-        return {
-          id: venta.id || '',
-          precio_total: venta.precio_total || 0,
-          estado: venta.estado || '',
-          es_fraccional: venta.es_fraccional || false,
-          fecha_inicio: venta.fecha_inicio || '',
-          fecha_actualizacion: venta.fecha_actualizacion || '',
-          unidad_id: venta.unidad_id || '',
-          notas: venta.notas,
-          empresa_id: hasEmpresaColumn.data && 'empresa_id' in venta ? (venta.empresa_id as number | null) : null,
-          progreso: 30, // Default progress value
-          unidad: null
-        };
-      }).filter((v): v is Venta => v !== null);
+      const ventas: Venta[] = ventasData
+        .filter(venta => venta !== null)
+        .map(venta => {
+          if (!venta) return null;
+          
+          const ventaObj: Venta = {
+            id: venta.id || '',
+            precio_total: venta.precio_total || 0,
+            estado: venta.estado || '',
+            es_fraccional: venta.es_fraccional || false,
+            fecha_inicio: venta.fecha_inicio || '',
+            fecha_actualizacion: venta.fecha_actualizacion || '',
+            unidad_id: venta.unidad_id || '',
+            notas: venta.notas,
+            progreso: 30, // Default progress value
+            unidad: null
+          };
+          
+          // Add empresa_id if the column exists and the value is in the data
+          if (hasEmpresaColumn.data && 'empresa_id' in venta) {
+            ventaObj.empresa_id = venta.empresa_id as number | null;
+          }
+          
+          return ventaObj;
+        })
+        .filter((v): v is Venta => v !== null);
       
       // Get all unidad_ids
       const unidadIds = ventas

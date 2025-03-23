@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
@@ -104,6 +103,7 @@ export const useVentaDetail = (ventaId?: string) => {
         return null;
       }
       
+      // Create Venta object with strong typing
       let venta: Venta = {
         id: ventaData.id,
         precio_total: ventaData.precio_total,
