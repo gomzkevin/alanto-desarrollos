@@ -100,7 +100,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
         fecha_actualizacion: venta.fecha_actualizacion,
         unidad_id: venta.unidad_id,
         notas: venta.notas,
-        empresa_id: hasEmpresaColumn.data && 'empresa_id' in venta ? venta.empresa_id : null,
+        empresa_id: hasEmpresaColumn.data && 'empresa_id' in venta ? (venta.empresa_id as number | null) : null,
         progreso: 30, // Default progress value
         unidad: null
       }));
@@ -196,7 +196,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
                   id: desarrollo.id,
                   nombre: desarrollo.nombre,
                   ubicacion: desarrollo.ubicacion,
-                  empresa_id: desarrollo.empresa_id
+                  empresa_id: desarrollo.empresa_id as number
                 };
               }
             }
@@ -260,7 +260,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
         column_name: 'empresa_id'
       });
       
-      const ventaInsert: any = {
+      const ventaInsert: Record<string, any> = {
         unidad_id: ventaData.unidad_id,
         precio_total: ventaData.precio_total,
         es_fraccional: ventaData.es_fraccional,

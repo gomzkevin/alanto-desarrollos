@@ -106,7 +106,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         numero_pagos: c.numero_pagos,
         prototipo_id: c.prototipo_id,
         usar_finiquito: c.usar_finiquito,
-        empresa_id: 'empresa_id' in c ? c.empresa_id : null,
+        empresa_id: 'empresa_id' in c ? (c.empresa_id as number | null) : null,
         lead: null,
         desarrollo: null,
         prototipo: null

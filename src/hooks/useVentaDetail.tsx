@@ -118,7 +118,7 @@ export const useVentaDetail = (ventaId?: string) => {
       
       // Add empresa_id if it exists
       if ('empresa_id' in ventaData) {
-        venta.empresa_id = ventaData.empresa_id;
+        venta.empresa_id = ventaData.empresa_id as number | null;
       }
       
       // Fetch unidad information separately to avoid deep nesting
@@ -177,7 +177,7 @@ export const useVentaDetail = (ventaId?: string) => {
                       id: desarrolloData.id,
                       nombre: desarrolloData.nombre,
                       ubicacion: desarrolloData.ubicacion,
-                      empresa_id: desarrolloData.empresa_id
+                      empresa_id: desarrolloData.empresa_id as number
                     };
                   }
                 }
