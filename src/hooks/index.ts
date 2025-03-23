@@ -13,3 +13,4 @@ export { default as useDesarrolloStats } from './useDesarrolloStats';
 export { default as useUnidades } from './useUnidades';
 export { default as useSubscriptionAuth } from './useSubscriptionAuth';
 export { default as useSubscriptionInfo } from './useSubscriptionInfo';
+export { useSubscription } from '@/contexts/SubscriptionContext';
