@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import useUserRole from '@/hooks/useUserRole';
 
-// Define simplified types to avoid deep recursion
+// Define simplified types with no circular references
 export interface SimpleUnidad {
   id?: string;
   numero: string;

@@ -1,88 +1,63 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { fetchFinancialConfig } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { useChartData } from '@/hooks';
-import { ProyeccionView } from './components/ProyeccionView';
-import { toast } from "sonner";
+import ProyeccionView from './components/ProyeccionView';
+import useSubscriptionGuard from '@/hooks/useSubscriptionGuard';
 
-export const ProyeccionesPage = () => {
-  const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('global');
-  const [selectedPrototipoId, setSelectedPrototipoId] = useState<string>('global');
-  const [rawChartData, setRawChartData] = useState<any[]>([]);
-  const [summaryData, setSummaryData] = useState({
-    propertyValue: 3500000,
-    airbnbProfit: 5655683,
-    altReturn: 677006,
-    avgROI: 56.8
-  });
-  const [shouldCalculate, setShouldCalculate] = useState(false);
-  
-  // Usamos el hook para procesar los datos
-  const chartData = useChartData(rawChartData);
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  const handleDesarrolloChange = (value: string) => {
-    setSelectedDesarrolloId(value);
-    setSelectedPrototipoId('global');
-  };
-
-  const handlePrototipoChange = (value: string) => {
-    setSelectedPrototipoId(value);
-  };
-
-  const handleChartDataUpdate = (data: any[]) => {
-    console.log("Raw chart data received:", JSON.stringify(data.slice(0, 2), null, 2));
-    setRawChartData(data);
-    
-    if (data.length > 0) {
-      const lastYear = data[data.length - 1];
-      const sumROI = data.reduce((acc, item) => acc + parseFloat(item.yearlyROI), 0);
-      
-      setSummaryData({
-        propertyValue: data[0].initialPropertyValue || 3500000,
-        airbnbProfit: lastYear.airbnbProfit - data[0].initialPropertyValue,
-        altReturn: lastYear.alternativeInvestment - data[0].initialPropertyValue,
-        avgROI: sumROI / data.length
-      });
-      
-      toast.success("Proyección actualizada correctamente");
-    }
-  };
-
-  const handleCreateProjection = () => {
-    setShouldCalculate(true);
-  };
+const ProyeccionesPage = () => {
+  const { hasAccess, isLoading: isSubscriptionLoading } = useSubscriptionGuard();
+  const [financialConfig, setFinancialConfig] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (shouldCalculate && rawChartData.length > 0) {
-      setShouldCalculate(false);
-    }
-  }, [rawChartData, shouldCalculate]);
+    const loadFinancialConfig = async () => {
+      try {
+        // Fetch global configuration (no desarrollo_id)
+        const config = await fetchFinancialConfig();
+        setFinancialConfig(config);
+      } catch (error) {
+        console.error('Error al cargar configuración financiera:', error);
+        toast({
+          title: 'Error',
+          description: 'No se pudo cargar la configuración financiera',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const getFileName = () => {
-    return `Proyeccion_${selectedDesarrolloId !== "global" ? selectedDesarrolloId : 'Global'}_${selectedPrototipoId !== "global" ? selectedPrototipoId : 'Todos'}`;
-  };
+    if (hasAccess) {
+      loadFinancialConfig();
+    }
+  }, [hasAccess]);
+
+  if (isSubscriptionLoading) {
+    return <DashboardLayout>Cargando...</DashboardLayout>;
+  }
+
+  if (!hasAccess) {
+    return null; // The subscription guard will redirect
+  }
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-6 pb-16 bg-gradient-to-br from-white to-slate-50" ref={contentRef} id="proyeccion-content">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-indigo-800">Proyecciones Financieras</h1>
-          <p className="text-slate-600">Calcula y compara el rendimiento potencial de inversiones inmobiliarias.</p>
-        </div>
-
-        <ProyeccionView 
-          selectedDesarrolloId={selectedDesarrolloId}
-          selectedPrototipoId={selectedPrototipoId}
-          onDesarrolloChange={handleDesarrolloChange}
-          onPrototipoChange={handlePrototipoChange}
-          chartData={chartData}
-          summaryData={summaryData}
-          onDataUpdate={handleChartDataUpdate}
-          shouldCalculate={shouldCalculate}
-          onCreateProjection={handleCreateProjection}
-          fileName={getFileName()}
-        />
+      <div className="container mx-auto py-6">
+        <h1 className="text-2xl font-bold mb-6">Proyecciones Financieras</h1>
+        
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+              <p>Cargando configuración financiera...</p>
+            </div>
+          </div>
+        ) : (
+          <ProyeccionView initialConfig={financialConfig} />
+        )}
       </div>
     </DashboardLayout>
   );

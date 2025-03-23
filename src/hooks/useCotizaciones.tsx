@@ -6,7 +6,7 @@ import useUserRole from '@/hooks/useUserRole';
 
 export type Cotizacion = Tables<"cotizaciones">;
 
-// Define simplified types to prevent circular references
+// Define simplified types without circular references
 export interface SimplifiedLead {
   id: string;
   nombre: string;

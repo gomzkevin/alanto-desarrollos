@@ -91,19 +91,23 @@ export const useVentas = (filters: VentasFilter = {}) => {
       }
       
       // Convert ventas data to proper Venta objects
-      const ventas: Venta[] = ventasData.map(venta => ({
-        id: venta.id || '',
-        precio_total: venta.precio_total || 0,
-        estado: venta.estado || '',
-        es_fraccional: venta.es_fraccional || false,
-        fecha_inicio: venta.fecha_inicio || '',
-        fecha_actualizacion: venta.fecha_actualizacion || '',
-        unidad_id: venta.unidad_id || '',
-        notas: venta.notas,
-        empresa_id: hasEmpresaColumn.data && 'empresa_id' in venta ? (venta.empresa_id as number | null) : null,
-        progreso: 30, // Default progress value
-        unidad: null
-      }));
+      const ventas: Venta[] = ventasData.map(venta => {
+        if (!venta) return null;
+        
+        return {
+          id: venta.id || '',
+          precio_total: venta.precio_total || 0,
+          estado: venta.estado || '',
+          es_fraccional: venta.es_fraccional || false,
+          fecha_inicio: venta.fecha_inicio || '',
+          fecha_actualizacion: venta.fecha_actualizacion || '',
+          unidad_id: venta.unidad_id || '',
+          notas: venta.notas,
+          empresa_id: hasEmpresaColumn.data && 'empresa_id' in venta ? (venta.empresa_id as number | null) : null,
+          progreso: 30, // Default progress value
+          unidad: null
+        };
+      }).filter((v): v is Venta => v !== null);
       
       // Get all unidad_ids
       const unidadIds = ventas
@@ -260,12 +264,12 @@ export const useVentas = (filters: VentasFilter = {}) => {
         column_name: 'empresa_id'
       });
       
-      const ventaInsert = {
+      const ventaInsert: Record<string, any> = {
         unidad_id: ventaData.unidad_id,
         precio_total: ventaData.precio_total,
         es_fraccional: ventaData.es_fraccional,
         estado: ventaData.estado || 'en_proceso',
-      } as Record<string, any>;
+      };
       
       // Only add empresa_id if the column exists
       if (hasEmpresaColumn.data && effectiveEmpresaId) {

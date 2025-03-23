@@ -169,31 +169,31 @@ const DesarrolloDetailPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       <Card>
                         <CardHeader>
-                          <CardTitle className="text-sm font-medium">Leads Totales</CardTitle>
+                          <CardTitle className="text-sm font-medium">Unidades Disponibles</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-semibold">{statsData.totalLeads || 0}</div>
-                          <p className="text-sm text-slate-500">Total de leads asociados a este desarrollo</p>
+                          <div className="text-2xl font-semibold">{statsData.unidadesDisponibles || 0}</div>
+                          <p className="text-sm text-slate-500">Total de unidades disponibles</p>
                         </CardContent>
                       </Card>
                       
                       <Card>
                         <CardHeader>
-                          <CardTitle className="text-sm font-medium">Leads Convertidos</CardTitle>
+                          <CardTitle className="text-sm font-medium">Unidades Totales</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-semibold">{statsData.convertedLeads || 0}</div>
-                          <p className="text-sm text-slate-500">Leads convertidos en clientes</p>
+                          <div className="text-2xl font-semibold">{statsData.totalUnidades || 0}</div>
+                          <p className="text-sm text-slate-500">Total de unidades del desarrollo</p>
                         </CardContent>
                       </Card>
                       
                       <Card>
                         <CardHeader>
-                          <CardTitle className="text-sm font-medium">Tasa de Conversión</CardTitle>
+                          <CardTitle className="text-sm font-medium">Avance Comercial</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-semibold">{statsData.conversionRate || 0}%</div>
-                          <p className="text-sm text-slate-500">Porcentaje de leads convertidos</p>
+                          <div className="text-2xl font-semibold">{statsData.avanceComercial || 0}%</div>
+                          <p className="text-sm text-slate-500">Porcentaje de unidades vendidas</p>
                         </CardContent>
                       </Card>
                     </div>
