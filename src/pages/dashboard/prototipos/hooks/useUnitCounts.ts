@@ -1,13 +1,17 @@
 
 import { useMemo } from 'react';
 
+interface Unidad {
+  estado?: string;
+}
+
 interface UnitCounts {
   disponibles: number;
   vendidas: number;
   con_anticipo: number;
 }
 
-export const useUnitCounts = (unidades: any[]): UnitCounts => {
+export const useUnitCounts = (unidades: Unidad[]): UnitCounts => {
   const counts = useMemo(() => {
     if (!unidades || unidades.length === 0) {
       return {

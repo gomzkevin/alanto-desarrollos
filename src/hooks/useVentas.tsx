@@ -91,19 +91,35 @@ export const useVentas = (filters: VentasFilter = {}) => {
       }
       
       // Convert ventas data to proper Venta objects
-      const ventas: Venta[] = ventasData.map(venta => ({
-        id: venta.id,
-        precio_total: venta.precio_total,
-        estado: venta.estado,
-        es_fraccional: venta.es_fraccional,
-        fecha_inicio: venta.fecha_inicio,
-        fecha_actualizacion: venta.fecha_actualizacion,
-        unidad_id: venta.unidad_id,
-        notas: venta.notas,
-        empresa_id: hasEmpresaColumn.data && 'empresa_id' in venta ? (venta.empresa_id as number | null) : null,
-        progreso: 30, // Default progress value
-        unidad: null
-      }));
+      const ventas: Venta[] = ventasData.map(venta => {
+        if (!venta) {
+          return {
+            id: '',
+            precio_total: 0,
+            estado: '',
+            es_fraccional: false,
+            fecha_inicio: '',
+            fecha_actualizacion: '',
+            unidad_id: '',
+            progreso: 0,
+            unidad: null
+          };
+        }
+        
+        return {
+          id: venta.id,
+          precio_total: venta.precio_total,
+          estado: venta.estado,
+          es_fraccional: venta.es_fraccional,
+          fecha_inicio: venta.fecha_inicio,
+          fecha_actualizacion: venta.fecha_actualizacion,
+          unidad_id: venta.unidad_id,
+          notas: venta.notas,
+          empresa_id: hasEmpresaColumn.data && 'empresa_id' in venta ? (venta.empresa_id as number | null) : null,
+          progreso: 30, // Default progress value
+          unidad: null
+        };
+      });
       
       // Get all unidad_ids
       const unidadIds = ventas
@@ -260,7 +276,14 @@ export const useVentas = (filters: VentasFilter = {}) => {
         column_name: 'empresa_id'
       });
       
-      const ventaInsert: Record<string, any> = {
+      // Create a properly typed object for the insert
+      const ventaInsert: {
+        unidad_id: string;
+        precio_total: number;
+        es_fraccional: boolean;
+        estado: string;
+        empresa_id?: number;
+      } = {
         unidad_id: ventaData.unidad_id,
         precio_total: ventaData.precio_total,
         es_fraccional: ventaData.es_fraccional,
@@ -309,27 +332,42 @@ export const useVentas = (filters: VentasFilter = {}) => {
         column_name: 'empresa_id'
       });
       
-      // Create a shallow copy of updates to modify
-      const ventaUpdates: Record<string, any> = {
-        ...updates,
+      // Create a properly typed object for the update
+      const ventaUpdates: {
+        fecha_actualizacion: string;
+        empresa_id?: number;
+        estado?: string;
+        precio_total?: number;
+        es_fraccional?: boolean;
+        notas?: string | null;
+      } = {
         fecha_actualizacion: new Date().toISOString()
       };
+      
+      // Copy relevant properties from updates to ventaUpdates
+      if (updates.estado !== undefined) {
+        ventaUpdates.estado = updates.estado;
+      }
+      
+      if (updates.precio_total !== undefined) {
+        ventaUpdates.precio_total = updates.precio_total;
+      }
+      
+      if (updates.es_fraccional !== undefined) {
+        ventaUpdates.es_fraccional = updates.es_fraccional;
+      }
+      
+      if (updates.notas !== undefined) {
+        ventaUpdates.notas = updates.notas;
+      }
       
       // Make sure we're not overriding the empresa_id if it doesn't exist
       if (!hasEmpresaColumn.data) {
         delete ventaUpdates.empresa_id;
       } else if (updates.empresa_id === undefined && effectiveEmpresaId) {
         ventaUpdates.empresa_id = effectiveEmpresaId;
-      }
-      
-      // Remove unidad field if it exists
-      if ('unidad' in ventaUpdates) {
-        delete ventaUpdates.unidad;
-      }
-      
-      // Remove progreso field if it exists
-      if ('progreso' in ventaUpdates) {
-        delete ventaUpdates.progreso;
+      } else if (updates.empresa_id !== undefined) {
+        ventaUpdates.empresa_id = updates.empresa_id as number;
       }
       
       const { data, error } = await supabase

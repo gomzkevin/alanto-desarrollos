@@ -79,18 +79,12 @@ export const useVentaDetail = (ventaId?: string) => {
       });
       
       // Fetch basic venta information
-      const ventaQuery = supabase.from('ventas')
-        .select('id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas');
-      
-      // Add empresa_id to the select if it exists
-      if (hasEmpresaColumn.data) {
-        ventaQuery.select('id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas, empresa_id');
-      }
+      let ventaQuery = supabase.from('ventas').select('*');
       
       // Filter by id and empresa_id if necessary
-      ventaQuery.eq('id', ventaId);
+      ventaQuery = ventaQuery.eq('id', ventaId);
       if (empresaId && hasEmpresaColumn.data) {
-        ventaQuery.eq('empresa_id', empresaId);
+        ventaQuery = ventaQuery.eq('empresa_id', empresaId);
       }
       
       const { data: ventaData, error: ventaError } = await ventaQuery.maybeSingle();
