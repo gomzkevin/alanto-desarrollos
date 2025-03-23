@@ -91,13 +91,13 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         const prototipos = prototipesResponse.error ? [] : prototipesResponse.data;
         
         // Map related entities to cotizaciones
-        const extendedCotizaciones: ExtendedCotizacion[] = cotizaciones.map(cotizacion => {
+        const extendedCotizaciones = cotizaciones.map(cotizacion => {
           return {
             ...cotizacion,
             lead: leads.find(l => l.id === cotizacion.lead_id) || null,
             desarrollo: desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null,
             prototipo: prototipos.find(p => p.id === cotizacion.prototipo_id) || null
-          };
+          } as ExtendedCotizacion;  // Use type assertion here to avoid deep instantiation
         });
         
         console.log('Extended cotizaciones fetched:', extendedCotizaciones);
@@ -105,7 +105,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       }
       
       console.log('Cotizaciones fetched:', cotizaciones);
-      return cotizaciones as ExtendedCotizacion[];
+      return cotizaciones as ExtendedCotizacion[];  // Use type assertion here
     } catch (error) {
       console.error('Error in fetchCotizaciones:', error);
       throw error;
