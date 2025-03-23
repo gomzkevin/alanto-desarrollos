@@ -21,7 +21,7 @@ export const useVentaDetail = (ventaId?: string) => {
   const [loading, setLoading] = useState(false);
   const { empresaId } = useUserRole();
   
-  // Fetch venta details
+  // Simplified fetch function to avoid deep type recursion
   const fetchVentaDetail = async (): Promise<Venta | null> => {
     if (!ventaId) return null;
     
@@ -31,12 +31,14 @@ export const useVentaDetail = (ventaId?: string) => {
       let query = supabase
         .from('ventas')
         .select(`
-          *,
+          id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, empresa_id, notas,
           unidad:unidades(
-            *,
+            id, numero, estado, nivel,
             prototipo:prototipos(
-              *,
-              desarrollo:desarrollos(*)
+              id, nombre, precio,
+              desarrollo:desarrollos(
+                id, nombre, ubicacion
+              )
             )
           )
         `)

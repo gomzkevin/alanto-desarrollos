@@ -12,3 +12,6 @@ export { default as useChartData } from './useChartData';
 export { default as useDesarrolloStats } from './useDesarrolloStats';
 export { default as useUnidades } from './useUnidades';
 export { default as useSubscriptionInfo } from './useSubscriptionInfo';
+export { default as useVentas } from './useVentas';
+export { default as useVentaDetail } from './useVentaDetail';
+export { default as usePagos } from './usePagos';
