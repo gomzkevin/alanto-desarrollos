@@ -70,61 +70,124 @@ export const useVentas = (filters: VentasFilter = {}) => {
       });
       
       // First fetch basic ventas data without relations
-      let query = supabase.from('ventas').select(
-        `id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas${
-          hasEmpresaColumn.data ? ', empresa_id' : ''
-        }`
-      );
+      let queryFields = 'id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas';
       
-      // Add empresa_id filter if available and column exists
-      if (effectiveEmpresaId && hasEmpresaColumn.data) {
-        query = query.eq('empresa_id', effectiveEmpresaId);
+      if (hasEmpresaColumn.data) {
+        queryFields += ', empresa_id';
       }
-
-      const { data: ventasData, error: ventasError } = await query;
+      
+      const { data: ventasData, error: ventasError } = await supabase
+        .from('ventas')
+        .select(queryFields);
 
       if (ventasError) {
         console.error('Error al obtener ventas básicas:', ventasError);
         return [];
       }
 
-      // Now fetch the unidades separately to add the relations
+      // If no ventas data, return empty array
       if (!ventasData || ventasData.length === 0) {
         return [];
       }
       
-      // Get all unidad_ids
-      const unidadIds = ventasData.map(venta => venta.unidad_id);
+      // Convert ventas data to proper Venta objects
+      const ventas: Venta[] = ventasData.map(venta => ({
+        id: venta.id,
+        precio_total: venta.precio_total,
+        estado: venta.estado,
+        es_fraccional: venta.es_fraccional,
+        fecha_inicio: venta.fecha_inicio,
+        fecha_actualizacion: venta.fecha_actualizacion,
+        unidad_id: venta.unidad_id,
+        notas: venta.notas,
+        ...(hasEmpresaColumn.data && { empresa_id: venta.empresa_id }),
+        progreso: 30 // Default progress value
+      }));
       
-      // Fetch unidades with prototipos and desarrollos
+      // Get all unidad_ids
+      const unidadIds = ventas.map(venta => venta.unidad_id).filter(Boolean);
+      
+      if (unidadIds.length === 0) {
+        return ventas;
+      }
+      
+      // Fetch unidades data
       const { data: unidadesData, error: unidadesError } = await supabase
         .from('unidades')
-        .select(`
-          id, numero, estado, nivel,
-          prototipo:prototipos (
-            id, nombre, precio,
-            desarrollo:desarrollos (
-              id, nombre, ubicacion, empresa_id
-            )
-          )
-        `)
+        .select('id, numero, estado, nivel, prototipo_id')
         .in('id', unidadIds);
         
       if (unidadesError) {
         console.error('Error al obtener unidades:', unidadesError);
+        // Continue with basic ventas data
+      } else if (unidadesData) {
+        // Get all prototipo_ids from unidades
+        const prototipoIds = unidadesData
+          .map(unidad => unidad.prototipo_id)
+          .filter(Boolean);
+          
+        // Fetch prototipos data
+        const { data: prototipossData, error: prototipossError } = await supabase
+          .from('prototipos')
+          .select('id, nombre, precio, desarrollo_id')
+          .in('id', prototipoIds);
+          
+        if (prototipossError) {
+          console.error('Error al obtener prototipos:', prototipossError);
+        }
+        
+        // Get all desarrollo_ids from prototipos
+        const desarrolloIds = prototipossData 
+          ? prototipossData
+              .map(prototipo => prototipo.desarrollo_id)
+              .filter(Boolean)
+          : [];
+              
+        // Fetch desarrollos data
+        const { data: desarrollosData, error: desarrollosError } = await supabase
+          .from('desarrollos')
+          .select('id, nombre, ubicacion, empresa_id')
+          .in('id', desarrolloIds);
+          
+        if (desarrollosError) {
+          console.error('Error al obtener desarrollos:', desarrollosError);
+        }
+        
+        // Map the related data to the ventas
+        ventas.forEach(venta => {
+          const unidad = unidadesData.find(u => u.id === venta.unidad_id);
+          
+          if (unidad) {
+            const prototipo = prototipossData?.find(p => p.id === unidad.prototipo_id);
+            let desarrollo = undefined;
+            
+            if (prototipo && prototipo.desarrollo_id) {
+              desarrollo = desarrollosData?.find(d => d.id === prototipo.desarrollo_id);
+            }
+            
+            venta.unidad = {
+              id: unidad.id,
+              numero: unidad.numero,
+              estado: unidad.estado,
+              nivel: unidad.nivel,
+              prototipo: prototipo ? {
+                id: prototipo.id,
+                nombre: prototipo.nombre,
+                precio: prototipo.precio,
+                desarrollo: desarrollo ? {
+                  id: desarrollo.id,
+                  nombre: desarrollo.nombre,
+                  ubicacion: desarrollo.ubicacion,
+                  empresa_id: desarrollo.empresa_id
+                } : undefined
+              } : undefined
+            };
+          }
+        });
       }
       
-      // Map unidades to ventas
-      const ventasWithUnidades = ventasData.map(venta => {
-        const unidad = unidadesData?.find(u => u.id === venta.unidad_id);
-        return {
-          ...venta,
-          unidad
-        };
-      });
-      
       // Apply filters in memory 
-      let filteredVentas = ventasWithUnidades;
+      let filteredVentas = [...ventas];
       
       if (filters.desarrollo_id) {
         filteredVentas = filteredVentas.filter(
@@ -150,11 +213,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
         });
       }
 
-      // Add mock progress (this would be calculated based on pagos in a real implementation)
-      return filteredVentas.map(venta => ({
-        ...venta,
-        progreso: 30, // Este sería un valor calculado en base a los pagos
-      }));
+      return filteredVentas;
     } catch (error) {
       console.error('Error al obtener ventas:', error);
       return [];
@@ -240,6 +299,16 @@ export const useVentas = (filters: VentasFilter = {}) => {
         delete ventaUpdates.empresa_id;
       } else if (updates.empresa_id === undefined && effectiveEmpresaId) {
         ventaUpdates.empresa_id = effectiveEmpresaId;
+      }
+      
+      // Remove unidad field if it exists
+      if ('unidad' in ventaUpdates) {
+        delete ventaUpdates.unidad;
+      }
+      
+      // Remove progreso field if it exists
+      if ('progreso' in ventaUpdates) {
+        delete ventaUpdates.progreso;
       }
       
       const { data, error } = await supabase

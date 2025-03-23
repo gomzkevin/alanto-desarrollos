@@ -10,6 +10,7 @@ export interface SimpleUnidad {
   numero: string;
   estado?: string;
   nivel?: string | null;
+  prototipo_id?: string;
   prototipo?: {
     id?: string;
     nombre: string;
@@ -77,18 +78,22 @@ export const useVentaDetail = (ventaId?: string) => {
         column_name: 'empresa_id'
       });
       
-      // Build select query based on column existence
-      let query = supabase.from('ventas').select(`
-        id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas
-        ${hasEmpresaColumn.data ? ', empresa_id' : ''}
-      `).eq('id', ventaId);
+      // Fetch basic venta information
+      const ventaQuery = supabase.from('ventas')
+        .select('id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas');
       
-      // Add empresa_id filter if available and column exists
-      if (empresaId && hasEmpresaColumn.data) {
-        query = query.eq('empresa_id', empresaId);
+      // Add empresa_id to the select if it exists
+      if (hasEmpresaColumn.data) {
+        ventaQuery.select('id, precio_total, estado, es_fraccional, fecha_inicio, fecha_actualizacion, unidad_id, notas, empresa_id');
       }
       
-      const { data: ventaData, error: ventaError } = await query.maybeSingle();
+      // Filter by id and empresa_id if necessary
+      ventaQuery.eq('id', ventaId);
+      if (empresaId && hasEmpresaColumn.data) {
+        ventaQuery.eq('empresa_id', empresaId);
+      }
+      
+      const { data: ventaData, error: ventaError } = await ventaQuery.maybeSingle();
       
       if (ventaError) {
         console.error('Error fetching venta details:', ventaError);
@@ -99,30 +104,75 @@ export const useVentaDetail = (ventaId?: string) => {
         return null;
       }
       
-      // Fetch unidad information separately to avoid deep nesting
-      const { data: unidadData, error: unidadError } = await supabase
-        .from('unidades')
-        .select(`
-          id, numero, estado, nivel,
-          prototipo:prototipos (
-            id, nombre, precio,
-            desarrollo:desarrollos (
-              id, nombre, ubicacion, empresa_id
-            )
-          )
-        `)
-        .eq('id', ventaData.unidad_id)
-        .maybeSingle();
-        
-      if (unidadError) {
-        console.error('Error fetching unidad details:', unidadError);
+      let venta: Venta = {
+        id: ventaData.id,
+        precio_total: ventaData.precio_total,
+        estado: ventaData.estado,
+        es_fraccional: ventaData.es_fraccional,
+        fecha_inicio: ventaData.fecha_inicio,
+        fecha_actualizacion: ventaData.fecha_actualizacion,
+        unidad_id: ventaData.unidad_id,
+        notas: ventaData.notas
+      };
+      
+      // Add empresa_id if it exists
+      if ('empresa_id' in ventaData) {
+        venta.empresa_id = ventaData.empresa_id;
       }
       
-      // Combine the data
-      const venta: Venta = {
-        ...ventaData,
-        unidad: unidadData || undefined
-      };
+      // Fetch unidad information separately to avoid deep nesting
+      if (ventaData.unidad_id) {
+        const { data: unidadData, error: unidadError } = await supabase
+          .from('unidades')
+          .select('id, numero, estado, nivel, prototipo_id')
+          .eq('id', ventaData.unidad_id)
+          .maybeSingle();
+          
+        if (unidadError) {
+          console.error('Error fetching unidad details:', unidadError);
+        } else if (unidadData) {
+          venta.unidad = unidadData;
+          
+          // If we have a prototipo_id, fetch the prototipo
+          if (unidadData.prototipo_id) {
+            const { data: prototipoData, error: prototipoError } = await supabase
+              .from('prototipos')
+              .select('id, nombre, precio, desarrollo_id')
+              .eq('id', unidadData.prototipo_id)
+              .maybeSingle();
+              
+            if (prototipoError) {
+              console.error('Error fetching prototipo details:', prototipoError);
+            } else if (prototipoData) {
+              venta.unidad.prototipo = {
+                id: prototipoData.id,
+                nombre: prototipoData.nombre,
+                precio: prototipoData.precio
+              };
+              
+              // If we have a desarrollo_id, fetch the desarrollo
+              if (prototipoData.desarrollo_id) {
+                const { data: desarrolloData, error: desarrolloError } = await supabase
+                  .from('desarrollos')
+                  .select('id, nombre, ubicacion, empresa_id')
+                  .eq('id', prototipoData.desarrollo_id)
+                  .maybeSingle();
+                  
+                if (desarrolloError) {
+                  console.error('Error fetching desarrollo details:', desarrolloError);
+                } else if (desarrolloData) {
+                  venta.unidad.prototipo.desarrollo = {
+                    id: desarrolloData.id,
+                    nombre: desarrolloData.nombre,
+                    ubicacion: desarrolloData.ubicacion,
+                    empresa_id: desarrolloData.empresa_id
+                  };
+                }
+              }
+            }
+          }
+        }
+      }
       
       return venta;
     } catch (error) {
@@ -139,7 +189,7 @@ export const useVentaDetail = (ventaId?: string) => {
 
   // Fetch compradores with lead information
   const fetchCompradores = async (): Promise<Comprador[]> => {
-    if (!ventaId) return [];
+    if (!ventaId || !venta) return [];
     
     setLoading(true);
     try {
