@@ -15,7 +15,7 @@ import { VentaProgress } from './components/VentaProgress';
 import { PagoDialog } from './components/PagoDialog';
 import { VentaEditDialog } from './components/VentaEditDialog';
 import { CompradorDialog } from './components/CompradorDialog';
-import { VentaComprador } from '@/hooks/types';
+import { VentaComprador, Pago } from '@/hooks/types';
 
 interface InfoTabComprador {
   id: string;
@@ -227,7 +227,7 @@ const VentaDetail = () => {
               <PagosTab 
                 ventaId={venta.id} 
                 compradorVentaId={compradorVentaId}
-                pagos={pagos}
+                pagos={pagos as unknown as Pago[]}
                 isLoading={isLoading}
                 refetchPagos={refetch}
               />

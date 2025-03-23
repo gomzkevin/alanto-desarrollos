@@ -1,27 +1,33 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Venta } from '@/hooks/types';
+import { useUpdateVenta } from '@/hooks/useVentas';
 import { useToast } from '@/hooks/use-toast';
-import { useVentas } from '@/hooks/useVentas';
-import { Textarea } from '@/components/ui/textarea';
-import { VentaDetallada } from '@/hooks/types';
-import { formatCurrency, parseCurrency } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
+
+// Define form schema
+const formSchema = z.object({
+  precio_total: z.string().optional(),
+  notas: z.string().optional(),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface VentaEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  venta: VentaDetallada;
+  venta: Venta;
   onSuccess?: () => void;
 }
 
@@ -29,93 +35,106 @@ export const VentaEditDialog = ({
   open,
   onOpenChange,
   venta,
-  onSuccess
+  onSuccess,
 }: VentaEditDialogProps) => {
   const { toast } = useToast();
-  const { updateVenta } = useVentas();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const updateVentaMutation = useUpdateVenta();
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const formatCurrency = (val: number) => `$${val.toLocaleString('es-MX')}`;
+  const parseCurrency = (val: string) => {
+    return Number(val.replace(/[^0-9.-]+/g, ''));
+  };
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const {
+    handleSubmit,
+    register,
+    formState: { errors },
+    reset,
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      precio_total: formatCurrency(venta.precio_total),
+      precio_total: formatCurrency(venta.precio_total || 0),
       notas: venta.notas || '',
-    }
+    },
   });
 
-  const onSubmit = async (data: any) => {
-    setIsSubmitting(true);
+  const onSubmit = async (values: FormValues) => {
+    setIsLoading(true);
     try {
-      const updateData = {
+      const updatedVenta = {
         id: venta.id,
-        precio_total: parseCurrency(data.precio_total),
-        notas: data.notas
+        precio_total: parseCurrency(values.precio_total || '0'),
+        notas: values.notas,
       };
 
-      await updateVenta(updateData);
+      await updateVentaMutation.mutateAsync(updatedVenta);
       
       toast({
-        title: 'Venta actualizada',
-        description: 'La información de la venta ha sido actualizada correctamente'
+        title: "Venta actualizada",
+        description: "La información de la venta ha sido actualizada exitosamente",
       });
       
-      if (onSuccess) {
-        onSuccess();
-      }
-      
+      if (onSuccess) onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error al actualizar venta:', error);
+      console.error('Error updating venta:', error);
       toast({
-        title: 'Error',
-        description: 'No se pudo actualizar la venta',
-        variant: 'destructive'
+        title: "Error",
+        description: "No se pudo actualizar la venta",
+        variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Editar Venta</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="precio_total">Precio Total</Label>
-            <Input
-              id="precio_total"
-              {...register('precio_total', { required: 'El precio es requerido' })}
-            />
-            {errors.precio_total && (
-              <p className="text-sm text-destructive">{errors.precio_total.message}</p>
-            )}
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <label htmlFor="precio_total" className="text-sm font-medium">
+                Precio Total
+              </label>
+              <Input
+                id="precio_total"
+                {...register('precio_total')}
+                placeholder="$0.00"
+              />
+              {errors.precio_total && (
+                <p className="text-sm text-red-500">{errors.precio_total.message}</p>
+              )}
+            </div>
+            
+            <div className="grid gap-2">
+              <label htmlFor="notas" className="text-sm font-medium">
+                Notas
+              </label>
+              <Input
+                id="notas"
+                {...register('notas')}
+                placeholder="Agregar notas..."
+              />
+            </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="notas">Notas</Label>
-            <Textarea
-              id="notas"
-              {...register('notas')}
-              placeholder="Notas adicionales sobre la venta"
-              className="h-24"
-            />
-          </div>
-          
-          <DialogFooter className="px-0 pt-4">
-            <Button
-              type="button"
-              variant="outline"
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
               onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
+              disabled={isLoading}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Guardar Cambios
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
           </DialogFooter>
         </form>

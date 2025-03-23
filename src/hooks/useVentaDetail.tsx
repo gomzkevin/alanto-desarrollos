@@ -35,7 +35,7 @@ const useVentaDetail = (ventaId: string | undefined) => {
 
       // Fetch compradores
       const { data: compradoresData, error: compradoresError } = await supabase
-        .from('compradores_ventas')
+        .from('compradores_venta')
         .select(`
           *,
           comprador:compradores(*),
@@ -74,7 +74,9 @@ const useVentaDetail = (ventaId: string | undefined) => {
 
   useEffect(() => {
     if (data) {
-      setVenta(data.venta as Venta);
+      // Need to cast the data to ensure it matches the expected type
+      const typedVenta = data.venta as unknown as Venta;
+      setVenta(typedVenta);
       
       // Map porcentaje_propiedad to porcentaje for compatibility
       const mappedCompradores = data.compradores?.map(comp => ({
@@ -83,7 +85,15 @@ const useVentaDetail = (ventaId: string | undefined) => {
       })) || [];
       
       setCompradores(mappedCompradores as VentaComprador[]);
-      setPagos(data.pagos || []);
+      
+      // Need to add required properties that might be missing from DB
+      const mappedPagos = (data.pagos || []).map(pago => ({
+        ...pago,
+        venta_id: ventaId,
+        concepto: pago.concepto || 'Pago',
+      }));
+      
+      setPagos(mappedPagos as Pago[]);
 
       // Set first comprador as default if available
       if (mappedCompradores.length > 0) {
@@ -99,7 +109,7 @@ const useVentaDetail = (ventaId: string | undefined) => {
         setProgreso(Math.min(100, progresoCalculado));
       }
     }
-  }, [data]);
+  }, [data, ventaId]);
 
   return {
     venta,

@@ -2,23 +2,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CotizacionesFilters, SimpleCotizacion, SimpleDesarrollo, SimpleLead, SimplePrototipo } from './types';
-
-// Type for cotizaciones from the database
-interface CotizacionDB {
-  id: string;
-  created_at: string;
-  lead_id: string;
-  desarrollo_id: string;
-  prototipo_id: string;
-  monto_anticipo: number;
-  numero_pagos: number;
-  notas?: string;
-  usar_finiquito?: boolean;
-  fecha_inicio_pagos?: string;
-  fecha_finiquito?: string;
-  monto_finiquito?: number;
-}
+import { CotizacionesFilters, SimpleCotizacion } from './types';
 
 // Simplified API for creating cotizaciones
 interface CreateCotizacionParams {
@@ -26,7 +10,7 @@ interface CreateCotizacionParams {
   desarrollo_id: string;
   prototipo_id: string;
   unidad_id?: string;
-  precio_total: number;
+  precio_total?: number;
   monto_anticipo: number;
   enganche_porcentaje?: number;
   plazo_meses?: number;
@@ -51,7 +35,7 @@ export const useCotizaciones = (filters: CotizacionesFilters = {}) => {
   const apiFilters = { ...filters };
   delete apiFilters.withRelations;
 
-  return useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['cotizaciones', apiFilters],
     queryFn: async () => {
       let query = supabase
@@ -88,16 +72,22 @@ export const useCotizaciones = (filters: CotizacionesFilters = {}) => {
         query = query.eq('prototipo_id', prototipoId);
       }
 
-      const { data, error } = await query;
+      const { data: cotizacionesData, error } = await query;
 
       if (error) {
         throw new Error(error.message);
       }
 
-      // Return data as-is, without trying to transform it to SimpleCotizacion
-      return data || [];
+      return cotizacionesData as SimpleCotizacion[];
     },
   });
+
+  return {
+    cotizaciones: data || [],
+    isLoading,
+    error,
+    refetch,
+  };
 };
 
 export const useCreateCotizacion = () => {
@@ -106,7 +96,7 @@ export const useCreateCotizacion = () => {
   return useMutation({
     mutationFn: async (cotizacionData: CreateCotizacionParams) => {
       // Prepare the data object
-      const dbData = {
+      const dbData: any = {
         lead_id: cotizacionData.lead_id,
         desarrollo_id: cotizacionData.desarrollo_id,
         prototipo_id: cotizacionData.prototipo_id,

@@ -1,29 +1,43 @@
 
-import { Badge } from "@/components/ui/badge";
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Check, Clock, AlertTriangle } from 'lucide-react';
 
-type VentaStatusBadgeProps = {
+interface VentaStatusBadgeProps {
   estado: string;
-};
+}
 
 export const VentaStatusBadge = ({ estado }: VentaStatusBadgeProps) => {
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'activa':
-        return "bg-green-100 text-green-800 hover:bg-green-100";
-      case 'pendiente':
-        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
-      case 'cancelada':
-        return "bg-red-100 text-red-800 hover:bg-red-100";
-      case 'finalizada':
-        return "bg-blue-100 text-blue-800 hover:bg-blue-100";
-      default:
-        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
+  const statusConfig = {
+    completada: {
+      variant: 'success' as const,
+      icon: <Check className="h-3.5 w-3.5 mr-1" />,
+      label: 'Completada'
+    },
+    en_proceso: {
+      variant: 'warning' as const,
+      icon: <Clock className="h-3.5 w-3.5 mr-1" />,
+      label: 'En proceso'
+    },
+    cancelada: {
+      variant: 'destructive' as const,
+      icon: <AlertTriangle className="h-3.5 w-3.5 mr-1" />,
+      label: 'Cancelada'
+    },
+    default: {
+      variant: 'outline' as const,
+      icon: null,
+      label: estado.replace('_', ' ')
     }
   };
 
+  const config = statusConfig[estado as keyof typeof statusConfig] || statusConfig.default;
+  const formattedLabel = config.label || estado.replace('_', ' ');
+
   return (
-    <Badge className={getStatusColor(estado)} variant="outline">
-      {estado}
+    <Badge variant={config.variant} className="flex items-center">
+      {config.icon}
+      <span className="capitalize">{formattedLabel}</span>
     </Badge>
   );
 };

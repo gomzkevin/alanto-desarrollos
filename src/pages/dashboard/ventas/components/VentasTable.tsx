@@ -1,25 +1,20 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useVentas, VentasFilters } from '@/hooks';
+import { useVentas } from '@/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useUserRole } from '@/hooks/useUserRole';
-import VentaStatusBadge from './VentaStatusBadge';
+import { VentaStatusBadge } from './VentaStatusBadge';
 import { VentaActionsMenu } from './VentaActionsMenu';
 import { VentaFilterBar } from './VentaFilterBar';
 import { PlusCircle, FileDown } from 'lucide-react';
 import { CreateVentaDialog } from './CreateVentaDialog';
 import { useToast } from '@/hooks/use-toast';
 import { exportToExcel } from '@/lib/excel';
+import { VentasFilters } from '@/hooks/types';
 
 export const VentasTable = () => {
   const navigate = useNavigate();
@@ -33,14 +28,17 @@ export const VentasTable = () => {
     unidadId: undefined,
     compradorId: undefined,
     desarrolloId: undefined,
-    empresa_id: empresaId || undefined
+    empresa_id: empresaId ? String(empresaId) : undefined
   });
 
+  // Update filters when empresaId changes
   useEffect(() => {
-    setFilters(prev => ({
-      ...prev,
-      empresa_id: empresaId || undefined
-    }));
+    if (empresaId) {
+      setFilters(prev => ({
+        ...prev,
+        empresa_id: String(empresaId)
+      }));
+    }
   }, [empresaId]);
 
   const { ventas, isLoading, refetch } = useVentas(filters);
@@ -74,11 +72,10 @@ export const VentasTable = () => {
       'Estado': venta.estado,
       'Fecha': formatDate(venta.fecha_inicio),
       'Última Actualización': formatDate(venta.fecha_actualizacion),
-      'Es Fraccional': venta.es_fraccional ? 'Sí' : 'No',
+      'Es Fraccional': venta.es_fraccional ? 'Sí' : 'No'
     }));
 
     exportToExcel(data, 'Ventas', `Ventas_${new Date().toISOString().split('T')[0]}`);
-    
     toast({
       title: "Exportación exitosa",
       description: "Los datos han sido exportados a Excel"
@@ -90,17 +87,17 @@ export const VentasTable = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold tracking-tight">Ventas</h2>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleExportToExcel}
             disabled={isLoading || ventas.length === 0}
           >
             <FileDown className="h-4 w-4 mr-2" />
             Exportar
           </Button>
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             onClick={() => setIsCreateDialogOpen(true)}
           >
             <PlusCircle className="h-4 w-4 mr-2" />
@@ -109,10 +106,7 @@ export const VentasTable = () => {
         </div>
       </div>
 
-      <VentaFilterBar 
-        filters={filters} 
-        onFilterChange={handleFilterChange} 
-      />
+      <VentaFilterBar filters={filters} onFilterChange={handleFilterChange} />
 
       <div className="rounded-md border">
         <Table>
@@ -128,6 +122,7 @@ export const VentasTable = () => {
           </TableHeader>
           <TableBody>
             {isLoading ? (
+              // Loading state
               Array.from({ length: 5 }).map((_, index) => (
                 <TableRow key={`skeleton-${index}`}>
                   <TableCell><Skeleton className="h-6 w-24" /></TableCell>
@@ -139,15 +134,17 @@ export const VentasTable = () => {
                 </TableRow>
               ))
             ) : ventas.length === 0 ? (
+              // Empty state
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
                   No se encontraron ventas con los filtros actuales
                 </TableCell>
               </TableRow>
             ) : (
+              // Data rows
               ventas.map((venta) => (
-                <TableRow 
-                  key={venta.id} 
+                <TableRow
+                  key={venta.id}
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => handleRowClick(venta.id)}
                 >
@@ -159,8 +156,8 @@ export const VentasTable = () => {
                   </TableCell>
                   <TableCell>{formatDate(venta.fecha_inicio)}</TableCell>
                   <TableCell className="text-right">
-                    <VentaActionsMenu 
-                      venta={venta} 
+                    <VentaActionsMenu
+                      venta={venta}
                       onRefresh={refetch}
                       onClick={(e) => e.stopPropagation()}
                     />

@@ -1,3 +1,4 @@
+
 // Venta types
 export interface Venta {
   id: string;
@@ -62,6 +63,11 @@ export interface Pago {
   notas?: string;
   forma_pago?: string;
   referencia?: string;
+  metodo_pago?: string;
+  estado?: string;
+  created_at?: string;
+  comprobante_url?: string;
+  registrado_por?: string;
 }
 
 // Cotizacion types
@@ -72,16 +78,22 @@ export interface SimpleCotizacion {
   desarrollo_id: string;
   prototipo_id: string;
   unidad_id?: string;
-  precio_total: number;
-  enganche_porcentaje: number;
-  plazo_meses: number;
-  tasa_interes: number;
-  monto_anticipo?: number;
-  numero_pagos?: number;
+  precio_total?: number;
+  enganche_porcentaje?: number;
+  plazo_meses?: number;
+  tasa_interes?: number;
+  monto_anticipo: number;
+  numero_pagos: number;
   estado?: string;
   lead?: SimpleLead;
   desarrollo?: SimpleDesarrollo;
   prototipo?: SimplePrototipo;
+  // Additional properties needed
+  notas?: string;
+  usar_finiquito?: boolean;
+  fecha_inicio_pagos?: string;
+  fecha_finiquito?: string;
+  monto_finiquito?: number;
 }
 
 export interface CotizacionesFilters {
@@ -97,14 +109,24 @@ export interface SimpleLead {
   nombre: string;
   email?: string;
   telefono?: string;
+  origen?: string;
 }
 
 export interface SimpleDesarrollo {
   id: string;
   nombre: string;
+  ubicacion?: string;
 }
 
 export interface SimplePrototipo {
   id: string;
   nombre: string;
+  precio?: number;
+}
+
+// Add missing VentaDetallada interface
+export interface VentaDetallada extends Venta {
+  // Additional fields that might be in VentaDetail
+  compradores?: VentaComprador[];
+  pagos?: Pago[];
 }

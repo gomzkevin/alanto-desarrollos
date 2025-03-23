@@ -14,7 +14,7 @@ export const useVentas = (filters: VentasFilters = {}) => {
     empresa_id,
   } = filters;
 
-  return useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['ventas', filters],
     queryFn: async () => {
       let query = supabase
@@ -61,9 +61,17 @@ export const useVentas = (filters: VentasFilters = {}) => {
         return [];
       }
 
-      return data as Venta[];
+      // Cast the data to ensure it matches the expected type
+      return data as unknown as Venta[];
     },
   });
+
+  return {
+    ventas: data || [],
+    isLoading,
+    error,
+    refetch
+  };
 };
 
 export const useCreateVenta = () => {
@@ -73,7 +81,7 @@ export const useCreateVenta = () => {
     mutationFn: async (ventaData: Partial<Venta>) => {
       const { data, error } = await supabase
         .from('ventas')
-        .insert([ventaData])
+        .insert([ventaData as any])
         .select();
 
       if (error) {
