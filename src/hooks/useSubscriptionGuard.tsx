@@ -63,26 +63,22 @@ export const useSubscriptionGuard = (options: UseSubscriptionGuardOptions = {}) 
       // Verificación de características específicas del plan
       let hasRequiredFeatures = true;
       
-      for (const feature of requiredFeatures) {
-        // Corrección: verificar características de manera más flexible
-        if (feature === 'prototipo') {
-          // Si requiere acceso a prototipos, verificar que el plan sea de tipo prototipo 
-          // o que no tenga restricción de tipo
-          if (subscriptionInfo.resourceType !== null && 
-              subscriptionInfo.resourceType !== 'prototipo') {
-            hasRequiredFeatures = false;
-            console.log("[useSubscriptionGuard] Plan type mismatch: required prototipo, got", subscriptionInfo.resourceType);
-          }
-        }
-        else if (feature === 'desarrollo') {
-          // Si requiere acceso a desarrollos, verificar que el plan sea de tipo desarrollo
-          // o que no tenga restricción de tipo
-          if (subscriptionInfo.resourceType !== null && 
-              subscriptionInfo.resourceType !== 'desarrollo') {
-            hasRequiredFeatures = false;
-            console.log("[useSubscriptionGuard] Plan type mismatch: required desarrollo, got", subscriptionInfo.resourceType);
-          }
-        }
+      // Si requiere acceso a prototipos, verificar que el plan sea de tipo prototipo o null
+      // Si el resourceType es null, significa que no hay restricción por tipo
+      if (requiredFeatures.includes('prototipo') && 
+          subscriptionInfo.resourceType !== null && 
+          subscriptionInfo.resourceType !== 'prototipo') {
+        
+        console.log("[useSubscriptionGuard] Plan type mismatch: required prototipo, got", subscriptionInfo.resourceType);
+        hasRequiredFeatures = false;
+      }
+      // Si requiere acceso a desarrollos, verificar que el plan sea de tipo desarrollo o null
+      else if (requiredFeatures.includes('desarrollo') && 
+               subscriptionInfo.resourceType !== null && 
+               subscriptionInfo.resourceType !== 'desarrollo') {
+        
+        console.log("[useSubscriptionGuard] Plan type mismatch: required desarrollo, got", subscriptionInfo.resourceType);
+        hasRequiredFeatures = false;
       }
       
       if (!hasRequiredFeatures) {

@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { VentaDetallada, VentaComprador } from './types';
+import { VentaDetallada, VentaComprador, SimpleUnidad } from './types';
 
 const useVentaDetail = (ventaId: string | undefined) => {
   const [compradores, setCompradores] = useState<VentaComprador[]>([]);
@@ -80,6 +80,30 @@ const useVentaDetail = (ventaId: string | undefined) => {
       } else if (pagosError) {
         console.error('Error fetching pagos:', pagosError);
       }
+      
+      // Convert unidad to SimpleUnidad
+      const simpleUnidad: SimpleUnidad | undefined = unidad ? {
+        id: unidad.id,
+        codigo: unidad.numero || 'Sin código',
+        numero: unidad.numero,
+        estado: unidad.estado,
+        prototipo_id: unidad.prototipo_id,
+        precio_venta: unidad.precio_venta
+      } : undefined;
+
+      // Convert compradores to VentaComprador
+      const ventaCompradores: VentaComprador[] = compradoresData ? compradoresData.map(c => ({
+        id: c.id,
+        venta_id: c.venta_id,
+        comprador_id: c.comprador_id,
+        vendedor_id: c.vendedor_id,
+        porcentaje: c.porcentaje_propiedad || 0,
+        porcentaje_propiedad: c.porcentaje_propiedad,
+        monto_comprometido: c.monto_comprometido,
+        comprador: c.comprador,
+        vendedor: c.vendedor,
+        created_at: c.created_at
+      })) : [];
 
       const ventaDetallada: VentaDetallada = {
         id: venta.id,
@@ -91,8 +115,8 @@ const useVentaDetail = (ventaId: string | undefined) => {
         unidad_id: venta.unidad_id,
         notas: venta.notas,
         empresa_id: ventaWithEmpresaId.empresa_id,
-        unidad: unidad || undefined,
-        compradores: compradoresData || [],
+        unidad: simpleUnidad,
+        compradores: ventaCompradores,
         totalPagado: totalPagado,
       };
 
@@ -122,15 +146,29 @@ const useVentaDetail = (ventaId: string | undefined) => {
           .eq('venta_id', ventaId);
         
         if (compradoresData) {
-          setCompradores(compradoresData);
+          // Convert to VentaComprador
+          const ventaCompradores: VentaComprador[] = compradoresData.map(c => ({
+            id: c.id,
+            venta_id: c.venta_id,
+            comprador_id: c.comprador_id,
+            vendedor_id: c.vendedor_id,
+            porcentaje: c.porcentaje_propiedad || 0,
+            porcentaje_propiedad: c.porcentaje_propiedad,
+            monto_comprometido: c.monto_comprometido,
+            comprador: c.comprador,
+            vendedor: c.vendedor,
+            created_at: c.created_at
+          }));
+          
+          setCompradores(ventaCompradores);
           
           // Set the first comprador's ID for payments
-          if (compradoresData.length > 0) {
-            setCompradorVentaId(compradoresData[0].id);
+          if (ventaCompradores.length > 0) {
+            setCompradorVentaId(ventaCompradores[0].id);
           }
 
           // Fetch pagos for all compradores
-          const pagosPromises = compradoresData.map(comprador => 
+          const pagosPromises = ventaCompradores.map(comprador => 
             supabase
               .from('pagos')
               .select('*')

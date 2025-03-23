@@ -17,11 +17,7 @@ export { default as useVentas } from './useVentas';
 export { default as useVentaDetail } from './useVentaDetail';
 export { default as usePagos } from './usePagos';
 
-// Export types from hooks
-export type { CotizacionesFilter } from './useCotizaciones';
-export type { VentasFilter } from './useVentas';
-
-// Export types from types.ts
+// Export types from types.ts directly
 export type {
   SimpleDesarrollo,
   SimplePrototipo,
@@ -31,5 +27,8 @@ export type {
   VentaComprador,
   SimpleComprador,
   SimpleVendedor,
-  SimpleCotizacion
+  SimpleCotizacion,
+  CotizacionesFilters,
+  VentasFilters
 } from './types';
+

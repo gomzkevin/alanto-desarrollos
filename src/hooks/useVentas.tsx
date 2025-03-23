@@ -2,16 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Venta, GenericStringError } from './types';
-
-interface VentasFilters {
-  estado?: string;
-  fechaInicio?: string;
-  fechaFin?: string;
-  unidadId?: string;
-  compradorId?: string;
-  desarrolloId?: string;
-}
+import { Venta, VentasFilters, GenericStringError } from './types';
 
 export const useVentas = (
   filters: VentasFilters = {},
@@ -73,7 +64,7 @@ export const useVentas = (
       }
       
       // Mapear los datos a nuestro tipo Venta
-      return data.map((item): Venta => {
+      return data.map((item: any): Venta => {
         // Asegurarse de que item no es un error antes de acceder a sus propiedades
         if ('message' in item && typeof item.message === 'string') {
           const error = item as unknown as GenericStringError;

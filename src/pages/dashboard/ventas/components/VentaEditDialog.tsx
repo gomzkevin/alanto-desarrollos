@@ -1,66 +1,74 @@
 
 import { useState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import useVentas from '@/hooks/useVentas';
-import { Venta } from '@/hooks/types';
+import { useVentas } from '@/hooks/useVentas';
+import { Textarea } from '@/components/ui/textarea';
+import { VentaDetallada } from '@/hooks/types';
+import { formatCurrency, parseCurrency } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
 
 interface VentaEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  venta: Venta;
+  venta: VentaDetallada;
   onSuccess?: () => void;
 }
 
-const formSchema = z.object({
-  precio_total: z.coerce.number().positive('El precio debe ser mayor a 0'),
-  estado: z.string().min(1, 'El estado es requerido'),
-  notas: z.string().optional(),
-});
-
-type FormData = z.infer<typeof formSchema>;
-
-export const VentaEditDialog = ({ open, onOpenChange, venta, onSuccess }: VentaEditDialogProps) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { updateVenta } = useVentas();
+export const VentaEditDialog = ({
+  open,
+  onOpenChange,
+  venta,
+  onSuccess
+}: VentaEditDialogProps) => {
   const { toast } = useToast();
+  const { updateVenta } = useVentas();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+  const { register, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
-      precio_total: venta.precio_total,
-      estado: venta.estado,
+      precio_total: formatCurrency(venta.precio_total),
       notas: venta.notas || '',
-    },
+    }
   });
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
-      await updateVenta(venta.id, {
-        precio_total: data.precio_total,
-        estado: data.estado,
-        notas: data.notas,
-      });
+      const updateData = {
+        id: venta.id,
+        precio_total: parseCurrency(data.precio_total),
+        notas: data.notas
+      };
+
+      await updateVenta(updateData);
+      
       toast({
         title: 'Venta actualizada',
-        description: 'La venta ha sido actualizada correctamente.',
+        description: 'La información de la venta ha sido actualizada correctamente'
       });
-      onSuccess?.();
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+      
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error) {
+      console.error('Error al actualizar venta:', error);
       toast({
-        variant: 'destructive',
         title: 'Error',
-        description: error.message,
+        description: 'No se pudo actualizar la venta',
+        variant: 'destructive'
       });
     } finally {
       setIsSubmitting(false);
@@ -74,69 +82,43 @@ export const VentaEditDialog = ({ open, onOpenChange, venta, onSuccess }: VentaE
           <DialogTitle>Editar Venta</DialogTitle>
         </DialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="precio_total"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Precio Total</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Precio total de la venta" type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="precio_total">Precio Total</Label>
+            <Input
+              id="precio_total"
+              {...register('precio_total', { required: 'El precio es requerido' })}
             />
-            
-            <FormField
-              control={form.control}
-              name="estado"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estado</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona un estado" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="en_proceso">En Proceso</SelectItem>
-                      <SelectItem value="completada">Completada</SelectItem>
-                      <SelectItem value="cancelada">Cancelada</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+            {errors.precio_total && (
+              <p className="text-sm text-destructive">{errors.precio_total.message}</p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="notas">Notas</Label>
+            <Textarea
+              id="notas"
+              {...register('notas')}
+              placeholder="Notas adicionales sobre la venta"
+              className="h-24"
             />
-
-            <FormField
-              control={form.control}
-              name="notas"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notas</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Notas adicionales" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <DialogFooter>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          </div>
+          
+          <DialogFooter className="px-0 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Guardar Cambios
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

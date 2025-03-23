@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -48,7 +49,7 @@ const VentaDetail = () => {
       id: c.id,
       comprador_id: c.comprador_id,
       nombre: c.comprador?.nombre || 'Sin nombre',
-      porcentaje: c.porcentaje_propiedad,
+      porcentaje: c.porcentaje,
       pagos_realizados: pagos.filter(p => p.comprador_venta_id === c.id).length,
       total_pagos: 0
     }));
@@ -177,25 +178,25 @@ const VentaDetail = () => {
                   <div className="flex items-center gap-4">
                     <Building2 className="h-10 w-10 text-slate-400" />
                     <div>
-                      <p className="font-medium">{venta.unidad.prototipo?.desarrollo?.nombre || 'Desarrollo'}</p>
-                      <p className="text-sm text-muted-foreground">Desarrollo</p>
+                      <p className="font-medium">Desarrollo</p>
+                      <p className="text-sm text-muted-foreground">Información del desarrollo</p>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-4">
                     <Home className="h-10 w-10 text-slate-400" />
                     <div>
-                      <p className="font-medium">{venta.unidad.prototipo?.nombre || 'Prototipo'}</p>
-                      <p className="text-sm text-muted-foreground">Prototipo</p>
+                      <p className="font-medium">Prototipo</p>
+                      <p className="text-sm text-muted-foreground">Información del prototipo</p>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-4">
                     <div className="h-10 w-10 bg-slate-100 rounded-md flex items-center justify-center font-medium text-slate-700">
-                      {venta.unidad.numero}
+                      {venta.unidad.numero || 'N/A'}
                     </div>
                     <div>
-                      <p className="font-medium">Unidad {venta.unidad.numero}</p>
+                      <p className="font-medium">Unidad {venta.unidad.numero || 'N/A'}</p>
                       <p className="text-sm text-muted-foreground">Número de unidad</p>
                     </div>
                   </div>

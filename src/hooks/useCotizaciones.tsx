@@ -3,17 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-import { SimpleCotizacion } from './types';
-
-interface CotizacionesFilters {
-  estado?: string;
-  leadId?: string;
-  unidadId?: string;
-  prototipoId?: string;
-  desarrolloId?: string;
-  fechaInicio?: string;
-  fechaFin?: string;
-}
+import { SimpleCotizacion, CotizacionesFilters } from './types';
 
 export const useCotizaciones = (
   filters: CotizacionesFilters = {},
@@ -59,11 +49,11 @@ export const useCotizaciones = (
       }
       
       if (filters.fechaInicio) {
-        query = query.gte('fecha_creacion', filters.fechaInicio);
+        query = query.gte('created_at', filters.fechaInicio);
       }
       
       if (filters.fechaFin) {
-        query = query.lte('fecha_creacion', filters.fechaFin);
+        query = query.lte('created_at', filters.fechaFin);
       }
       
       // Aplicar límite si se proporciona
@@ -86,8 +76,8 @@ export const useCotizaciones = (
       
       console.log(`Obtenidas ${data.length} cotizaciones`);
       
-      // Mapear los datos a nuestro tipo SimpleCotizacion
-      return data as SimpleCotizacion[];
+      // Convertir los datos a SimpleCotizacion
+      return data as unknown as SimpleCotizacion[];
     } catch (error) {
       console.error('Error en fetchCotizaciones:', error);
       throw error;
@@ -98,9 +88,9 @@ export const useCotizaciones = (
   const createCotizacion = async (cotizacionData: {
     unidad_id?: string;
     precio_total: number;
-    enganche_porcentaje: number;
-    plazo_meses: number;
-    tasa_interes: number;
+    enganche_porcentaje?: number;
+    plazo_meses?: number;
+    tasa_interes?: number;
     nombre_cliente?: string;
     email_cliente?: string;
     telefono_cliente?: string;
@@ -109,13 +99,20 @@ export const useCotizaciones = (
     lead_id?: string;
     prototipo_id?: string;
     desarrollo_id: string;
+    monto_anticipo: number;
+    numero_pagos: number;
+    usar_finiquito?: boolean;
+    monto_finiquito?: number;
+    fecha_inicio_pagos?: string;
+    fecha_finiquito?: string;
+    notas?: string;
   }) => {
     try {
       const { data, error } = await supabase
         .from('cotizaciones')
         .insert({
           ...cotizacionData,
-          fecha_creacion: new Date().toISOString(),
+          created_at: new Date().toISOString(),
           estado: 'pendiente'
         })
         .select()
@@ -155,7 +152,6 @@ export const useCotizaciones = (
   // Función para actualizar una cotización
   const updateCotizacion = async (data: { 
     id: string; 
-    estado?: string;
     [key: string]: any;
   }) => {
     try {
