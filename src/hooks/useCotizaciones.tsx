@@ -7,25 +7,9 @@ import { useUserRole } from './useUserRole';
 export type Cotizacion = Tables<"cotizaciones">;
 
 // Define simplified types without circular references
-export type SimpleLead = {
-  id: string;
-  nombre: string;
-  email: string;
-  telefono: string;
-  origen: string;
-};
-
-export type SimpleDesarrollo = {
-  id: string;
-  nombre: string;
-  ubicacion: string;
-};
-
-export type SimplePrototipo = {
-  id: string;
-  nombre: string;
-  precio: number;
-};
+export type SimpleLead = Pick<Tables<"leads">, 'id' | 'nombre' | 'correo' | 'telefono'>;
+export type SimpleDesarrollo = Pick<Tables<"desarrollos">, 'id' | 'nombre'>;
+export type SimplePrototipo = Pick<Tables<"prototipos">, 'id' | 'nombre'>;
 
 // Define extended cotizacion with simple related types
 export type ExtendedCotizacion = Cotizacion & {
@@ -81,9 +65,9 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         
         // Fetch all related entities in batch queries
         const [leadsResponse, desarrollosResponse, prototipesResponse] = await Promise.all([
-          leadIds.length > 0 ? supabase.from('leads').select('id, nombre, email, telefono, origen').in('id', leadIds) : { data: [], error: null },
-          desarrolloIds.length > 0 ? supabase.from('desarrollos').select('id, nombre, ubicacion').in('id', desarrolloIds) : { data: [], error: null },
-          prototipoIds.length > 0 ? supabase.from('prototipos').select('id, nombre, precio').in('id', prototipoIds) : { data: [], error: null }
+          leadIds.length > 0 ? supabase.from('leads').select('*').in('id', leadIds) : { data: [], error: null },
+          desarrolloIds.length > 0 ? supabase.from('desarrollos').select('*').in('id', desarrolloIds) : { data: [], error: null },
+          prototipoIds.length > 0 ? supabase.from('prototipos').select('*').in('id', prototipoIds) : { data: [], error: null }
         ]);
         
         const leads = leadsResponse.error ? [] : leadsResponse.data;
@@ -91,13 +75,13 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         const prototipos = prototipesResponse.error ? [] : prototipesResponse.data;
         
         // Map related entities to cotizaciones
-        const extendedCotizaciones = cotizaciones.map(cotizacion => {
+        const extendedCotizaciones: ExtendedCotizacion[] = cotizaciones.map(cotizacion => {
           return {
             ...cotizacion,
             lead: leads.find(l => l.id === cotizacion.lead_id) || null,
             desarrollo: desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null,
             prototipo: prototipos.find(p => p.id === cotizacion.prototipo_id) || null
-          } as ExtendedCotizacion;  // Use type assertion here to avoid deep instantiation
+          };
         });
         
         console.log('Extended cotizaciones fetched:', extendedCotizaciones);
@@ -105,7 +89,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       }
       
       console.log('Cotizaciones fetched:', cotizaciones);
-      return cotizaciones as ExtendedCotizacion[];  // Use type assertion here
+      return cotizaciones as ExtendedCotizacion[];
     } catch (error) {
       console.error('Error in fetchCotizaciones:', error);
       throw error;

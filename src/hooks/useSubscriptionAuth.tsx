@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
-import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useUserRole } from './useUserRole';
+import { useSubscriptionInfo } from './useSubscriptionInfo';
 
 /**
  * Hook para verificar si el usuario tiene acceso basado en suscripción
@@ -17,47 +18,49 @@ export const useSubscriptionAuth = (
 ) => {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const navigate = useNavigate();
-  const { 
-    isLoading, 
-    canAccess, 
-    hasValidEmpresa, 
-    isSubscriptionActive 
-  } = useSubscription();
+  
+  // Always call hooks at the top level, regardless of any conditions
+  const { userId, empresaId, isAdmin: isUserAdmin, authChecked } = useUserRole();
+  const { subscriptionInfo, isLoading: isLoadingSubscription } = useSubscriptionInfo();
 
   useEffect(() => {
     // Solo verificar cuando tengamos toda la información necesaria
-    if (!isLoading) {
-      // Verificar acceso utilizando el contexto
-      const authorized = canAccess(requiredModule, bypassAdmin);
-      
-      // Log para debugging
+    if (!isLoadingSubscription && authChecked && userId) {
       console.log('Verificando autorización de suscripción:', {
-        requiredModule,
-        authorized,
-        hasValidEmpresa,
-        isSubscriptionActive,
+        userId,
+        empresaId,
+        isAdmin: isUserAdmin(),
+        isSubscriptionActive: subscriptionInfo.isActive,
         bypassAdmin
       });
 
-      // Si no está autorizado, mostrar mensaje y redirigir
-      if (!authorized) {
-        // Determinar mensaje específico basado en la causa del rechazo
-        if (!hasValidEmpresa) {
-          toast({
-            title: "Sin acceso",
-            description: "No tienes una empresa asignada. Contacta al administrador.",
-            variant: "destructive"
-          });
-        } else if (!isSubscriptionActive) {
-          const moduleText = requiredModule ? ` al módulo ${requiredModule}` : '';
-          toast({
-            title: "Suscripción requerida",
-            description: `No tienes acceso${moduleText}. La empresa necesita una suscripción activa.`,
-            variant: "destructive"
-          });
-        }
-        
-        // Redirigir a la ruta segura
+      // Si el usuario es admin y bypassAdmin está habilitado, autorizar sin más comprobaciones
+      if (bypassAdmin && isUserAdmin()) {
+        console.log('Usuario es admin, autorizando sin verificar suscripción');
+        setIsAuthorized(true);
+        return;
+      }
+
+      if (!empresaId) {
+        console.log('Usuario sin empresa asignada');
+        toast({
+          title: "Sin acceso",
+          description: "No tienes una empresa asignada. Contacta al administrador.",
+          variant: "destructive"
+        });
+        navigate(redirectPath);
+        setIsAuthorized(false);
+        return;
+      }
+
+      if (!subscriptionInfo.isActive) {
+        console.log('Suscripción inactiva');
+        const moduleText = requiredModule ? ` al módulo ${requiredModule}` : '';
+        toast({
+          title: "Suscripción requerida",
+          description: `No tienes acceso${moduleText}. La empresa necesita una suscripción activa.`,
+          variant: "destructive"
+        });
         navigate(redirectPath);
         setIsAuthorized(false);
         return;
@@ -66,11 +69,11 @@ export const useSubscriptionAuth = (
       // Si llegamos aquí, el usuario está autorizado
       setIsAuthorized(true);
     }
-  }, [isLoading, canAccess, hasValidEmpresa, isSubscriptionActive, navigate, redirectPath, requiredModule, bypassAdmin]);
+  }, [userId, empresaId, isUserAdmin, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule, bypassAdmin]);
 
   return {
     isAuthorized,
-    isLoading: isLoading || isAuthorized === null
+    isLoading: isLoadingSubscription || !authChecked || isAuthorized === null
   };
 };
 
