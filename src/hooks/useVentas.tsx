@@ -4,43 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import useUserRole from '@/hooks/useUserRole';
-
-// Basic types with simplified structures to avoid deep recursion
-export interface SimpleDesarrollo {
-  id?: string;
-  nombre: string;
-  ubicacion?: string | null;
-  empresa_id?: number;
-}
-
-export interface SimplePrototipo {
-  id?: string;
-  nombre: string;
-  precio?: number;
-  desarrollo?: SimpleDesarrollo | null;
-}
-
-export interface SimpleUnidad {
-  id?: string;
-  numero: string;
-  estado?: string;
-  nivel?: string | null;
-  prototipo?: SimplePrototipo | null;
-}
-
-export interface Venta {
-  id: string;
-  precio_total: number;
-  estado: string;
-  es_fraccional: boolean;
-  fecha_inicio: string;
-  fecha_actualizacion: string;
-  unidad_id: string;
-  empresa_id?: number | null;
-  notas?: string | null;
-  unidad?: SimpleUnidad | null;
-  progreso?: number;
-}
+import { Venta, SimpleUnidad, SimplePrototipo, SimpleDesarrollo } from './types';
 
 export interface VentasFilter {
   desarrollo_id?: string;
@@ -90,12 +54,15 @@ export const useVentas = (filters: VentasFilter = {}) => {
         return [];
       }
       
+      // Function to check if an item is a valid venta object
+      const isValidVenta = (item: any): item is Venta => {
+        return item && typeof item === 'object' && 'id' in item;
+      };
+      
       // Convert ventas data to proper Venta objects with null checks
       const ventas: Venta[] = ventasData
-        .filter(venta => venta !== null)
+        .filter(isValidVenta)
         .map(venta => {
-          if (!venta) return null;
-          
           // Safely extract properties with type checking
           const ventaObj: Venta = {
             id: String(venta.id || ''),
@@ -116,8 +83,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
           }
           
           return ventaObj;
-        })
-        .filter((v): v is Venta => v !== null);
+        });
         
       // Get all unidad_ids
       const unidadIds = ventas
@@ -190,6 +156,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
               numero: unidad.numero,
               estado: unidad.estado,
               nivel: unidad.nivel,
+              prototipo_id: unidad.prototipo_id,
               prototipo: null
             };
             
@@ -199,6 +166,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
                 id: prototipo.id,
                 nombre: prototipo.nombre,
                 precio: prototipo.precio,
+                desarrollo_id: prototipo.desarrollo_id,
                 desarrollo: null
               };
               

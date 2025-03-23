@@ -15,6 +15,17 @@ import { VentaProgress } from './components/VentaProgress';
 import { PagoDialog } from './components/PagoDialog';
 import { VentaEditDialog } from './components/VentaEditDialog';
 import { CompradorDialog } from './components/CompradorDialog';
+import { VentaComprador } from '@/hooks/types';
+
+// Interface matching InfoTab's expected format for compradores
+interface InfoTabComprador {
+  id: string;
+  comprador_id: string;
+  nombre: string;
+  porcentaje: number;
+  pagos_realizados?: number;
+  total_pagos?: number;
+}
 
 const VentaDetail = () => {
   const { ventaId } = useParams<{ ventaId: string }>();
@@ -33,6 +44,18 @@ const VentaDetail = () => {
     refetch,
     compradorVentaId
   } = useVentaDetail(ventaId);
+
+  // Transform compradores to match InfoTab's expected format
+  const formatCompradores = (compradores: VentaComprador[]): InfoTabComprador[] => {
+    return compradores.map(c => ({
+      id: c.id,
+      comprador_id: c.comprador_id,
+      nombre: c.comprador?.nombre || 'Sin nombre',
+      porcentaje: c.porcentaje_propiedad,
+      pagos_realizados: pagos.filter(p => p.comprador_venta_id === c.id).length,
+      total_pagos: 0 // This will be calculated elsewhere if needed
+    }));
+  };
 
   if (isLoading) {
     return (
@@ -57,6 +80,8 @@ const VentaDetail = () => {
       </DashboardLayout>
     );
   }
+
+  const formattedCompradores = formatCompradores(compradores);
 
   return (
     <DashboardLayout>
@@ -193,7 +218,7 @@ const VentaDetail = () => {
           <TabsContent value="info" className="space-y-4">
             <InfoTab 
               venta={venta} 
-              compradores={compradores} 
+              compradores={formattedCompradores} 
               pagos={pagos}
               onAddComprador={() => setOpenCompradorDialog(true)}
             />

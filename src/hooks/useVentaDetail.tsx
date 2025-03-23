@@ -2,47 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { SimpleUnidad } from '@/hooks/useVentas';
-
-// Simplified types to avoid circular references
-export interface SimpleComprador {
-  id: string;
-  nombre?: string;
-  email?: string;
-  telefono?: string;
-}
-
-export interface SimpleVendedor {
-  id: string;
-  nombre?: string;
-  email?: string;
-}
-
-export interface VentaComprador {
-  id: string;
-  venta_id: string;
-  comprador_id: string;
-  vendedor_id?: string;
-  porcentaje_propiedad: number;
-  monto_comprometido: number;
-  comprador?: SimpleComprador;
-  vendedor?: SimpleVendedor;
-}
-
-export interface VentaDetallada {
-  id: string;
-  precio_total: number;
-  estado: string;
-  es_fraccional: boolean;
-  fecha_inicio: string;
-  fecha_actualizacion: string;
-  unidad_id: string;
-  notas?: string;
-  empresa_id?: number | null;
-  unidad?: SimpleUnidad;
-  compradores?: VentaComprador[];
-  totalPagado?: number;
-}
+import { SimpleUnidad, SimpleComprador, SimpleVendedor, VentaComprador, VentaDetallada } from './types';
 
 const useVentaDetail = (ventaId: string | undefined) => {
   const [compradores, setCompradores] = useState<VentaComprador[]>([]);
@@ -72,7 +32,7 @@ const useVentaDetail = (ventaId: string | undefined) => {
         return null;
       }
 
-      // Adding empresa_id with a default value of null if it's not in the database
+      // Check if empresa_id exists in the venta object
       const ventaWithEmpresaId = {
         ...venta,
         empresa_id: 'empresa_id' in venta ? venta.empresa_id : null
@@ -107,7 +67,11 @@ const useVentaDetail = (ventaId: string | undefined) => {
 
       let totalPagado = 0;
       if (pagosData && !pagosError) {
-        totalPagado = pagosData.reduce((sum, pago) => sum + pago.monto, 0);
+        totalPagado = pagosData.reduce((sum, pago) => {
+          // Ensure pago.monto is a number
+          const monto = typeof pago.monto === 'number' ? pago.monto : 0;
+          return sum + monto;
+        }, 0);
       } else if (pagosError) {
         console.error('Error fetching pagos:', pagosError);
       }
@@ -173,7 +137,11 @@ const useVentaDetail = (ventaId: string | undefined) => {
         setPagos(allPagos);
         
         // Calculate total paid
-        const totalPagado = allPagos.reduce((sum, pago) => sum + pago.monto, 0);
+        const totalPagado = allPagos.reduce((sum, pago) => {
+          // Ensure pago.monto is a number
+          const monto = typeof pago.monto === 'number' ? pago.monto : 0;
+          return sum + monto;
+        }, 0);
         setMontoPagado(totalPagado);
         
         // Calculate progress percentage

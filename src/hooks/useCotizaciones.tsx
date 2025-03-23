@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
-import { SimpleDesarrollo, SimplePrototipo } from './useVentas';
+import { SimpleDesarrollo, SimplePrototipo } from './types';
 
 // Simplified type to avoid circular references
 export interface SimpleCotizacion {
@@ -20,16 +20,16 @@ export interface SimpleCotizacion {
   notas?: string;
   estado?: string;
   created_at?: string;
-  // Nested relations as simple objects with minimal properties
+  // Nested relations as optional objects
   lead?: {
     id: string;
     nombre?: string;
     email?: string;
     telefono?: string;
     origen?: string;
-  };
-  prototipo?: SimplePrototipo;
-  desarrollo?: SimpleDesarrollo;
+  } | null;
+  prototipo?: SimplePrototipo | null;
+  desarrollo?: SimpleDesarrollo | null;
 }
 
 export interface CotizacionesFilter {
@@ -60,7 +60,6 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
           fecha_inicio_pagos,
           fecha_finiquito,
           notas,
-          estado,
           created_at
         `);
 
@@ -69,30 +68,38 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
       }
 
       if (filters.estado && filters.estado !== 'todos') {
-        query = query.eq('estado', filters.estado);
+        // Handle the case where 'estado' column may not exist yet
+        try {
+          query = query.eq('estado', filters.estado);
+        } catch (error) {
+          console.error('Error filtering by estado:', error);
+        }
       }
 
       if (filters.busqueda) {
         // We'll join with leads table to search by name
-        query = supabase
-          .from('cotizaciones')
-          .select(`
-            id,
-            lead_id,
-            desarrollo_id,
-            prototipo_id,
-            monto_anticipo,
-            numero_pagos,
-            usar_finiquito,
-            monto_finiquito,
-            fecha_inicio_pagos,
-            fecha_finiquito,
-            notas,
-            estado,
-            created_at,
-            lead:lead_id(id, nombre, email, telefono)
-          `)
-          .ilike('lead.nombre', `%${filters.busqueda}%`);
+        try {
+          query = supabase
+            .from('cotizaciones')
+            .select(`
+              id,
+              lead_id,
+              desarrollo_id,
+              prototipo_id,
+              monto_anticipo,
+              numero_pagos,
+              usar_finiquito,
+              monto_finiquito,
+              fecha_inicio_pagos,
+              fecha_finiquito,
+              notas,
+              created_at,
+              lead:lead_id(id, nombre, email, telefono)
+            `)
+            .ilike('lead.nombre', `%${filters.busqueda}%`);
+        } catch (error) {
+          console.error('Error filtering with busqueda:', error);
+        }
       }
 
       const { data, error } = await query;
@@ -102,46 +109,65 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
         return [];
       }
 
-      let cotizaciones: SimpleCotizacion[] = data || [];
+      // Ensure we have an array even if data is null
+      const cotizacionesData = data || [];
+      
+      // Type guard to ensure we have valid cotizaciones data
+      const isValidCotizacion = (item: any): item is SimpleCotizacion => {
+        return item && typeof item === 'object' && 'id' in item;
+      };
+      
+      // Filter out invalid items
+      const validCotizaciones = cotizacionesData.filter(isValidCotizacion);
 
       // If withRelations is true, fetch the related data
-      if (filters.withRelations && cotizaciones.length > 0) {
+      if (filters.withRelations && validCotizaciones.length > 0) {
         const cotizacionesWithRelations = await Promise.all(
-          cotizaciones.map(async (cotizacion) => {
-            if (!cotizacion) return null;
-            
+          validCotizaciones.map(async (cotizacion) => {
             let leadData = null;
             let prototipoData = null;
             let desarrolloData = null;
 
             // Fetch lead data if lead_id exists
             if (cotizacion.lead_id) {
-              const { data: lead } = await supabase
-                .from('leads')
-                .select('id, nombre, email, telefono, origen')
-                .eq('id', cotizacion.lead_id)
-                .single();
-              leadData = lead;
+              try {
+                const { data: lead } = await supabase
+                  .from('leads')
+                  .select('id, nombre, email, telefono, origen')
+                  .eq('id', cotizacion.lead_id)
+                  .single();
+                leadData = lead;
+              } catch (error) {
+                console.error(`Error fetching lead for cotizacion ${cotizacion.id}:`, error);
+              }
             }
 
             // Fetch prototipo data if prototipo_id exists
             if (cotizacion.prototipo_id) {
-              const { data: prototipo } = await supabase
-                .from('prototipos')
-                .select('id, nombre, precio, desarrollo_id')
-                .eq('id', cotizacion.prototipo_id)
-                .single();
-              prototipoData = prototipo;
+              try {
+                const { data: prototipo } = await supabase
+                  .from('prototipos')
+                  .select('id, nombre, precio, desarrollo_id')
+                  .eq('id', cotizacion.prototipo_id)
+                  .single();
+                prototipoData = prototipo;
+              } catch (error) {
+                console.error(`Error fetching prototipo for cotizacion ${cotizacion.id}:`, error);
+              }
             }
 
             // Fetch desarrollo data if desarrollo_id exists
             if (cotizacion.desarrollo_id) {
-              const { data: desarrollo } = await supabase
-                .from('desarrollos')
-                .select('id, nombre, ubicacion, empresa_id')
-                .eq('id', cotizacion.desarrollo_id)
-                .single();
-              desarrolloData = desarrollo;
+              try {
+                const { data: desarrollo } = await supabase
+                  .from('desarrollos')
+                  .select('id, nombre, ubicacion, empresa_id')
+                  .eq('id', cotizacion.desarrollo_id)
+                  .single();
+                desarrolloData = desarrollo;
+              } catch (error) {
+                console.error(`Error fetching desarrollo for cotizacion ${cotizacion.id}:`, error);
+              }
             }
 
             return {
@@ -156,7 +182,7 @@ const useCotizaciones = (filters: CotizacionesFilter = {}) => {
         return cotizacionesWithRelations.filter((c): c is SimpleCotizacion => c !== null);
       }
 
-      return cotizaciones;
+      return validCotizaciones;
     } catch (error) {
       console.error('Error fetching cotizaciones:', error);
       return [];
