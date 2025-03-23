@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -17,7 +18,7 @@ import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
-import { ExtendedCotizacion } from '@/hooks/useCotizaciones';
+import { ExtendedCotizacion } from '@/hooks';
 import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
@@ -835,4 +836,3 @@ const CotizacionesPage = () => {
 };
 
 export default CotizacionesPage;
-

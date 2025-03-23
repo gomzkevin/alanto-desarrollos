@@ -4,7 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import useUserRole from '@/hooks/useUserRole';
 import useSupabaseTableHelpers from './useSupabaseTableHelpers';
-import { Venta, VentasFilter, SimpleUnidad, SimplePrototipo, SimpleDesarrollo } from './types/venta.types';
+import { 
+  Venta, 
+  VentasFilter, 
+  SimpleUnidad, 
+  SimplePrototipo, 
+  SimpleDesarrollo 
+} from './types/venta.types';
 
 export const useVentas = (filters: VentasFilter = {}) => {
   const [isCreating, setIsCreating] = useState(false);
