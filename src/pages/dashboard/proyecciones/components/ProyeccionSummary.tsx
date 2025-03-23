@@ -1,63 +1,68 @@
 
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, Clock, PiggyBank, DollarSign } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
-interface ProyeccionSummaryProps {
-  summaryData: {
-    roi: number;
-    returnPeriod: number;
-    totalInvestment: number;
-    projectedProfit: number;
-  };
+interface SummaryData {
+  propertyValue: number;
+  airbnbProfit: number;
+  altReturn: number;
+  avgROI: number;
 }
 
-export const ProyeccionSummary: React.FC<ProyeccionSummaryProps> = ({ summaryData }) => {
+interface ProyeccionSummaryProps {
+  summaryData: SummaryData;
+}
+
+export const ProyeccionSummary = ({ summaryData }: ProyeccionSummaryProps) => {
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="flex items-center space-x-4">
-            <div className="bg-blue-100 p-3 rounded-full">
-              <TrendingUp className="h-6 w-6 text-blue-700" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">ROI</p>
-              <p className="text-2xl font-bold">{summaryData.roi}%</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="bg-amber-100 p-3 rounded-full">
-              <Clock className="h-6 w-6 text-amber-700" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Periodo de Retorno</p>
-              <p className="text-2xl font-bold">{summaryData.returnPeriod} meses</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="bg-purple-100 p-3 rounded-full">
-              <PiggyBank className="h-6 w-6 text-purple-700" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Inversión Total</p>
-              <p className="text-2xl font-bold">${summaryData.totalInvestment.toLocaleString()}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="bg-green-100 p-3 rounded-full">
-              <DollarSign className="h-6 w-6 text-green-700" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Utilidad Proyectada</p>
-              <p className="text-2xl font-bold">${summaryData.projectedProfit.toLocaleString()}</p>
-            </div>
-          </div>
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl overflow-hidden border border-indigo-100 p-5 shadow-sm hover:shadow-md transition-all">
+        <div className="mb-2">
+          <p className="text-sm font-medium text-indigo-700 flex items-center">
+            <span className="w-2 h-2 bg-indigo-600 rounded-full mr-2"></span>
+            Inversión Inicial
+          </p>
         </div>
-      </CardContent>
-    </Card>
+        <p className="text-xl font-bold text-indigo-900 financial-number">{formatCurrency(summaryData.propertyValue)}</p>
+        <p className="text-xs text-indigo-600/70 mt-1">Valor base de la propiedad</p>
+      </div>
+      
+      <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl overflow-hidden border border-purple-100 p-5 shadow-sm hover:shadow-md transition-all">
+        <div className="mb-2">
+          <p className="text-sm font-medium text-purple-700 flex items-center">
+            <span className="w-2 h-2 bg-purple-600 rounded-full mr-2"></span>
+            Renta Vacacional
+          </p>
+        </div>
+        <p className="text-xl font-bold text-purple-900 financial-number">{formatCurrency(summaryData.airbnbProfit)}</p>
+        <p className="text-xs text-purple-600/70 mt-1">Ganancia total proyectada</p>
+      </div>
+      
+      <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl overflow-hidden border border-emerald-100 p-5 shadow-sm hover:shadow-md transition-all">
+        <div className="mb-2">
+          <p className="text-sm font-medium text-emerald-700 flex items-center">
+            <span className="w-2 h-2 bg-emerald-600 rounded-full mr-2"></span>
+            Inversión Alternativa
+          </p>
+        </div>
+        <p className="text-xl font-bold text-emerald-700 financial-number">{formatCurrency(summaryData.altReturn)}</p>
+        <p className="text-xs text-emerald-600/70 mt-1">Rendimiento total en bonos</p>
+      </div>
+      
+      <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl overflow-hidden border border-amber-100 p-5 shadow-sm hover:shadow-md transition-all">
+        <div className="mb-2">
+          <p className="text-sm font-medium text-amber-700 flex items-center">
+            <span className="w-2 h-2 bg-amber-600 rounded-full mr-2"></span>
+            ROI Promedio Anual
+          </p>
+        </div>
+        <p className="text-xl font-bold text-amber-800">{summaryData.avgROI.toFixed(1)}%</p>
+        <div className="flex items-center text-xs text-amber-600/70 mt-1">
+          <span className={`inline-block mr-1 ${(summaryData.avgROI - 7) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {(summaryData.avgROI - 7) > 0 ? '+' : ''}{(summaryData.avgROI - 7).toFixed(1)}%
+          </span> 
+          vs inversión alternativa
+        </div>
+      </div>
+    </div>
   );
 };

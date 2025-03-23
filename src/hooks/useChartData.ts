@@ -1,30 +1,35 @@
 
 import { useState, useEffect } from 'react';
-import { subMonths, format } from 'date-fns';
-import { es } from 'date-fns/locale';
 
-export interface ChartDataPoint {
-  date: string;
-  Ventas: number;
-}
+/**
+ * Hook para procesar datos de gráficas y asegurar que tienen el formato correcto
+ */
+const useChartData = (rawData: any[]) => {
+  const [processedData, setProcessedData] = useState<any[]>([]);
 
-const useChartData = () => {
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  
   useEffect(() => {
-    // Generate sample data for the last 6 months
-    const data = Array.from({ length: 6 }, (_, i) => {
-      const date = subMonths(new Date(), i);
-      return {
-        date: format(date, 'MMM yyyy', { locale: es }),
-        Ventas: Math.floor(Math.random() * 10000)
-      };
-    }).reverse();
+    if (!rawData || rawData.length === 0) {
+      setProcessedData([]);
+      return;
+    }
+
+    // Procesamos los datos para asegurar que tienen las propiedades correctas y son valores numéricos
+    const enhancedData = rawData.map(item => ({
+      ...item,
+      year: item.year,
+      "year_label": `Año ${item.year}`,
+      "Renta vacacional": Number(item.airbnbProfit || 0),
+      "Bonos US": Number(item.alternativeInvestment || 0),
+      // Asegurarnos que estos campos existen para la tabla
+      airbnbProfit: Number(item.airbnbProfit || 0),
+      alternativeInvestment: Number(item.alternativeInvestment || 0)
+    }));
     
-    setChartData(data);
-  }, []);
-  
-  return chartData;
+    console.log("useChartData - Enhanced data:", JSON.stringify(enhancedData.slice(0, 2), null, 2));
+    setProcessedData(enhancedData);
+  }, [rawData]);
+
+  return processedData;
 };
 
 export default useChartData;

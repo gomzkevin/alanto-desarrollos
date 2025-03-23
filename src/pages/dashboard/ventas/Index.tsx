@@ -4,10 +4,13 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VentasTable } from './components/VentasTable';
 import VentasStatistics from './components/VentasStatistics';
-import useUserRole from '@/hooks/useUserRole';
 
 const VentasPage = () => {
-  const { empresaId } = useUserRole();
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   return (
     <DashboardLayout>
@@ -25,7 +28,7 @@ const VentasPage = () => {
         </TabsList>
         
         <TabsContent value="list" className="space-y-4">
-          <VentasTable />
+          <VentasTable refreshTrigger={refreshTrigger} />
         </TabsContent>
         
         <TabsContent value="stats">

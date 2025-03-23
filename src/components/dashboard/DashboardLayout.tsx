@@ -20,7 +20,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 import LogoutButton from './LogoutButton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import useSubscriptionInfo from '@/hooks/useSubscriptionInfo';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -32,7 +31,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isLoading, userId, userEmail, userName, authChecked } = useUserRole();
-  const { subscriptionInfo } = useSubscriptionInfo();
   
   const getUserInitials = () => {
     if (userName) {
@@ -83,6 +81,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     setIsSidebarOpen(false);
   }, [location.pathname]);
 
+  // Mejora en la lógica para mostrar estados de carga
   if (isLoading || !authChecked) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
@@ -100,37 +99,20 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     return null;
   }
 
-  // Comprobar si hay una suscripción activa y registrar en consola para depuración
-  const hasActiveSubscription = subscriptionInfo.isActive;
-  console.log("[DashboardLayout] Subscription status:", { 
-    isActive: hasActiveSubscription,
-    planName: subscriptionInfo.currentPlan?.name,
-    resourceType: subscriptionInfo.resourceType
-  });
-  
-  // Configuración base del menú de navegación
-  let navigation = [
+  const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3, current: location.pathname === '/dashboard' },
+    { name: 'Desarrollos', href: '/dashboard/desarrollos', icon: Building2, current: location.pathname.includes('/dashboard/desarrollos') },
+    { name: 'Propiedades', href: '/dashboard/propiedades', icon: Home, current: location.pathname === '/dashboard/propiedades' },
+    { name: 'Leads', href: '/dashboard/leads', icon: Users, current: location.pathname.includes('/dashboard/leads') },
+    { name: 'Cotizaciones', href: '/dashboard/cotizaciones', icon: Calculator, current: location.pathname.includes('/dashboard/cotizaciones') },
+    { name: 'Ventas', href: '/dashboard/ventas', icon: DollarSign, current: location.pathname.includes('/dashboard/ventas') },
+    { name: 'Proyecciones', href: '/dashboard/proyecciones', icon: Briefcase, current: location.pathname.includes('/dashboard/proyecciones') },
     { name: 'Configuración', href: '/dashboard/configuracion', icon: Settings, current: location.pathname === '/dashboard/configuracion' },
   ];
   
-  // Agregar módulos premium si hay una suscripción activa
-  if (hasActiveSubscription) {
-    const premiumNavigation = [
-      { name: 'Desarrollos', href: '/dashboard/desarrollos', icon: Building2, current: location.pathname.includes('/dashboard/desarrollos') },
-      { name: 'Propiedades', href: '/dashboard/propiedades', icon: Home, current: location.pathname === '/dashboard/propiedades' },
-      { name: 'Leads', href: '/dashboard/leads', icon: Users, current: location.pathname.includes('/dashboard/leads') },
-      { name: 'Cotizaciones', href: '/dashboard/cotizaciones', icon: Calculator, current: location.pathname.includes('/dashboard/cotizaciones') },
-      { name: 'Ventas', href: '/dashboard/ventas', icon: DollarSign, current: location.pathname.includes('/dashboard/ventas') },
-      { name: 'Proyecciones', href: '/dashboard/proyecciones', icon: Briefcase, current: location.pathname.includes('/dashboard/proyecciones') },
-    ];
-    
-    // Insertamos después del Dashboard y antes de Configuración
-    navigation.splice(1, 0, ...premiumNavigation);
-  }
-  
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {/* Mobile sidebar overlay */}
       <div className={cn(
         "fixed inset-0 z-40 lg:hidden",
         isSidebarOpen ? "block" : "hidden"
@@ -140,6 +122,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           onClick={() => setIsSidebarOpen(false)}
         ></div>
         
+        {/* Mobile sidebar */}
         <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out">
           <div className="flex items-center justify-between h-16 px-4 border-b">
             <div className="text-lg font-semibold text-indigo-600">Alanto</div>
@@ -176,6 +159,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </div>
       
+      {/* Desktop sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
         <div className="flex flex-col w-64 border-r border-slate-200 bg-white">
           <div className="flex items-center h-16 px-4 border-b">
@@ -209,6 +193,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </div>
       
+      {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">
         <div className="bg-white border-b border-slate-200 z-10">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6">
@@ -232,11 +217,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </div>
             
             <div className="flex items-center">
-              {hasActiveSubscription && (
-                <div className="mr-4 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                  {subscriptionInfo.currentPlan?.name || 'Plan activo'}
-                </div>
-              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">

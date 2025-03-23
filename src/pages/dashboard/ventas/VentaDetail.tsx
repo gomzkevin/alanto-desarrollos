@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -8,23 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, Building2, Home, Calendar, CreditCard, Edit, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import useVentaDetail from '@/hooks/useVentaDetail';
+import { useVentaDetail } from '@/hooks/useVentaDetail';
 import { InfoTab } from './components/InfoTab';
 import { PagosTab } from './components/PagosTab';
 import { VentaProgress } from './components/VentaProgress';
 import { PagoDialog } from './components/PagoDialog';
 import { VentaEditDialog } from './components/VentaEditDialog';
 import { CompradorDialog } from './components/CompradorDialog';
-import { VentaComprador, Pago } from '@/hooks/types';
-
-interface InfoTabComprador {
-  id: string;
-  comprador_id: string;
-  nombre: string;
-  porcentaje: number;
-  pagos_realizados?: number;
-  total_pagos?: number;
-}
 
 const VentaDetail = () => {
   const { ventaId } = useParams<{ ventaId: string }>();
@@ -43,17 +32,6 @@ const VentaDetail = () => {
     refetch,
     compradorVentaId
   } = useVentaDetail(ventaId);
-
-  const formatCompradores = (compradores: VentaComprador[]): InfoTabComprador[] => {
-    return compradores.map(c => ({
-      id: c.id,
-      comprador_id: c.comprador_id,
-      nombre: c.comprador?.nombre || 'Sin nombre',
-      porcentaje: c.porcentaje,
-      pagos_realizados: pagos.filter(p => p.comprador_venta_id === c.id).length,
-      total_pagos: 0
-    }));
-  };
 
   if (isLoading) {
     return (
@@ -78,8 +56,6 @@ const VentaDetail = () => {
       </DashboardLayout>
     );
   }
-
-  const formattedCompradores = formatCompradores(compradores);
 
   return (
     <DashboardLayout>
@@ -178,25 +154,25 @@ const VentaDetail = () => {
                   <div className="flex items-center gap-4">
                     <Building2 className="h-10 w-10 text-slate-400" />
                     <div>
-                      <p className="font-medium">Desarrollo</p>
-                      <p className="text-sm text-muted-foreground">Información del desarrollo</p>
+                      <p className="font-medium">{venta.unidad.prototipo?.desarrollo?.nombre || 'Desarrollo'}</p>
+                      <p className="text-sm text-muted-foreground">Desarrollo</p>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-4">
                     <Home className="h-10 w-10 text-slate-400" />
                     <div>
-                      <p className="font-medium">Prototipo</p>
-                      <p className="text-sm text-muted-foreground">Información del prototipo</p>
+                      <p className="font-medium">{venta.unidad.prototipo?.nombre || 'Prototipo'}</p>
+                      <p className="text-sm text-muted-foreground">Prototipo</p>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-4">
                     <div className="h-10 w-10 bg-slate-100 rounded-md flex items-center justify-center font-medium text-slate-700">
-                      {venta.unidad.numero || 'N/A'}
+                      {venta.unidad.numero}
                     </div>
                     <div>
-                      <p className="font-medium">Unidad {venta.unidad.numero || 'N/A'}</p>
+                      <p className="font-medium">Unidad {venta.unidad.numero}</p>
                       <p className="text-sm text-muted-foreground">Número de unidad</p>
                     </div>
                   </div>
@@ -216,7 +192,7 @@ const VentaDetail = () => {
           <TabsContent value="info" className="space-y-4">
             <InfoTab 
               venta={venta} 
-              compradores={formattedCompradores} 
+              compradores={compradores} 
               pagos={pagos}
               onAddComprador={() => setOpenCompradorDialog(true)}
             />
@@ -227,7 +203,7 @@ const VentaDetail = () => {
               <PagosTab 
                 ventaId={venta.id} 
                 compradorVentaId={compradorVentaId}
-                pagos={pagos as unknown as Pago[]}
+                pagos={pagos}
                 isLoading={isLoading}
                 refetchPagos={refetch}
               />

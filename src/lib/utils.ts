@@ -1,83 +1,152 @@
 
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 /**
- * Format a date string to a more readable format
+ * Formatea un valor numérico como moneda (MXN)
  */
-export function formatDate(dateString: string, formatString: string = "dd/MM/yyyy") {
-  if (!dateString) return "N/A";
+export function formatCurrency(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) return '$0';
+  
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numValue);
+}
+
+/**
+ * Formatea un valor numérico como moneda abreviada (k, M, etc.)
+ */
+export function formatCurrencyShort(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) return '$0';
+  
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  
+  if (numValue >= 1000000) {
+    return formatCurrency(Math.round(numValue / 1000000)) + 'M';
+  } else if (numValue >= 1000) {
+    return formatCurrency(Math.round(numValue / 1000)) + 'k';
+  }
+  
+  return formatCurrency(numValue);
+}
+
+/**
+ * Formatea un número para mostrar separadores de miles
+ */
+export function formatNumber(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) return '0';
+  
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  
+  return new Intl.NumberFormat('es-MX', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numValue);
+}
+
+/**
+ * Formatea un valor como porcentaje
+ */
+export function formatPercent(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) return '0%';
+  
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  
+  return new Intl.NumberFormat('es-MX', {
+    style: 'percent',
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(numValue / 100);
+}
+
+/**
+ * Genera colores para gráficos según el nombre del conjunto de datos
+ */
+export function getDatasetColor(datasetName: string): string {
+  const colorMap: Record<string, string> = {
+    'Rendimiento Inmobiliario': '#8b5cf6', // Morado
+    'Rendimiento Alternativo': '#0ea5e9', // Azul cielo
+    'Ingresos': '#10b981', // Verde
+    'Gastos': '#f97316', // Naranja
+    'Utilidad': '#6366f1', // Índigo
+    'Ocupación': '#8b5cf6', // Morado
+  };
+  
+  return colorMap[datasetName] || '#8b5cf6'; // Morado por defecto
+}
+
+/**
+ * Trunca un texto si supera cierta longitud y agrega "..."
+ */
+export function truncateText(text: string, maxLength: number = 20): string {
+  if (!text) return '';
+  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+}
+
+/**
+ * Formatea un texto para su visualización, reemplazando valores nulos/vacíos
+ */
+export function formatText(value: string | null | undefined, placeholder: string = '-'): string {
+  if (value === null || value === undefined || value === '') return placeholder;
+  return value;
+}
+
+/**
+ * Formatea una fecha en formato amigable
+ */
+export function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '-';
+  
   try {
-    const date = new Date(dateString);
-    return format(date, formatString, { locale: es });
+    const date = new Date(dateStr);
+    return new Intl.DateTimeFormat('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    }).format(date);
   } catch (error) {
-    console.error("Error formatting date:", error);
-    return "Invalid date";
+    console.error('Error formatting date:', error);
+    return dateStr;
   }
 }
 
 /**
- * Format currency using Intl
+ * Formatea fecha y hora en formato amigable
  */
-export function formatCurrency(amount: number) {
-  if (amount === undefined || amount === null) return "$0";
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    minimumFractionDigits: 0,
-  }).format(amount);
+export function formatDateTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '-';
+  
+  try {
+    const date = new Date(dateStr);
+    return new Intl.DateTimeFormat('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  } catch (error) {
+    console.error('Error formatting date and time:', error);
+    return dateStr;
+  }
 }
 
 /**
- * Parse currency string to number
+ * Convierte un objeto a formato query string para URLs
  */
-export function parseCurrency(value: string) {
-  return Number(value.replace(/[^0-9.-]+/g, ""));
+export function objectToQueryString(obj: Record<string, any>): string {
+  return Object.keys(obj)
+    .filter(key => obj[key] !== undefined && obj[key] !== null && obj[key] !== '')
+    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(obj[key])}`)
+    .join('&');
 }
 
-/**
- * Truncate a string if it exceeds a certain length
- */
-export function truncateString(str: string, maxLength: number = 100) {
-  if (!str) return "";
-  if (str.length <= maxLength) return str;
-  return str.substring(0, maxLength) + "...";
-}
-
-/**
- * Capitalize the first letter of a string
- */
-export function capitalizeFirstLetter(string: string) {
-  if (!string) return "";
-  return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-/**
- * Format percentage from decimal to percentage string
- */
-export function formatPercentage(decimal: number) {
-  return `${(decimal * 100).toFixed(0)}%`;
-}
-
-/**
- * Generate a random hex color
- */
-export function randomColor() {
-  return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-}
-
-/**
- * Get initials from a name
- */
-export function getInitials(name: string) {
-  if (!name) return "";
-  const names = name.split(" ");
-  if (names.length === 1) return names[0].charAt(0).toUpperCase();
-  return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
-}

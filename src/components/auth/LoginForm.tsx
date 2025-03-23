@@ -27,7 +27,6 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     setErrorMessage(null);
     
     try {
-      // Fix here: Just pass email and password - remove the third argument that's causing the error
       const result = await signInWithEmailPassword(email, password);
       
       if (result.success) {
@@ -44,7 +43,24 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         let errorMsg = result.error || "Error desconocido al iniciar sesión";
         
         if (errorMsg.includes("Email not confirmed") || errorMsg.includes("Correo no confirmado")) {
-          errorMsg = "Su correo electrónico no ha sido confirmado. Por favor, contacte al administrador.";
+          errorMsg = "Su correo electrónico no ha sido confirmado. Intentando confirmar automáticamente...";
+          
+          // Intentamos iniciar sesión nuevamente después de un breve retraso
+          setTimeout(async () => {
+            const retryResult = await signInWithEmailPassword(email, password, true);
+            if (retryResult.success) {
+              toast({
+                title: "Inicio de sesión exitoso",
+                description: "Bienvenido de nuevo",
+              });
+              navigate("/dashboard");
+              if (onSuccess) onSuccess();
+            } else {
+              setErrorMessage(retryResult.error || "No se pudo confirmar su correo automáticamente. Por favor, contacte al administrador.");
+            }
+            setLoading(false);
+          }, 1500);
+          return;
         } else if (errorMsg.includes("Invalid login credentials")) {
           errorMsg = "Credenciales incorrectas. Verifique su correo y contraseña.";
         }

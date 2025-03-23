@@ -1,144 +1,164 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Venta, VentasFilters } from './types';
+import { useToast } from '@/hooks/use-toast';
 
-export const useVentas = (filters: VentasFilters = {}) => {
-  const {
-    estado,
-    fechaInicio,
-    fechaFin,
-    unidadId,
-    desarrolloId,
-    compradorId,
-    empresa_id,
-  } = filters;
+// Tipos básicos
+export interface Venta {
+  id: string;
+  precio_total: number;
+  estado: string;
+  es_fraccional: boolean;
+  fecha_inicio: string;
+  fecha_actualizacion: string;
+  unidad_id: string;
+  unidad?: {
+    numero: string;
+    prototipo?: {
+      nombre: string;
+      desarrollo?: {
+        nombre: string;
+      };
+    };
+  };
+  progreso?: number;
+}
 
-  const result = useQuery({
-    queryKey: ['ventas', filters],
-    queryFn: async () => {
+export interface VentasFilter {
+  desarrollo_id?: string;
+  estado?: string;
+  busqueda?: string;
+}
+
+export const useVentas = (filters: VentasFilter = {}) => {
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { toast } = useToast();
+
+  // Consulta para obtener las ventas
+  const fetchVentas = async (): Promise<Venta[]> => {
+    try {
       let query = supabase
         .from('ventas')
         .select(`
           *,
-          unidad:unidades(*)
+          unidad:unidades(
+            numero,
+            prototipo:prototipos(
+              nombre,
+              desarrollo:desarrollos(
+                nombre
+              )
+            )
+          )
         `);
 
-      // Apply filters
-      if (estado && estado !== 'todos') {
-        query = query.eq('estado', estado);
+      // Aplicar filtros si existen
+      if (filters.desarrollo_id) {
+        query = query.eq('unidad.prototipo.desarrollo.id', filters.desarrollo_id);
       }
 
-      if (fechaInicio) {
-        query = query.gte('fecha_inicio', fechaInicio);
-      }
-
-      if (fechaFin) {
-        query = query.lte('fecha_inicio', fechaFin);
-      }
-
-      if (unidadId) {
-        query = query.eq('unidad_id', unidadId);
-      }
-
-      if (desarrolloId) {
-        query = query.eq('desarrollos.id', desarrolloId);
-      }
-
-      if (compradorId) {
-        // This is a bit more complex, would need a join or a separate query
-        // For now, we'll simplify and handle this on the frontend
-      }
-
-      if (empresa_id) {
-        query = query.eq('empresa_id', empresa_id);
+      if (filters.estado && filters.estado !== 'todos') {
+        query = query.eq('estado', filters.estado);
       }
 
       const { data, error } = await query;
 
-      if (error) {
-        console.error('Error fetching ventas:', error);
-        return [];
-      }
+      if (error) throw error;
 
-      // Cast the data to ensure it matches the expected type
-      return data as unknown as Venta[];
-    },
+      // Calcular el progreso para cada venta (esto sería un cálculo real en la implementación final)
+      return (data || []).map(venta => ({
+        ...venta,
+        progreso: 30, // Este sería un valor calculado en base a los pagos
+      }));
+    } catch (error) {
+      console.error('Error al obtener ventas:', error);
+      return [];
+    }
+  };
+
+  const { data = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['ventas', filters],
+    queryFn: fetchVentas,
   });
 
-  return {
-    ventas: result.data || [],
-    isLoading: result.isLoading,
-    error: result.error,
-    refetch: result.refetch
-  };
-};
-
-export const useCreateVenta = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (ventaData: Partial<Venta>) => {
+  // Función para crear una venta
+  const createVenta = async (ventaData: {
+    unidad_id: string;
+    precio_total: number;
+    es_fraccional: boolean;
+    estado?: string;
+  }) => {
+    setIsCreating(true);
+    try {
       const { data, error } = await supabase
         .from('ventas')
-        .insert([ventaData])
+        .insert({
+          unidad_id: ventaData.unidad_id,
+          precio_total: ventaData.precio_total,
+          es_fraccional: ventaData.es_fraccional,
+          estado: ventaData.estado || 'en_proceso'
+        })
         .select();
 
-      if (error) {
-        throw error;
+      if (error) throw error;
+      
+      // También actualizar el estado de la unidad si es necesario
+      const { error: unidadError } = await supabase
+        .from('unidades')
+        .update({ estado: 'en_proceso' })
+        .eq('id', ventaData.unidad_id);
+        
+      if (unidadError) {
+        console.error('Error updating unidad estado:', unidadError);
       }
+      
+      await refetch();
+      return data;
+    } catch (error) {
+      console.error('Error al crear venta:', error);
+      throw error;
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
-      return data[0];
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ventas'] });
-    },
-  });
-};
-
-export const useUpdateVenta = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, ...updateData }: { id: string } & Partial<Venta>) => {
+  // Función para actualizar una venta
+  const updateVenta = async (id: string, updates: Partial<Omit<Venta, 'id'>>) => {
+    setIsUpdating(true);
+    try {
       const { data, error } = await supabase
         .from('ventas')
-        .update(updateData)
+        .update({
+          ...updates,
+          fecha_actualizacion: new Date().toISOString()
+        })
         .eq('id', id)
         .select();
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
+      
+      await refetch();
+      return data;
+    } catch (error) {
+      console.error('Error al actualizar venta:', error);
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
-      return data[0];
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ventas'] });
-    },
-  });
-};
-
-export const useDeleteVenta = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('ventas')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        throw error;
-      }
-
-      return id;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ventas'] });
-    },
-  });
+  return {
+    ventas: data,
+    isLoading,
+    error,
+    refetch,
+    createVenta,
+    updateVenta,
+    isCreating,
+    isUpdating
+  };
 };
 
 export default useVentas;

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,10 +76,9 @@ export default function useResourceActions({
         }
       }
       
-      // Ensure empresa_id is set for all relevant resource types
+      // Ensure empresa_id is set for relevant resource types
       if ((resourceType === 'desarrollos' || resourceType === 'leads' || resourceType === 'cotizaciones') 
           && !data.empresa_id && empresaId) {
-        console.log(`Setting empresa_id to ${empresaId} for ${resourceType}`);
         data.empresa_id = empresaId;
       }
       
@@ -119,8 +119,25 @@ export default function useResourceActions({
         console.log('Updating existing resource with id:', resourceId);
         let error;
         
-        // Consistently apply empresa_id to all resource types that need it
-        if (resourceType === 'desarrollos' || resourceType === 'leads' || resourceType === 'cotizaciones') {
+        if (resourceType === 'desarrollos') {
+          const result = await supabase
+            .from(resourceType)
+            .update({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any)
+            .eq('id', resourceId);
+          error = result.error;
+        } else if (resourceType === 'leads') {
+          const result = await supabase
+            .from(resourceType)
+            .update({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any)
+            .eq('id', resourceId);
+          error = result.error;
+        } else if (resourceType === 'cotizaciones') {
           const result = await supabase
             .from(resourceType)
             .update({
@@ -158,9 +175,23 @@ export default function useResourceActions({
         console.log('Creating new resource');
         let error;
         
-        // Consistently apply empresa_id to all resource types that need it
-        if (resourceType === 'desarrollos' || resourceType === 'leads' || resourceType === 'cotizaciones') {
-          console.log(`Setting empresa_id to ${empresaId} for new ${resourceType}`);
+        if (resourceType === 'desarrollos') {
+          const result = await supabase
+            .from(resourceType)
+            .insert({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any);
+          error = result.error;
+        } else if (resourceType === 'leads') {
+          const result = await supabase
+            .from(resourceType)
+            .insert({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any);
+          error = result.error;
+        } else if (resourceType === 'cotizaciones') {
           const result = await supabase
             .from(resourceType)
             .insert({

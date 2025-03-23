@@ -52,7 +52,7 @@ export const useSubscriptionInfo = () => {
   const { userId, empresaId } = useUserRole();
   
   // Query to fetch the active subscription and plan details
-  const { data: subscriptionInfo, isLoading, error, refetch } = useQuery({
+  const { data: subscriptionInfo, isLoading, error } = useQuery({
     queryKey: ['subscriptionInfo', userId, empresaId],
     queryFn: async (): Promise<SubscriptionInfo> => {
       if (!userId) {
@@ -235,19 +235,12 @@ export const useSubscriptionInfo = () => {
       };
     },
     enabled: !!userId,
-    // Reducir staleTime para actualizar más frecuentemente
-    staleTime: 5000, // 5 segundos
-    // Añadir refetchInterval para actualizar automáticamente
-    refetchInterval: 10000, // 10 segundos
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
   });
 
   return {
     subscriptionInfo: subscriptionInfo || getDefaultSubscriptionInfo(),
     isLoading,
-    error,
-    refetch  // Asegurarnos de incluir la función refetch en el retorno
+    error
   };
 };
 

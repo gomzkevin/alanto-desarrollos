@@ -1,124 +1,103 @@
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Venta } from '@/hooks/types';
-import { formatCurrency } from '@/lib/utils';
-import { Users, PlusCircle } from 'lucide-react';
-
-interface InfoTabComprador {
-  id: string;
-  comprador_id: string;
-  nombre: string;
-  porcentaje: number;
-  pagos_realizados?: number;
-  total_pagos?: number;
-}
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Users, Plus } from "lucide-react";
+import { Venta } from "@/hooks/useVentas";
+import { formatCurrency } from "@/lib/utils";
+import { Pago } from "@/hooks/usePagos";
 
 interface InfoTabProps {
   venta: Venta;
-  compradores: InfoTabComprador[];
-  pagos: any[];
+  compradores: Array<{
+    id: string;
+    comprador_id: string;
+    nombre: string;
+    porcentaje: number;
+    pagos_realizados?: number;
+    total_pagos?: number;
+  }>;
+  pagos: Pago[];
   onAddComprador: () => void;
 }
 
 export const InfoTab = ({ venta, compradores, pagos, onAddComprador }: InfoTabProps) => {
-  const totalPagos = pagos.length;
-  
+  // Calculate payments per buyer
+  const pagosPorComprador = compradores.reduce((acc, comprador) => {
+    acc[comprador.id] = pagos
+      .filter(pago => pago.comprador_venta_id === comprador.id)
+      .reduce((total, pago) => total + pago.monto, 0);
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-lg font-medium flex items-center">
-              <Users className="mr-2 h-5 w-5 text-muted-foreground" />
-              Compradores Asignados
-            </CardTitle>
-            <Button variant="outline" size="sm" onClick={onAddComprador}>
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Agregar
-            </Button>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-lg">Compradores</CardTitle>
+        <Button 
+          size="sm"
+          onClick={onAddComprador}
+          className="h-8"
+        >
+          <Plus className="h-4 w-4 mr-1" /> Agregar Comprador
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {compradores.length === 0 ? (
+          <div className="text-center py-4 text-muted-foreground">
+            No hay compradores asignados a esta venta. Use el botón "Agregar Comprador" para asignar uno.
           </div>
-        </CardHeader>
-        <CardContent>
-          {compradores.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No hay compradores asignados a esta venta.</p>
-              <p className="mt-2">Agregue un comprador para comenzar a registrar pagos.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Tipo de venta: <span className="font-medium">{venta.es_fraccional ? 'Fraccional' : 'Individual'}</span>
+              {venta.es_fraccional && compradores.length > 0 && (
+                <span> - {compradores.length} copropietarios</span>
+              )}
             </div>
-          ) : (
-            <div className="space-y-4">
-              {compradores.map((comprador) => (
-                <div key={comprador.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
+            
+            {compradores.map(comprador => {
+              // Calculate the amount this buyer should pay based on percentage
+              const montoComprador = venta.es_fraccional 
+                ? (venta.precio_total * comprador.porcentaje) / 100 
+                : venta.precio_total;
+              
+              // Get total payments made by this buyer
+              const pagosRealizados = pagosPorComprador[comprador.id] || 0;
+              
+              // Calculate number of payments made by this buyer
+              const numPagosRealizados = pagos.filter(
+                pago => pago.comprador_venta_id === comprador.id
+              ).length;
+
+              return (
+                <div key={comprador.id} className="flex items-center justify-between py-3 border-b last:border-0">
+                  <div className="flex items-center gap-3">
+                    <Users className="h-8 w-8 text-slate-400" />
                     <div>
-                      <h3 className="font-medium">{comprador.nombre}</h3>
+                      <p className="font-medium">{comprador.nombre}</p>
                       <p className="text-sm text-muted-foreground">
-                        Porcentaje: {comprador.porcentaje}%
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge>{comprador.pagos_realizados || 0} pagos</Badge>
-                    </div>
-                  </div>
-                  
-                  <Separator className="my-3" />
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Monto comprometido</p>
-                      <p className="font-medium">
-                        {formatCurrency((venta.precio_total * comprador.porcentaje) / 100)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total pagado</p>
-                      <p className="font-medium">
-                        {formatCurrency(
-                          pagos
-                            .filter(p => p.comprador_venta_id === comprador.id)
-                            .reduce((sum, p) => sum + p.monto, 0)
+                        {venta.es_fraccional ? (
+                          <>Porcentaje: <span className="font-medium">{comprador.porcentaje}%</span></>
+                        ) : (
+                          <>Propietario único</>
                         )}
                       </p>
                     </div>
                   </div>
+                  <div className="text-right">
+                    <p className="font-medium">{formatCurrency(montoComprador)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {numPagosRealizados} pagos registrados
+                    </p>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
-      {totalPagos > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-medium">Resumen de Pagos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-primary/5 p-4 rounded-lg text-center">
-                <p className="text-sm text-muted-foreground">Total de Pagos</p>
-                <p className="text-2xl font-bold">{totalPagos}</p>
-              </div>
-              <div className="bg-primary/5 p-4 rounded-lg text-center">
-                <p className="text-sm text-muted-foreground">Pagado</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(pagos.reduce((sum, p) => sum + p.monto, 0))}
-                </p>
-              </div>
-              <div className="bg-primary/5 p-4 rounded-lg text-center">
-                <p className="text-sm text-muted-foreground">Pendiente</p>
-                <p className="text-2xl font-bold text-amber-600">
-                  {formatCurrency(
-                    venta.precio_total - pagos.reduce((sum, p) => sum + p.monto, 0)
-                  )}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
+
+export default InfoTab;

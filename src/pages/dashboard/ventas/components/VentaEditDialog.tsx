@@ -1,140 +1,104 @@
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Venta } from '@/hooks/types';
-import { useUpdateVenta } from '@/hooks/useVentas';
-import { useToast } from '@/hooks/use-toast';
-
-// Define form schema
-const formSchema = z.object({
-  precio_total: z.string().optional(),
-  notas: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { useVentas, Venta } from "@/hooks/useVentas";
+import { useToast } from "@/hooks/use-toast";
 
 interface VentaEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   venta: Venta;
-  onSuccess?: () => void;
+  onSuccess: () => void;
 }
 
-export const VentaEditDialog = ({
-  open,
-  onOpenChange,
-  venta,
-  onSuccess,
+export const VentaEditDialog = ({ 
+  open, 
+  onOpenChange, 
+  venta, 
+  onSuccess 
 }: VentaEditDialogProps) => {
-  const { toast } = useToast();
-  const updateVentaMutation = useUpdateVenta();
-  const [isLoading, setIsLoading] = useState(false);
+  const [precioTotal, setPrecioTotal] = useState<string>(venta?.precio_total?.toString() || '');
+  const [esFraccional, setEsFraccional] = useState<boolean>(venta?.es_fraccional || false);
   
-  const formatCurrency = (val: number) => `$${val.toLocaleString('es-MX')}`;
-  const parseCurrency = (val: string) => {
-    return Number(val.replace(/[^0-9.-]+/g, ''));
-  };
-
-  const {
-    handleSubmit,
-    register,
-    formState: { errors },
-    reset,
-  } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      precio_total: formatCurrency(venta.precio_total || 0),
-      notas: venta.notas || '',
-    },
-  });
-
-  const onSubmit = async (values: FormValues) => {
-    setIsLoading(true);
+  const { updateVenta, isUpdating } = useVentas();
+  const { toast } = useToast();
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!precioTotal) {
+      toast({
+        title: "Campo requerido",
+        description: "El precio total es requerido",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
-      const updatedVenta = {
-        id: venta.id,
-        precio_total: parseCurrency(values.precio_total || '0'),
-        notas: values.notas,
-      };
-
-      await updateVentaMutation.mutateAsync(updatedVenta);
+      await updateVenta(venta.id, {
+        precio_total: parseFloat(precioTotal),
+        es_fraccional: esFraccional
+      });
       
       toast({
         title: "Venta actualizada",
         description: "La información de la venta ha sido actualizada exitosamente",
       });
       
-      if (onSuccess) onSuccess();
+      onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error updating venta:', error);
+      console.error('Error al actualizar venta:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar la venta",
-        variant: "destructive",
+        description: "No se pudo actualizar la información de la venta",
+        variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
     }
   };
-
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Editar Venta</DialogTitle>
+      <DialogContent className="sm:max-w-[425px] border-2 border-gray-300 shadow-lg rounded-lg overflow-hidden">
+        <DialogHeader className="bg-gradient-to-r from-indigo-50 to-white pb-2 border-b-2 border-gray-200">
+          <DialogTitle>Editar información de venta</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <label htmlFor="precio_total" className="text-sm font-medium">
-                Precio Total
-              </label>
-              <Input
-                id="precio_total"
-                {...register('precio_total')}
-                placeholder="$0.00"
-              />
-              {errors.precio_total && (
-                <p className="text-sm text-red-500">{errors.precio_total.message}</p>
-              )}
-            </div>
-            
-            <div className="grid gap-2">
-              <label htmlFor="notas" className="text-sm font-medium">
-                Notas
-              </label>
-              <Input
-                id="notas"
-                {...register('notas')}
-                placeholder="Agregar notas..."
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-5 p-6">
+          <div className="space-y-3">
+            <Label htmlFor="precio-total" className="text-gray-700">Precio de Venta <span className="text-red-500">*</span></Label>
+            <Input
+              id="precio-total"
+              type="number"
+              formatCurrency
+              placeholder="$0.00"
+              value={precioTotal}
+              onChange={(e) => setPrecioTotal(e.target.value)}
+              required
+              className="border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+            />
           </div>
           
-          <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => onOpenChange(false)}
-              disabled={isLoading}
-            >
+          <div className="flex items-center space-x-3 pt-2">
+            <Switch
+              id="es-fraccional"
+              checked={esFraccional}
+              onCheckedChange={setEsFraccional}
+            />
+            <Label htmlFor="es-fraccional" className="text-gray-700 cursor-pointer">Venta fraccional</Label>
+          </div>
+          
+          <DialogFooter className="pt-2 px-0">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-gray-300">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Guardando...' : 'Guardar Cambios'}
+            <Button type="submit" disabled={isUpdating} className="bg-indigo-600 hover:bg-indigo-700">
+              {isUpdating ? 'Guardando...' : 'Guardar cambios'}
             </Button>
           </DialogFooter>
         </form>
@@ -142,3 +106,5 @@ export const VentaEditDialog = ({
     </Dialog>
   );
 };
+
+export default VentaEditDialog;

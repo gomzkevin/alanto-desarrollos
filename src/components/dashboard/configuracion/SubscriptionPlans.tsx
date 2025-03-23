@@ -17,9 +17,6 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { initiateSubscription, cancelSubscription, updateSubscription } from "@/lib/stripe";
-import { useLocation, useNavigate } from "react-router-dom";
-import { UpdateBillingButton } from "./UpdateBillingButton";
 
 interface SubscriptionPlan {
   id: string;
@@ -33,7 +30,6 @@ interface SubscriptionPlan {
     max_vendedores?: number;
     [key: string]: any;
   };
-  stripe_price_id?: string;
 }
 
 interface CurrentSubscription {
@@ -42,73 +38,30 @@ interface CurrentSubscription {
   current_period_end: string;
   plan_id: string;
   subscription_plans: SubscriptionPlan;
-  stripe_subscription_id?: string;
 }
 
 export function SubscriptionPlans() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
   const { userId } = useUserRole();
-  const { subscriptionInfo, refetch: refetchSubscriptionInfo } = useSubscriptionInfo();
-  const location = useLocation();
-  const navigate = useNavigate();
+  const { subscriptionInfo } = useSubscriptionInfo();
 
-  // Revised useEffect for URL parameters and forced refresh
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const success = searchParams.get('success');
-    const canceled = searchParams.get('canceled');
-    const refresh = searchParams.get('refresh');
-    const timestamp = searchParams.get('t');
-    
-    console.log("URL params:", { success, canceled, refresh, timestamp });
-    
-    if (success) {
-      toast({
-        title: "Suscripción completada",
-        description: "Tu suscripción ha sido activada correctamente.",
-      });
-      navigate('/dashboard/configuracion', { replace: true });
-    } else if (canceled) {
-      toast({
-        title: "Suscripción cancelada",
-        description: "Has cancelado el proceso de suscripción.",
-        variant: "destructive",
-      });
-      navigate('/dashboard/configuracion', { replace: true });
-    } else if (refresh) {
-      // Force a refetch of subscription data
-      console.log("Forzando actualización de datos de suscripción debido a parámetro refresh");
-      refetchSubscriptionInfo();
-      
-      // Remover el parámetro de refresh pero mantener la vista actual
-      const cleanParams = new URLSearchParams(location.search);
-      cleanParams.delete('refresh');
-      cleanParams.delete('t');
-      navigate({
-        pathname: location.pathname,
-        search: cleanParams.toString() 
-      }, { replace: true });
-    }
-  }, [location, navigate, refetchSubscriptionInfo]);
-
+  // Helper function to ensure features is always an object
   const normalizeFeatures = (features: any): SubscriptionPlan['features'] => {
     if (!features) return {};
     if (typeof features === 'object' && !Array.isArray(features)) return features;
-    return {};
+    return {}; // Default empty object if features is not in expected format
   };
 
   useEffect(() => {
-    console.log("Subscription status in SubscriptionPlans:", subscriptionInfo.isActive);
-    
     const fetchPlansAndSubscription = async () => {
       if (!userId) return;
       
       try {
         setIsLoading(true);
         
+        // Fetch plans
         const { data: plansData, error: plansError } = await supabase
           .from('subscription_plans')
           .select('*')
@@ -118,6 +71,7 @@ export function SubscriptionPlans() {
           throw plansError;
         }
 
+        // Convert and ensure proper typing
         const typedPlans: SubscriptionPlan[] = plansData?.map(plan => ({
           ...plan,
           interval: plan.interval === 'year' ? 'year' : 'month' as 'month' | 'year',
@@ -126,8 +80,7 @@ export function SubscriptionPlans() {
 
         setPlans(typedPlans);
 
-        // Check explicitly for active subscriptions
-        console.log("Fetching active subscription for user:", userId);
+        // Fetch current subscription
         const { data: subData, error: subError } = await supabase
           .from('subscriptions')
           .select('*, subscription_plans(*)')
@@ -135,14 +88,12 @@ export function SubscriptionPlans() {
           .eq('status', 'active')
           .maybeSingle();
 
-        console.log("Subscription query result:", subData, subError);
-
         if (subError && subError.code !== 'PGRST116') {
           throw subError;
         }
 
+        // If we have subscription data, properly type it
         if (subData) {
-          console.log("Found active subscription:", subData);
           const typedSubscription: CurrentSubscription = {
             ...subData,
             subscription_plans: {
@@ -155,9 +106,6 @@ export function SubscriptionPlans() {
           };
           
           setCurrentSubscription(typedSubscription);
-        } else {
-          console.log("No active subscription found");
-          setCurrentSubscription(null);
         }
       } catch (error) {
         console.error("Error fetching subscription data:", error);
@@ -172,80 +120,68 @@ export function SubscriptionPlans() {
     };
 
     fetchPlansAndSubscription();
-  }, [userId, subscriptionInfo.isActive]);
+  }, [userId]);
 
   const handleSubscribe = async (planId: string) => {
     try {
+      // Check if user already has a subscription
       if (currentSubscription) {
-        if (!currentSubscription.stripe_subscription_id) {
-          toast({
-            title: "Error",
-            description: "No se encontró información de suscripción en Stripe.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        setProcessingPlanId(planId);
-        
-        const success = await updateSubscription(
-          currentSubscription.stripe_subscription_id, 
-          planId
-        );
-        
-        if (success) {
-          toast({
-            title: "Plan actualizado",
-            description: "Tu plan de suscripción ha sido actualizado correctamente.",
-          });
-          
-          window.location.reload();
-        }
-        
+        toast({
+          title: "Ya tienes una suscripción activa",
+          description: "Contacta a soporte para cambiar de plan.",
+        });
         return;
       }
 
-      setProcessingPlanId(planId);
+      // Simulate subscription creation
+      setIsLoading(true);
       
-      // Pass userId to initiateSubscription
-      await initiateSubscription(planId, userId);
+      const { data: planData, error: planError } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('id', planId)
+        .single();
+        
+      if (planError) throw planError;
+      
+      // For demo purposes, create a subscription directly
+      const { data: subscriptionData, error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: userId,
+          plan_id: planId,
+          status: 'active',
+          current_period_start: new Date().toISOString(),
+          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 days
+        })
+        .select('*, subscription_plans(*)');
+      
+      if (subscriptionError) throw subscriptionError;
+      
+      if (subscriptionData && subscriptionData.length > 0) {
+        const typedSubscription: CurrentSubscription = {
+          ...subscriptionData[0],
+          subscription_plans: {
+            ...subscriptionData[0].subscription_plans,
+            interval: subscriptionData[0].subscription_plans.interval === 'year' 
+              ? 'year' 
+              : 'month' as 'month' | 'year',
+            features: normalizeFeatures(subscriptionData[0].subscription_plans.features)
+          }
+        };
+        
+        setCurrentSubscription(typedSubscription);
+      }
+      
+      toast({
+        title: "Suscripción activada",
+        description: `Te has suscrito al plan ${planData.name} correctamente.`,
+      });
     } catch (error) {
       console.error("Error subscribing to plan:", error);
       toast({
         title: "Error",
         description: "Ocurrió un error al procesar la suscripción.",
-        variant: "destructive",
-      });
-    } finally {
-      setProcessingPlanId(null);
-    }
-  };
-
-  const handleCancelSubscription = async () => {
-    if (!currentSubscription?.stripe_subscription_id) {
-      toast({
-        title: "Error",
-        description: "No se encontró información de suscripción.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const success = await cancelSubscription(currentSubscription.stripe_subscription_id);
-      
-      if (success) {
-        setCurrentSubscription({
-          ...currentSubscription,
-          status: 'active_canceling',
-        });
-      }
-    } catch (error) {
-      console.error("Error canceling subscription:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo cancelar la suscripción.",
         variant: "destructive",
       });
     } finally {
@@ -266,6 +202,7 @@ export function SubscriptionPlans() {
 
   return (
     <div className="space-y-6">
+      {/* Resumen de facturación */}
       {subscriptionInfo.isActive && subscriptionInfo.currentPlan && (
         <Card>
           <CardHeader>
@@ -367,21 +304,14 @@ export function SubscriptionPlans() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Estado:</span>
-                    <Badge variant="outline" className={
-                      currentSubscription?.status === 'active_canceling' 
-                        ? "bg-amber-50 text-amber-700 border-amber-200"
-                        : "bg-green-50 text-green-700 border-green-200"
-                    }>
-                      {currentSubscription?.status === 'active_canceling' 
-                        ? 'Cancelación programada' 
-                        : 'Activo'}
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      Activo
                     </Badge>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Próxima renovación:</span>
                     <span>
                       {subscriptionInfo.renewalDate?.toLocaleDateString() || 'No disponible'}
-                      {currentSubscription?.status === 'active_canceling' && " (No se renovará)"}
                     </span>
                   </div>
                 </div>
@@ -389,30 +319,14 @@ export function SubscriptionPlans() {
             </div>
           </CardContent>
           <CardFooter>
-            <div className="w-full space-y-2">
-              <div className="flex gap-2 w-full">
-                <UpdateBillingButton />
-                <Button 
-                  variant={currentSubscription?.status === 'active_canceling' ? "outline" : "default"} 
-                  className="flex-1"
-                  onClick={handleCancelSubscription}
-                  disabled={currentSubscription?.status === 'active_canceling' || isLoading}
-                >
-                  {currentSubscription?.status === 'active_canceling' 
-                    ? 'Cancelación programada' 
-                    : 'Cancelar Suscripción'}
-                </Button>
-              </div>
-              {currentSubscription?.status === 'active_canceling' && (
-                <p className="text-xs text-center text-gray-500">
-                  Tu suscripción permanecerá activa hasta el final del período actual.
-                </p>
-              )}
-            </div>
+            <Button variant="outline" className="w-full">
+              Gestionar Suscripción
+            </Button>
           </CardFooter>
         </Card>
       )}
 
+      {/* Planes disponibles */}
       <Card>
         <CardHeader>
           <CardTitle>Planes de Suscripción</CardTitle>
@@ -420,16 +334,11 @@ export function SubscriptionPlans() {
             Elige el plan que mejor se adapte a tus necesidades.
             {currentSubscription && (
               <div className="mt-2">
-                <Badge variant="outline" className={
-                  currentSubscription.status === 'active_canceling' 
-                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                    : "bg-green-50 text-green-700 border-green-200"
-                }>
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                   Plan activo: {currentSubscription.subscription_plans.name}
-                  {currentSubscription.status === 'active_canceling' && " (Cancelación programada)"}
                 </Badge>
                 <p className="text-sm mt-1">
-                  Tu suscripción {currentSubscription.status === 'active_canceling' ? 'estará activa hasta' : 'se renovará el'} {new Date(currentSubscription.current_period_end).toLocaleDateString()}
+                  Tu suscripción se renovará el {new Date(currentSubscription.current_period_end).toLocaleDateString()}
                 </p>
               </div>
             )}
@@ -490,20 +399,10 @@ export function SubscriptionPlans() {
                   <CardFooter>
                     <Button 
                       className="w-full" 
-                      disabled={isCurrentPlan || isLoading || processingPlanId === plan.id}
+                      disabled={isCurrentPlan || isLoading}
                       onClick={() => handleSubscribe(plan.id)}
                     >
-                      {processingPlanId === plan.id ? (
-                        <>
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Procesando...
-                        </>
-                      ) : (
-                        isCurrentPlan ? 'Plan Actual' : 'Suscribirse'
-                      )}
+                      {isCurrentPlan ? 'Plan Actual' : 'Suscribirse'}
                     </Button>
                   </CardFooter>
                 </Card>

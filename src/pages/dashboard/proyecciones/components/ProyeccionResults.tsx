@@ -1,42 +1,71 @@
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
 import { ProyeccionChart } from './ProyeccionChart';
+import { ProyeccionTable } from './ProyeccionTable';
+import { ProyeccionSummary } from './ProyeccionSummary';
 
-export interface ProyeccionResultsProps {
-  resultData: any;
+interface ProyeccionResultsProps {
+  chartData: any[];
+  summaryData: {
+    propertyValue: number;
+    airbnbProfit: number;
+    altReturn: number;
+    avgROI: number;
+  };
+  activeTab: string;
+  onTabChange: (value: string) => void;
+  fileName: string;
 }
 
-export const ProyeccionResults: React.FC<ProyeccionResultsProps> = ({ resultData }) => {
-  // For demonstration, we'll use a simple chart
-  const chartData = resultData?.monthlyProjection || [];
-
+export const ProyeccionResults = ({
+  chartData,
+  summaryData,
+  activeTab,
+  onTabChange,
+  fileName
+}: ProyeccionResultsProps) => {
   return (
-    <Card className="border-2 border-slate-200 shadow-md">
-      <CardHeader className="bg-gradient-to-r from-blue-50 to-white pb-2">
-        <CardTitle className="text-lg font-semibold text-blue-800">
-          Resultados de Proyección
-        </CardTitle>
+    <Card className="xl:col-span-9">
+      <CardHeader>
+        <CardTitle>Resultados de la proyección</CardTitle>
+        <CardDescription>
+          Comparativa de rendimientos a lo largo del tiempo
+        </CardDescription>
       </CardHeader>
-      <CardContent className="pt-4">
-        <div className="h-72 w-full">
-          <ProyeccionChart chartData={chartData} />
-        </div>
-        <Separator className="my-4" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <p className="text-sm text-blue-500 font-medium">Inversión Total</p>
-            <p className="text-2xl font-bold text-blue-800">
-              ${resultData?.totalInvestment?.toLocaleString() || 0}
-            </p>
+      <CardContent className="p-0">
+        <Tabs 
+          defaultValue="grafica" 
+          value={activeTab}
+          onValueChange={onTabChange}
+          className="w-full"
+        >
+          <div className="px-6 pt-2">
+            <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+              <TabsTrigger value="grafica">Gráfica</TabsTrigger>
+              <TabsTrigger value="tabla">Tabla detallada</TabsTrigger>
+            </TabsList>
           </div>
-          <div className="bg-green-50 rounded-lg p-4">
-            <p className="text-sm text-green-500 font-medium">Utilidad Proyectada</p>
-            <p className="text-2xl font-bold text-green-800">
-              ${resultData?.projectedProfit?.toLocaleString() || 0}
-            </p>
-          </div>
+          
+          <TabsContent value="grafica" className="p-6">
+            <ProyeccionChart chartData={chartData} />
+          </TabsContent>
+          
+          <TabsContent value="tabla" className="px-0">
+            <ProyeccionTable chartData={chartData} />
+          </TabsContent>
+        </Tabs>
+
+        <ProyeccionSummary summaryData={summaryData} />
+
+        <div className="flex justify-end p-6 pt-0">
+          <ExportPDFButton
+            buttonText="Exportar PDF"
+            resourceName="proyeccion"
+            fileName={fileName}
+            className="flex items-center gap-2"
+          />
         </div>
       </CardContent>
     </Card>

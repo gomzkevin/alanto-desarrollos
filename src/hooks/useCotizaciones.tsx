@@ -1,182 +1,100 @@
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CotizacionesFilters, SimpleCotizacion } from './types';
+import { Tables } from '@/integrations/supabase/types';
 
-// Simplified API for creating cotizaciones
-interface CreateCotizacionParams {
-  lead_id: string;
-  desarrollo_id: string;
-  prototipo_id: string;
-  unidad_id?: string;
-  precio_total?: number;
-  monto_anticipo: number;
-  enganche_porcentaje?: number;
-  plazo_meses?: number;
-  tasa_interes?: number;
-  numero_pagos: number;
-  notas?: string;
-  usar_finiquito?: boolean;
-  fecha_inicio_pagos?: string;
-  fecha_finiquito?: string;
-  monto_finiquito?: number;
-  nombre_cliente?: string;
-  email_cliente?: string;
-  telefono_cliente?: string;
-  estado?: string;
-}
+export type Cotizacion = Tables<"cotizaciones">;
 
-export const useCotizaciones = (filters: CotizacionesFilters = {}) => {
-  const withRelations = filters.withRelations || false;
-  const { estado, desarrolloId, leadId, prototipoId } = filters;
+// Define basic types without circular references
+export type ExtendedCotizacion = Cotizacion & {
+  lead?: Tables<"leads"> | null;
+  desarrollo?: Tables<"desarrollos"> | null;
+  prototipo?: Tables<"prototipos"> | null;
+  // These fields are now part of the database schema
+  fecha_inicio_pagos?: string | null;
+  fecha_finiquito?: string | null;
+};
 
-  // Remove withRelations from the filter object before sending to API
-  const apiFilters = { ...filters };
-  delete apiFilters.withRelations;
+type FetchCotizacionesOptions = {
+  limit?: number;
+  withRelations?: boolean;
+};
 
-  const result = useQuery({
-    queryKey: ['cotizaciones', apiFilters],
-    queryFn: async () => {
-      let query = supabase
-        .from('cotizaciones')
-        .select(`
-          id,
-          created_at,
-          lead_id,
-          desarrollo_id,
-          prototipo_id,
-          monto_anticipo,
-          numero_pagos,
-          notas,
-          usar_finiquito,
-          fecha_inicio_pagos,
-          fecha_finiquito,
-          monto_finiquito
-        `);
-
-      // Apply filters
-      if (estado) {
-        query = query.eq('estado', estado);
+export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
+  const { limit, withRelations = false } = options;
+  
+  // Function to fetch cotizaciones
+  const fetchCotizaciones = async (): Promise<ExtendedCotizacion[]> => {
+    console.log('Fetching cotizaciones with options:', options);
+    
+    try {
+      // Build the basic query
+      let query = supabase.from('cotizaciones').select('*');
+      
+      // Apply limit if provided
+      if (limit) {
+        query = query.limit(limit);
       }
-
-      if (desarrolloId) {
-        query = query.eq('desarrollo_id', desarrolloId);
-      }
-
-      if (leadId) {
-        query = query.eq('lead_id', leadId);
-      }
-
-      if (prototipoId) {
-        query = query.eq('prototipo_id', prototipoId);
-      }
-
-      const { data: cotizacionesData, error } = await query;
-
+      
+      const { data: cotizaciones, error } = await query;
+      
       if (error) {
+        console.error('Error fetching cotizaciones:', error);
         throw new Error(error.message);
       }
+      
+      // If relations are requested, fetch them for each cotizacion
+      if (withRelations && cotizaciones && cotizaciones.length > 0) {
+        // Get all unique IDs for related entities
+        const leadIds = [...new Set(cotizaciones.map(c => c.lead_id))];
+        const desarrolloIds = [...new Set(cotizaciones.map(c => c.desarrollo_id))];
+        const prototipoIds = [...new Set(cotizaciones.map(c => c.prototipo_id))];
+        
+        // Fetch all related entities in batch queries
+        const [leadsResponse, desarrollosResponse, prototipesResponse] = await Promise.all([
+          supabase.from('leads').select('*').in('id', leadIds),
+          supabase.from('desarrollos').select('*').in('id', desarrolloIds),
+          supabase.from('prototipos').select('*').in('id', prototipoIds)
+        ]);
+        
+        const leads = leadsResponse.error ? [] : leadsResponse.data;
+        const desarrollos = desarrollosResponse.error ? [] : desarrollosResponse.data;
+        const prototipos = prototipesResponse.error ? [] : prototipesResponse.data;
+        
+        // Map related entities to cotizaciones
+        const extendedCotizaciones: ExtendedCotizacion[] = cotizaciones.map(cotizacion => {
+          return {
+            ...cotizacion,
+            lead: leads.find(l => l.id === cotizacion.lead_id) || null,
+            desarrollo: desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null,
+            prototipo: prototipos.find(p => p.id === cotizacion.prototipo_id) || null
+          };
+        });
+        
+        console.log('Extended cotizaciones fetched:', extendedCotizaciones);
+        return extendedCotizaciones;
+      }
+      
+      console.log('Cotizaciones fetched:', cotizaciones);
+      return cotizaciones as ExtendedCotizacion[];
+    } catch (error) {
+      console.error('Error in fetchCotizaciones:', error);
+      throw error;
+    }
+  };
 
-      return cotizacionesData as SimpleCotizacion[];
-    },
+  // Use React Query to fetch and cache the data
+  const queryResult = useQuery({
+    queryKey: ['cotizaciones', limit, withRelations],
+    queryFn: fetchCotizaciones
   });
 
   return {
-    cotizaciones: result.data || [],
-    isLoading: result.isLoading,
-    error: result.error,
-    refetch: result.refetch,
+    cotizaciones: queryResult.data || [],
+    isLoading: queryResult.isLoading,
+    error: queryResult.error,
+    refetch: queryResult.refetch
   };
-};
-
-export const useCreateCotizacion = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (cotizacionData: CreateCotizacionParams) => {
-      // Prepare the data object
-      const dbData: any = {
-        lead_id: cotizacionData.lead_id,
-        desarrollo_id: cotizacionData.desarrollo_id,
-        prototipo_id: cotizacionData.prototipo_id,
-        unidad_id: cotizacionData.unidad_id,
-        monto_anticipo: cotizacionData.monto_anticipo,
-        numero_pagos: cotizacionData.numero_pagos,
-        notas: cotizacionData.notas,
-        usar_finiquito: cotizacionData.usar_finiquito || false,
-        fecha_inicio_pagos: cotizacionData.fecha_inicio_pagos,
-        fecha_finiquito: cotizacionData.fecha_finiquito,
-        monto_finiquito: cotizacionData.monto_finiquito,
-        created_at: new Date().toISOString(),
-        estado: cotizacionData.estado || 'pendiente'
-      };
-
-      const { data, error } = await supabase
-        .from('cotizaciones')
-        .insert([dbData])
-        .select();
-
-      if (error) {
-        throw error;
-      }
-
-      return data[0];
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cotizaciones'] });
-    },
-  });
-};
-
-export const useUpdateCotizacion = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, ...updateData }: { id: string; [key: string]: any }) => {
-      // Filter out undefined values
-      const filteredData = Object.fromEntries(
-        Object.entries(updateData).filter(([_, v]) => v !== undefined)
-      );
-
-      const { data, error } = await supabase
-        .from('cotizaciones')
-        .update(filteredData)
-        .eq('id', id)
-        .select();
-
-      if (error) {
-        throw error;
-      }
-
-      return data[0];
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cotizaciones'] });
-    },
-  });
-};
-
-export const useDeleteCotizacion = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('cotizaciones')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        throw error;
-      }
-
-      return id;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cotizaciones'] });
-    },
-  });
 };
 
 export default useCotizaciones;

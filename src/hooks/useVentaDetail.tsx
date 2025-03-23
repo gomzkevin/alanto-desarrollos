@@ -1,125 +1,184 @@
 
-import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Venta, VentaComprador, Pago } from './types';
+import { Venta } from './useVentas';
+import { Pago } from './usePagos';
+import { useState, useEffect } from 'react';
 
-const useVentaDetail = (ventaId: string | undefined) => {
-  const [venta, setVenta] = useState<Venta | null>(null);
-  const [compradores, setCompradores] = useState<VentaComprador[]>([]);
+interface Comprador {
+  id: string;
+  comprador_id: string;
+  nombre: string;
+  porcentaje: number;
+  pagos_realizados?: number;
+  total_pagos?: number;
+}
+
+export const useVentaDetail = (ventaId?: string) => {
+  const [compradores, setCompradores] = useState<Comprador[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
-  const [montoPagado, setMontoPagado] = useState(0);
-  const [progreso, setProgreso] = useState(0);
-  const [compradorVentaId, setCompradorVentaId] = useState<string | null>(null);
-
-  // Main query to fetch the venta data
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ['venta', ventaId],
-    queryFn: async () => {
-      if (!ventaId) return null;
-
-      // Fetch the venta
-      const { data: ventaData, error: ventaError } = await supabase
+  const [loading, setLoading] = useState(false);
+  
+  // Fetch venta details
+  const fetchVentaDetail = async (): Promise<Venta | null> => {
+    if (!ventaId) return null;
+    
+    try {
+      const { data, error } = await supabase
         .from('ventas')
         .select(`
           *,
-          unidad:unidades(*)
+          unidad:unidades(
+            *,
+            prototipo:prototipos(
+              *,
+              desarrollo:desarrollos(*)
+            )
+          )
         `)
         .eq('id', ventaId)
         .single();
 
-      if (ventaError) {
-        console.error('Error fetching venta:', ventaError);
-        return null;
-      }
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error al obtener detalles de venta:', error);
+      return null;
+    }
+  };
 
-      // Fetch compradores
-      const { data: compradoresData, error: compradoresError } = await supabase
-        .from('compradores_venta')
-        .select(`
-          *,
-          comprador:compradores(*),
-          vendedor:vendedores(*)
-        `)
-        .eq('venta_id', ventaId);
-
-      if (compradoresError) {
-        console.error('Error fetching compradores:', compradoresError);
-        return { venta: ventaData, compradores: [] };
-      }
-
-      // Fetch pagos
-      const { data: pagosData, error: pagosError } = await supabase
-        .from('pagos')
-        .select('*')
-        .eq('venta_id', ventaId);
-
-      if (pagosError) {
-        console.error('Error fetching pagos:', pagosError);
-        return { 
-          venta: ventaData, 
-          compradores: compradoresData, 
-          pagos: [] 
-        };
-      }
-
-      return { 
-        venta: ventaData, 
-        compradores: compradoresData, 
-        pagos: pagosData 
-      };
-    },
+  const { data: venta, isLoading: isVentaLoading, refetch: refetchVenta } = useQuery({
+    queryKey: ['venta', ventaId],
+    queryFn: fetchVentaDetail,
     enabled: !!ventaId,
   });
 
+  // Fetch compradores with lead information
+  const fetchCompradores = async (): Promise<Comprador[]> => {
+    if (!ventaId) return [];
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('compradores_venta')
+        .select(`
+          *,
+          comprador:leads(id, nombre)
+        `)
+        .eq('venta_id', ventaId);
+
+      if (error) throw error;
+
+      // Count pagos for each comprador
+      const compradoresWithPagos = await Promise.all(
+        data.map(async (item) => {
+          const { count, error: pagosError } = await supabase
+            .from('pagos')
+            .select('id', { count: 'exact', head: true })
+            .eq('comprador_venta_id', item.id)
+            .eq('estado', 'registrado'); // Cambiado de 'verificado' a 'registrado'
+            
+          return {
+            id: item.id,
+            comprador_id: item.comprador_id,
+            nombre: item.comprador?.nombre || 'Comprador sin nombre',
+            porcentaje: item.porcentaje_propiedad,
+            pagos_realizados: count || 0,
+          };
+        })
+      );
+
+      return compradoresWithPagos;
+    } catch (error) {
+      console.error('Error al obtener compradores:', error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const { data: compradoresData = [], isLoading: isCompradoresLoading, refetch: refetchCompradores } = useQuery({
+    queryKey: ['compradores', ventaId],
+    queryFn: fetchCompradores,
+    enabled: !!ventaId,
+  });
+
+  // Set compradores to state
   useEffect(() => {
-    if (data) {
-      // Cast data to ensure it matches the expected type
-      const typedVenta = data.venta as unknown as Venta;
-      setVenta(typedVenta);
+    if (compradoresData) {
+      setCompradores(compradoresData);
+    }
+  }, [compradoresData]);
+
+  // Fetch all pagos for this venta (regardless of comprador)
+  const fetchPagos = async (): Promise<Pago[]> => {
+    if (!ventaId || !compradoresData.length) return [];
+    
+    try {
+      // Get all comprador_venta_ids for this venta
+      const compradorVentaIds = compradoresData.map(c => c.id);
       
-      // Map porcentaje_propiedad to porcentaje for compatibility
-      const mappedCompradores = data.compradores?.map(comp => ({
-        ...comp,
-        porcentaje: comp.porcentaje_propiedad
-      })) || [];
+      if (!compradorVentaIds.length) return [];
       
-      setCompradores(mappedCompradores as VentaComprador[]);
+      const { data, error } = await supabase
+        .from('pagos')
+        .select('*')
+        .in('comprador_venta_id', compradorVentaIds)
+        .order('fecha', { ascending: false });
+
+      if (error) throw error;
       
-      // Add required properties that might be missing from DB
-      const mappedPagos = (data.pagos || []).map(pago => ({
+      // Map the data to ensure estados conform to the expected type
+      const typedPagos: Pago[] = (data || []).map(pago => ({
         ...pago,
-        venta_id: ventaId || '',
-        concepto: pago.concepto || 'Pago',
+        estado: pago.estado === 'rechazado' ? 'rechazado' : 'registrado'
       }));
       
-      setPagos(mappedPagos as Pago[]);
-
-      // Set first comprador as default if available
-      if (mappedCompradores.length > 0) {
-        setCompradorVentaId(mappedCompradores[0].id);
-      }
-
-      // Calculate the amount paid and progress
-      const totalPagado = (data.pagos || []).reduce((sum, pago) => sum + (pago.monto || 0), 0);
-      setMontoPagado(totalPagado);
-
-      if (data.venta?.precio_total) {
-        const progresoCalculado = (totalPagado / data.venta.precio_total) * 100;
-        setProgreso(Math.min(100, progresoCalculado));
-      }
+      return typedPagos;
+    } catch (error) {
+      console.error('Error al obtener pagos de la venta:', error);
+      return [];
     }
-  }, [data, ventaId]);
+  };
+
+  const { data: pagosData = [], isLoading: isPagosLoading, refetch: refetchPagos } = useQuery({
+    queryKey: ['pagos-venta', ventaId, compradoresData],
+    queryFn: fetchPagos,
+    enabled: !!ventaId && compradoresData.length > 0,
+  });
+
+  // Update pagos in state when data changes
+  useEffect(() => {
+    setPagos(pagosData);
+  }, [pagosData]);
+
+  // Calculate payment progress
+  const montoPagado = pagos.reduce((total, pago) => {
+    return pago.estado === 'registrado' ? total + pago.monto : total;
+  }, 0);
+
+  const progreso = venta?.precio_total
+    ? Math.round((montoPagado / venta.precio_total) * 100)
+    : 0;
+
+  // Refetch all data
+  const refetch = async () => {
+    await refetchVenta();
+    await refetchCompradores();
+    await refetchPagos();
+  };
+
+  const compradorVentaId = compradores.length > 0 ? compradores[0].id : '';
 
   return {
     venta,
     compradores,
     pagos,
-    isLoading,
+    isLoading: isVentaLoading || isCompradoresLoading || isPagosLoading || loading,
     montoPagado,
     progreso,
     refetch,
-    compradorVentaId,
+    compradorVentaId
   };
 };
 

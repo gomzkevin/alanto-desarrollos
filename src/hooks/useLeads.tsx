@@ -63,7 +63,7 @@ type FetchLeadsOptions = {
   agente?: string;
   limit?: number;
   search?: string;
-  empresa_id?: number | null;
+  empresa_id?: number;
 };
 
 export const useLeads = (options: FetchLeadsOptions = {}) => {
@@ -71,10 +71,9 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
   const { toast } = useToast();
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos();
-  const { empresaId: userEmpresaId } = useUserRole();
+  const { empresaId } = useUserRole();
   
-  // Use the specified empresa_id or fall back to the user's empresa_id
-  const effectiveEmpresaId = empresa_id !== undefined ? empresa_id : userEmpresaId;
+  const effectiveEmpresaId = empresa_id || empresaId;
   
   console.log("useLeads initialization with options:", { ...options, empresaId: effectiveEmpresaId });
   console.log("Lead status options:", LEAD_STATUS_OPTIONS);
@@ -105,7 +104,6 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
       // Filter by empresa_id if provided
       if (effectiveEmpresaId) {
         query = query.eq('empresa_id', effectiveEmpresaId);
-        console.log('Filtering leads by empresa_id:', effectiveEmpresaId);
       }
       
       // Apply limit if provided

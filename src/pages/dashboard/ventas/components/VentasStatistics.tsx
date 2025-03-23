@@ -1,116 +1,53 @@
 
-import React from 'react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { formatCurrency, formatPercentage } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const VentasStatistics = () => {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Total Ventas
-          </CardTitle>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            className="h-4 w-4 text-muted-foreground"
-          >
-            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-          </svg>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <Card className="col-span-2">
+        <CardHeader>
+          <CardTitle>Ingresos Mensuales</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(1250000)}</div>
-          <p className="text-xs text-muted-foreground">
-            +20.1% desde el mes pasado
-          </p>
+        <CardContent className="pl-2">
+          <div className="h-[300px] flex items-center justify-center text-slate-500">
+            Gráfico de ingresos por mes (próximamente)
+          </div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Número de Ventas
-          </CardTitle>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            className="h-4 w-4 text-muted-foreground"
-          >
-            <rect width="20" height="14" x="2" y="5" rx="2" />
-            <path d="M2 10h20" />
-          </svg>
+      
+      <Card className="col-span-1">
+        <CardHeader>
+          <CardTitle>Distribución de Ventas</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">5</div>
-          <p className="text-xs text-muted-foreground">
-            +12% desde el mes pasado
-          </p>
+          <div className="h-[300px] flex items-center justify-center text-slate-500">
+            Gráfico de distribución (próximamente)
+          </div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Ticket Promedio
-          </CardTitle>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            className="h-4 w-4 text-muted-foreground"
-          >
-            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-          </svg>
+      
+      <Card className="col-span-3">
+        <CardHeader>
+          <CardTitle>Proyección de Pagos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(250000)}</div>
-          <p className="text-xs text-muted-foreground">
-            +5.2% desde el mes pasado
-          </p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Tasa de Cierre
-          </CardTitle>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            className="h-4 w-4 text-muted-foreground"
-          >
-            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-          </svg>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatPercentage(0.65)}</div>
-          <p className="text-xs text-muted-foreground">
-            +2.5% desde el mes pasado
-          </p>
+          <Tabs defaultValue="proximos">
+            <TabsList>
+              <TabsTrigger value="proximos">Próximos Pagos</TabsTrigger>
+              <TabsTrigger value="retrasados">Pagos Retrasados</TabsTrigger>
+            </TabsList>
+            <TabsContent value="proximos" className="pt-4">
+              <div className="h-[200px] flex items-center justify-center text-slate-500">
+                Tabla de próximos pagos programados (próximamente)
+              </div>
+            </TabsContent>
+            <TabsContent value="retrasados" className="pt-4">
+              <div className="h-[200px] flex items-center justify-center text-slate-500">
+                Tabla de pagos retrasados (próximamente)
+              </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
