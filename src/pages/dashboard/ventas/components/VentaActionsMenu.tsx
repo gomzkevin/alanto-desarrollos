@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Edit, Trash, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/router";
+import { useNavigate } from "react-router-dom";
 import { Venta } from "@/hooks/types";
 
 interface VentaActionsMenuProps {
@@ -22,11 +22,11 @@ interface VentaActionsMenuProps {
 
 export const VentaActionsMenu = ({ venta, onRefresh, onClick }: VentaActionsMenuProps) => {
   const { toast } = useToast();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
-    router.push(`/dashboard/ventas/${venta.id}`);
+    navigate(`/dashboard/ventas/${venta.id}`);
   };
 
   const handleDelete = async (e: React.MouseEvent) => {

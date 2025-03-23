@@ -1,4 +1,3 @@
-
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -25,15 +24,12 @@ export function formatCurrency(value: number | string | null | undefined): strin
 /**
  * Parsea un string de moneda a un número
  */
-export function parseCurrency(value: string | number): number {
-  if (typeof value === 'number') return value;
-  
-  // Eliminar símbolos de moneda, comas y espacios
-  const cleanValue = value.replace(/[$,\s]/g, '');
-  
-  // Convertir a número
-  return parseFloat(cleanValue) || 0;
-}
+export const parseCurrency = (value: string): number => {
+  // Remove currency symbols, spaces, and commas
+  const sanitized = value.replace(/[^\d.-]/g, '');
+  const parsed = parseFloat(sanitized);
+  return isNaN(parsed) ? 0 : parsed;
+};
 
 /**
  * Formatea un valor numérico como moneda abreviada (k, M, etc.)
