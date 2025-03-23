@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
+import { useUserRole } from './useUserRole';
 
 export type Cotizacion = Tables<"cotizaciones">;
 
@@ -22,14 +23,21 @@ type FetchCotizacionesOptions = {
 
 export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
   const { limit, withRelations = false } = options;
+  // Always call hooks at the top level, regardless of conditions
+  const { empresaId } = useUserRole();
   
   // Function to fetch cotizaciones
   const fetchCotizaciones = async (): Promise<ExtendedCotizacion[]> => {
-    console.log('Fetching cotizaciones with options:', options);
+    console.log('Fetching cotizaciones with options:', options, 'for empresa:', empresaId);
     
     try {
       // Build the basic query
       let query = supabase.from('cotizaciones').select('*');
+      
+      // Filter by empresa_id if it exists
+      if (empresaId) {
+        query = query.eq('empresa_id', empresaId);
+      }
       
       // Apply limit if provided
       if (limit) {
@@ -85,7 +93,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
 
   // Use React Query to fetch and cache the data
   const queryResult = useQuery({
-    queryKey: ['cotizaciones', limit, withRelations],
+    queryKey: ['cotizaciones', limit, withRelations, empresaId],
     queryFn: fetchCotizaciones
   });
 
