@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useNavigate } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -23,7 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { exportToExcel } from '@/lib/excel';
 
 export const VentasTable = () => {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { empresaId } = useUserRole();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -55,7 +56,7 @@ export const VentasTable = () => {
   };
 
   const handleRowClick = (ventaId: string) => {
-    router.push(`/dashboard/ventas/${ventaId}`);
+    navigate(`/dashboard/ventas/${ventaId}`);
   };
 
   const handleExportToExcel = () => {
