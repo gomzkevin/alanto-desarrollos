@@ -110,7 +110,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
             console.error('Error fetching leads:', leadsError);
           } else if (leads) {
             basicCotizaciones.forEach(cotizacion => {
-              cotizacion.lead = leads.find(l => l.id === cotizacion.lead_id) as SimpleLead || null;
+              cotizacion.lead = leads.find(l => l.id === cotizacion.lead_id) || null;
             });
           }
         }
@@ -126,7 +126,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
             console.error('Error fetching desarrollos:', desarrollosError);
           } else if (desarrollos) {
             basicCotizaciones.forEach(cotizacion => {
-              cotizacion.desarrollo = desarrollos.find(d => d.id === cotizacion.desarrollo_id) as SimpleDesarrollo || null;
+              cotizacion.desarrollo = desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null;
             });
           }
         }
@@ -142,7 +142,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
             console.error('Error fetching prototipos:', prototipossError);
           } else if (prototipos) {
             basicCotizaciones.forEach(cotizacion => {
-              cotizacion.prototipo = prototipos.find(p => p.id === cotizacion.prototipo_id) as SimplePrototipo || null;
+              cotizacion.prototipo = prototipos.find(p => p.id === cotizacion.prototipo_id) || null;
             });
           }
         }

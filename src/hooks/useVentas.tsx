@@ -9,7 +9,9 @@ import {
   VentasFilter, 
   SimpleUnidad, 
   SimplePrototipo, 
-  SimpleDesarrollo 
+  SimpleDesarrollo,
+  ExtendedPrototipo,
+  ExtendedUnidad
 } from './types/venta.types';
 
 export const useVentas = (filters: VentasFilter = {}) => {
@@ -156,7 +158,8 @@ export const useVentas = (filters: VentasFilter = {}) => {
           const unidad = unidadesData.find(u => u.id === venta.unidad_id);
           
           if (unidad) {
-            const unidadObj: SimpleUnidad = {
+            // Create the unidad object first
+            const unidadObj: ExtendedUnidad = {
               id: unidad.id,
               numero: unidad.numero || '',
               estado: unidad.estado,
@@ -165,9 +168,10 @@ export const useVentas = (filters: VentasFilter = {}) => {
               prototipo: null
             };
             
+            // Find and attach prototipo if it exists
             const prototipo = prototipossData.find(p => p.id === unidad.prototipo_id);
             if (prototipo) {
-              const prototipoObj: SimplePrototipo = {
+              const prototipoObj: ExtendedPrototipo = {
                 id: prototipo.id,
                 nombre: prototipo.nombre || '',
                 precio: prototipo.precio,
@@ -175,8 +179,10 @@ export const useVentas = (filters: VentasFilter = {}) => {
                 desarrollo: null
               };
               
+              // Attach prototipo to unidad
               unidadObj.prototipo = prototipoObj;
               
+              // Find and attach desarrollo if it exists
               const desarrollo = desarrollosData.find(d => d.id === prototipo.desarrollo_id);
               if (desarrollo) {
                 prototipoObj.desarrollo = {
@@ -188,6 +194,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
               }
             }
             
+            // Attach the complete unidad to the venta
             venta.unidad = unidadObj;
           }
         });

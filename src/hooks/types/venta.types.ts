@@ -14,7 +14,7 @@ export interface SimplePrototipo {
   nombre: string;
   precio?: number;
   desarrollo_id?: string;
-  desarrollo?: SimpleDesarrollo | null;
+  // No reference back to desarrollo
 }
 
 export interface SimpleUnidad {
@@ -23,7 +23,7 @@ export interface SimpleUnidad {
   estado?: string;
   nivel?: string | null;
   prototipo_id?: string;
-  prototipo?: SimplePrototipo | null;
+  // No reference back to prototipo
 }
 
 export interface SimpleLead {
@@ -32,6 +32,15 @@ export interface SimpleLead {
   email?: string | null;
   telefono?: string | null;
   origen?: string | null;
+}
+
+// Extended interfaces that can include references to simple types
+export interface ExtendedPrototipo extends SimplePrototipo {
+  desarrollo?: SimpleDesarrollo | null;
+}
+
+export interface ExtendedUnidad extends SimpleUnidad {
+  prototipo?: ExtendedPrototipo | null;
 }
 
 export interface Venta {
@@ -44,7 +53,7 @@ export interface Venta {
   unidad_id: string;
   empresa_id?: number | null;
   notas?: string | null;
-  unidad?: SimpleUnidad | null;
+  unidad?: ExtendedUnidad | null;
   progreso?: number;
 }
 
@@ -92,7 +101,7 @@ export interface ExtendedCotizacion {
   prototipo_id: string;
   usar_finiquito?: boolean | null;
   empresa_id?: number | null;
-  // Simple references instead of recursive definitions
+  // Simple references
   lead?: SimpleLead | null;
   desarrollo?: SimpleDesarrollo | null;
   prototipo?: SimplePrototipo | null;
