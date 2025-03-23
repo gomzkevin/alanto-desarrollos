@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -96,28 +95,29 @@ export const useVentas = (filters: VentasFilter = {}) => {
         .map(venta => {
           if (!venta) return null;
           
+          // Safely extract properties with type checking
           const ventaObj: Venta = {
             id: venta.id || '',
-            precio_total: venta.precio_total || 0,
-            estado: venta.estado || '',
-            es_fraccional: venta.es_fraccional || false,
-            fecha_inicio: venta.fecha_inicio || '',
-            fecha_actualizacion: venta.fecha_actualizacion || '',
-            unidad_id: venta.unidad_id || '',
-            notas: venta.notas,
+            precio_total: Number(venta.precio_total) || 0,
+            estado: String(venta.estado || ''),
+            es_fraccional: Boolean(venta.es_fraccional),
+            fecha_inicio: String(venta.fecha_inicio || ''),
+            fecha_actualizacion: String(venta.fecha_actualizacion || ''),
+            unidad_id: String(venta.unidad_id || ''),
+            notas: venta.notas ? String(venta.notas) : null,
             progreso: 30, // Default progress value
             unidad: null
           };
           
           // Add empresa_id if the column exists and the value is in the data
           if (hasEmpresaColumn.data && 'empresa_id' in venta) {
-            ventaObj.empresa_id = venta.empresa_id as number | null;
+            ventaObj.empresa_id = venta.empresa_id !== null ? Number(venta.empresa_id) : null;
           }
           
           return ventaObj;
         })
         .filter((v): v is Venta => v !== null);
-      
+        
       // Get all unidad_ids
       const unidadIds = ventas
         .map(venta => venta.unidad_id)
@@ -285,6 +285,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
         ventaInsert.empresa_id = effectiveEmpresaId;
       }
       
+      // Fix the insert operation by passing an object, not an array
       const { data, error } = await supabase
         .from('ventas')
         .insert(ventaInsert)

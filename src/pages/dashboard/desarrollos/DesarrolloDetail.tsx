@@ -1,4 +1,3 @@
-
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, PlusIcon, Building2, Users, AreaChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,8 +22,7 @@ import useUserRole from '@/hooks/useUserRole';
 import useSubscriptionGuard from '@/hooks/useSubscriptionGuard';
 import useChartData from '@/hooks/useChartData';
 
-const DesarrolloDetailPage = () => {
-  // Verificar suscripción activa
+const DesarrolloDetail = () => {
   const { hasAccess, isLoading: isLoadingSubscription } = useSubscriptionGuard();
   
   const { id } = useParams<{ id: string }>();
@@ -37,10 +35,8 @@ const DesarrolloDetailPage = () => {
   
   const desarrollo = desarrollos.find(d => d.id === id);
   
-  // Estado de carga general
   const isLoading = isLoadingDesarrollos || isLoadingPrototipos || isLoadingStats || isLoadingImagenes || isLoadingSubscription;
   
-  // Si todavía estamos verificando la suscripción, mostrar un estado de carga
   if (isLoadingSubscription) {
     return (
       <DashboardLayout>
@@ -52,7 +48,6 @@ const DesarrolloDetailPage = () => {
     );
   }
   
-  // Si no tiene acceso, no renderizar nada (el hook se encarga de la redirección)
   if (!hasAccess) {
     return null;
   }
@@ -134,7 +129,7 @@ const DesarrolloDetailPage = () => {
               
               <TabsContent value="imagenes" className="space-y-2">
                 {images && images.length > 0 ? (
-                  <DesarrolloImageCarousel images={images} />
+                  <DesarrolloImageCarousel imagenes={images} />
                 ) : (
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
@@ -205,7 +200,6 @@ const DesarrolloDetailPage = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="h-72 w-full">
-                          {/* Use appropriate chart component here instead of AreaChart icon */}
                           {chartData.map((item, index) => (
                             <div key={index} className="flex justify-between mb-2">
                               <span>{item.date}</span>
@@ -232,4 +226,4 @@ const DesarrolloDetailPage = () => {
   );
 };
 
-export default DesarrolloDetailPage;
+export default DesarrolloDetail;

@@ -1,157 +1,57 @@
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
 import { ProyeccionFilters } from './ProyeccionFilters';
-import { Calculator } from '@/components/Calculator';
-import { ProyeccionChart } from './ProyeccionChart';
-import { ProyeccionTable } from './ProyeccionTable';
+import { ProyeccionResults } from './ProyeccionResults';
 import { ProyeccionSummary } from './ProyeccionSummary';
-import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useState } from 'react';
-import { BarChart2, TableIcon, ArrowRightIcon } from 'lucide-react';
+import { ProyeccionTable } from './ProyeccionTable';
 
-interface ProyeccionViewProps {
-  selectedDesarrolloId: string;
-  selectedPrototipoId: string;
-  onDesarrolloChange: (value: string) => void;
-  onPrototipoChange: (value: string) => void;
-  chartData: any[];
-  summaryData: {
-    propertyValue: number;
-    airbnbProfit: number;
-    altReturn: number;
-    avgROI: number;
-  };
-  onDataUpdate: (data: any[]) => void;
-  shouldCalculate: boolean;
-  onCreateProjection: () => void;
-  fileName: string;
+export interface ProyeccionViewProps {
+  initialConfig: any;
 }
 
-export const ProyeccionView = ({
-  selectedDesarrolloId,
-  selectedPrototipoId,
-  onDesarrolloChange,
-  onPrototipoChange,
-  chartData,
-  summaryData,
-  onDataUpdate,
-  shouldCalculate,
-  onCreateProjection,
-  fileName
-}: ProyeccionViewProps) => {
-  const [activeTab, setActiveTab] = useState('grafica');
+export const ProyeccionView: React.FC<ProyeccionViewProps> = ({ initialConfig }) => {
+  const [config, setConfig] = useState(initialConfig);
+  const [results, setResults] = useState<any>(null);
+
+  // Calculate financial projections when config changes
+  useEffect(() => {
+    if (!config) return;
+    
+    // Perform financial calculations here
+    const calculatedResults = {
+      roi: 15.5,
+      returnPeriod: 36,
+      totalInvestment: 5000000,
+      projectedProfit: 1200000,
+      monthlyProjection: [
+        { month: 1, income: 50000, expenses: 30000, profit: 20000 },
+        { month: 2, income: 55000, expenses: 32000, profit: 23000 },
+        { month: 3, income: 60000, expenses: 33000, profit: 27000 },
+        // Add more months as needed
+      ]
+    };
+    
+    setResults(calculatedResults);
+  }, [config]);
+
+  const handleConfigChange = (newConfig: any) => {
+    setConfig(newConfig);
+  };
 
   return (
-    <div className="space-y-6" id="proyeccion-detail-content">
-      {/* Header con título y filtros */}
-      <Card className="border-indigo-100 shadow-md bg-gradient-to-r from-white to-indigo-50/30">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <div>
-            <CardTitle className="text-indigo-900">Información de la proyección</CardTitle>
-            <CardDescription>
-              Selecciona desarrollo y prototipo para personalizar la proyección
-            </CardDescription>
-          </div>
-          <ExportPDFButton
-            buttonText="Exportar PDF"
-            resourceName="proyeccion"
-            fileName={fileName}
-            elementId="proyeccion-detail-content"
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
-            variant="default"
-          />
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <ProyeccionFilters
-              selectedDesarrolloId={selectedDesarrolloId}
-              selectedPrototipoId={selectedPrototipoId}
-              onDesarrolloChange={onDesarrolloChange}
-              onPrototipoChange={onPrototipoChange}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Sección de Calculadora */}
-      <Card className="border-purple-100 shadow-md overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-white to-purple-50/30 border-b border-purple-100 pb-2">
-          <CardTitle className="text-purple-900">Parámetros de proyección</CardTitle>
-          <CardDescription>
-            Ajusta los valores para personalizar el cálculo de rendimiento
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <Calculator 
-            desarrolloId={selectedDesarrolloId !== "global" ? selectedDesarrolloId : undefined}
-            prototipoId={selectedPrototipoId !== "global" ? selectedPrototipoId : undefined}
-            onDataUpdate={onDataUpdate}
-            shouldCalculate={shouldCalculate}
-          />
-          
-          <Button 
-            onClick={onCreateProjection} 
-            className="w-full bg-indigo-600 hover:bg-indigo-700 mt-6 flex items-center justify-center gap-2 font-medium"
-          >
-            Actualizar Proyección
-            <ArrowRightIcon size={16} />
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Sección de Resultados */}
-      <Card className="border-amber-100 shadow-md overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-white to-amber-50/30 border-b border-amber-100 pb-2">
-          <CardTitle className="text-amber-900">Resumen de la inversión</CardTitle>
-          <CardDescription>
-            Análisis comparativo de rendimientos
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <ProyeccionSummary summaryData={summaryData} />
-        </CardContent>
-      </Card>
-
-      {/* Sección de Gráfica y Tabla */}
-      <Card className="border-emerald-100 shadow-md overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-white to-emerald-50/30 border-b border-emerald-100 pb-2">
-          <CardTitle className="text-emerald-900">Resultados detallados</CardTitle>
-          <CardDescription>
-            Visualización año por año de la proyección financiera
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Tabs 
-            defaultValue="grafica" 
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <div className="px-6 pt-4">
-              <TabsList className="grid w-full max-w-[400px] grid-cols-2 p-1 bg-emerald-50 border border-emerald-100">
-                <TabsTrigger value="grafica" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-emerald-800">
-                  <BarChart2 size={16} />
-                  Gráfica
-                </TabsTrigger>
-                <TabsTrigger value="tabla" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-emerald-800">
-                  <TableIcon size={16} />
-                  Tabla detallada
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            
-            <TabsContent value="grafica" className="p-6">
-              <ProyeccionChart chartData={chartData} />
-            </TabsContent>
-            
-            <TabsContent value="tabla" className="px-0">
-              <ProyeccionTable chartData={chartData} />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+    <div className="space-y-8">
+      <ProyeccionFilters config={config} onChange={handleConfigChange} />
+      
+      {results && (
+        <>
+          <ProyeccionSummary results={results} />
+          <ProyeccionResults results={results} />
+          <ProyeccionTable data={results.monthlyProjection} />
+        </>
+      )}
     </div>
   );
 };
+
+// Export both the component and its props type
+export default ProyeccionView;

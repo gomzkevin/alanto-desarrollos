@@ -1,197 +1,172 @@
-
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Tables } from '@/integrations/supabase/types';
-import useUserRole from '@/hooks/useUserRole';
+import { useToast } from "@/hooks/use-toast";
+import { SimpleDesarrollo, SimplePrototipo } from '@/hooks/useVentas';
 
-export type Cotizacion = Tables<"cotizaciones">;
-
-// Define simplified types without circular references
-export interface SimplifiedLead {
+// Simplified type to avoid circular references
+export interface SimpleCotizacion {
   id: string;
-  nombre: string;
-  email?: string | null;
-  telefono?: string | null;
-  origen?: string | null;
+  nombre_cliente?: string;
+  email_cliente?: string;
+  telefono_cliente?: string;
+  estado?: string;
+  fecha_creacion?: string;
+  ultima_actualizacion?: string;
+  prototipo_id?: string;
+  desarrollo_id?: string;
+  created_by?: string;
+  prototipo?: SimplePrototipo;
+  desarrollo?: SimpleDesarrollo;
 }
 
-export interface SimplifiedDesarrollo {
-  id: string;
-  nombre: string;
-  ubicacion?: string | null;
+export interface CotizacionesFilter {
+  desarrollo_id?: string;
+  estado?: string;
+  busqueda?: string;
 }
 
-export interface SimplifiedPrototipo {
-  id: string;
-  nombre: string;
-  precio: number;
-}
+const useCotizaciones = (filters: CotizacionesFilter = {}) => {
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { toast } = useToast();
 
-// Define extended cotizacion with simplified related entities
-export interface ExtendedCotizacion {
-  id: string;
-  created_at: string;
-  desarrollo_id: string;
-  fecha_finiquito?: string | null;
-  fecha_inicio_pagos?: string | null;
-  lead_id: string;
-  monto_anticipo: number;
-  monto_finiquito?: number | null;
-  notas?: string | null;
-  numero_pagos: number;
-  prototipo_id: string;
-  usar_finiquito?: boolean | null;
-  empresa_id?: number | null;
-  lead?: SimplifiedLead | null;
-  desarrollo?: SimplifiedDesarrollo | null;
-  prototipo?: SimplifiedPrototipo | null;
-}
-
-type FetchCotizacionesOptions = {
-  limit?: number;
-  withRelations?: boolean;
-  empresa_id?: number | null;
-};
-
-export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
-  const { limit, withRelations = false, empresa_id } = options;
-  const { empresaId: userEmpresaId } = useUserRole();
-  
-  // Use the specified empresa_id or fall back to the user's empresa_id
-  const effectiveEmpresaId = empresa_id !== undefined ? empresa_id : userEmpresaId;
-  
-  // Function to fetch cotizaciones with simplified types to prevent recursion
-  const fetchCotizaciones = async (): Promise<ExtendedCotizacion[]> => {
-    console.log('Fetching cotizaciones with options:', {...options, effectiveEmpresaId});
-    
+  const fetchCotizaciones = async (): Promise<SimpleCotizacion[]> => {
     try {
-      // Build the basic query
-      let query = supabase.from('cotizaciones').select('*');
-      
-      // Filter by empresa_id if provided
-      if (effectiveEmpresaId) {
-        query = query.eq('empresa_id', effectiveEmpresaId);
-        console.log('Filtering cotizaciones by empresa_id:', effectiveEmpresaId);
+      let query = supabase
+        .from('cotizaciones')
+        .select(`
+          id,
+          nombre_cliente,
+          email_cliente,
+          telefono_cliente,
+          estado,
+          fecha_creacion,
+          ultima_actualizacion,
+          prototipo_id,
+          desarrollo_id,
+          created_by,
+          prototipo: prototipos (id, nombre, precio, desarrollo_id),
+          desarrollo: desarrollos (id, nombre, ubicacion, empresa_id)
+        `);
+
+      if (filters.desarrollo_id) {
+        query = query.eq('desarrollo_id', filters.desarrollo_id);
       }
-      
-      // Apply limit if provided
-      if (limit) {
-        query = query.limit(limit);
+
+      if (filters.estado && filters.estado !== 'todos') {
+        query = query.eq('estado', filters.estado);
       }
-      
-      const { data: cotizaciones, error } = await query;
-      
+
+      if (filters.busqueda) {
+        query = query.ilike('nombre_cliente', `%${filters.busqueda}%`);
+      }
+
+      const { data, error } = await query;
+
       if (error) {
         console.error('Error fetching cotizaciones:', error);
         return [];
       }
-      
-      if (!cotizaciones || cotizaciones.length === 0) {
-        return [];
-      }
-      
-      // Type cast to our simplified ExtendedCotizacion type
-      const basicCotizaciones: ExtendedCotizacion[] = cotizaciones.map(c => ({
-        id: c.id,
-        created_at: c.created_at,
-        desarrollo_id: c.desarrollo_id,
-        fecha_finiquito: c.fecha_finiquito,
-        fecha_inicio_pagos: c.fecha_inicio_pagos,
-        lead_id: c.lead_id,
-        monto_anticipo: c.monto_anticipo,
-        monto_finiquito: c.monto_finiquito,
-        notas: c.notas,
-        numero_pagos: c.numero_pagos,
-        prototipo_id: c.prototipo_id,
-        usar_finiquito: c.usar_finiquito,
-        empresa_id: 'empresa_id' in c ? (c.empresa_id as number | null) : null,
-        lead: null,
-        desarrollo: null,
-        prototipo: null
+
+      return data.map(cotizacion => ({
+        id: cotizacion.id,
+        nombre_cliente: cotizacion.nombre_cliente,
+        email_cliente: cotizacion.email_cliente,
+        telefono_cliente: cotizacion.telefono_cliente,
+        estado: cotizacion.estado,
+        fecha_creacion: cotizacion.fecha_creacion,
+        ultima_actualizacion: cotizacion.ultima_actualizacion,
+        prototipo_id: cotizacion.prototipo_id,
+        desarrollo_id: cotizacion.desarrollo_id,
+        created_by: cotizacion.created_by,
+        prototipo: cotizacion.prototipo,
+        desarrollo: cotizacion.desarrollo
       }));
-      
-      // If relations are requested and we have cotizaciones, fetch related entities
-      if (withRelations && basicCotizaciones.length > 0) {
-        // Get all unique IDs for related entities
-        const leadIds = basicCotizaciones
-          .map(c => c.lead_id)
-          .filter((id): id is string => id !== null && id !== undefined);
-          
-        const desarrolloIds = basicCotizaciones
-          .map(c => c.desarrollo_id)
-          .filter((id): id is string => id !== null && id !== undefined);
-          
-        const prototipoIds = basicCotizaciones
-          .map(c => c.prototipo_id)
-          .filter((id): id is string => id !== null && id !== undefined);
-        
-        // Fetch leads if needed
-        if (leadIds.length > 0) {
-          const { data: leads, error: leadsError } = await supabase
-            .from('leads')
-            .select('id, nombre, email, telefono, origen')
-            .in('id', leadIds);
-            
-          if (leadsError) {
-            console.error('Error fetching leads:', leadsError);
-          } else if (leads) {
-            basicCotizaciones.forEach(cotizacion => {
-              cotizacion.lead = leads.find(l => l.id === cotizacion.lead_id) || null;
-            });
-          }
-        }
-        
-        // Fetch desarrollos if needed
-        if (desarrolloIds.length > 0) {
-          const { data: desarrollos, error: desarrollosError } = await supabase
-            .from('desarrollos')
-            .select('id, nombre, ubicacion')
-            .in('id', desarrolloIds);
-            
-          if (desarrollosError) {
-            console.error('Error fetching desarrollos:', desarrollosError);
-          } else if (desarrollos) {
-            basicCotizaciones.forEach(cotizacion => {
-              cotizacion.desarrollo = desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null;
-            });
-          }
-        }
-        
-        // Fetch prototipos if needed
-        if (prototipoIds.length > 0) {
-          const { data: prototipos, error: prototipossError } = await supabase
-            .from('prototipos')
-            .select('id, nombre, precio')
-            .in('id', prototipoIds);
-            
-          if (prototipossError) {
-            console.error('Error fetching prototipos:', prototipossError);
-          } else if (prototipos) {
-            basicCotizaciones.forEach(cotizacion => {
-              cotizacion.prototipo = prototipos.find(p => p.id === cotizacion.prototipo_id) || null;
-            });
-          }
-        }
-      }
-      
-      return basicCotizaciones;
     } catch (error) {
-      console.error('Error in fetchCotizaciones:', error);
+      console.error('Error fetching cotizaciones:', error);
       return [];
     }
   };
 
-  // Use React Query to fetch and cache the data
-  const queryResult = useQuery({
-    queryKey: ['cotizaciones', limit, withRelations, effectiveEmpresaId],
-    queryFn: fetchCotizaciones
+  const { data: cotizaciones = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['cotizaciones', filters],
+    queryFn: fetchCotizaciones,
   });
 
+  const createCotizacion = async (cotizacionData: {
+    nombre_cliente: string;
+    email_cliente: string;
+    telefono_cliente: string;
+    prototipo_id?: string;
+    desarrollo_id?: string;
+    estado?: string;
+  }) => {
+    setIsCreating(true);
+    try {
+      const { data, error } = await supabase
+        .from('cotizaciones')
+        .insert([cotizacionData])
+        .select();
+
+      if (error) throw error;
+      toast({
+        title: "Cotización creada",
+        description: "La cotización ha sido creada exitosamente",
+      });
+      await refetch();
+      return data;
+    } catch (error) {
+      console.error('Error creating cotizacion:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo crear la cotización",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const updateCotizacion = async (id: string, updates: Partial<SimpleCotizacion>) => {
+    setIsUpdating(true);
+    try {
+      const { data, error } = await supabase
+        .from('cotizaciones')
+        .update(updates)
+        .eq('id', id)
+        .select();
+
+      if (error) throw error;
+      toast({
+        title: "Cotización actualizada",
+        description: "La cotización ha sido actualizada exitosamente",
+      });
+      await refetch();
+      return data;
+    } catch (error) {
+      console.error('Error updating cotizacion:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la cotización",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return {
-    cotizaciones: queryResult.data || [],
-    isLoading: queryResult.isLoading,
-    error: queryResult.error,
-    refetch: queryResult.refetch
+    cotizaciones,
+    isLoading,
+    error,
+    refetch,
+    createCotizacion,
+    updateCotizacion,
+    isCreating,
+    isUpdating
   };
 };
 
