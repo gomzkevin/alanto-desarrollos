@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -20,7 +19,7 @@ import {
   CardFooter 
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ExtendedCotizacion } from '@/hooks';
+import { ExtendedCotizacion } from '@/hooks/useCotizaciones';
 import ExportPDFButton from '@/components/dashboard/ExportPDFButton';
 import { generateAmortizationTable } from '@/utils/quotationPDF';
 import { Badge } from '@/components/ui/badge';

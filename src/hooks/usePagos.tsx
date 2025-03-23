@@ -1,8 +1,21 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Pago } from './types/venta.types';
+
+export interface Pago {
+  id: string;
+  comprador_venta_id: string;
+  monto: number;
+  fecha: string;
+  metodo_pago: string;
+  estado: 'registrado' | 'rechazado';
+  referencia?: string;
+  comprobante_url?: string;
+  notas?: string;
+  created_at: string;
+}
 
 export interface NuevoPago {
   comprador_venta_id: string;

@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { useVentas } from "@/hooks/useVentas";
-import { Venta } from "@/hooks";
+import { useVentas, Venta } from "@/hooks/useVentas";
 import { useToast } from "@/hooks/use-toast";
 
 interface VentaEditDialogProps {

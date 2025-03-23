@@ -1,132 +1,60 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Venta } from './useVentas';
+import { Pago } from './usePagos';
 import { useState, useEffect } from 'react';
 import useUserRole from '@/hooks/useUserRole';
-import useSupabaseTableHelpers from './useSupabaseTableHelpers';
-import { Venta, Pago, Comprador, SimpleDesarrollo, SimplePrototipo, ExtendedPrototipo, ExtendedUnidad } from './types/venta.types';
+
+interface Comprador {
+  id: string;
+  comprador_id: string;
+  nombre: string;
+  porcentaje: number;
+  pagos_realizados?: number;
+  total_pagos?: number;
+}
 
 export const useVentaDetail = (ventaId?: string) => {
   const [compradores, setCompradores] = useState<Comprador[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [loading, setLoading] = useState(false);
   const { empresaId } = useUserRole();
-  const { hasColumn } = useSupabaseTableHelpers();
   
-  // Simplified fetch function to avoid deep type recursion
+  // Fetch venta details
   const fetchVentaDetail = async (): Promise<Venta | null> => {
     if (!ventaId) return null;
     
     try {
       console.log('Fetching venta details with id:', ventaId, 'and empresa_id:', empresaId);
       
-      // First, check if the ventas table has empresa_id column
-      const hasEmpresaColumn = await hasColumn('ventas', 'empresa_id');
+      let query = supabase
+        .from('ventas')
+        .select(`
+          *,
+          unidad:unidades(
+            *,
+            prototipo:prototipos(
+              *,
+              desarrollo:desarrollos(*)
+            )
+          )
+        `)
+        .eq('id', ventaId);
       
-      // Fetch basic venta information
-      let ventaQuery = supabase.from('ventas').select('*');
-      
-      // Filter by id and empresa_id if necessary
-      ventaQuery = ventaQuery.eq('id', ventaId);
-      if (empresaId && hasEmpresaColumn) {
-        ventaQuery = ventaQuery.eq('empresa_id', empresaId);
+      // Add empresa_id filter if available
+      if (empresaId) {
+        query = query.eq('empresa_id', empresaId);
       }
       
-      const { data: ventaData, error: ventaError } = await ventaQuery.maybeSingle();
-      
-      if (ventaError) {
-        console.error('Error fetching venta details:', ventaError);
+      const { data, error } = await query.single();
+
+      if (error) {
+        console.error('Error fetching venta details:', error);
         return null;
       }
       
-      if (!ventaData) {
-        return null;
-      }
-      
-      const venta: Venta = {
-        id: ventaData.id || '',
-        precio_total: ventaData.precio_total || 0,
-        estado: ventaData.estado || '',
-        es_fraccional: ventaData.es_fraccional || false,
-        fecha_inicio: ventaData.fecha_inicio || '',
-        fecha_actualizacion: ventaData.fecha_actualizacion || '',
-        unidad_id: ventaData.unidad_id || '',
-        notas: ventaData.notas,
-        unidad: null
-      };
-      
-      // Add empresa_id if it exists
-      if ('empresa_id' in ventaData) {
-        venta.empresa_id = ventaData.empresa_id as number | null;
-      }
-      
-      // Fetch unidad information separately to avoid deep nesting
-      if (ventaData.unidad_id) {
-        const { data: unidadData, error: unidadError } = await supabase
-          .from('unidades')
-          .select('id, numero, estado, nivel, prototipo_id')
-          .eq('id', ventaData.unidad_id)
-          .maybeSingle();
-          
-        if (unidadError) {
-          console.error('Error fetching unidad details:', unidadError);
-        } else if (unidadData) {
-          const unidad: ExtendedUnidad = {
-            id: unidadData.id,
-            numero: unidadData.numero || '',
-            estado: unidadData.estado,
-            nivel: unidadData.nivel,
-            prototipo_id: unidadData.prototipo_id,
-            prototipo: null
-          };
-          
-          venta.unidad = unidad;
-          
-          // If we have a prototipo_id, fetch the prototipo
-          if (unidadData.prototipo_id) {
-            const { data: prototipoData, error: prototipoError } = await supabase
-              .from('prototipos')
-              .select('id, nombre, precio, desarrollo_id')
-              .eq('id', unidadData.prototipo_id)
-              .maybeSingle();
-              
-            if (prototipoError) {
-              console.error('Error fetching prototipo details:', prototipoError);
-            } else if (prototipoData) {
-              venta.unidad.prototipo = {
-                id: prototipoData.id,
-                nombre: prototipoData.nombre || '',
-                precio: prototipoData.precio,
-                desarrollo_id: prototipoData.desarrollo_id,
-                desarrollo: null
-              };
-              
-              // If we have a desarrollo_id, fetch the desarrollo
-              if (prototipoData.desarrollo_id) {
-                const { data: desarrolloData, error: desarrolloError } = await supabase
-                  .from('desarrollos')
-                  .select('id, nombre, ubicacion, empresa_id')
-                  .eq('id', prototipoData.desarrollo_id)
-                  .maybeSingle();
-                  
-                if (desarrolloError) {
-                  console.error('Error fetching desarrollo details:', desarrolloError);
-                } else if (desarrolloData) {
-                  if (venta.unidad?.prototipo) {
-                    venta.unidad.prototipo.desarrollo = {
-                      id: desarrolloData.id,
-                      nombre: desarrolloData.nombre || '',
-                      ubicacion: desarrolloData.ubicacion,
-                      empresa_id: desarrolloData.empresa_id as number
-                    };
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      
-      return venta;
+      return data;
     } catch (error) {
       console.error('Error al obtener detalles de venta:', error);
       return null;
@@ -141,16 +69,15 @@ export const useVentaDetail = (ventaId?: string) => {
 
   // Fetch compradores with lead information
   const fetchCompradores = async (): Promise<Comprador[]> => {
-    if (!ventaId || !venta) return [];
+    if (!ventaId) return [];
     
     setLoading(true);
     try {
       // First verify the venta belongs to the user's empresa
       if (empresaId && venta) {
-        // Check if venta has empresa_id property
         const ventaEmpresaId = venta.empresa_id;
         
-        if (ventaEmpresaId !== undefined && ventaEmpresaId !== null && ventaEmpresaId !== empresaId) {
+        if (ventaEmpresaId !== undefined && ventaEmpresaId !== empresaId) {
           console.log('Venta does not belong to user empresa:', ventaEmpresaId, empresaId);
           return [];
         }
@@ -164,14 +91,7 @@ export const useVentaDetail = (ventaId?: string) => {
         `)
         .eq('venta_id', ventaId);
 
-      if (error) {
-        console.error('Error fetching compradores:', error);
-        return [];
-      }
-
-      if (!data || data.length === 0) {
-        return [];
-      }
+      if (error) throw error;
 
       // Count pagos for each comprador
       const compradoresWithPagos = await Promise.all(
@@ -180,18 +100,7 @@ export const useVentaDetail = (ventaId?: string) => {
             .from('pagos')
             .select('id', { count: 'exact', head: true })
             .eq('comprador_venta_id', item.id)
-            .eq('estado', 'registrado');
-            
-          if (pagosError) {
-            console.error('Error counting pagos:', pagosError);
-            return {
-              id: item.id,
-              comprador_id: item.comprador_id,
-              nombre: item.comprador?.nombre || 'Comprador sin nombre',
-              porcentaje: item.porcentaje_propiedad,
-              pagos_realizados: 0,
-            };
-          }
+            .eq('estado', 'registrado'); // Cambiado de 'verificado' a 'registrado'
             
           return {
             id: item.id,
@@ -241,27 +150,12 @@ export const useVentaDetail = (ventaId?: string) => {
         .in('comprador_venta_id', compradorVentaIds)
         .order('fecha', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching pagos:', error);
-        return [];
-      }
-      
-      if (!data || data.length === 0) {
-        return [];
-      }
+      if (error) throw error;
       
       // Map the data to ensure estados conform to the expected type
-      const typedPagos: Pago[] = data.map(pago => ({
-        id: pago.id || '',
-        comprador_venta_id: pago.comprador_venta_id || '',
-        monto: pago.monto || 0,
-        fecha: pago.fecha || '',
-        metodo_pago: pago.metodo_pago || '',
-        estado: pago.estado === 'rechazado' ? 'rechazado' : 'registrado',
-        referencia: pago.referencia,
-        notas: pago.notas,
-        comprobante_url: pago.comprobante_url,
-        created_at: pago.created_at || ''
+      const typedPagos: Pago[] = (data || []).map(pago => ({
+        ...pago,
+        estado: pago.estado === 'rechazado' ? 'rechazado' : 'registrado'
       }));
       
       return typedPagos;
@@ -287,7 +181,7 @@ export const useVentaDetail = (ventaId?: string) => {
     return pago.estado === 'registrado' ? total + pago.monto : total;
   }, 0);
 
-  const progreso = venta && venta.precio_total && venta.precio_total > 0
+  const progreso = venta?.precio_total
     ? Math.round((montoPagado / venta.precio_total) * 100)
     : 0;
 
