@@ -97,7 +97,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         return [];
       }
       
-      // Type cast to our simplified ExtendedCotizacion type
+      // Type cast to our simplified ExtendedCotizacion type - breaking circular references
       const basicCotizaciones: ExtendedCotizacion[] = cotizaciones.map(c => {
         // Ensure c is not null before accessing properties
         if (!c) return {
@@ -114,17 +114,17 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         };
         
         return {
-          id: c.id,
-          created_at: c.created_at,
-          desarrollo_id: c.desarrollo_id,
+          id: c.id || '',
+          created_at: c.created_at || '',
+          desarrollo_id: c.desarrollo_id || '',
           fecha_finiquito: c.fecha_finiquito,
           fecha_inicio_pagos: c.fecha_inicio_pagos,
-          lead_id: c.lead_id,
-          monto_anticipo: c.monto_anticipo,
+          lead_id: c.lead_id || '',
+          monto_anticipo: c.monto_anticipo || 0,
           monto_finiquito: c.monto_finiquito,
           notas: c.notas,
-          numero_pagos: c.numero_pagos,
-          prototipo_id: c.prototipo_id,
+          numero_pagos: c.numero_pagos || 0,
+          prototipo_id: c.prototipo_id || '',
           usar_finiquito: c.usar_finiquito,
           empresa_id: 'empresa_id' in c ? (c.empresa_id as number | null) : null,
           lead: null,

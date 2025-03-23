@@ -110,16 +110,29 @@ export const useVentas = (filters: VentasFilter = {}) => {
           };
         }
         
+        // Type guard for venta object
+        const typedVenta = venta as {
+          id?: string;
+          precio_total?: number;
+          estado?: string;
+          es_fraccional?: boolean;
+          fecha_inicio?: string;
+          fecha_actualizacion?: string;
+          unidad_id?: string;
+          notas?: string | null;
+          empresa_id?: number | null;
+        };
+        
         return {
-          id: venta.id || '',
-          precio_total: venta.precio_total || 0,
-          estado: venta.estado || '',
-          es_fraccional: venta.es_fraccional || false,
-          fecha_inicio: venta.fecha_inicio || '',
-          fecha_actualizacion: venta.fecha_actualizacion || '',
-          unidad_id: venta.unidad_id || '',
-          notas: venta.notas,
-          empresa_id: hasEmpresaColumn && 'empresa_id' in venta ? (venta.empresa_id as number | null) : null,
+          id: typedVenta.id || '',
+          precio_total: typedVenta.precio_total || 0,
+          estado: typedVenta.estado || '',
+          es_fraccional: typedVenta.es_fraccional || false,
+          fecha_inicio: typedVenta.fecha_inicio || '',
+          fecha_actualizacion: typedVenta.fecha_actualizacion || '',
+          unidad_id: typedVenta.unidad_id || '',
+          notas: typedVenta.notas,
+          empresa_id: hasEmpresaColumn && 'empresa_id' in typedVenta ? typedVenta.empresa_id : null,
           progreso: 30, // Default progress value
           unidad: null
         };
@@ -193,7 +206,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
           if (unidad) {
             const unidadObj: SimpleUnidad = {
               id: unidad.id,
-              numero: unidad.numero,
+              numero: unidad.numero || '',
               estado: unidad.estado,
               nivel: unidad.nivel,
               prototipo: null
@@ -203,7 +216,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
             if (prototipo) {
               const prototipoObj: SimplePrototipo = {
                 id: prototipo.id,
-                nombre: prototipo.nombre,
+                nombre: prototipo.nombre || '',
                 precio: prototipo.precio,
                 desarrollo: null
               };
@@ -214,7 +227,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
               if (desarrollo) {
                 prototipoObj.desarrollo = {
                   id: desarrollo.id,
-                  nombre: desarrollo.nombre,
+                  nombre: desarrollo.nombre || '',
                   ubicacion: desarrollo.ubicacion,
                   empresa_id: desarrollo.empresa_id as number
                 };

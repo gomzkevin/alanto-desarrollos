@@ -127,7 +127,7 @@ export const useVentaDetail = (ventaId?: string) => {
         } else if (unidadData) {
           const unidad: SimpleUnidad = {
             id: unidadData.id,
-            numero: unidadData.numero,
+            numero: unidadData.numero || '',
             estado: unidadData.estado,
             nivel: unidadData.nivel,
             prototipo_id: unidadData.prototipo_id,
@@ -149,7 +149,7 @@ export const useVentaDetail = (ventaId?: string) => {
             } else if (prototipoData) {
               venta.unidad.prototipo = {
                 id: prototipoData.id,
-                nombre: prototipoData.nombre,
+                nombre: prototipoData.nombre || '',
                 precio: prototipoData.precio,
                 desarrollo: null
               };
@@ -168,7 +168,7 @@ export const useVentaDetail = (ventaId?: string) => {
                   if (venta.unidad?.prototipo) {
                     venta.unidad.prototipo.desarrollo = {
                       id: desarrolloData.id,
-                      nombre: desarrolloData.nombre,
+                      nombre: desarrolloData.nombre || '',
                       ubicacion: desarrolloData.ubicacion,
                       empresa_id: desarrolloData.empresa_id as number
                     };
@@ -306,16 +306,16 @@ export const useVentaDetail = (ventaId?: string) => {
       
       // Map the data to ensure estados conform to the expected type
       const typedPagos: Pago[] = data.map(pago => ({
-        id: pago.id,
-        comprador_venta_id: pago.comprador_venta_id,
-        monto: pago.monto,
-        fecha: pago.fecha,
-        metodo_pago: pago.metodo_pago,
+        id: pago.id || '',
+        comprador_venta_id: pago.comprador_venta_id || '',
+        monto: pago.monto || 0,
+        fecha: pago.fecha || '',
+        metodo_pago: pago.metodo_pago || '',
         estado: pago.estado === 'rechazado' ? 'rechazado' : 'registrado',
         referencia: pago.referencia,
         notas: pago.notas,
         comprobante_url: pago.comprobante_url,
-        created_at: pago.created_at
+        created_at: pago.created_at || ''
       }));
       
       return typedPagos;
