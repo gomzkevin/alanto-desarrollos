@@ -74,7 +74,7 @@ const useVentaDetail = (ventaId: string | undefined) => {
 
   useEffect(() => {
     if (data) {
-      // Need to cast the data to ensure it matches the expected type
+      // Cast data to ensure it matches the expected type
       const typedVenta = data.venta as unknown as Venta;
       setVenta(typedVenta);
       
@@ -86,10 +86,10 @@ const useVentaDetail = (ventaId: string | undefined) => {
       
       setCompradores(mappedCompradores as VentaComprador[]);
       
-      // Need to add required properties that might be missing from DB
+      // Add required properties that might be missing from DB
       const mappedPagos = (data.pagos || []).map(pago => ({
         ...pago,
-        venta_id: ventaId,
+        venta_id: ventaId || '',
         concepto: pago.concepto || 'Pago',
       }));
       

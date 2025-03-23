@@ -35,7 +35,7 @@ export const useCotizaciones = (filters: CotizacionesFilters = {}) => {
   const apiFilters = { ...filters };
   delete apiFilters.withRelations;
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const result = useQuery({
     queryKey: ['cotizaciones', apiFilters],
     queryFn: async () => {
       let query = supabase
@@ -83,10 +83,10 @@ export const useCotizaciones = (filters: CotizacionesFilters = {}) => {
   });
 
   return {
-    cotizaciones: data || [],
-    isLoading,
-    error,
-    refetch,
+    cotizaciones: result.data || [],
+    isLoading: result.isLoading,
+    error: result.error,
+    refetch: result.refetch,
   };
 };
 

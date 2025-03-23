@@ -124,9 +124,8 @@ export interface SimplePrototipo {
   precio?: number;
 }
 
-// Add missing VentaDetallada interface
+// Add VentaDetallada interface
 export interface VentaDetallada extends Venta {
-  // Additional fields that might be in VentaDetail
   compradores?: VentaComprador[];
   pagos?: Pago[];
 }

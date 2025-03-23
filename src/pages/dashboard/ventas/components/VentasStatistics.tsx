@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { formatCurrency, formatPercent } from '@/lib/utils';
+import { formatCurrency, formatPercentage } from '@/lib/utils';
 
 const VentasStatistics = () => {
   return (
@@ -107,7 +107,7 @@ const VentasStatistics = () => {
           </svg>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatPercent(6500)}</div>
+          <div className="text-2xl font-bold">{formatPercentage(0.65)}</div>
           <p className="text-xs text-muted-foreground">
             +2.5% desde el mes pasado
           </p>

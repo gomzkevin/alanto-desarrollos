@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,21 +6,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useVentas } from '@/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useUserRole } from '@/hooks/useUserRole';
-import { VentaStatusBadge } from './VentaStatusBadge';
+import VentaStatusBadge from './VentaStatusBadge';
 import { VentaActionsMenu } from './VentaActionsMenu';
 import { VentaFilterBar } from './VentaFilterBar';
 import { PlusCircle, FileDown } from 'lucide-react';
 import { CreateVentaDialog } from './CreateVentaDialog';
 import { useToast } from '@/hooks/use-toast';
 import { exportToExcel } from '@/lib/excel';
-import { VentasFilters } from '@/hooks/types';
 
 export const VentasTable = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { empresaId } = useUserRole();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [filters, setFilters] = useState<VentasFilters>({
+  const [filters, setFilters] = useState({
     estado: 'todos',
     fechaInicio: undefined,
     fechaFin: undefined,
@@ -33,24 +31,22 @@ export const VentasTable = () => {
 
   // Update filters when empresaId changes
   useEffect(() => {
-    if (empresaId) {
-      setFilters(prev => ({
-        ...prev,
-        empresa_id: String(empresaId)
-      }));
-    }
+    setFilters((prev) => ({
+      ...prev,
+      empresa_id: empresaId ? String(empresaId) : undefined
+    }));
   }, [empresaId]);
 
   const { ventas, isLoading, refetch } = useVentas(filters);
 
-  const handleFilterChange = (newFilters: Partial<VentasFilters>) => {
-    setFilters(prev => ({
+  const handleFilterChange = (newFilters) => {
+    setFilters((prev) => ({
       ...prev,
       ...newFilters
     }));
   };
 
-  const handleRowClick = (ventaId: string) => {
+  const handleRowClick = (ventaId) => {
     navigate(`/dashboard/ventas/${ventaId}`);
   };
 
@@ -64,7 +60,7 @@ export const VentasTable = () => {
       return;
     }
 
-    const data = ventas.map(venta => ({
+    const data = ventas.map((venta) => ({
       'ID': venta.id,
       'Unidad': venta.unidad ? venta.unidad.codigo : 'N/A',
       'Prototipo': venta.unidad && venta.unidad.prototipo?.nombre ? venta.unidad.prototipo.nombre : 'N/A',
@@ -122,7 +118,6 @@ export const VentasTable = () => {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              // Loading state
               Array.from({ length: 5 }).map((_, index) => (
                 <TableRow key={`skeleton-${index}`}>
                   <TableCell><Skeleton className="h-6 w-24" /></TableCell>
@@ -134,14 +129,12 @@ export const VentasTable = () => {
                 </TableRow>
               ))
             ) : ventas.length === 0 ? (
-              // Empty state
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
                   No se encontraron ventas con los filtros actuales
                 </TableCell>
               </TableRow>
             ) : (
-              // Data rows
               ventas.map((venta) => (
                 <TableRow
                   key={venta.id}
