@@ -1,8 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
-// Función para iniciar una suscripción
+// Function to initiate a subscription
 export const initiateSubscription = async (planId: string, userId: string) => {
   try {    
     if (!userId) {
@@ -14,20 +13,26 @@ export const initiateSubscription = async (planId: string, userId: string) => {
       return null;
     }
 
-    // Llamar a una función API para crear una sesión de Stripe
+    toast({
+      title: "Procesando",
+      description: "Redireccionando a la página de pago...",
+    });
+
+    console.log("Initiating subscription for plan:", planId, "user:", userId);
+
+    // Call the Edge Function to create a Stripe checkout session
     const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-      method: 'POST',  // Explicitly set method to POST
       body: {
         planId,
         userId,
         successUrl: `${window.location.origin}/dashboard/configuracion?success=true`,
         cancelUrl: `${window.location.origin}/dashboard/configuracion?canceled=true`,
-        timestamp: new Date().toISOString() // Para evitar cachés
+        timestamp: new Date().toISOString() // To avoid caches
       },
     });
 
     if (error) {
-      console.error('Error al crear la sesión de Stripe:', error);
+      console.error('Error creating Stripe session:', error);
       toast({
         title: "Error",
         description: "No se pudo iniciar el proceso de suscripción",
@@ -36,14 +41,22 @@ export const initiateSubscription = async (planId: string, userId: string) => {
       return null;
     }
 
-    // Redirigir al usuario a la página de checkout de Stripe
+    // Redirect user to Stripe checkout page
     if (data?.checkoutUrl) {
+      console.log("Redirecting to checkout URL:", data.checkoutUrl);
       window.location.href = data.checkoutUrl;
+      return data;
+    } else {
+      console.error('No checkout URL returned');
+      toast({
+        title: "Error",
+        description: "No se pudo obtener la URL de pago",
+        variant: "destructive",
+      });
+      return null;
     }
-    
-    return data;
   } catch (error) {
-    console.error('Error en initiateSubscription:', error);
+    console.error('Error in initiateSubscription:', error);
     toast({
       title: "Error",
       description: "Ocurrió un error al procesar tu solicitud",
@@ -53,7 +66,7 @@ export const initiateSubscription = async (planId: string, userId: string) => {
   }
 };
 
-// Función para cancelar una suscripción
+// Function to cancel a subscription
 export const cancelSubscription = async (subscriptionId: string) => {
   try {
     const { data, error } = await supabase.functions.invoke('cancel-subscription', {
@@ -81,7 +94,7 @@ export const cancelSubscription = async (subscriptionId: string) => {
     
     return true;
   } catch (error) {
-    console.error('Error en cancelSubscription:', error);
+    console.error('Error in cancelSubscription:', error);
     toast({
       title: "Error",
       description: "Ocurrió un error al procesar tu solicitud",
@@ -91,7 +104,7 @@ export const cancelSubscription = async (subscriptionId: string) => {
   }
 };
 
-// Función para modificar una suscripción
+// Function to update a subscription
 export const updateSubscription = async (subscriptionId: string, newPlanId: string) => {
   try {
     console.log('Cambiando plan de suscripción:', { subscriptionId, newPlanId });
@@ -122,7 +135,7 @@ export const updateSubscription = async (subscriptionId: string, newPlanId: stri
     
     return true;
   } catch (error) {
-    console.error('Error en updateSubscription:', error);
+    console.error('Error in updateSubscription:', error);
     toast({
       title: "Error",
       description: "Ocurrió un error al procesar tu solicitud",
@@ -132,7 +145,7 @@ export const updateSubscription = async (subscriptionId: string, newPlanId: stri
   }
 };
 
-// Función para actualizar la información de uso actual
+// Function to update current usage information
 export const updateUsageInformation = async (subscriptionId: string) => {
   try {
     console.log('Enviando solicitud de actualización de uso a Edge Function para:', subscriptionId);
@@ -172,7 +185,7 @@ export const updateUsageInformation = async (subscriptionId: string) => {
       data: data
     };
   } catch (error) {
-    console.error('Error en updateUsageInformation:', error);
+    console.error('Error in updateUsageInformation:', error);
     return {
       success: false,
       error: `Error: ${error.message || "Error desconocido"}`

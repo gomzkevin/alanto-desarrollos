@@ -2,109 +2,126 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { Stripe } from "https://esm.sh/stripe@12.18.0?target=deno";
 
-// Inicializar Stripe con la clave secreta de API
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || 'sk_test_51R4saiPGxxD3ciXynuLwEj9C344ivGAsOQrN45H6ZP3gw12aywXd9Tui4dzY8iqGPvXLdusBiIxGi4zjy17hI7AH00jfDMq5GL', {
+// Initialize Stripe with the API key from environment variables
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2023-10-16',
 });
 
-// Definir los encabezados CORS
+// Define CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Mapeo de IDs de planes a productos de Stripe
+// Mapping of plan types to Stripe products
 const STRIPE_PRODUCTS = {
-  desarrollo: 'prod_RyqU9V2MUpdoAE', // Plan por Desarrollo
-  prototipo: 'prod_RyqQdayNykeJTM',  // Plan por Prototipos
+  desarrollo: 'prod_RyqU9V2MUpdoAE', // Development Plan
+  prototipo: 'prod_RyqQdayNykeJTM',  // Prototype Plan
 };
 
 serve(async (req) => {
-  // Manejar la petición de preflight OPTIONS
+  // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Obtener datos del cuerpo de la petición
+    // Get request data
     const { planId, userId, successUrl, cancelUrl } = await req.json();
     
     if (!planId || !userId || !successUrl || !cancelUrl) {
       return new Response(
-        JSON.stringify({ error: 'Faltan parámetros requeridos' }),
+        JSON.stringify({ error: 'Missing required parameters' }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 
-    // Obtener detalles del plan desde Supabase
-    const { data: planData, error: planError } = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/rest/v1/subscription_plans?id=eq.${planId}`,
+    console.log("Creating checkout session for plan:", planId, "user:", userId);
+
+    // Get plan details from Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseKey) {
+      return new Response(
+        JSON.stringify({ error: 'Missing Supabase configuration' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    const planResponse = await fetch(
+      `${supabaseUrl}/rest/v1/subscription_plans?id=eq.${planId}`,
       {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          'Apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
         },
       }
-    ).then(r => r.json());
+    );
 
-    if (planError || !planData || planData.length === 0) {
-      console.error('Error obteniendo detalles del plan:', planError);
+    const planData = await planResponse.json();
+
+    if (!planData || planData.length === 0) {
+      console.error('Plan not found:', planId);
       return new Response(
-        JSON.stringify({ error: 'Plan no encontrado' }),
+        JSON.stringify({ error: 'Plan not found' }),
         { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 
     const plan = planData[0];
+    console.log("Found plan:", plan.name);
     
-    // Obtener información del usuario
-    const { data: userData, error: userError } = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/rest/v1/usuarios?auth_id=eq.${userId}`,
+    // Get user information
+    const userResponse = await fetch(
+      `${supabaseUrl}/rest/v1/usuarios?auth_id=eq.${userId}`,
       {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          'Apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
         },
       }
-    ).then(r => r.json());
+    );
 
-    if (userError || !userData || userData.length === 0) {
-      console.error('Error obteniendo información del usuario:', userError);
+    const userData = await userResponse.json();
+
+    if (!userData || userData.length === 0) {
+      console.error('User not found:', userId);
       return new Response(
-        JSON.stringify({ error: 'Usuario no encontrado' }),
+        JSON.stringify({ error: 'User not found' }),
         { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 
     const user = userData[0];
+    console.log("Found user:", user.email);
 
-    // Verificar si el usuario ya tiene un cliente de Stripe
+    // Check if user already has a Stripe customer ID
     let customerId;
-    const { data: subscriptionData, error: subscriptionError } = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/rest/v1/subscriptions?user_id=eq.${userId}`,
+    const subscriptionResponse = await fetch(
+      `${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}`,
       {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          'Apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
         },
       }
-    ).then(r => r.json());
+    );
 
-    if (subscriptionError) {
-      console.error('Error verificando suscripción existente:', subscriptionError);
-    }
+    const subscriptionData = await subscriptionResponse.json();
 
-    // Si el usuario ya tiene un cliente de Stripe, usarlo
+    // If user already has a Stripe customer, use it
     if (subscriptionData && subscriptionData.length > 0 && subscriptionData[0].stripe_customer_id) {
       customerId = subscriptionData[0].stripe_customer_id;
+      console.log("Using existing customer ID:", customerId);
     } else {
-      // Crear un nuevo cliente en Stripe
+      // Create a new Stripe customer
       const customer = await stripe.customers.create({
         email: user.email,
         name: user.nombre,
@@ -115,19 +132,21 @@ serve(async (req) => {
       });
       
       customerId = customer.id;
+      console.log("Created new customer ID:", customerId);
     }
 
-    // Determinar qué producto de Stripe usar según el tipo de plan
+    // Determine which Stripe product to use based on plan type
     let stripeProductId;
     if (plan.features && typeof plan.features === 'object' && plan.features.tipo) {
-      // Usar el tipo del plan para obtener el ID de producto correspondiente
       stripeProductId = STRIPE_PRODUCTS[plan.features.tipo];
+      console.log("Using product ID for type:", plan.features.tipo, stripeProductId);
     }
 
-    // Crear una sesión de checkout de Stripe
+    // Create a Stripe checkout session
     let session;
     if (plan.stripe_price_id) {
-      // Si el plan ya tiene un ID de precio de Stripe, usarlo
+      // If the plan already has a Stripe price ID, use it
+      console.log("Using existing price ID:", plan.stripe_price_id);
       session = await stripe.checkout.sessions.create({
         customer: customerId,
         line_items: [
@@ -145,7 +164,8 @@ serve(async (req) => {
         },
       });
     } else if (stripeProductId) {
-      // Si tenemos un ID de producto basado en el tipo de plan, crear un precio nuevo
+      // If we have a product ID based on plan type, create a new price
+      console.log("Creating new price for product:", stripeProductId);
       session = await stripe.checkout.sessions.create({
         customer: customerId,
         line_items: [
@@ -153,10 +173,10 @@ serve(async (req) => {
             price_data: {
               currency: 'mxn',
               product: stripeProductId,
-              unit_amount: Math.round(plan.price * 100), // Stripe usa centavos
+              unit_amount: Math.round(plan.price * 100), // Stripe uses cents
               recurring: {
                 interval: plan.interval === 'month' ? 'month' : 'year',
-                usage_type: 'licensed', // o 'metered' dependiendo de tu caso
+                usage_type: 'licensed',
               },
             },
             quantity: 1,
@@ -171,7 +191,8 @@ serve(async (req) => {
         },
       });
     } else {
-      // Si no hay ID de producto o precio, crear un producto temporal
+      // If no product or price ID, create a temporary product
+      console.log("Creating temporary product and price");
       session = await stripe.checkout.sessions.create({
         customer: customerId,
         line_items: [
@@ -182,7 +203,7 @@ serve(async (req) => {
                 name: plan.name,
                 description: plan.description || '',
               },
-              unit_amount: Math.round(plan.price * 100), // Stripe usa centavos
+              unit_amount: Math.round(plan.price * 100), // Stripe uses cents
               recurring: {
                 interval: plan.interval === 'month' ? 'month' : 'year',
               },
@@ -200,7 +221,9 @@ serve(async (req) => {
       });
     }
 
-    // Preparar respuesta con la URL de checkout
+    console.log("Created checkout session:", session.id, "URL:", session.url);
+
+    // Prepare response with checkout URL
     return new Response(
       JSON.stringify({ 
         checkoutUrl: session.url,
@@ -212,7 +235,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error creando sesión de checkout:', error);
+    console.error('Error creating checkout session:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
