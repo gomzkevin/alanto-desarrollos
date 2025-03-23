@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -26,11 +27,15 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+  // Always call hooks at the top level, regardless of any conditions
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [attemptedAuth, setAttemptedAuth] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { isLoading, userId, userEmail, userName, authChecked, isAdmin: isUserAdmin } = useUserRole();
+  
+  // Always call this hook unconditionally at the top level
+  const { subscriptionInfo } = useSubscriptionInfo();
   
   const getUserInitials = () => {
     if (userName) {
@@ -45,6 +50,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     }
     return 'U';
   };
+  
+  // Determine subscription warning outside of JSX
+  const showSubscriptionWarning = isUserAdmin && userId && 
+    (subscriptionInfo && (!subscriptionInfo.isActive || subscriptionInfo.isOverLimit));
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -108,9 +117,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: 'Proyecciones', href: '/dashboard/proyecciones', icon: Briefcase, current: location.pathname.includes('/dashboard/proyecciones') },
     { name: 'Configuración', href: '/dashboard/configuracion', icon: Settings, current: location.pathname === '/dashboard/configuracion' },
   ];
-  
-  const { subscriptionInfo } = useSubscriptionInfo();
-  const showSubscriptionWarning = isUserAdmin() && (!subscriptionInfo.isActive || subscriptionInfo.isOverLimit);
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
