@@ -9,13 +9,18 @@ import { useSubscriptionInfo } from './useSubscriptionInfo';
  * Hook para verificar si el usuario tiene acceso basado en suscripción
  * @param requiredModule - Módulo opcional que se intenta acceder (para mensajes específicos)
  * @param redirectPath - Ruta a la que redirigir si no hay acceso (por defecto: /dashboard)
+ * @param bypassAdmin - Si los administradores pueden omitir la verificación (por defecto: true)
  */
-export const useSubscriptionAuth = (requiredModule?: string, redirectPath: string = '/dashboard') => {
+export const useSubscriptionAuth = (
+  requiredModule?: string, 
+  redirectPath: string = '/dashboard',
+  bypassAdmin: boolean = true
+) => {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const navigate = useNavigate();
   
   // Always call hooks at the top level, regardless of any conditions
-  const { userId, empresaId, isAdmin, authChecked } = useUserRole();
+  const { userId, empresaId, isAdmin: isUserAdmin, authChecked } = useUserRole();
   const { subscriptionInfo, isLoading: isLoadingSubscription } = useSubscriptionInfo();
 
   useEffect(() => {
@@ -24,8 +29,17 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
       console.log('Verificando autorización de suscripción:', {
         userId,
         empresaId,
-        isSubscriptionActive: subscriptionInfo.isActive
+        isAdmin: isUserAdmin(),
+        isSubscriptionActive: subscriptionInfo.isActive,
+        bypassAdmin
       });
+
+      // Si el usuario es admin y bypassAdmin está habilitado, autorizar sin más comprobaciones
+      if (bypassAdmin && isUserAdmin()) {
+        console.log('Usuario es admin, autorizando sin verificar suscripción');
+        setIsAuthorized(true);
+        return;
+      }
 
       if (!empresaId) {
         console.log('Usuario sin empresa asignada');
@@ -55,7 +69,7 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
       // Si llegamos aquí, el usuario está autorizado
       setIsAuthorized(true);
     }
-  }, [userId, empresaId, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule]);
+  }, [userId, empresaId, isUserAdmin, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule, bypassAdmin]);
 
   return {
     isAuthorized,

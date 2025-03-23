@@ -6,11 +6,16 @@ import { useUserRole } from './useUserRole';
 
 export type Cotizacion = Tables<"cotizaciones">;
 
-// Define basic types without circular references
+// Define simplified types without circular references
+export type SimpleLead = Pick<Tables<"leads">, 'id' | 'nombre' | 'correo' | 'telefono'>;
+export type SimpleDesarrollo = Pick<Tables<"desarrollos">, 'id' | 'nombre'>;
+export type SimplePrototipo = Pick<Tables<"prototipos">, 'id' | 'nombre'>;
+
+// Define extended cotizacion with simple related types
 export type ExtendedCotizacion = Cotizacion & {
-  lead?: Tables<"leads"> | null;
-  desarrollo?: Tables<"desarrollos"> | null;
-  prototipo?: Tables<"prototipos"> | null;
+  lead?: SimpleLead | null;
+  desarrollo?: SimpleDesarrollo | null;
+  prototipo?: SimplePrototipo | null;
   // These fields are now part of the database schema
   fecha_inicio_pagos?: string | null;
   fecha_finiquito?: string | null;
