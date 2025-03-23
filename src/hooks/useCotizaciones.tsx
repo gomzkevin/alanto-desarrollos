@@ -7,9 +7,9 @@ import { useUserRole } from './useUserRole';
 export type Cotizacion = Tables<"cotizaciones">;
 
 // Define simplified types without circular references
-export type SimpleLead = Pick<Tables<"leads">, 'id' | 'nombre' | 'correo' | 'telefono'>;
-export type SimpleDesarrollo = Pick<Tables<"desarrollos">, 'id' | 'nombre'>;
-export type SimplePrototipo = Pick<Tables<"prototipos">, 'id' | 'nombre'>;
+export type SimpleLead = Pick<Tables<"leads">, 'id' | 'nombre' | 'email' | 'telefono' | 'origen'>;
+export type SimpleDesarrollo = Pick<Tables<"desarrollos">, 'id' | 'nombre' | 'ubicacion'>;
+export type SimplePrototipo = Pick<Tables<"prototipos">, 'id' | 'nombre' | 'precio'>;
 
 // Define extended cotizacion with simple related types
 export type ExtendedCotizacion = Cotizacion & {
@@ -65,9 +65,9 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         
         // Fetch all related entities in batch queries
         const [leadsResponse, desarrollosResponse, prototipesResponse] = await Promise.all([
-          leadIds.length > 0 ? supabase.from('leads').select('*').in('id', leadIds) : { data: [], error: null },
-          desarrolloIds.length > 0 ? supabase.from('desarrollos').select('*').in('id', desarrolloIds) : { data: [], error: null },
-          prototipoIds.length > 0 ? supabase.from('prototipos').select('*').in('id', prototipoIds) : { data: [], error: null }
+          leadIds.length > 0 ? supabase.from('leads').select('id, nombre, email, telefono, origen').in('id', leadIds) : { data: [], error: null },
+          desarrolloIds.length > 0 ? supabase.from('desarrollos').select('id, nombre, ubicacion').in('id', desarrolloIds) : { data: [], error: null },
+          prototipoIds.length > 0 ? supabase.from('prototipos').select('id, nombre, precio').in('id', prototipoIds) : { data: [], error: null }
         ]);
         
         const leads = leadsResponse.error ? [] : leadsResponse.data;

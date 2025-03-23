@@ -36,10 +36,13 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   const { userId, empresaId, isAdmin, authChecked } = useUserRole();
   const { 
     subscriptionInfo, 
-    isLoading: isLoadingSubscription, 
-    resourceLimits, 
-    resourceCounts
+    isLoading: isLoadingSubscription,
+    error
   } = useSubscriptionInfo();
+
+  // Default empty objects for resourceLimits and resourceCounts
+  const resourceLimits: Record<string, number> = {};
+  const resourceCounts: Record<string, number> = {};
 
   // Determine base subscription state
   const hasValidEmpresa = !!empresaId;

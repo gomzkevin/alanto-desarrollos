@@ -14,3 +14,6 @@ export { default as useUnidades } from './useUnidades';
 export { default as useSubscriptionAuth } from './useSubscriptionAuth';
 export { default as useSubscriptionInfo } from './useSubscriptionInfo';
 export { useSubscription } from '@/contexts/SubscriptionContext';
+export { default as useUnitCounts } from '../pages/dashboard/prototipos/hooks/useUnitCounts';
+export { default as useVendedores } from '../pages/dashboard/prototipos/hooks/useVendedores';
+export { default as useUnidadForm } from '../pages/dashboard/prototipos/hooks/useUnidadForm';
