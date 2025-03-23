@@ -67,3 +67,45 @@ export interface VentasFilter {
   busqueda?: string;
   empresa_id?: number | null;
 }
+
+// Simplified types for cotizaciones
+export interface SimplifiedLead {
+  id: string;
+  nombre: string;
+  email?: string | null;
+  telefono?: string | null;
+  origen?: string | null;
+}
+
+export interface SimplifiedDesarrollo {
+  id: string;
+  nombre: string;
+  ubicacion?: string | null;
+}
+
+export interface SimplifiedPrototipo {
+  id: string;
+  nombre: string;
+  precio: number;
+}
+
+// Stand-alone type without circular references 
+export interface ExtendedCotizacion {
+  id: string;
+  created_at: string;
+  desarrollo_id: string;
+  fecha_finiquito?: string | null;
+  fecha_inicio_pagos?: string | null;
+  lead_id: string;
+  monto_anticipo: number;
+  monto_finiquito?: number | null;
+  notas?: string | null;
+  numero_pagos: number;
+  prototipo_id: string;
+  usar_finiquito?: boolean | null;
+  empresa_id?: number | null;
+  // Simple references instead of nested objects
+  lead?: SimplifiedLead | null;
+  desarrollo?: SimplifiedDesarrollo | null;
+  prototipo?: SimplifiedPrototipo | null;
+}
