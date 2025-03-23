@@ -57,13 +57,14 @@ export interface Venta {
   progreso?: number;
 }
 
+// Updated to match usePagos.tsx estado type (removed 'verificado')
 export interface Pago {
   id: string;
   comprador_venta_id: string;
   monto: number;
   fecha: string;
   metodo_pago: string;
-  estado: 'registrado' | 'rechazado' | 'verificado';
+  estado: 'registrado' | 'rechazado';
   referencia?: string | null;
   notas?: string | null;
   comprobante_url?: string | null;

@@ -14,6 +14,7 @@ import { VentaProgress } from './components/VentaProgress';
 import { PagoDialog } from './components/PagoDialog';
 import { VentaEditDialog } from './components/VentaEditDialog';
 import { CompradorDialog } from './components/CompradorDialog';
+import { Pago } from '@/hooks/types/venta.types';
 
 const VentaDetail = () => {
   const { ventaId } = useParams<{ ventaId: string }>();
@@ -193,7 +194,7 @@ const VentaDetail = () => {
             <InfoTab 
               venta={venta} 
               compradores={compradores} 
-              pagos={pagos}
+              pagos={pagos as Pago[]}
               onAddComprador={() => setOpenCompradorDialog(true)}
             />
           </TabsContent>
@@ -203,7 +204,7 @@ const VentaDetail = () => {
               <PagosTab 
                 ventaId={venta.id} 
                 compradorVentaId={compradorVentaId}
-                pagos={pagos}
+                pagos={pagos as Pago[]}
                 isLoading={isLoading}
                 refetchPagos={refetch}
               />
