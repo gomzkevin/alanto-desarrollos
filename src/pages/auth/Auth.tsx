@@ -6,6 +6,20 @@ import { SignupForm } from "@/components/auth/SignupForm";
 import { useAuth } from "@/hooks/useAuth";
 import { InvitationAccept } from "@/components/auth/InvitationAccept";
 
+// Create a type for the view toggle props
+interface ViewToggleProps {
+  onViewChange: () => void;
+}
+
+// Define props for the form components
+interface LoginFormProps {
+  onViewChange?: () => void;
+}
+
+interface SignupFormProps {
+  onViewChange?: () => void;
+}
+
 export function AuthPage() {
   const [view, setView] = useState<"login" | "signup">("login");
   const { userId, isLoading } = useAuth({});

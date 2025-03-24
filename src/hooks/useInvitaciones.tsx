@@ -5,17 +5,29 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { useUserRole } from './useUserRole';
 import { useResourceCounts } from './useResourceCounts';
+import { UserRole } from './useUserRole';
+
+export type InvitationRole = 'admin' | 'vendedor' | 'cliente';
 
 export interface Invitacion {
   id: string;
   empresa_id: number;
   email: string;
-  rol: 'admin' | 'vendedor' | 'cliente';
+  rol: InvitationRole;
   token: string;
   creado_por: string | null;
   estado: 'pendiente' | 'aceptada' | 'rechazada' | 'expirada';
   fecha_creacion: string;
   fecha_expiracion: string;
+}
+
+export interface InvitationVerificationResult {
+  id: string;
+  empresa_id: number;
+  email: string;
+  rol: string;
+  estado: string;
+  es_valida: boolean;
 }
 
 export function useInvitaciones() {
@@ -46,13 +58,16 @@ export function useInvitaciones() {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        rol: item.rol as InvitationRole
+      }));
     },
     enabled: !!empresaId,
   });
 
   // Crear nueva invitación
-  const createInvitacion = async (email: string, rol: 'admin' | 'vendedor' | 'cliente') => {
+  const createInvitacion = async (email: string, rol: InvitationRole) => {
     try {
       setLoading(true);
 
@@ -176,7 +191,7 @@ export function useInvitaciones() {
   });
 
   // Verificar validez de un token de invitación
-  const verificarInvitacion = async (token: string) => {
+  const verificarInvitacion = async (token: string): Promise<InvitationVerificationResult | null> => {
     try {
       const { data, error } = await supabase
         .rpc('verificar_invitacion', {
@@ -188,7 +203,8 @@ export function useInvitaciones() {
         throw error;
       }
 
-      return data;
+      // Ensure data is returned as a single object, not an array
+      return data && data.length ? data[0] : null;
     } catch (error) {
       console.error('Error en verificarInvitacion:', error);
       return null;

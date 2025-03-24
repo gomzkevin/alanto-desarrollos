@@ -218,7 +218,7 @@ export function UserManagementTable() {
         newUser.email, 
         newUser.password, 
         empresaId || undefined, 
-        newUser.rol
+        newUser.rol as 'admin' | 'vendedor' | 'cliente'
       );
 
       if (!authResult.success) {
@@ -253,7 +253,10 @@ export function UserManagementTable() {
       return;
     }
 
-    const result = await createInvitacion(newInvite.email, newInvite.rol);
+    const result = await createInvitacion(
+      newInvite.email, 
+      newInvite.rol as 'admin' | 'vendedor' | 'cliente'
+    );
     
     if (result.success) {
       setNewInvite({

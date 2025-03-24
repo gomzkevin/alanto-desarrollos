@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useInvitaciones } from "@/hooks/useInvitaciones";
+import { useInvitaciones, InvitationVerificationResult } from "@/hooks/useInvitaciones";
 import { toast } from "@/components/ui/use-toast";
 import { Loader2, CheckCircle, AlertCircle, UserPlus } from "lucide-react";
 
@@ -18,7 +17,7 @@ export function InvitationAccept() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isValid, setIsValid] = useState(false);
-  const [invitationData, setInvitationData] = useState<any>(null);
+  const [invitationData, setInvitationData] = useState<InvitationVerificationResult | null>(null);
   const [formData, setFormData] = useState({
     nombre: "",
     password: "",
