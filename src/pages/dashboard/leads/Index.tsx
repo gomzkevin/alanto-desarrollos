@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,7 @@ const LeadsPage = () => {
     onSuccess: () => {},
     onError: (error) => console.error("Error fetching desarrollos:", error)
   });
+  
   const { prototipos } = usePrototipos();
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,7 +88,7 @@ const LeadsPage = () => {
     
     if (interesEn.startsWith('desarrollo:')) {
       const desarrolloId = interesEn.split(':')[1];
-      const desarrollo = desarrollos.find(d => d.id === desarrolloId);
+      const desarrollo = desarrollos?.find(d => d.id === desarrolloId);
       
       return (
         <div className="flex items-center">
@@ -96,9 +98,9 @@ const LeadsPage = () => {
       );
     } else if (interesEn.startsWith('prototipo:')) {
       const prototipoId = interesEn.split(':')[1];
-      const prototipo = prototipos.find(p => p.id === prototipoId);
+      const prototipo = prototipos?.find(p => p.id === prototipoId);
       const desarrollo = prototipo 
-        ? desarrollos.find(d => d.id === prototipo.desarrollo_id) 
+        ? desarrollos?.find(d => d.id === prototipo.desarrollo_id) 
         : null;
       
       return (
@@ -159,7 +161,7 @@ const LeadsPage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos los estados</SelectItem>
-                {statusOptions.map((option) => (
+                {statusOptions?.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -198,7 +200,7 @@ const LeadsPage = () => {
                     <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
                   </TableRow>
                 ))
-              ) : leads.length > 0 ? (
+              ) : leads && leads.length > 0 ? (
                 leads.map((lead) => (
                   <TableRow key={lead.id} className="hover:bg-slate-50">
                     <TableCell className="font-medium">

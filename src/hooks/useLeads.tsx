@@ -71,20 +71,54 @@ export const LEAD_ORIGIN_OPTIONS = [
   { value: 'otro', label: 'Otro' }
 ];
 
-const useLeads = () => {
+export interface LeadType {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+  estado: string;
+  subestado: string;
+  origen: string;
+  interes_en: string;
+  notas: string;
+  agente: string;
+  empresa_id: number;
+  fecha_creacion: string;
+  ultimo_contacto: string;
+}
+
+interface UseLeadsOptions {
+  estado?: string;
+  search?: string;
+  empresa_id?: number;
+}
+
+const useLeads = (options: UseLeadsOptions = {}) => {
   const { empresaId } = useUserRole();
   const queryClient = useQueryClient();
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  
+  const empresa_id = options.empresa_id || empresaId;
 
   // Fetch leads
   const { data: leads = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['leads', empresaId],
+    queryKey: ['leads', empresa_id, options.estado, options.search],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('leads')
         .select('*')
-        .eq('empresa_id', empresaId)
+        .eq('empresa_id', empresa_id)
         .order('fecha_creacion', { ascending: false });
+
+      if (options.estado) {
+        query = query.eq('estado', options.estado);
+      }
+
+      if (options.search && options.search.length > 2) {
+        query = query.or(`nombre.ilike.%${options.search}%,email.ilike.%${options.search}%,telefono.ilike.%${options.search}%`);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         throw new Error(error.message);
@@ -92,7 +126,7 @@ const useLeads = () => {
 
       return data || [];
     },
-    enabled: !!empresaId,
+    enabled: !!empresa_id,
   });
 
   // Create lead
@@ -100,7 +134,7 @@ const useLeads = () => {
     mutationFn: async (newLead: any) => {
       const { data, error } = await supabase
         .from('leads')
-        .insert([{ ...newLead, empresa_id: empresaId }])
+        .insert([{ ...newLead, empresa_id: empresa_id }])
         .select()
         .single();
 
@@ -188,6 +222,27 @@ const useLeads = () => {
     },
   });
 
+  // Helper functions to get labels
+  const getStatusLabel = (status: string | null) => {
+    if (!status) return '';
+    const statusOption = LEAD_STATUS_OPTIONS.find(opt => opt.value === status);
+    return statusOption ? statusOption.label : status;
+  };
+
+  const getSubstatusLabel = (status: string | null, substatus: string | null) => {
+    if (!status || !substatus) return '';
+    
+    const substatusOptions = LEAD_SUBSTATUS_OPTIONS[status as keyof typeof LEAD_SUBSTATUS_OPTIONS] || [];
+    const option = substatusOptions.find(opt => opt.value === substatus);
+    return option ? option.label : substatus;
+  };
+
+  const getOriginLabel = (origin: string | null) => {
+    if (!origin) return '';
+    const originOption = LEAD_ORIGIN_OPTIONS.find(opt => opt.value === origin);
+    return originOption ? originOption.label : origin;
+  };
+
   return {
     leads,
     isLoading,
@@ -198,6 +253,10 @@ const useLeads = () => {
     deleteLead,
     selectedStatus,
     setSelectedStatus,
+    statusOptions: LEAD_STATUS_OPTIONS,
+    getStatusLabel,
+    getSubstatusLabel,
+    getOriginLabel
   };
 };
 
