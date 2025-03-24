@@ -56,7 +56,7 @@ export const useUserRole = () => {
         
         if (userData) {
           console.log('User data loaded:', userData);
-          // Explicit cast string role to UserRole type
+          // Explicit cast string role to UserRole type - now it's an enum in the database
           const roleToUse: UserRole = userData.rol as UserRole;
           
           setUserRole(roleToUse);
