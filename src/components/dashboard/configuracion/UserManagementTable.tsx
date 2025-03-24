@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -62,7 +63,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole, UserRole } from "@/hooks/useUserRole";
 import { signUpWithEmailPassword } from "@/services/authService";
 import { useOrganizationUsers } from "@/hooks/useOrganizationUsers";
-import { useInvitaciones } from "@/hooks/useInvitaciones";
+import { useInvitaciones, InvitationRole } from "@/hooks/useInvitaciones";
 import { useUserTransfer } from "@/hooks/useUserTransfer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -257,6 +258,7 @@ export function UserManagementTable() {
       return;
     }
 
+    // Ensure we only pass allowed invitation roles
     const invitationRole: InvitationRoles = 
       (newInvite.rol === 'admin' || newInvite.rol === 'vendedor' || newInvite.rol === 'cliente') 
         ? newInvite.rol 
@@ -908,4 +910,3 @@ export function UserManagementTable() {
 }
 
 export default UserManagementTable;
-
