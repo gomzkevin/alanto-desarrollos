@@ -28,7 +28,7 @@ export const useResourceActions = (resourceType: ResourceType) => {
   const { subscriptionInfo } = useCompanySubscription();
   
   // Obtener información de desarrollos
-  const { desarrollos } = useDesarrollos();
+  const { desarrollos } = useDesarrollos({}); // Pass an empty object to satisfy the argument requirement
   
   // Obtener información de vendedores
   const { users: vendedores } = useOrganizationUsers();

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -9,6 +8,7 @@ import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { useUserRole } from '@/hooks/useUserRole';
 import useUnidades from '@/hooks/useUnidades';
 import { toast } from '@/components/ui/use-toast';
+import { Json } from '@/integrations/supabase/types';
 
 const DesarrollosPage = () => {
   const navigate = useNavigate();
@@ -82,7 +82,7 @@ const DesarrollosPage = () => {
 
   const normalizeDesarrollos = (desarrollosData: Desarrollo[]): Desarrollo[] => {
     return desarrollosData.map(desarrollo => {
-      const normalizedDesarrollo: Desarrollo = {
+      return {
         ...desarrollo,
         unidades_disponibles: Math.min(
           desarrollo.unidades_disponibles || 0,
@@ -91,9 +91,7 @@ const DesarrollosPage = () => {
         avance_porcentaje: desarrollo.total_unidades 
           ? Math.round(((desarrollo.total_unidades - (desarrollo.unidades_disponibles || 0)) / desarrollo.total_unidades) * 100)
           : 0
-      };
-      
-      return normalizedDesarrollo;
+      } as Desarrollo;
     });
   };
 
