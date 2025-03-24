@@ -26,7 +26,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   loadingFallback,
   unauthorizedFallback
 }) => {
-  const { empresaId, userId, userRole, isAdmin } = useUserRole();
+  const { empresaId, userId, userRole, isAdmin, isSuperAdmin } = useUserRole();
   
   // Agregar logs para depurar la carga de datos del usuario
   useEffect(() => {
@@ -34,9 +34,10 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
       userId,
       empresaId,
       userRole,
-      isAdmin: isAdmin()
+      isAdmin: isAdmin(),
+      isSuperAdmin: isSuperAdmin()
     });
-  }, [userId, empresaId, userRole, moduleName, isAdmin]);
+  }, [userId, empresaId, userRole, moduleName, isAdmin, isSuperAdmin]);
   
   // Usar el hook central de suscripciones
   const { isAuthorized, isLoading } = useSubscription({
@@ -48,6 +49,9 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   // Console logs para depuración
   console.log(`RequireSubscription (${moduleName}) - isAuthorized:`, isAuthorized);
   console.log(`RequireSubscription (${moduleName}) - isLoading:`, isLoading);
+
+  // Autorizar automáticamente a vendedores y administradores
+  const hasAccess = isAuthorized || isAdmin() || isSuperAdmin() || userRole === 'vendedor';
 
   // Mostrar estado de carga
   if (isLoading) {
@@ -67,7 +71,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   }
 
   // Manejar acceso no autorizado
-  if (!isAuthorized) {
+  if (!hasAccess) {
     if (unauthorizedFallback) return <>{unauthorizedFallback}</>;
     
     return (

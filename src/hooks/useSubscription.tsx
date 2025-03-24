@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -267,9 +268,9 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
         userRole
       });
 
-      // Los superadmins siempre tienen acceso completo a todo
-      if (isSuperAdmin()) {
-        console.log('User is superadmin with global system access');
+      // Los superadmins o vendedores siempre tienen acceso completo a todo
+      if (isSuperAdmin() || isAdmin() || userRole === 'vendedor') {
+        console.log('User is superadmin/admin/vendedor with global system access');
         setIsAuthorized(true);
         return;
       }
