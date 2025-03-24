@@ -148,10 +148,19 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
   // Calculate billing amount based on resource counts
   const calculateBillingAmount = async () => {
     try {
-      // Get resource counts directly from the hook
-      const { data } = await supabase.rpc('get_subscription_status', { 
+      if (!effectiveEmpresaId) {
+        return 0;
+      }
+      
+      // Get subscription info via our new RPC function
+      const { data, error } = await supabase.rpc('get_subscription_status', { 
         company_id: effectiveEmpresaId 
       });
+      
+      if (error) {
+        console.error("Error getting subscription status:", error);
+        return 0;
+      }
       
       if (!data || !data.currentPlan || !data.currentPlan.features) {
         return 0;

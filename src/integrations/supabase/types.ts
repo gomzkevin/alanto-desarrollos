@@ -866,6 +866,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_subscription_limit: {
+        Args: {
+          company_id: number
+          resource_type: string
+          resources_to_add?: number
+        }
+        Returns: boolean
+      }
+      count_company_resources: {
+        Args: {
+          company_id: number
+          resource_type: string
+        }
+        Returns: number
+      }
+      get_subscription_status: {
+        Args: {
+          company_id: number
+        }
+        Returns: Json
+      }
       has_active_subscription: {
         Args: {
           user_uuid: string
