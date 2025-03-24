@@ -27,10 +27,12 @@ export const useResourceActions = (resourceType: ResourceType) => {
   const { userId, empresaId, isAdmin } = useUserRole();
   const { subscriptionInfo } = useCompanySubscription();
   
-  // Corrigiendo la llamada a useDesarrollos con un objeto de opciones
-  const { desarrollos } = useDesarrollos({ 
+  // Fix: Pass required options object to useDesarrollos
+  const { desarrollos } = useDesarrollos({
     onSuccess: () => {},
-    onError: () => {} 
+    onError: (error) => {
+      console.error("Error fetching desarrollos:", error);
+    }
   });
   
   // Obtener información de vendedores

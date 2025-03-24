@@ -18,26 +18,26 @@ export interface Desarrollo {
   updated_at: string;
   cover_image?: string;
   logo?: string;
-  amenidades?: string[];
+  amenidades?: string[] | null;
   // Additional fields from the database
-  user_id?: string;
-  total_unidades?: number | null;
-  unidades_disponibles?: number | null;
-  avance_porcentaje?: number | null;
-  comision_operador?: number | null;
-  moneda?: string | null;
-  fecha_entrega?: string | null;
-  adr_base?: number | null;
-  ocupacion_anual?: number | null;
-  es_impuestos_porcentaje?: boolean | null;
-  impuestos?: number | null;
-  es_gastos_variables_porcentaje?: boolean | null;
-  gastos_variables?: number | null;
-  gastos_fijos?: number | null;
-  es_gastos_fijos_porcentaje?: boolean | null;
-  es_mantenimiento_porcentaje?: boolean | null;
-  mantenimiento_valor?: number | null;
-  imagen_url?: string | null;
+  user_id: string;
+  total_unidades: number;
+  unidades_disponibles: number;
+  avance_porcentaje: number;
+  comision_operador: number;
+  moneda: string;
+  fecha_entrega: string | null;
+  adr_base: number;
+  ocupacion_anual: number;
+  es_impuestos_porcentaje: boolean;
+  impuestos: number;
+  es_gastos_variables_porcentaje: boolean;
+  gastos_variables: number;
+  gastos_fijos: number;
+  es_gastos_fijos_porcentaje: boolean;
+  es_mantenimiento_porcentaje: boolean;
+  mantenimiento_valor: number;
+  imagen_url: string | null;
 }
 
 export interface UseDesarrollosOptions {
@@ -46,7 +46,7 @@ export interface UseDesarrollosOptions {
   onError?: (error: Error) => void;
 }
 
-export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
+export const useDesarrollos = (options: UseDesarrollosOptions) => {
   const { userId, empresaId } = useUserRole();
   const queryClient = useQueryClient();
 
