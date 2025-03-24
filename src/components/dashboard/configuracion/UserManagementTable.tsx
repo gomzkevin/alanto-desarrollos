@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -63,16 +62,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole, UserRole } from "@/hooks/useUserRole";
 import { signUpWithEmailPassword } from "@/services/authService";
 import { useOrganizationUsers } from "@/hooks/useOrganizationUsers";
-import { useInvitaciones, InvitationRole } from "@/hooks/useInvitaciones";
+import { useInvitaciones } from "@/hooks/useInvitaciones";
 import { useUserTransfer } from "@/hooks/useUserTransfer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Define a helper type for the roles that can be passed to signUpWithEmailPassword
 type AuthServiceRole = 'admin' | 'vendedor' | 'cliente';
 
-// Define a type that includes all roles, and subtypes for specific contexts:
 type AllUserRoles = 'superadmin' | 'admin' | 'vendedor' | 'cliente';
-type InvitationRoles = 'admin' | 'vendedor' | 'cliente'; // Roles that can be invited
+type InvitationRoles = 'admin' | 'vendedor' | 'cliente';
 
 export function UserManagementTable() {
   const [activeTab, setActiveTab] = useState<string>("usuarios");
@@ -83,7 +80,6 @@ export function UserManagementTable() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserName, setSelectedUserName] = useState<string>("");
 
-  // Updated to use UserRole type that includes 'superadmin'
   const [newUser, setNewUser] = useState({
     nombre: "",
     email: "",
@@ -91,7 +87,6 @@ export function UserManagementTable() {
     password: "",
   });
 
-  // Updated to use InvitationRoles type that excludes 'superadmin'
   const [newInvite, setNewInvite] = useState({
     email: "",
     rol: "vendedor" as InvitationRoles,
@@ -198,7 +193,6 @@ export function UserManagementTable() {
     if (formType === 'user') {
       setNewUser((prev) => ({ ...prev, rol: value as UserRole }));
     } else if (formType === 'invite') {
-      // Ensure we only set valid invitation roles (admin, vendedor, cliente)
       if (value === 'admin' || value === 'vendedor' || value === 'cliente') {
         setNewInvite((prev) => ({ ...prev, rol: value as InvitationRoles }));
       }
@@ -222,8 +216,6 @@ export function UserManagementTable() {
     }
 
     try {
-      // Convert superadmin to admin for the auth service since it only accepts 
-      // admin, vendedor, or cliente
       const roleForAuthService: AuthServiceRole = 
         newUser.rol === 'superadmin' ? 'admin' : 
         (newUser.rol as AuthServiceRole);
@@ -266,12 +258,9 @@ export function UserManagementTable() {
       return;
     }
 
-    // Safe cast to InvitationRoles - we only allow valid invitation roles
-    const invitationRole: InvitationRoles = newInvite.rol;
-    
     const result = await createInvitacion(
       newInvite.email, 
-      invitationRole
+      newInvite.rol
     );
     
     if (result.success) {
