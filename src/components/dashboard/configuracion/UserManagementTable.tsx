@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Table,
@@ -65,9 +64,11 @@ export function UserManagementTable() {
 
   const {
     users,
-    isLoading: isUsersLoading,
-    error: usersError,
+    isLoading,
+    createUser,
     updateUser,
+    deleteUser,
+    error: usersError,
   } = useOrganizationUsers({});
 
   const {
@@ -143,13 +144,13 @@ export function UserManagementTable() {
     });
   };
 
-  const isLoading = isUsersLoading || isInvitacionesLoading;
+  const isLoading = isLoading || isInvitacionesLoading;
   const hasInvitations = invitaciones && invitaciones.length > 0;
   const hasUsers = users && users.length > 0;
 
   const handleChangeRole = (userId: string, newRole: string) => {
     updateUser.mutate(
-      { userId, data: { rol: newRole } },
+      { id: userId, data: { rol: newRole } },
       {
         onSuccess: () => {
           toast({
@@ -338,7 +339,7 @@ export function UserManagementTable() {
                             <DropdownMenuItem
                               onClick={() =>
                                 updateUser.mutate({
-                                  userId: user.id,
+                                  id: user.id,
                                   data: { activo: !user.activo },
                                 })
                               }

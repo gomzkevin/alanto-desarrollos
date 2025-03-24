@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -16,7 +15,6 @@ const DesarrollosPage = () => {
   const [desarrollosWithRealCounts, setDesarrollosWithRealCounts] = useState<Desarrollo[]>([]);
   const [hasTriedInitialLoad, setHasTriedInitialLoad] = useState(false);
   
-  // Get user info from useUserRole hook
   const { 
     userId,
     empresaId,
@@ -24,7 +22,6 @@ const DesarrollosPage = () => {
     isLoading: isUserLoading 
   } = useUserRole();
   
-  // Use empresa_id instead of user_id for filtering desarrollos
   const { 
     desarrollos = [], 
     isLoading, 
@@ -38,7 +35,6 @@ const DesarrollosPage = () => {
     return isAdmin();
   };
 
-  // Force a refetch when empresaId becomes available
   useEffect(() => {
     if (empresaId !== null && !hasTriedInitialLoad) {
       console.log('Empresa ID available, forcing refetch:', empresaId);
@@ -47,7 +43,6 @@ const DesarrollosPage = () => {
     }
   }, [empresaId, refetch, hasTriedInitialLoad]);
 
-  // Update unit counts when desarrollos change
   useEffect(() => {
     const updateRealUnitCounts = async () => {
       if (desarrollos.length === 0 || isLoading) return;
@@ -70,7 +65,7 @@ const DesarrollosPage = () => {
           })
         );
         
-        setDesarrollosWithRealCounts(updatedDesarrollos);
+        setDesarrollosWithRealCounts(updatedDesarrollos as Desarrollo[]);
       } catch (error) {
         console.error('Error updating unit counts:', error);
         toast({
@@ -109,10 +104,8 @@ const DesarrollosPage = () => {
     ? normalizeDesarrollos(desarrollosWithRealCounts)
     : normalizeDesarrollos(desarrollos);
 
-  // Unified loading state
   const isActuallyLoading = isUserLoading || isLoading;
   
-  // Add debug logs to help troubleshoot
   console.log('Desarrollo page render:', { 
     userId,
     empresaId,

@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -72,17 +71,14 @@ export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
           throw new Error(error.message);
         }
         
+        // Fix for type mismatches - ensure we cast properly
         return data as unknown as Desarrollo[];
       } catch (error) {
         console.error('Error fetching desarrollos:', error);
         throw error;
       }
     },
-    enabled: !!empresaId,
-    meta: {
-      onSuccess: options.onSuccess,
-      onError: options.onError
-    }
+    enabled: !!empresaId
   });
 
   const createDesarrollo = useMutation({
@@ -94,9 +90,39 @@ export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
           empresa_id: empresaId,
         };
         
+        // Fix type mismatch by being explicit about the fields we're passing
         const { data, error } = await supabase
           .from('desarrollos')
-          .insert([desarrolloWithEmpresa])
+          .insert([{
+            nombre: desarrolloWithEmpresa.nombre,
+            ubicacion: desarrolloWithEmpresa.ubicacion,
+            descripcion: desarrolloWithEmpresa.descripcion,
+            empresa_id: desarrolloWithEmpresa.empresa_id,
+            total_unidades: desarrolloWithEmpresa.total_unidades,
+            unidades_disponibles: desarrolloWithEmpresa.unidades_disponibles,
+            amenidades: desarrolloWithEmpresa.amenidades,
+            imagen_url: desarrolloWithEmpresa.imagen_url,
+            // Other optional fields
+            latitud: desarrolloWithEmpresa.latitud,
+            longitud: desarrolloWithEmpresa.longitud,
+            estado: desarrolloWithEmpresa.estado,
+            fecha_inicio: desarrolloWithEmpresa.fecha_inicio,
+            fecha_finalizacion_estimada: desarrolloWithEmpresa.fecha_finalizacion_estimada,
+            avance_porcentaje: desarrolloWithEmpresa.avance_porcentaje,
+            comision_operador: desarrolloWithEmpresa.comision_operador,
+            moneda: desarrolloWithEmpresa.moneda,
+            fecha_entrega: desarrolloWithEmpresa.fecha_entrega,
+            adr_base: desarrolloWithEmpresa.adr_base,
+            ocupacion_anual: desarrolloWithEmpresa.ocupacion_anual,
+            es_impuestos_porcentaje: desarrolloWithEmpresa.es_impuestos_porcentaje,
+            impuestos: desarrolloWithEmpresa.impuestos,
+            es_gastos_variables_porcentaje: desarrolloWithEmpresa.es_gastos_variables_porcentaje,
+            gastos_variables: desarrolloWithEmpresa.gastos_variables,
+            gastos_fijos: desarrolloWithEmpresa.gastos_fijos,
+            es_gastos_fijos_porcentaje: desarrolloWithEmpresa.es_gastos_fijos_porcentaje,
+            es_mantenimiento_porcentaje: desarrolloWithEmpresa.es_mantenimiento_porcentaje,
+            mantenimiento_valor: desarrolloWithEmpresa.mantenimiento_valor
+          }])
           .select()
           .single();
           

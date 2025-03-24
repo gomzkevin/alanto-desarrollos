@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { FormValues } from './types';
 import { CotizacionDialogContent } from './components/CotizacionDialogContent';
 import useResourceData from './useResourceData';
-import useResourceActions from './useResourceActions';
+import { useResourceActions } from './useResourceActions';
 import { useResourceFields } from './hooks/useResourceFields';
 
 interface CotizacionDialogProps {
@@ -58,16 +57,7 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
 
   const fields = useResourceFields(resourceType, selectedStatus);
 
-  const { saveResource, handleImageUpload: uploadResourceImage } = useResourceActions({
-    resourceType,
-    resourceId,
-    onSuccess,
-    selectedAmenities,
-    clientConfig: {
-      isExistingClient,
-      newClientData
-    }
-  });
+  const { saveResource, handleImageUpload: uploadResourceImage } = useResourceActions(resourceType);
 
   useEffect(() => {
     if (open) {
