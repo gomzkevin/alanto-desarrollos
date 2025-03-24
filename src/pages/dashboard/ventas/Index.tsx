@@ -4,39 +4,74 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VentasTable } from './components/VentasTable';
 import VentasStatistics from './components/VentasStatistics';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useSubscriptionAuth } from '@/hooks/useSubscriptionAuth';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const VentasPage = () => {
+  // Always call hooks at the top level, regardless of conditions
+  const { isAuthorized, isLoading } = useSubscriptionAuth('Ventas');
   const [refreshTrigger, setRefreshTrigger] = React.useState(0);
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  return (
-    <DashboardLayout>
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Ventas</h1>
-          <div className="text-sm text-muted-foreground">
-            Las ventas se crean automáticamente al cambiar el estado de las unidades
+  // Render loading state
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-1/3" />
+          <Skeleton className="h-8 w-full" />
+          <div className="grid gap-4">
+            <Skeleton className="h-64 w-full" />
           </div>
         </div>
+      </DashboardLayout>
+    );
+  }
 
-        <Tabs defaultValue="list" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="list">Lista de Ventas</TabsTrigger>
-            <TabsTrigger value="stats">Estadísticas</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="list" className="space-y-4">
-            <VentasTable refreshTrigger={refreshTrigger} />
-          </TabsContent>
-          
-          <TabsContent value="stats">
-            <VentasStatistics />
-          </TabsContent>
-        </Tabs>
+  // Render unauthorized state
+  if (!isAuthorized) {
+    return (
+      <DashboardLayout>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Acceso restringido</AlertTitle>
+          <AlertDescription>
+            No tienes acceso al módulo de Ventas. Por favor, contacta al administrador o verifica que tu empresa tenga una suscripción activa.
+          </AlertDescription>
+        </Alert>
+      </DashboardLayout>
+    );
+  }
+
+  // Render authorized state
+  return (
+    <DashboardLayout>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Ventas</h1>
+        <div className="text-sm text-muted-foreground">
+          Las ventas se crean automáticamente al cambiar el estado de las unidades
+        </div>
       </div>
+
+      <Tabs defaultValue="list" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="list">Lista de Ventas</TabsTrigger>
+          <TabsTrigger value="stats">Estadísticas</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="list" className="space-y-4">
+          <VentasTable refreshTrigger={refreshTrigger} />
+        </TabsContent>
+        
+        <TabsContent value="stats">
+          <VentasStatistics />
+        </TabsContent>
+      </Tabs>
     </DashboardLayout>
   );
 };

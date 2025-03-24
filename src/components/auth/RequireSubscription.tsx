@@ -6,7 +6,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { useUserRole } from '@/hooks/useUserRole';
 
 interface RequireSubscriptionProps {
   children: React.ReactNode;
@@ -22,12 +21,11 @@ interface RequireSubscriptionProps {
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   children,
   moduleName,
-  redirectTo = '/dashboard/configuracion',
+  redirectTo = '/dashboard',
   loadingFallback,
   unauthorizedFallback
 }) => {
   const { isAuthorized, isLoading } = useSubscriptionAuth(moduleName, redirectTo);
-  const { isAdmin } = useUserRole();
 
   // Show loading state
   if (isLoading) {
@@ -50,11 +48,6 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   if (!isAuthorized) {
     if (unauthorizedFallback) return <>{unauthorizedFallback}</>;
     
-    // Mensaje personalizado según el rol
-    const message = isAdmin() 
-      ? `No tienes acceso al módulo de ${moduleName}. Por favor, verifica que tu empresa tenga una suscripción activa.`
-      : `No tienes acceso al módulo de ${moduleName}. La empresa necesita una suscripción activa. Por favor, contacta al administrador de tu empresa.`;
-    
     return (
       <DashboardLayout>
         <div className="p-6">
@@ -62,7 +55,8 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Acceso restringido</AlertTitle>
             <AlertDescription>
-              {message}
+              No tienes acceso al módulo de {moduleName}. Por favor, contacta al administrador 
+              o verifica que tu empresa tenga una suscripción activa.
             </AlertDescription>
           </Alert>
         </div>

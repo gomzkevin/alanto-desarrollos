@@ -8,14 +8,14 @@ import { useSubscriptionInfo } from './useSubscriptionInfo';
 /**
  * Hook para verificar si el usuario tiene acceso basado en suscripción
  * @param requiredModule - Módulo opcional que se intenta acceder (para mensajes específicos)
- * @param redirectPath - Ruta a la que redirigir si no hay acceso (por defecto: /dashboard/configuracion)
+ * @param redirectPath - Ruta a la que redirigir si no hay acceso (por defecto: /dashboard)
  */
-export const useSubscriptionAuth = (requiredModule?: string, redirectPath: string = '/dashboard/configuracion') => {
+export const useSubscriptionAuth = (requiredModule?: string, redirectPath: string = '/dashboard') => {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const navigate = useNavigate();
   
   // Always call hooks at the top level, regardless of any conditions
-  const { userId, empresaId, isAdmin, userRole, authChecked } = useUserRole();
+  const { userId, empresaId, isAdmin, authChecked } = useUserRole();
   const { subscriptionInfo, isLoading: isLoadingSubscription } = useSubscriptionInfo();
 
   useEffect(() => {
@@ -24,7 +24,6 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
       console.log('Verificando autorización de suscripción:', {
         userId,
         empresaId,
-        userRole,
         isSubscriptionActive: subscriptionInfo.isActive,
         moduleName: requiredModule
       });
@@ -46,15 +45,9 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
       if (!subscriptionInfo.isActive) {
         console.log('Suscripción inactiva para módulo:', requiredModule);
         const moduleText = requiredModule ? ` al módulo ${requiredModule}` : '';
-        
-        // Mensaje personalizado según el rol del usuario
-        const description = isAdmin() 
-          ? `No tienes acceso${moduleText}. Tu empresa necesita una suscripción activa.`
-          : `No tienes acceso${moduleText}. La empresa necesita una suscripción activa. Contacta al administrador de tu empresa.`;
-        
         toast({
           title: "Suscripción requerida",
-          description,
+          description: `No tienes acceso${moduleText}. La empresa necesita una suscripción activa.`,
           variant: "destructive"
         });
         navigate(redirectPath);
@@ -62,14 +55,11 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
         return;
       }
 
-      // Si llegamos aquí, el usuario está autorizado porque:
-      // 1. Tiene una empresa asignada
-      // 2. La empresa tiene una suscripción activa
-      // 3. El usuario tiene un rol (admin o vendedor) en esa empresa
-      console.log('Usuario autorizado para acceder al módulo:', requiredModule, 'con rol:', userRole);
+      // Si llegamos aquí, el usuario está autorizado
+      console.log('Usuario autorizado para acceder al módulo:', requiredModule);
       setIsAuthorized(true);
     }
-  }, [userId, empresaId, userRole, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule, isAdmin]);
+  }, [userId, empresaId, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule]);
 
   // Devolver estado de autorización y carga
   return {

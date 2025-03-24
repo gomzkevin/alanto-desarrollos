@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -66,6 +67,7 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
+				// Custom colors based on requirements
 				indigo: {
 					50: '#eef2ff',
 					100: '#e0e7ff',
@@ -73,7 +75,7 @@ export default {
 					300: '#a5b4fc',
 					400: '#818cf8',
 					500: '#6366f1',
-					600: '#4f46e5',
+					600: '#4f46e5', // Primary color
 					700: '#4338ca',
 					800: '#3730a3',
 					900: '#312e81',
@@ -85,25 +87,25 @@ export default {
 					200: '#99f6e4',
 					300: '#5eead4',
 					400: '#2dd4bf',
-					500: '#14b8a6',
+					500: '#14b8a6', // Secondary color
 					600: '#0891b2',
 					700: '#0e7490',
 					800: '#155e75',
 					900: '#164e63',
 					950: '#083344',
 				},
-				coral: '#F97066',
-				amber: '#FBBF24',
+				coral: '#F97066', // Accent color
+				amber: '#FBBF24', // Accent color
 				slate: {
 					50: '#f8fafc',
-					100: '#f1f5f9',
+					100: '#f1f5f9', // Light gray
 					200: '#e2e8f0',
 					300: '#cbd5e1',
 					400: '#94a3b8',
-					500: '#64748b',
+					500: '#64748b', // Medium gray
 					600: '#475569',
 					700: '#334155',
-					800: '#1e293b',
+					800: '#1e293b', // Dark gray
 					900: '#0f172a',
 					950: '#020617',
 				},
@@ -160,11 +162,6 @@ export default {
 			},
 			backdropBlur: {
 				'xs': '2px',
-			},
-			spacing: {
-				'form-padding': '1.5rem',
-				'card-padding': '1.25rem',
-				'dialog-padding': '1.5rem',
 			},
 		}
 	},
