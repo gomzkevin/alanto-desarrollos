@@ -31,7 +31,7 @@ export const useResourceActions = (resourceType: ResourceType) => {
   const { desarrollos } = useDesarrollos();
   
   // Obtener información de vendedores
-  const { users: vendedores } = useOrganizationUsers({ role: 'vendedor' });
+  const { users: vendedores } = useOrganizationUsers();
   
   // Obtener información de prototipos
   const { prototipos } = usePrototipos();

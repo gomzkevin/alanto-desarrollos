@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -65,7 +66,7 @@ const DesarrollosPage = () => {
           })
         );
         
-        setDesarrollosWithRealCounts(updatedDesarrollos as Desarrollo[]);
+        setDesarrollosWithRealCounts(updatedDesarrollos);
       } catch (error) {
         console.error('Error updating unit counts:', error);
         toast({
