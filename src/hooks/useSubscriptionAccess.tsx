@@ -68,47 +68,6 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
           return;
         }
         
-        // Si es admin de empresa, también otorgar acceso sin verificar suscripción
-        if (isAdmin() && !isSuperAdmin()) {
-          console.log('Usuario es admin de empresa - acceso autorizado');
-          // Para admins, obtenemos la información de suscripción pero no bloqueamos el acceso
-          if (empresaId) {
-            try {
-              const { data: subData, error: subError } = await supabase
-                .rpc('get_user_subscription_status', { user_uuid: userId });
-                
-              if (!subError && subData) {
-                console.log('Datos de suscripción para admin:', subData);
-                let currentPlanData = null;
-                
-                if (subData.currentPlan && typeof subData.currentPlan === 'object' && !Array.isArray(subData.currentPlan)) {
-                  currentPlanData = {
-                    id: String(subData.currentPlan.id || ''),
-                    name: String(subData.currentPlan.name || ''),
-                    price: Number(subData.currentPlan.price || 0),
-                    interval: String(subData.currentPlan.interval || ''),
-                    features: subData.currentPlan.features || {}
-                  };
-                }
-                
-                setSubscription({
-                  isActive: !!subData.isActive,
-                  currentPlan: currentPlanData,
-                  renewalDate: subData.renewalDate ? String(subData.renewalDate) : null,
-                  empresa_id: typeof subData.empresa_id === 'number' ? subData.empresa_id : undefined
-                });
-              }
-            } catch (e) {
-              console.error('Error al obtener datos de suscripción para admin:', e);
-            }
-          }
-          
-          // Independientemente de la suscripción, los admins siempre tienen acceso
-          setIsAuthorized(true);
-          setIsLoading(false);
-          return;
-        }
-        
         // Para usuarios regulares, verificar si requiere suscripción
         if (!requiresSubscription) {
           console.log('Módulo no requiere suscripción - acceso autorizado');
@@ -134,6 +93,7 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
         if (data && typeof data === 'object' && 'isActive' in data) {
           // Verificar y convertir currentPlan de forma segura
           let currentPlanData = null;
+          
           if (data.currentPlan && typeof data.currentPlan === 'object') {
             // Verificar que currentPlan no sea un array antes de acceder a sus propiedades
             if (!Array.isArray(data.currentPlan)) {
