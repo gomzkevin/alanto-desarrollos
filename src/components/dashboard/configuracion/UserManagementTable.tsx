@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -467,14 +466,14 @@ export function UserManagementTable() {
               Nuevo Usuario
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Crear Nuevo Usuario</DialogTitle>
               <DialogDescription>
                 Añade un nuevo usuario con acceso a la plataforma.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-6 py-4 px-2">
               <div className="grid w-full items-center gap-2">
                 <Label htmlFor="nombre">Nombre</Label>
                 <Input
@@ -483,7 +482,7 @@ export function UserManagementTable() {
                   placeholder="Nombre completo"
                   value={newUser.nombre}
                   onChange={handleNewUserChange}
-                  className={validationErrors.nombre ? "border-red-500" : ""}
+                  className={`${validationErrors.nombre ? "border-red-500" : ""}`}
                 />
                 {validationErrors.nombre && (
                   <p className="text-sm text-red-500">{validationErrors.nombre}</p>
@@ -498,7 +497,7 @@ export function UserManagementTable() {
                   placeholder="correo@ejemplo.com"
                   value={newUser.email}
                   onChange={handleNewUserChange}
-                  className={validationErrors.email ? "border-red-500" : ""}
+                  className={`${validationErrors.email ? "border-red-500" : ""}`}
                 />
                 {validationErrors.email && (
                   <p className="text-sm text-red-500">{validationErrors.email}</p>
@@ -513,7 +512,7 @@ export function UserManagementTable() {
                   placeholder="Contraseña segura"
                   value={newUser.password}
                   onChange={handleNewUserChange}
-                  className={validationErrors.password ? "border-red-500" : ""}
+                  className={`${validationErrors.password ? "border-red-500" : ""}`}
                 />
                 {validationErrors.password && (
                   <p className="text-sm text-red-500">{validationErrors.password}</p>
