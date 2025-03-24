@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,7 @@ export function UserManagementTable() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserName, setSelectedUserName] = useState<string>("");
 
+  // Updated to use UserRole type that includes 'superadmin'
   const [newUser, setNewUser] = useState({
     nombre: "",
     email: "",
@@ -89,9 +91,10 @@ export function UserManagementTable() {
     password: "",
   });
 
+  // Updated to use InvitationRoles type that excludes 'superadmin'
   const [newInvite, setNewInvite] = useState({
     email: "",
-    rol: "vendedor" as InvitationRole,
+    rol: "vendedor" as InvitationRoles,
   });
 
   const [transferData, setTransferData] = useState({
@@ -195,7 +198,10 @@ export function UserManagementTable() {
     if (formType === 'user') {
       setNewUser((prev) => ({ ...prev, rol: value as UserRole }));
     } else if (formType === 'invite') {
-      setNewInvite((prev) => ({ ...prev, rol: value as InvitationRole }));
+      // Ensure we only set valid invitation roles (admin, vendedor, cliente)
+      if (value === 'admin' || value === 'vendedor' || value === 'cliente') {
+        setNewInvite((prev) => ({ ...prev, rol: value as InvitationRoles }));
+      }
     } else if (formType === 'transfer') {
       setTransferData((prev) => ({ ...prev, newRole: value as UserRole }));
     }
@@ -260,11 +266,8 @@ export function UserManagementTable() {
       return;
     }
 
-    // Ensure we're only passing valid invitation roles to createInvitacion
-    const invitationRole: InvitationRoles = 
-      (newInvite.rol === 'admin' || newInvite.rol === 'vendedor' || newInvite.rol === 'cliente' || newInvite.rol === 'superadmin') 
-        ? newInvite.rol 
-        : 'admin';
+    // Safe cast to InvitationRoles - we only allow valid invitation roles
+    const invitationRole: InvitationRoles = newInvite.rol;
     
     const result = await createInvitacion(
       newInvite.email, 
@@ -274,7 +277,7 @@ export function UserManagementTable() {
     if (result.success) {
       setNewInvite({
         email: "",
-        rol: "vendedor" as InvitationRole,
+        rol: "vendedor" as InvitationRoles,
       });
       setIsInviteDialogOpen(false);
     }
