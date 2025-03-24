@@ -82,7 +82,7 @@ const DesarrollosPage = () => {
 
   const normalizeDesarrollos = (desarrollosData: Desarrollo[]): Desarrollo[] => {
     return desarrollosData.map(desarrollo => {
-      return {
+      const normalizedDesarrollo = {
         ...desarrollo,
         unidades_disponibles: Math.min(
           desarrollo.unidades_disponibles || 0,
@@ -92,6 +92,8 @@ const DesarrollosPage = () => {
           ? Math.round(((desarrollo.total_unidades - (desarrollo.unidades_disponibles || 0)) / desarrollo.total_unidades) * 100)
           : 0
       } as Desarrollo;
+      
+      return normalizedDesarrollo;
     });
   };
 
