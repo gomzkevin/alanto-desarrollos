@@ -1,3 +1,4 @@
+
 import useCompanySubscription from '@/hooks/useCompanySubscription';
 import { toast } from '@/components/ui/use-toast';
 import { ResourceType } from './types';
