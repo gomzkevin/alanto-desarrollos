@@ -24,19 +24,32 @@ export function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [redirectAttempted, setRedirectAttempted] = useState(false);
+  const [shouldNavigate, setShouldNavigate] = useState(false);
 
   useEffect(() => {
     // Si el usuario está autenticado, redirige a la página principal
     if (userId && !isLoading && !redirectAttempted) {
       setRedirectAttempted(true);
+      
       // Obtener ruta de redirección de location.state o usar default
       const from = location.state?.from?.pathname || "/dashboard";
+      
       // Use a timeout to avoid immediate state changes that could cause excessive replaceState calls
-      setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 100);
+      const timer = setTimeout(() => {
+        setShouldNavigate(true);
+      }, 300);
+      
+      return () => clearTimeout(timer);
     }
   }, [userId, isLoading, navigate, location.state, redirectAttempted]);
+
+  // Handle navigation in a separate effect to avoid loops
+  useEffect(() => {
+    if (shouldNavigate) {
+      const from = location.state?.from?.pathname || "/dashboard";
+      navigate(from, { replace: true });
+    }
+  }, [shouldNavigate, navigate, location.state]);
 
   // Si está cargando, mostrar spinner
   if (isLoading) {

@@ -14,7 +14,7 @@ export { default as useUnidades } from './useUnidades';
 export { default as useSubscriptionAuth } from './useSubscriptionAuth';
 export { default as useSubscriptionInfo } from './useSubscriptionInfo';
 export { default as useSubscription } from './useSubscription';
-export { useAuth } from './useAuth';
+export { default as useAuth } from './useAuth';
 export { default as useResourceCounts } from './useResourceCounts';
 export { default as useInvitaciones } from './useInvitaciones';
 export { default as useUserTransfer } from './useUserTransfer';

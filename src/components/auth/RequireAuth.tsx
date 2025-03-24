@@ -11,24 +11,31 @@ export default function RequireAuth({ children }: RequireAuthProps) {
   const { userId, authChecked, isLoading } = useUserRole();
   const location = useLocation();
   const [redirectAttempted, setRedirectAttempted] = useState(false);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   useEffect(() => {
     // Reset the redirect attempt flag when location changes
     setRedirectAttempted(false);
+    setShouldRedirect(false);
   }, [location.pathname]);
 
-  // Prevent endless redirect loops by only attempting to redirect once per location
-  // and adding a timeout to avoid too many history.replaceState calls
-  if (!isLoading && authChecked && !userId && !redirectAttempted) {
-    console.log("Usuario no autenticado, redirigiendo a /auth");
-    setRedirectAttempted(true);
-    
-    // We'll return the Navigate component after a very brief delay
-    // This helps prevent excessive history.replaceState() calls in quick succession
-    setTimeout(() => {
-      setRedirectAttempted(false); // Reset for potential future redirects
-    }, 1000);
-    
+  // Only check auth status when we have a definitive answer
+  useEffect(() => {
+    if (!isLoading && authChecked && !userId && !redirectAttempted) {
+      console.log("Usuario no autenticado, redirigiendo a /auth");
+      setRedirectAttempted(true);
+      
+      // Use a timeout to avoid excessive history.replaceState() calls
+      const timer = setTimeout(() => {
+        setShouldRedirect(true);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [userId, authChecked, isLoading, redirectAttempted, location.pathname]);
+
+  // Only return the Navigate component when shouldRedirect is true
+  if (shouldRedirect) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 

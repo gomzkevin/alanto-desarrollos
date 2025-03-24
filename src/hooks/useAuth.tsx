@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -17,14 +17,19 @@ export const useAuth = ({ redirectTo, requiresSubscription, requiredModule, redi
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const { toast } = useToast();
+  const lastAuthCheckRef = useRef(0);
 
   useEffect(() => {
     // Only run the auth check if we're not already processing it
-    if (isProcessingAuth) return;
+    // and if at least 2 seconds have passed since the last check
+    const now = Date.now();
+    if (isProcessingAuth || (now - lastAuthCheckRef.current < 2000 && lastAuthCheckRef.current !== 0)) return;
 
     const checkAuth = async () => {
       try {
         setIsProcessingAuth(true);
+        lastAuthCheckRef.current = Date.now();
+        
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -51,22 +56,43 @@ export const useAuth = ({ redirectTo, requiresSubscription, requiredModule, redi
         // Add a small delay before allowing another auth check
         setTimeout(() => {
           setIsProcessingAuth(false);
-        }, 1000);
+        }, 2000);
       }
     };
     
     checkAuth();
     
-    // Set up auth state change listener
+    // Set up auth state change listener with debounce
+    let authChangeTimeout: NodeJS.Timeout;
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("Auth state changed:", event);
-        setUserId(session?.user?.id || null);
-        setUserEmail(session?.user?.email || null);
+        
+        // Clear any pending timeout
+        if (authChangeTimeout) {
+          clearTimeout(authChangeTimeout);
+        }
+        
+        // Debounce auth state changes
+        authChangeTimeout = setTimeout(async () => {
+          if (!isProcessingAuth) {
+            setIsProcessingAuth(true);
+            lastAuthCheckRef.current = Date.now();
+            
+            setUserId(session?.user?.id || null);
+            setUserEmail(session?.user?.email || null);
+            
+            // Release the processing lock after a delay
+            setTimeout(() => setIsProcessingAuth(false), 2000);
+          }
+        }, 500); // Debounce for 500ms
       }
     );
     
     return () => {
+      if (authChangeTimeout) {
+        clearTimeout(authChangeTimeout);
+      }
       authListener.subscription.unsubscribe();
     };
   }, [isProcessingAuth, requiresSubscription, requiredModule]);
@@ -154,5 +180,4 @@ export const useAuth = ({ redirectTo, requiresSubscription, requiredModule, redi
   return { userId, userEmail, isLoading, isAuthorized, login, signup, logout };
 };
 
-// This fixes the "no exported member 'default'" error
 export default useAuth;

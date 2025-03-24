@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { useAuth } from '@/hooks/useAuth';
+import useAuth from '@/hooks/useAuth';
 
 interface RequireSubscriptionProps {
   children: React.ReactNode;
@@ -25,12 +26,29 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   loadingFallback,
   unauthorizedFallback
 }) => {
+  const navigate = useNavigate();
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
+  
   // Utilizar el hook centralizado de autorización con los parámetros necesarios
   const { isAuthorized, isLoading } = useAuth({
     requiresSubscription: true,
     requiredModule: moduleName,
     redirectPath: redirectTo
   });
+
+  // Effect to handle unauthorized access
+  useEffect(() => {
+    if (!isLoading && !isAuthorized && !redirectAttempted) {
+      setRedirectAttempted(true);
+      
+      // Use timeout to prevent too many navigation actions
+      const timer = setTimeout(() => {
+        navigate(redirectTo);
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthorized, isLoading, navigate, redirectTo, redirectAttempted]);
 
   // Mostrar estado de carga
   if (isLoading) {

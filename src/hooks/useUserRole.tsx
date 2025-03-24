@@ -22,14 +22,18 @@ export const useUserRole = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
+  const [lastAuthCheck, setLastAuthCheck] = useState(0);
 
   useEffect(() => {
     // Only run the auth check if we're not already processing it
-    if (isProcessingAuth) return;
+    // and if at least 2 seconds have passed since the last check
+    const now = Date.now();
+    if (isProcessingAuth || (now - lastAuthCheck < 2000 && lastAuthCheck !== 0)) return;
 
     const fetchUserData = async () => {
       try {
         setIsProcessingAuth(true);
+        setLastAuthCheck(Date.now());
         setIsLoading(true);
         
         // Get the current user
@@ -95,14 +99,14 @@ export const useUserRole = () => {
         });
       } finally {
         setIsLoading(false);
-        // Add a delay before allowing another auth check
-        setTimeout(() => setIsProcessingAuth(false), 1000);
+        // Add a longer delay before allowing another auth check
+        setTimeout(() => setIsProcessingAuth(false), 2000);
       }
     };
     
     fetchUserData();
     
-    // Set up auth state change listener - with debounce
+    // Set up auth state change listener with debounce
     let authChangeTimeout: NodeJS.Timeout;
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
@@ -114,38 +118,47 @@ export const useUserRole = () => {
       
       // Debounce auth state changes
       authChangeTimeout = setTimeout(async () => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          // User signed in, fetch their data
-          setUserId(session.user.id);
-          setUserEmail(session.user.email);
+        // Only process if we're not already processing
+        if (!isProcessingAuth) {
+          setIsProcessingAuth(true);
+          setLastAuthCheck(Date.now());
           
-          const { data, error } = await supabase
-            .from('usuarios')
-            .select('*')
-            .eq('auth_id', session.user.id)
-            .maybeSingle();
-          
-          if (!error && data) {
-            console.log('User data from auth change:', data);
-            // Explicit cast string role to UserRole type
-            const roleToUse: UserRole = data.rol as UserRole;
+          if (event === 'SIGNED_IN' && session?.user) {
+            // User signed in, fetch their data
+            setUserId(session.user.id);
+            setUserEmail(session.user.email);
             
-            setUserRole(roleToUse);
-            setUserName(data.nombre);
+            const { data, error } = await supabase
+              .from('usuarios')
+              .select('*')
+              .eq('auth_id', session.user.id)
+              .maybeSingle();
             
-            // Establecer empresaId para acceso basado en organización
-            setEmpresaId(data.empresa_id);
-            console.log('Empresa ID after auth change:', data.empresa_id);
+            if (!error && data) {
+              console.log('User data from auth change:', data);
+              // Explicit cast string role to UserRole type
+              const roleToUse: UserRole = data.rol as UserRole;
+              
+              setUserRole(roleToUse);
+              setUserName(data.nombre);
+              
+              // Establecer empresaId para acceso basado en organización
+              setEmpresaId(data.empresa_id);
+              console.log('Empresa ID after auth change:', data.empresa_id);
+            }
+          } else if (event === 'SIGNED_OUT') {
+            // User signed out, clear their data
+            setUserId(null);
+            setUserEmail(null);
+            setUserRole(null);
+            setUserName(null);
+            setEmpresaId(null);
           }
-        } else if (event === 'SIGNED_OUT') {
-          // User signed out, clear their data
-          setUserId(null);
-          setUserEmail(null);
-          setUserRole(null);
-          setUserName(null);
-          setEmpresaId(null);
+          
+          // Release the processing lock after a longer delay
+          setTimeout(() => setIsProcessingAuth(false), 2000);
         }
-      }, 300); // Debounce for 300ms
+      }, 500); // Debounce for 500ms
     });
     
     return () => {
@@ -154,7 +167,7 @@ export const useUserRole = () => {
       }
       authListener.subscription.unsubscribe();
     };
-  }, [isProcessingAuth]);
+  }, [isProcessingAuth, lastAuthCheck]);
 
   // Helper methods
   const isUserAdmin = () => {
