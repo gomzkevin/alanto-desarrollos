@@ -83,10 +83,25 @@ const DesarrollosPage = () => {
 
   const normalizeDesarrollos = (desarrollosData: Desarrollo[]): Desarrollo[] => {
     return desarrollosData.map(desarrollo => {
-      // Use a more complete type assertion that includes all required properties
-      // with default values for any missing properties
-      const normalizedDesarrollo = {
-        ...desarrollo,
+      // Create a complete normalized object with all required properties
+      const normalizedDesarrollo: Desarrollo = {
+        id: desarrollo.id,
+        nombre: desarrollo.nombre,
+        descripcion: desarrollo.descripcion || '',
+        ubicacion: desarrollo.ubicacion,
+        latitud: desarrollo.latitud || null,
+        longitud: desarrollo.longitud || null,
+        estado: desarrollo.estado || '',
+        fecha_inicio: desarrollo.fecha_inicio || null,
+        fecha_finalizacion_estimada: desarrollo.fecha_finalizacion_estimada || null,
+        empresa_id: desarrollo.empresa_id,
+        created_at: desarrollo.created_at,
+        updated_at: desarrollo.updated_at,
+        cover_image: desarrollo.cover_image || undefined,
+        logo: desarrollo.logo || undefined,
+        amenidades: desarrollo.amenidades || null,
+        user_id: desarrollo.user_id || '',
+        total_unidades: desarrollo.total_unidades || 0,
         unidades_disponibles: Math.min(
           desarrollo.unidades_disponibles || 0,
           desarrollo.total_unidades || 0
@@ -94,27 +109,21 @@ const DesarrollosPage = () => {
         avance_porcentaje: desarrollo.total_unidades 
           ? Math.round(((desarrollo.total_unidades - (desarrollo.unidades_disponibles || 0)) / desarrollo.total_unidades) * 100)
           : 0,
-        // Provide default values for all required properties that might be missing
-        adr_base: desarrollo.adr_base || 0,
-        amenidades: desarrollo.amenidades || null,
         comision_operador: desarrollo.comision_operador || 0,
-        descripcion: desarrollo.descripcion || '',
-        empresa_id: desarrollo.empresa_id || 0,
-        es_gastos_fijos_porcentaje: desarrollo.es_gastos_fijos_porcentaje || false,
-        es_gastos_variables_porcentaje: desarrollo.es_gastos_variables_porcentaje || false,
-        es_impuestos_porcentaje: desarrollo.es_impuestos_porcentaje || false,
-        es_mantenimiento_porcentaje: desarrollo.es_mantenimiento_porcentaje || false,
-        gastos_fijos: desarrollo.gastos_fijos || 0,
-        gastos_variables: desarrollo.gastos_variables || 0,
-        impuestos: desarrollo.impuestos || 0,
-        mantenimiento_valor: desarrollo.mantenimiento_valor || 0,
         moneda: desarrollo.moneda || 'MXN',
-        nombre: desarrollo.nombre,
+        fecha_entrega: desarrollo.fecha_entrega || null,
+        adr_base: desarrollo.adr_base || 0,
         ocupacion_anual: desarrollo.ocupacion_anual || 0,
-        total_unidades: desarrollo.total_unidades || 0,
-        ubicacion: desarrollo.ubicacion,
-        user_id: desarrollo.user_id || ''
-      } as Desarrollo;
+        es_impuestos_porcentaje: desarrollo.es_impuestos_porcentaje || false,
+        impuestos: desarrollo.impuestos || 0,
+        es_gastos_variables_porcentaje: desarrollo.es_gastos_variables_porcentaje || false,
+        gastos_variables: desarrollo.gastos_variables || 0,
+        gastos_fijos: desarrollo.gastos_fijos || 0,
+        es_gastos_fijos_porcentaje: desarrollo.es_gastos_fijos_porcentaje || false,
+        es_mantenimiento_porcentaje: desarrollo.es_mantenimiento_porcentaje || false,
+        mantenimiento_valor: desarrollo.mantenimiento_valor || 0,
+        imagen_url: desarrollo.imagen_url || null
+      };
       
       return normalizedDesarrollo;
     });
