@@ -67,6 +67,9 @@ import { useInvitaciones, InvitationRole } from "@/hooks/useInvitaciones";
 import { useUserTransfer } from "@/hooks/useUserTransfer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+// Define a helper type for the roles that can be passed to signUpWithEmailPassword
+type AuthServiceRole = 'admin' | 'vendedor' | 'cliente';
+
 export function UserManagementTable() {
   const [activeTab, setActiveTab] = useState<string>("usuarios");
   const [isNewUserDialogOpen, setIsNewUserDialogOpen] = useState(false);
@@ -210,13 +213,17 @@ export function UserManagementTable() {
     }
 
     try {
-      const effectiveRole = newUser.rol === 'superadmin' ? 'admin' as const : newUser.rol;
+      // Convert superadmin to admin for the auth service since it only accepts 
+      // admin, vendedor, or cliente
+      const roleForAuthService: AuthServiceRole = 
+        newUser.rol === 'superadmin' ? 'admin' : 
+        (newUser.rol as AuthServiceRole);
       
       const authResult = await signUpWithEmailPassword(
         newUser.email, 
         newUser.password, 
         empresaId || undefined, 
-        effectiveRole === 'superadmin' ? 'admin' : effectiveRole as 'admin' | 'vendedor' | 'cliente'
+        roleForAuthService
       );
 
       if (!authResult.success) {
@@ -250,10 +257,11 @@ export function UserManagementTable() {
       return;
     }
 
-    const invitationRole = 
-      newInvite.rol === 'admin' || newInvite.rol === 'vendedor' || newInvite.rol === 'cliente' 
+    // Ensure we're only passing valid invitation roles to createInvitacion
+    const invitationRole: InvitationRole = 
+      (newInvite.rol === 'admin' || newInvite.rol === 'vendedor' || newInvite.rol === 'cliente') 
         ? newInvite.rol 
-        : 'admin' as InvitationRole;
+        : 'admin';
     
     const result = await createInvitacion(
       newInvite.email, 

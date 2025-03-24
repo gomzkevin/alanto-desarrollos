@@ -7,6 +7,7 @@ import { useUserRole } from './useUserRole';
 import { useResourceCounts } from './useResourceCounts';
 import { UserRole } from './useUserRole';
 
+// Updated to include 'superadmin' to match with UserRole
 export type InvitationRole = 'admin' | 'vendedor' | 'cliente' | 'superadmin';
 export type InvitationStatus = 'pendiente' | 'aceptada' | 'rechazada' | 'expirada';
 
