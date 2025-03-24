@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -258,7 +257,6 @@ export function UserManagementTable() {
       return;
     }
 
-    // Ensure we only pass allowed invitation roles
     const invitationRole: InvitationRoles = 
       (newInvite.rol === 'admin' || newInvite.rol === 'vendedor' || newInvite.rol === 'cliente') 
         ? newInvite.rol 
