@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -83,9 +82,7 @@ const DesarrollosPage = () => {
 
   const normalizeDesarrollos = (desarrollosData: Desarrollo[]): Desarrollo[] => {
     return desarrollosData.map(desarrollo => {
-      // Create a new object with all the properties from desarrollo
-      // and add/override specific properties
-      const normalizedDesarrollo = {
+      const normalizedDesarrollo: Partial<Desarrollo> = {
         ...desarrollo,
         unidades_disponibles: Math.min(
           desarrollo.unidades_disponibles || 0,
@@ -96,8 +93,6 @@ const DesarrollosPage = () => {
           : 0
       };
       
-      // Use a type assertion to tell TypeScript this is a valid Desarrollo
-      // This avoids the type error while preserving the original type
       return normalizedDesarrollo as Desarrollo;
     });
   };

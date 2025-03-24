@@ -13,6 +13,7 @@ export const useUserRole = () => {
   const [empresaId, setEmpresaId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -65,10 +66,29 @@ export const useUserRole = () => {
           
           setUserRole(roleToUse);
           setUserName(userData.nombre);
-          setEmpresaId(userData.empresa_id);
           
-          console.log('Role set:', roleToUse);
-          console.log('Empresa ID set:', userData.empresa_id);
+          // Ensure empresa_id is set
+          if (userData.empresa_id) {
+            setEmpresaId(userData.empresa_id);
+            console.log('Empresa ID set:', userData.empresa_id);
+          } else if (retryCount < 3) {
+            // If empresa_id is not set but should be, try to update it in the database
+            console.log('No empresa_id found for user, attempting to set default empresa_id');
+            
+            // For users who should have empresa_id 1
+            const { error: updateError } = await supabase
+              .from('usuarios')
+              .update({ empresa_id: 1 })
+              .eq('id', userData.id);
+              
+            if (updateError) {
+              console.error('Failed to update empresa_id:', updateError);
+            } else {
+              console.log('Updated user with empresa_id: 1');
+              setEmpresaId(1);
+              setRetryCount(prev => prev + 1);
+            }
+          }
         } else {
           console.log('No user data found in usuarios table');
         }
@@ -116,10 +136,28 @@ export const useUserRole = () => {
           
           setUserRole(roleToUse);
           setUserName(data.nombre);
-          setEmpresaId(data.empresa_id);
           
-          console.log('Role after auth change:', roleToUse);
-          console.log('Empresa ID after auth change:', data.empresa_id);
+          // Ensure empresa_id is set
+          if (data.empresa_id) {
+            setEmpresaId(data.empresa_id);
+            console.log('Empresa ID after auth change:', data.empresa_id);
+          } else {
+            console.log('No empresa_id found after auth change, attempting to check directly');
+            
+            // Try to get and update empresa_id from the database
+            const { data: directData, error: directError } = await supabase
+              .from('usuarios')
+              .select('empresa_id')
+              .eq('auth_id', session.user.id)
+              .single();
+              
+            if (!directError && directData && directData.empresa_id) {
+              console.log('Found empresa_id from direct check:', directData.empresa_id);
+              setEmpresaId(directData.empresa_id);
+            } else {
+              console.error('Still no empresa_id found after direct check');
+            }
+          }
         }
         setIsLoading(false);
       } else if (event === 'SIGNED_OUT') {
@@ -137,7 +175,7 @@ export const useUserRole = () => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [retryCount]);
 
   // Helper methods - Implementación consistente de verificaciones de rol
   const isUserAdmin = () => {
