@@ -1,4 +1,3 @@
-
 import useCompanySubscription from '@/hooks/useCompanySubscription';
 import { toast } from '@/components/ui/use-toast';
 import { ResourceType } from './types';
@@ -27,7 +26,6 @@ export const useResourceActions = (resourceType: ResourceType) => {
   const { userId, empresaId, isAdmin } = useUserRole();
   const { subscriptionInfo } = useCompanySubscription();
   
-  // Fix: Pass required options object to useDesarrollos
   const { desarrollos } = useDesarrollos({
     onSuccess: () => {},
     onError: (error) => {
@@ -35,14 +33,11 @@ export const useResourceActions = (resourceType: ResourceType) => {
     }
   });
   
-  // Obtener información de vendedores
   const { users: vendedores } = useOrganizationUsers();
   
-  // Obtener información de prototipos
   const { prototipos } = usePrototipos();
   
   const canAddResource = (resourceType: ResourceType): boolean => {
-    // El usuario siempre puede crear recursos si está autenticado y tiene una empresa asignada
     return !!userId && !!empresaId;
   };
   

@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
@@ -69,7 +68,10 @@ type FetchLeadsOptions = {
 export const useLeads = (options: FetchLeadsOptions = {}) => {
   const { estado, agente, limit, search, empresa_id } = options;
   const { toast } = useToast();
-  const { desarrollos } = useDesarrollos();
+  const { desarrollos } = useDesarrollos({
+    onSuccess: () => {},
+    onError: (error) => console.error("Error fetching desarrollos:", error)
+  });
   const { prototipos } = usePrototipos();
   const { empresaId } = useUserRole();
   

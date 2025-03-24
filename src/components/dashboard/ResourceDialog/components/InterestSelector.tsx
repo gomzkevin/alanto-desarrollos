@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,7 +24,10 @@ export const InterestSelector: React.FC<InterestSelectorProps> = ({
   );
   
   // Fetch data
-  const { desarrollos } = useDesarrollos();
+  const { desarrollos } = useDesarrollos({
+    onSuccess: () => {},
+    onError: (error) => console.error("Error fetching desarrollos:", error)
+  });
   const { prototipos } = usePrototipos({
     desarrolloId: selectedDesarrolloId || undefined
   });

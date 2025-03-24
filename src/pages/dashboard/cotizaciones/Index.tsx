@@ -93,7 +93,10 @@ const CotizacionesPage = () => {
   } = useCotizaciones({ limit, withRelations: true });
   
   const { leads } = useLeads({ limit: 100 });
-  const { desarrollos } = useDesarrollos();
+  const { desarrollos } = useDesarrollos({
+    onSuccess: () => {},
+    onError: (error) => console.error("Error fetching desarrollos:", error)
+  });
   const { prototipos } = usePrototipos({ 
     desarrolloId: selectedDesarrolloId 
   });
@@ -835,3 +838,4 @@ const CotizacionesPage = () => {
 };
 
 export default CotizacionesPage;
+

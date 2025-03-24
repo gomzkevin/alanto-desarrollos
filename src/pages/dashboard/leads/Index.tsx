@@ -62,7 +62,10 @@ const LeadsPage = () => {
     empresa_id: empresaId
   });
   
-  const { desarrollos } = useDesarrollos();
+  const { desarrollos } = useDesarrollos({
+    onSuccess: () => {},
+    onError: (error) => console.error("Error fetching desarrollos:", error)
+  });
   const { prototipos } = usePrototipos();
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
