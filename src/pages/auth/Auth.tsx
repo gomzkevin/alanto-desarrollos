@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { SignupForm } from "@/components/auth/SignupForm";
@@ -23,40 +23,15 @@ export function AuthPage() {
   const { userId, isLoading, authChecked } = useAuth({});
   const navigate = useNavigate();
   const location = useLocation();
-  const [shouldNavigate, setShouldNavigate] = useState(false);
-  const redirectAttemptedRef = useRef(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Si el usuario está autenticado, redirige a la página principal
-    if (userId && !isLoading && authChecked && !redirectAttemptedRef.current) {
-      redirectAttemptedRef.current = true;
-      
+    if (userId && !isLoading && authChecked) {
       // Obtener ruta de redirección de location.state o usar default
-      const from = location.state?.from?.pathname || "/dashboard";
-      
-      // Use a timeout to avoid immediate state changes that could cause excessive replaceState calls
-      // Increase timeout to prevent too many redirects
-      timeoutRef.current = setTimeout(() => {
-        setShouldNavigate(true);
-      }, 500);
-      
-      return () => {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
-      };
-    }
-  }, [userId, isLoading, authChecked, location.state]);
-
-  // Handle navigation in a separate effect to avoid loops
-  useEffect(() => {
-    if (shouldNavigate) {
       const from = location.state?.from?.pathname || "/dashboard";
       navigate(from, { replace: true });
     }
-  }, [shouldNavigate, navigate, location.state]);
+  }, [userId, isLoading, authChecked, navigate, location.state]);
 
   // Si está cargando, mostrar spinner
   if (isLoading) {

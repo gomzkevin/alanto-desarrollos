@@ -1,17 +1,9 @@
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
 export type UserRole = 'superadmin' | 'admin' | 'vendedor' | 'cliente';
-
-interface UserData {
-  id: string;
-  email: string;
-  role: UserRole;
-  name?: string;
-  empresaId?: number;
-}
 
 export const useUserRole = () => {
   const [userId, setUserId] = useState<string | null>(null);
@@ -21,20 +13,10 @@ export const useUserRole = () => {
   const [empresaId, setEmpresaId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
-  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
-  const lastAuthCheckRef = useRef(0);
-  const pendingUserDataRef = useRef<UserData | null>(null);
-  const authChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Limitar la frecuencia de verificaciones de autenticación
-    const now = Date.now();
-    if (isProcessingAuth || (now - lastAuthCheckRef.current < 3000 && lastAuthCheckRef.current !== 0)) return;
-
     const fetchUserData = async () => {
       try {
-        setIsProcessingAuth(true);
-        lastAuthCheckRef.current = Date.now();
         setIsLoading(true);
         
         // Get the current user
@@ -44,7 +26,6 @@ export const useUserRole = () => {
           console.error('Error fetching auth user:', authError);
           setAuthChecked(true);
           setIsLoading(false);
-          setTimeout(() => setIsProcessingAuth(false), 2000);
           return;
         }
         
@@ -52,7 +33,6 @@ export const useUserRole = () => {
           console.log('No authenticated user found');
           setAuthChecked(true);
           setIsLoading(false);
-          setTimeout(() => setIsProcessingAuth(false), 2000);
           return;
         }
         
@@ -71,7 +51,6 @@ export const useUserRole = () => {
           console.error('Error fetching user data:', userError);
           setAuthChecked(true);
           setIsLoading(false);
-          setTimeout(() => setIsProcessingAuth(false), 2000);
           return;
         }
         
@@ -100,88 +79,55 @@ export const useUserRole = () => {
         });
       } finally {
         setIsLoading(false);
-        // Añadir un retraso más largo antes de permitir otra verificación
-        setTimeout(() => setIsProcessingAuth(false), 3000);
       }
     };
     
     fetchUserData();
     
-    // Configurar listener de cambio de estado de autenticación con debounce
+    // Configurar listener de cambio de estado de autenticación
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
       
-      // Limpiar cualquier timeout pendiente
-      if (authChangeTimeoutRef.current) {
-        clearTimeout(authChangeTimeoutRef.current);
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Usuario inició sesión, obtener sus datos
+        setUserId(session.user.id);
+        setUserEmail(session.user.email);
+        
+        const { data, error } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('auth_id', session.user.id)
+          .maybeSingle();
+        
+        if (!error && data) {
+          console.log('User data from auth change:', data);
+          
+          // Explicit cast string role to UserRole type
+          const roleToUse: UserRole = data.rol as UserRole;
+          
+          setUserRole(roleToUse);
+          setUserName(data.nombre);
+          
+          // Establecer empresaId para acceso basado en organización
+          setEmpresaId(data.empresa_id);
+          console.log('Empresa ID after auth change:', data.empresa_id);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        // User signed out, clear their data
+        setUserId(null);
+        setUserEmail(null);
+        setUserRole(null);
+        setUserName(null);
+        setEmpresaId(null);
       }
       
-      // Debounce para cambios de estado de autenticación con rate limiting
-      authChangeTimeoutRef.current = setTimeout(async () => {
-        // Solo procesar si no estamos ya procesando
-        if (!isProcessingAuth) {
-          setIsProcessingAuth(true);
-          lastAuthCheckRef.current = Date.now();
-          
-          if (event === 'SIGNED_IN' && session?.user) {
-            // Usuario inició sesión, obtener sus datos
-            setUserId(session.user.id);
-            setUserEmail(session.user.email);
-            
-            // Store this data before fetching from database to avoid races
-            pendingUserDataRef.current = {
-              id: session.user.id,
-              email: session.user.email || '',
-              role: 'cliente' // default
-            };
-            
-            const { data, error } = await supabase
-              .from('usuarios')
-              .select('*')
-              .eq('auth_id', session.user.id)
-              .maybeSingle();
-            
-            if (!error && data) {
-              console.log('User data from auth change:', data);
-              
-              // Clear pending data
-              pendingUserDataRef.current = null;
-              
-              // Explicit cast string role to UserRole type
-              const roleToUse: UserRole = data.rol as UserRole;
-              
-              setUserRole(roleToUse);
-              setUserName(data.nombre);
-              
-              // Establecer empresaId para acceso basado en organización
-              setEmpresaId(data.empresa_id);
-              console.log('Empresa ID after auth change:', data.empresa_id);
-            }
-          } else if (event === 'SIGNED_OUT') {
-            // User signed out, clear their data
-            pendingUserDataRef.current = null;
-            setUserId(null);
-            setUserEmail(null);
-            setUserRole(null);
-            setUserName(null);
-            setEmpresaId(null);
-          }
-          
-          setAuthChecked(true);
-          
-          // Liberar el bloqueo de procesamiento después de un retraso más largo
-          setTimeout(() => setIsProcessingAuth(false), 3000);
-        }
-      }, 1000); // Debounce por 1000ms para más estabilidad
+      setAuthChecked(true);
     });
     
     return () => {
-      if (authChangeTimeoutRef.current) {
-        clearTimeout(authChangeTimeoutRef.current);
-      }
       authListener.subscription.unsubscribe();
     };
-  }, [isProcessingAuth]);
+  }, []);
 
   // Helper methods
   const isUserAdmin = () => {
