@@ -15,7 +15,7 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
   const navigate = useNavigate();
   
   // Always call hooks at the top level, regardless of any conditions
-  const { userId, empresaId, isAdmin, authChecked } = useUserRole();
+  const { userId, empresaId, isAdmin, userRole, authChecked } = useUserRole();
   const { subscriptionInfo, isLoading: isLoadingSubscription } = useSubscriptionInfo();
 
   useEffect(() => {
@@ -26,12 +26,13 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
         empresaId,
         isSubscriptionActive: subscriptionInfo.isActive,
         moduleName: requiredModule,
-        isAdmin: isAdmin()
+        isAdmin: isAdmin(),
+        userRole
       });
 
-      // Siempre permitir acceso a todos los módulos si es admin
-      if (isAdmin()) {
-        console.log('Usuario es admin, acceso autorizado');
+      // Siempre permitir acceso a administradores y vendedores
+      if (isAdmin() || userRole === 'vendedor') {
+        console.log('Usuario es admin o vendedor, acceso autorizado');
         setIsAuthorized(true);
         return;
       }
@@ -75,7 +76,7 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
       console.log('Usuario autorizado para acceder al módulo:', requiredModule);
       setIsAuthorized(true);
     }
-  }, [userId, empresaId, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule, isAdmin]);
+  }, [userId, empresaId, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule, isAdmin, userRole]);
 
   // Devolver estado de autorización y carga
   return {

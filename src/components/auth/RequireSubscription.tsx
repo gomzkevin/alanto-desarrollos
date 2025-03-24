@@ -27,10 +27,10 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   unauthorizedFallback
 }) => {
   const { isAuthorized, isLoading } = useSubscriptionAuth(moduleName, redirectTo);
-  const { isAdmin } = useUserRole();
+  const { isAdmin, userRole } = useUserRole();
 
-  // Admin users always have access to all modules
-  if (isAdmin()) {
+  // Admin users and vendors always have access to all modules
+  if (isAdmin() || userRole === 'vendedor') {
     return <>{children}</>;
   }
 
