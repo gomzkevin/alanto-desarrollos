@@ -29,6 +29,13 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
         isAdmin: isAdmin()
       });
 
+      // Siempre permitir acceso a todos los módulos si es admin
+      if (isAdmin()) {
+        console.log('Usuario es admin, acceso autorizado');
+        setIsAuthorized(true);
+        return;
+      }
+
       // Verificación de empresa asignada
       if (!empresaId) {
         console.log('Usuario sin empresa asignada');

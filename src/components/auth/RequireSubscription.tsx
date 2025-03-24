@@ -29,6 +29,11 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   const { isAuthorized, isLoading } = useSubscriptionAuth(moduleName, redirectTo);
   const { isAdmin } = useUserRole();
 
+  // Admin users always have access to all modules
+  if (isAdmin()) {
+    return <>{children}</>;
+  }
+
   // Show loading state
   if (isLoading) {
     if (loadingFallback) return <>{loadingFallback}</>;
