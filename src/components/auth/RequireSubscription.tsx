@@ -4,9 +4,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
 import { useUserRole } from '@/hooks/useUserRole';
-import { toast } from '@/components/ui/use-toast';
 
 interface RequireSubscriptionProps {
   children: React.ReactNode;
@@ -18,7 +17,7 @@ interface RequireSubscriptionProps {
 
 /**
  * Componente que asegura que la empresa del usuario tiene una suscripción activa
- * para acceder al contenido, utilizando el hook centralizado useSubscription
+ * Implementación simplificada que usa el nuevo hook useSubscriptionAccess
  */
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   children,
@@ -40,8 +39,8 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
     });
   }, [userId, empresaId, userRole, moduleName, isAdmin, isSuperAdmin]);
   
-  // Usar el hook central de suscripciones
-  const { isAuthorized, isLoading, subscription, error } = useSubscription({
+  // Usar el nuevo hook de acceso a suscripciones
+  const { isAuthorized, isLoading, subscription } = useSubscriptionAccess({
     requiresSubscription: true,
     requiredModule: moduleName,
     redirectPath: redirectTo
@@ -53,22 +52,11 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
       isActive: subscription?.isActive,
       planName: subscription?.currentPlan?.name,
       empresa: empresaId,
-      userId,
-      error
+      userId
     });
     console.log(`RequireSubscription (${moduleName}) - isAuthorized:`, isAuthorized);
     console.log(`RequireSubscription (${moduleName}) - isLoading:`, isLoading);
-    
-    // Mostrar toast informativo cuando hay error en consulta de suscripción
-    if (error) {
-      console.error(`RequireSubscription (${moduleName}) - Error:`, error);
-      toast({
-        title: "Error al verificar suscripción",
-        description: "Hubo un problema al verificar el estado de tu suscripción. Por favor, intenta de nuevo más tarde.",
-        variant: "destructive"
-      });
-    }
-  }, [isAuthorized, isLoading, subscription, error, moduleName, empresaId, userId]);
+  }, [isAuthorized, isLoading, subscription, moduleName, empresaId, userId]);
 
   // Mostrar estado de carga
   if (isLoading) {
