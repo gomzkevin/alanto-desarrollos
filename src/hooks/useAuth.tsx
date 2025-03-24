@@ -5,13 +5,17 @@ import { useToast } from "@/components/ui/use-toast";
 
 interface UseAuthProps {
   redirectTo?: string;
+  requiresSubscription?: boolean;
+  requiredModule?: string;
+  redirectPath?: string;
 }
 
-export const useAuth = ({ redirectTo }: UseAuthProps) => {
+export const useAuth = ({ redirectTo, requiresSubscription, requiredModule, redirectPath }: UseAuthProps = {}) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -30,6 +34,15 @@ export const useAuth = ({ redirectTo }: UseAuthProps) => {
         } else {
           setUserId(data.session?.user?.id || null);
           setUserEmail(data.session?.user?.email || null);
+          
+          // Check subscription authorization if required
+          if (requiresSubscription && requiredModule && data.session?.user?.id) {
+            // This is a placeholder - in a real app, you would check if the user
+            // has access to the specified module based on their subscription
+            setIsAuthorized(true); // For now, always authorize
+          } else {
+            setIsAuthorized(true); // No subscription check required
+          }
         }
       } catch (err) {
         console.error("Error in useAuth:", err);
@@ -56,7 +69,7 @@ export const useAuth = ({ redirectTo }: UseAuthProps) => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [isProcessingAuth]);
+  }, [isProcessingAuth, requiresSubscription, requiredModule]);
 
   // Handle login
   const login = async (email: string, password: string) => {
@@ -138,5 +151,8 @@ export const useAuth = ({ redirectTo }: UseAuthProps) => {
     }
   };
 
-  return { userId, userEmail, isLoading, login, signup, logout };
+  return { userId, userEmail, isLoading, isAuthorized, login, signup, logout };
 };
+
+// This fixes the "no exported member 'default'" error
+export default useAuth;

@@ -41,7 +41,7 @@ export const UnidadSaleAlert: React.FC<UnidadSaleAlertProps> = ({
     
     console.log('Sale alert visible with ventaId:', ventaId, 'and unidadId:', unidadId);
     
-    // Start a new timer
+    // Start a new timer with a slightly slower rate (1.5 second) to reduce state updates
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -54,14 +54,17 @@ export const UnidadSaleAlert: React.FC<UnidadSaleAlertProps> = ({
           // Avoid navigation if already navigating
           if (!navigatingRef.current && ventaId) {
             navigatingRef.current = true;
-            navigate(`/dashboard/ventas/${ventaId}`);
-            onClose();
+            // Use setTimeout to avoid immediate navigation that might cause excessive history changes
+            setTimeout(() => {
+              navigate(`/dashboard/ventas/${ventaId}`);
+              onClose();
+            }, 100);
           }
           return 0;
         }
         return prev - 1;
       });
-    }, 1000);
+    }, 1500); // Increased interval to 1.5 seconds
     
     // Cleanup
     return () => {
@@ -83,12 +86,14 @@ export const UnidadSaleAlert: React.FC<UnidadSaleAlertProps> = ({
       timerRef.current = null;
     }
     
-    // Navigate to sale
+    // Set navigating flag and add a small delay to prevent rapid state updates
     navigatingRef.current = true;
-    if (ventaId) {
-      navigate(`/dashboard/ventas/${ventaId}`);
-    }
-    onClose();
+    setTimeout(() => {
+      if (ventaId) {
+        navigate(`/dashboard/ventas/${ventaId}`);
+      }
+      onClose();
+    }, 100);
   };
   
   return (

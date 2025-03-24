@@ -31,7 +31,10 @@ export function AuthPage() {
       setRedirectAttempted(true);
       // Obtener ruta de redirección de location.state o usar default
       const from = location.state?.from?.pathname || "/dashboard";
-      navigate(from, { replace: true });
+      // Use a timeout to avoid immediate state changes that could cause excessive replaceState calls
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 100);
     }
   }, [userId, isLoading, navigate, location.state, redirectAttempted]);
 

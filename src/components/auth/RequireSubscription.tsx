@@ -25,7 +25,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   loadingFallback,
   unauthorizedFallback
 }) => {
-  // Utilizar el hook centralizado de autorización
+  // Utilizar el hook centralizado de autorización con los parámetros necesarios
   const { isAuthorized, isLoading } = useAuth({
     requiresSubscription: true,
     requiredModule: moduleName,

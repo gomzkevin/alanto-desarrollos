@@ -18,9 +18,17 @@ export default function RequireAuth({ children }: RequireAuthProps) {
   }, [location.pathname]);
 
   // Prevent endless redirect loops by only attempting to redirect once per location
+  // and adding a timeout to avoid too many history.replaceState calls
   if (!isLoading && authChecked && !userId && !redirectAttempted) {
     console.log("Usuario no autenticado, redirigiendo a /auth");
     setRedirectAttempted(true);
+    
+    // We'll return the Navigate component after a very brief delay
+    // This helps prevent excessive history.replaceState() calls in quick succession
+    setTimeout(() => {
+      setRedirectAttempted(false); // Reset for potential future redirects
+    }, 1000);
+    
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
