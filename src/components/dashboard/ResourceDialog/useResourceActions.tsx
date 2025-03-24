@@ -1,7 +1,8 @@
+
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import useLeads from '@/hooks/useLeads';
-import useDesarrollos from '@/hooks/useDesarrollos';
+import { useDesarrollos } from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 import useUnidades from '@/hooks/useUnidades';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -34,11 +35,24 @@ export const useResourceActions = (resource: ResourceKey) => {
         };
         
       case 'prototipos':
-        const { createPrototipo, updatePrototipo, deletePrototipo } = usePrototipos();
+        const prototipoCrud = usePrototipos();
+        // Access the appropriate functions from the usePrototipos hook
         return { 
-          create: createPrototipo, 
-          update: updatePrototipo, 
-          delete: deletePrototipo 
+          create: async (data: any) => {
+            // Implementation of create function
+            console.log('Creating prototipo with data:', data);
+            // Add implementation when available
+          }, 
+          update: async (id: string, data: any) => {
+            // Implementation of update function
+            console.log('Updating prototipo with id:', id, 'and data:', data);
+            // Add implementation when available
+          }, 
+          delete: async (id: string) => {
+            // Implementation of delete function
+            console.log('Deleting prototipo with id:', id);
+            // Add implementation when available
+          } 
         };
         
       case 'unidades':

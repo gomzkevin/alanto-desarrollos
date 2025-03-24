@@ -1,6 +1,7 @@
+
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
   CardHeader,
@@ -29,6 +30,14 @@ import { useUserRole } from '@/hooks/useUserRole';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import RequireSubscription from '@/components/auth/RequireSubscription';
 
+interface DesarrolloFormData {
+  nombre: string;
+  ubicacion: string;
+  total_unidades: number;
+  unidades_disponibles: number;
+  fecha_inicio: string;
+}
+
 const DesarrollosPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,15 +46,17 @@ const DesarrollosPage = () => {
   const navigate = useNavigate();
 
   const {
-    data: desarrollos,
+    desarrollos,
     isLoading,
     error,
     refetch,
   } = useDesarrollos({ empresa_id: empresaId });
 
   const queryClient = useQueryClient();
-  const { mutate: createDesarrolloMutation, isLoading: isCreating } = useMutation(
-    async (data: any) => {
+  
+  // Fix the mutation setup
+  const createDesarrolloMutation = useMutation({
+    mutationFn: async (data: DesarrolloFormData) => {
       const { data: response, error } = await supabase
         .from('desarrollos')
         .insert([data])
@@ -58,19 +69,17 @@ const DesarrollosPage = () => {
 
       return response;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['desarrollos']);
-        refetch();
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
+      refetch();
+    },
+  });
 
   const openDialog = () => setIsDialogOpen(true);
   const closeDialog = () => setIsDialogOpen(false);
 
   // Fix the type issue in createDesarrollo
-  const createDesarrollo = async (formData: any) => {
+  const createDesarrollo = async (formData: DesarrolloFormData) => {
     try {
       setIsSubmitting(true);
       
@@ -113,7 +122,7 @@ const DesarrollosPage = () => {
         <div className="container py-10">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold">Desarrollos</h1>
-            <Button onClick={openDialog} disabled={isCreating || isSubmitting}>
+            <Button onClick={openDialog} disabled={createDesarrolloMutation.isPending || isSubmitting}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Agregar Desarrollo
             </Button>
@@ -197,12 +206,13 @@ const DesarrollosPage = () => {
                     <form
                       onSubmit={async (e) => {
                         e.preventDefault();
+                        const form = e.target as HTMLFormElement;
                         const formData = {
-                          nombre: (e.target.elements.nombre as HTMLInputElement).value,
-                          ubicacion: (e.target.elements.ubicacion as HTMLInputElement).value,
-                          total_unidades: parseInt((e.target.elements.total_unidades as HTMLInputElement).value),
-                          unidades_disponibles: parseInt((e.target.elements.unidades_disponibles as HTMLInputElement).value),
-                          fecha_inicio: (e.target.elements.fecha_inicio as HTMLInputElement).value,
+                          nombre: (form.querySelector('#nombre') as HTMLInputElement).value,
+                          ubicacion: (form.querySelector('#ubicacion') as HTMLInputElement).value,
+                          total_unidades: parseInt((form.querySelector('#total_unidades') as HTMLInputElement).value),
+                          unidades_disponibles: parseInt((form.querySelector('#unidades_disponibles') as HTMLInputElement).value),
+                          fecha_inicio: (form.querySelector('#fecha_inicio') as HTMLInputElement).value,
                         };
                         await createDesarrollo(formData);
                       }}
@@ -238,8 +248,8 @@ const DesarrollosPage = () => {
                           <Label htmlFor="fecha_inicio">Fecha Inicio</Label>
                           <Input id="fecha_inicio" type="date" required />
                         </div>
-                        <Button type="submit" disabled={isSubmitting || isCreating}>
-                          {isSubmitting || isCreating ? "Creando..." : "Crear"}
+                        <Button type="submit" disabled={isSubmitting || createDesarrolloMutation.isPending}>
+                          {isSubmitting || createDesarrolloMutation.isPending ? "Creando..." : "Crear"}
                         </Button>
                       </div>
                     </form>
@@ -247,7 +257,7 @@ const DesarrollosPage = () => {
                       variant="ghost"
                       className="mt-4"
                       onClick={closeDialog}
-                      disabled={isSubmitting || isCreating}
+                      disabled={isSubmitting || createDesarrolloMutation.isPending}
                     >
                       Cancelar
                     </Button>

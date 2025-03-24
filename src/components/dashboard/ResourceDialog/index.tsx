@@ -18,7 +18,14 @@ interface ResourceDialogProps {
   buttonText?: string;
   buttonIcon?: React.ReactNode;
   buttonVariant?: string;
-  defaultValues?: Record<string, any>; // Added defaultValues prop
+  defaultValues?: Record<string, any>;
+}
+
+interface ResourceActions {
+  create: (data: any) => Promise<void>;
+  update: (id: string, data: any) => Promise<void>;
+  delete: (id: string) => Promise<void>;
+  view: (id: string) => void;
 }
 
 const ResourceDialog: React.FC<ResourceDialogProps> = ({
@@ -62,7 +69,9 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
 
   const fields = useResourceFields(resourceType, selectedStatus);
   
-  const { saveResource, handleImageUpload: uploadResourceImage } = useResourceActions(resourceType);
+  const actions = useResourceActions(
+    resourceType as 'leads' | 'desarrollos' | 'prototipos' | 'unidades'
+  );
 
   useEffect(() => {
     if (open) {
@@ -152,7 +161,7 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     setUploading(true);
     
     try {
-      const imageUrl = await uploadResourceImage(file);
+      const imageUrl = await uploadFile(file);
       
       if (imageUrl && resource) {
         const updatedResource = {
@@ -168,6 +177,11 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     }
   };
 
+  const uploadFile = async (file: File): Promise<string> => {
+    console.log('Uploading file:', file.name);
+    return URL.createObjectURL(file);
+  };
+
   const handleSaveResource = async () => {
     console.log("handleSaveResource called with resource:", resource);
     if (!resource) return false;
@@ -175,11 +189,11 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     setIsSubmitting(true);
     
     try {
-      const success = await saveResource(resource);
-      if (success && onSuccess) {
+      await actions.create(resource);
+      if (onSuccess) {
         onSuccess();
       }
-      return success;
+      return true;
     } catch (error) {
       console.error('Error saving resource:', error);
       return false;

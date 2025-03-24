@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -23,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { format } from 'date-fns';
 import useLeads, { LEAD_STATUS_OPTIONS } from '@/hooks/useLeads';
-import useDesarrollos from '@/hooks/useDesarrollos';
+import { useDesarrollos } from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 import { useUserRole } from '@/hooks';
 

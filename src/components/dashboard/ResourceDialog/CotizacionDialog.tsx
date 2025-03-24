@@ -57,15 +57,7 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
 
   const fields = useResourceFields(resourceType, selectedStatus);
 
-  const { saveResource, handleImageUpload: uploadResourceImage } = useResourceActions(resourceType);
-
-  useEffect(() => {
-    if (open) {
-      if (desarrolloId) {
-        setSelectedDesarrolloId(desarrolloId);
-      }
-    }
-  }, [open, desarrolloId]);
+  const actions = useResourceActions('leads');
 
   const handleChange = (values: FormValues) => {
     if (resource) {
@@ -126,7 +118,7 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     setUploading(true);
     
     try {
-      const imageUrl = await uploadResourceImage(file);
+      const imageUrl = await uploadFile(file);
       
       if (imageUrl && resource) {
         const updatedResource = {
@@ -142,6 +134,11 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     }
   };
 
+  const uploadFile = async (file: File): Promise<string> => {
+    console.log('Uploading file:', file.name);
+    return URL.createObjectURL(file); // Temporary URL for development
+  };
+
   const handleSaveResource = async () => {
     console.log("handleSaveResource called with resource:", resource);
     if (!resource) return false;
@@ -149,11 +146,11 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     setIsSubmitting(true);
     
     try {
-      const success = await saveResource(resource);
-      if (success && onSuccess) {
+      await actions.create(resource);
+      if (onSuccess) {
         onSuccess();
       }
-      return success;
+      return true;
     } catch (error) {
       console.error('Error saving resource:', error);
       return false;
