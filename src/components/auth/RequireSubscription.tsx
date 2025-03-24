@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface RequireSubscriptionProps {
   children: React.ReactNode;
@@ -25,6 +26,18 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   loadingFallback,
   unauthorizedFallback
 }) => {
+  const { empresaId, userId, userRole, isAdmin } = useUserRole();
+  
+  // Agregar logs para depurar la carga de datos del usuario
+  useEffect(() => {
+    console.log(`RequireSubscription for ${moduleName} - User data:`, {
+      userId,
+      empresaId,
+      userRole,
+      isAdmin: isAdmin()
+    });
+  }, [userId, empresaId, userRole, moduleName, isAdmin]);
+  
   // Usar el hook central de suscripciones
   const { isAuthorized, isLoading } = useSubscription({
     requiresSubscription: true,

@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -70,7 +69,7 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
   
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const { userId, empresaId, isAdmin, isSuperAdmin, userRole, authChecked } = useUserRole();
+  const { userId, empresaId, isAdmin, isSuperAdmin, userRole, authChecked, isLoading: isUserRoleLoading } = useUserRole();
   
   // Consultar información de suscripción de la empresa
   const { data: subscriptionInfo, isLoading: isLoadingSubscription, error } = useQuery({
@@ -254,8 +253,10 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
 
   // Efecto para verificar autorización basada en estado de suscripción
   useEffect(() => {
-    // Solo proceder cuando tenemos todos los datos necesarios
-    if (!isLoadingSubscription && authChecked && requiresSubscription) {
+    // Solo proceder cuando tenemos todos los datos necesarios y user data está cargada
+    const isInitialLoadComplete = !isUserRoleLoading && !isLoadingSubscription && authChecked;
+    
+    if (isInitialLoadComplete && requiresSubscription) {
       console.log('Verifying subscription authorization:', {
         userId,
         empresaId,
@@ -320,6 +321,7 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
   }, [
     subscriptionInfo, 
     isLoadingSubscription, 
+    isUserRoleLoading, 
     authChecked, 
     navigate, 
     redirectPath, 
@@ -334,7 +336,7 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
 
   return {
     subscription: subscriptionInfo || getDefaultSubscriptionInfo(),
-    isLoading: isLoadingSubscription || !authChecked || isAuthorized === null,
+    isLoading: isLoadingSubscription || isUserRoleLoading || !authChecked || isAuthorized === null,
     isAuthorized,
     error
   };
