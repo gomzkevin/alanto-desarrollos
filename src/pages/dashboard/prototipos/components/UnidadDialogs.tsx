@@ -61,15 +61,17 @@ export const UnidadDialogs = ({
           <DialogDescription className="px-6 mt-0 mb-4">
             Ingresa los datos de la nueva unidad
           </DialogDescription>
-          {isAddDialogOpen && (
-            <UnidadForm 
-              onSubmit={handleAddUnidad}
-              onCancel={safeCloseAddDialog}
-              leads={leads || []}
-              isSubmitting={isSubmitting}
-              simplifiedForm={true}
-            />
-          )}
+          <div className="px-6 pb-6">
+            {isAddDialogOpen && (
+              <UnidadForm 
+                onSubmit={handleAddUnidad}
+                onCancel={safeCloseAddDialog}
+                leads={leads || []}
+                isSubmitting={isSubmitting}
+                simplifiedForm={true}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
       
@@ -87,16 +89,18 @@ export const UnidadDialogs = ({
           <DialogDescription className="px-6 mt-0 mb-4">
             Modifica los datos de la unidad
           </DialogDescription>
-          {isEditDialogOpen && currentUnidad && (
-            <UnidadForm 
-              unidad={currentUnidad}
-              onSubmit={handleEditUnidad}
-              onCancel={closeEditDialog}
-              leads={leads || []}
-              isSubmitting={isSubmitting}
-              simplifiedForm={true}
-            />
-          )}
+          <div className="px-6 pb-6">
+            {isEditDialogOpen && currentUnidad && (
+              <UnidadForm 
+                unidad={currentUnidad}
+                onSubmit={handleEditUnidad}
+                onCancel={closeEditDialog}
+                leads={leads || []}
+                isSubmitting={isSubmitting}
+                simplifiedForm={true}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
       
