@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Check, Building, Home, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,9 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useSubscription } from "@/hooks/useSubscription";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { useResourceCounts } from "@/hooks/useResourceCounts";
 
 interface SubscriptionPlan {
   id: string;
@@ -31,20 +32,12 @@ interface SubscriptionPlan {
   };
 }
 
-interface CurrentSubscription {
-  id: string;
-  status: string;
-  current_period_end: string;
-  plan_id: string;
-  subscription_plans: SubscriptionPlan;
-}
-
 export function SubscriptionPlans() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
+  const [currentSubscription, setCurrentSubscription] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { userId } = useUserRole();
-  const { subscription } = useSubscription();
+  const { resourceCounts } = useResourceCounts();
 
   const normalizeFeatures = (features: any): SubscriptionPlan['features'] => {
     if (!features) return {};
@@ -88,7 +81,7 @@ export function SubscriptionPlans() {
         }
 
         if (subData) {
-          const typedSubscription: CurrentSubscription = {
+          const typedSubscription = {
             ...subData,
             subscription_plans: {
               ...subData.subscription_plans,
@@ -150,7 +143,7 @@ export function SubscriptionPlans() {
       if (subscriptionError) throw subscriptionError;
       
       if (subscriptionData && subscriptionData.length > 0) {
-        const typedSubscription: CurrentSubscription = {
+        const typedSubscription = {
           ...subscriptionData[0],
           subscription_plans: {
             ...subscriptionData[0].subscription_plans,
@@ -193,7 +186,7 @@ export function SubscriptionPlans() {
 
   return (
     <div className="space-y-6">
-      {subscription.isActive && subscription.currentPlan && (
+      {resourceCounts.isActive && resourceCounts.currentPlan && (
         <Card>
           <CardHeader>
             <CardTitle>Resumen de Facturación</CardTitle>
@@ -208,22 +201,22 @@ export function SubscriptionPlans() {
                 <div className="mt-2 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>
-                      {subscription.resourceType === 'desarrollo' ? 'Desarrollos:' : 'Prototipos:'}
+                      {resourceCounts.resourceType === 'desarrollo' ? 'Desarrollos:' : 'Prototipos:'}
                     </span>
                     <span className="font-medium">
-                      {subscription.resourceCount}
-                      {subscription.resourceLimit && (
-                        <> / {subscription.resourceLimit}</>
+                      {resourceCounts.resourceCount}
+                      {resourceCounts.resourceLimit && (
+                        <> / {resourceCounts.resourceLimit}</>
                       )}
                     </span>
                   </div>
-                  {subscription.resourceLimit && (
+                  {resourceCounts.resourceLimit && (
                     <Progress 
-                      value={subscription.percentUsed} 
-                      className={subscription.isOverLimit ? "bg-red-100" : ""}
+                      value={resourceCounts.percentUsed} 
+                      className={resourceCounts.isOverLimit ? "bg-red-100" : ""}
                     />
                   )}
-                  {subscription.isOverLimit && (
+                  {resourceCounts.isOverLimit && (
                     <div className="flex items-center text-red-500 text-xs gap-1">
                       <AlertTriangle className="h-3 w-3" />
                       <span>Excediste el límite de tu plan</span>
@@ -238,19 +231,19 @@ export function SubscriptionPlans() {
                   <div className="flex justify-between text-sm">
                     <span>Total de vendedores:</span>
                     <span className="font-medium">
-                      {subscription.vendorCount}
-                      {subscription.vendorLimit && (
-                        <> / {subscription.vendorLimit}</>
+                      {resourceCounts.vendorCount}
+                      {resourceCounts.vendorLimit && (
+                        <> / {resourceCounts.vendorLimit}</>
                       )}
                     </span>
                   </div>
-                  {subscription.vendorLimit && (
+                  {resourceCounts.vendorLimit && (
                     <Progress 
-                      value={(subscription.vendorCount / subscription.vendorLimit) * 100} 
-                      className={subscription.isOverVendorLimit ? "bg-red-100" : ""}
+                      value={resourceCounts.percentVendorUsed} 
+                      className={resourceCounts.isOverVendorLimit ? "bg-red-100" : ""}
                     />
                   )}
-                  {subscription.isOverVendorLimit && (
+                  {resourceCounts.isOverVendorLimit && (
                     <div className="flex items-center text-red-500 text-xs gap-1">
                       <AlertTriangle className="h-3 w-3" />
                       <span>Excediste el límite de vendedores</span>
@@ -268,19 +261,19 @@ export function SubscriptionPlans() {
                 <div className="space-y-1 mt-2">
                   <div className="flex justify-between text-sm">
                     <span>Plan base:</span>
-                    <span>${subscription.currentPlan.price}/{subscription.currentPlan.interval}</span>
+                    <span>${resourceCounts.currentPlan.price}/{resourceCounts.currentPlan.interval}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>
-                      {subscription.resourceCount} {subscription.resourceType === 'desarrollo' ? 'desarrollos' : 'prototipos'} x 
-                      ${subscription.currentPlan.features.precio_por_unidad}:
+                      {resourceCounts.resourceCount} {resourceCounts.resourceType === 'desarrollo' ? 'desarrollos' : 'prototipos'} x 
+                      ${resourceCounts.currentPlan.features.precio_por_unidad || 0}:
                     </span>
-                    <span>${subscription.currentBilling}</span>
+                    <span>${resourceCounts.resourceCount * (resourceCounts.currentPlan.features.precio_por_unidad || 0)}</span>
                   </div>
                   <Separator className="my-2" />
                   <div className="flex justify-between font-medium">
                     <span>Total estimado:</span>
-                    <span>${subscription.currentPlan.price + subscription.currentBilling}/{subscription.currentPlan.interval}</span>
+                    <span>${resourceCounts.currentPlan.price + (resourceCounts.resourceCount * (resourceCounts.currentPlan.features.precio_por_unidad || 0))}/{resourceCounts.currentPlan.interval}</span>
                   </div>
                 </div>
               </div>
@@ -290,7 +283,7 @@ export function SubscriptionPlans() {
                 <div className="space-y-1 mt-2">
                   <div className="flex justify-between text-sm">
                     <span>Plan actual:</span>
-                    <span>{subscription.currentPlan.name}</span>
+                    <span>{resourceCounts.currentPlan.name}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Estado:</span>
@@ -301,7 +294,10 @@ export function SubscriptionPlans() {
                   <div className="flex justify-between text-sm">
                     <span>Próxima renovación:</span>
                     <span>
-                      {subscription.renewalDate?.toLocaleDateString() || 'No disponible'}
+                      {resourceCounts.renewalDate 
+                        ? new Date(resourceCounts.renewalDate).toLocaleDateString() 
+                        : 'No disponible'
+                      }
                     </span>
                   </div>
                 </div>

@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, Json } from '@/integrations/supabase/types';
 import { toast } from '@/components/ui/use-toast';
+import { useUserRole } from './useUserRole';
+import { useResourceCounts } from './useResourceCounts';
 
 export type Desarrollo = Tables<"desarrollos"> & {
   amenidades?: string[] | null;
@@ -20,21 +22,25 @@ type FetchDesarrollosOptions = {
 };
 
 export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
-  const { limit, withPrototipos = false, empresaId = null } = options;
+  const { limit, withPrototipos = false, empresaId: optionsEmpresaId = null } = options;
+  const { empresaId: userEmpresaId } = useUserRole();
+  const { canAddResource } = useResourceCounts();
+  
+  const effectiveEmpresaId = optionsEmpresaId || userEmpresaId;
   
   // Function to fetch desarrollos
   const fetchDesarrollos = async (): Promise<ExtendedDesarrollo[]> => {
-    console.log('Fetching desarrollos with options:', options);
+    console.log('Fetching desarrollos with options:', { ...options, effectiveEmpresaId });
     
     try {
       // Build the select query
       let query = supabase.from('desarrollos').select('*');
       
       // Filter by empresa_id if provided
-      if (empresaId) {
+      if (effectiveEmpresaId) {
         // Filter desarrollos by empresa_id instead of user_id
-        query = query.eq('empresa_id', empresaId);
-        console.log(`Filtering desarrollos by empresa_id: ${empresaId}`);
+        query = query.eq('empresa_id', effectiveEmpresaId);
+        console.log(`Filtering desarrollos by empresa_id: ${effectiveEmpresaId}`);
       }
       
       // Apply limit if provided
@@ -127,104 +133,38 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
 
   // Use React Query to fetch and cache the data
   const queryResult = useQuery({
-    queryKey: ['desarrollos', limit, withPrototipos, empresaId],
+    queryKey: ['desarrollos', limit, withPrototipos, effectiveEmpresaId],
     queryFn: fetchDesarrollos,
     // Only enable when empresaId is available or we're not filtering by empresaId
-    enabled: empresaId !== null || options.empresaId === undefined,
-    staleTime: 0 // Force a fresh fetch on each component mount
+    enabled: effectiveEmpresaId !== null || options.empresaId === undefined,
+    staleTime: 2 * 60 * 1000 // 2 minutes cache
   });
 
-  // Check if can add more desarrollos based on subscription limits
+  // Check if can add more desarrollos based on subscription limits - now using our optimized function
   const canAddDesarrollo = async () => {
-    try {
-      // Fetch subscription data directly instead of using the hook
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return false;
-      
-      const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('*, subscription_plans(*)')
-        .eq('user_id', userData.user.id)
-        .eq('status', 'active')
-        .maybeSingle();
-      
-      if (!subscription) {
-        toast({
-          title: "Suscripción requerida",
-          description: "Necesitas una suscripción activa para crear desarrollos.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      // Extract plan features safely
-      const planFeatures = subscription.subscription_plans.features || {};
-      let resourceType: 'desarrollo' | 'prototipo' | undefined = undefined;
-      let resourceLimit: number | undefined = undefined;
-      
-      // Check if features is an object (not array) and assign properties safely
-      if (planFeatures && typeof planFeatures === 'object' && !Array.isArray(planFeatures)) {
-        const featuresObj = planFeatures as { [key: string]: Json };
-        resourceType = featuresObj.tipo as 'desarrollo' | 'prototipo' | undefined;
-        resourceLimit = typeof featuresObj.max_recursos === 'number' ? featuresObj.max_recursos : undefined;
-      }
-      
-      if (resourceType !== 'desarrollo' && resourceType !== undefined) {
-        toast({
-          title: "Plan incompatible",
-          description: "Tu plan actual no permite la creación de desarrollos. Considera cambiar a un plan por desarrollo.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      if (resourceLimit !== undefined && queryResult.data && queryResult.data.length >= resourceLimit) {
-        toast({
-          title: "Límite alcanzado",
-          description: `Has alcanzado el límite de ${resourceLimit} desarrollos de tu plan. Contacta a soporte para aumentar tu límite.`,
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error checking subscription:", error);
-      return false;
-    }
+    return await canAddResource('desarrollo');
   };
 
-  // Calculate billing amount for desarrollos
+  // Calculate billing amount based on resource counts
   const calculateBillingAmount = async () => {
     try {
-      // Fetch subscription data directly
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return 0;
+      // Get resource counts directly from the hook
+      const { data } = await supabase.rpc('get_subscription_status', { 
+        company_id: effectiveEmpresaId 
+      });
       
-      const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('*, subscription_plans(*)')
-        .eq('user_id', userData.user.id)
-        .eq('status', 'active')
-        .maybeSingle();
-      
-      if (!subscription) return 0;
-      
-      // Extract plan features safely
-      const planFeatures = subscription.subscription_plans.features || {};
-      let resourceType: 'desarrollo' | 'prototipo' | undefined = undefined;
-      let precioUnidad: number = 0;
-      
-      // Check if features is an object (not array) and assign properties safely
-      if (planFeatures && typeof planFeatures === 'object' && !Array.isArray(planFeatures)) {
-        const featuresObj = planFeatures as { [key: string]: Json };
-        resourceType = featuresObj.tipo as 'desarrollo' | 'prototipo' | undefined;
-        precioUnidad = typeof featuresObj.precio_por_unidad === 'number' ? featuresObj.precio_por_unidad : 0;
+      if (!data || !data.currentPlan || !data.currentPlan.features) {
+        return 0;
       }
       
-      if (resourceType !== 'desarrollo') return 0;
+      const resourceType = data.resourceType;
+      const precioUnidad = data.currentPlan.features.precio_por_unidad || 0;
       
-      return (queryResult.data?.length || 0) * precioUnidad;
+      if (resourceType !== 'desarrollo') {
+        return 0;
+      }
+      
+      return data.resourceCount * precioUnidad;
     } catch (error) {
       console.error("Error calculating billing:", error);
       return 0;
@@ -236,7 +176,7 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     isLoading: queryResult.isLoading,
     error: queryResult.error,
     refetch: queryResult.refetch,
-    empresaId, // Expose empresaId for reference
+    empresaId: effectiveEmpresaId, // Expose empresaId for reference
     isFetched: queryResult.isFetched,
     canAddDesarrollo,
     calculateBillingAmount
