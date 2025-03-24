@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -210,7 +209,6 @@ export function UserManagementTable() {
     }
 
     try {
-      // Convert superadmin to admin when sending to the backend
       const effectiveRole = newUser.rol === 'superadmin' ? 'admin' as const : newUser.rol;
       
       const authResult = await signUpWithEmailPassword(
@@ -251,7 +249,6 @@ export function UserManagementTable() {
       return;
     }
 
-    // Don't compare with superadmin directly, instead check if we need to convert it
     const invitationRole = 
       newInvite.rol === 'admin' || newInvite.rol === 'vendedor' || newInvite.rol === 'cliente' 
         ? newInvite.rol 
