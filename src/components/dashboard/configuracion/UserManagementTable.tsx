@@ -41,7 +41,7 @@ import {
 import { Loader2, MoreHorizontal, UserPlus, UserCog } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import useOrganizationUsers from "@/hooks/useOrganizationUsers";
+import useOrganizationUsers, { UserRole } from "@/hooks/useOrganizationUsers";
 import useInvitaciones from "@/hooks/useInvitaciones";
 import { format, formatDistance } from "date-fns";
 import { es } from "date-fns/locale";
@@ -150,7 +150,7 @@ export function UserManagementTable() {
 
   const handleChangeRole = (userId: string, newRole: string) => {
     updateUser.mutate(
-      { id: userId, rol: newRole },
+      { id: userId, rol: newRole as UserRole },
       {
         onSuccess: () => {
           toast({

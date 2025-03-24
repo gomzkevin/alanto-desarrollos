@@ -82,7 +82,7 @@ const DesarrollosPage = () => {
 
   const normalizeDesarrollos = (desarrollosData: Desarrollo[]): Desarrollo[] => {
     return desarrollosData.map(desarrollo => {
-      const normalizedDesarrollo = {
+      const normalizedDesarrollo: Desarrollo = {
         ...desarrollo,
         unidades_disponibles: Math.min(
           desarrollo.unidades_disponibles || 0,
