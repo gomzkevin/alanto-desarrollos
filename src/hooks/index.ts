@@ -19,7 +19,7 @@ export { default as useInvitaciones } from './useInvitaciones';
 export { default as useUserTransfer } from './useUserTransfer';
 export { default as useOrganizationUsers } from './useOrganizationUsers';
 
-// Para compatibilidad con código existente
+// Mantener estos alias para compatibilidad con código existente
 export { useSubscriptionAuth as useSubscriptionAccess } from './useSubscriptionAuth';
 export { useSubscriptionStatus as useSubscription } from './useSubscriptionStatus';
 export { useSubscriptionStatus as useSubscriptionInfo } from './useSubscriptionStatus';

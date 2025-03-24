@@ -23,7 +23,8 @@ export interface SubscriptionStatus {
 }
 
 /**
- * Hook simplificado que simula un estado de suscripción activo para todos los usuarios
+ * Hook simplificado que siempre devuelve una suscripción activa sin validaciones
+ * (Versión sin suscripciones ni Stripe)
  */
 export const useSubscriptionStatus = () => {
   const { userId, empresaId } = useUserRole();
@@ -32,12 +33,12 @@ export const useSubscriptionStatus = () => {
   const { data: subscription, isLoading } = useQuery({
     queryKey: ['subscriptionStatus', userId, empresaId],
     queryFn: async (): Promise<SubscriptionStatus> => {
-      // Simulamos una suscripción activa para todos los usuarios
+      // Devolvemos siempre una suscripción activa con recursos ilimitados
       return {
         isActive: true,
         currentPlan: {
-          id: 'free-plan',
-          name: 'Plan Completo',
+          id: 'unlimited-plan',
+          name: 'Plan Ilimitado',
           price: 0,
           interval: 'month',
           features: {
@@ -58,8 +59,8 @@ export const useSubscriptionStatus = () => {
     subscription: subscription || {
       isActive: true,
       currentPlan: {
-        id: 'default-plan',
-        name: 'Plan Completo',
+        id: 'unlimited-plan',
+        name: 'Plan Ilimitado',
         price: 0,
         interval: 'month',
         features: {

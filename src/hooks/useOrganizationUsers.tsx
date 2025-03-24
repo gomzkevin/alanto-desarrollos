@@ -1,165 +1,169 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from '@/components/ui/use-toast';
-import { useUserRole, UserRole } from './useUserRole';
-import { useResourceCounts } from './useResourceCounts';
 
 export interface OrganizationUser {
   id: string;
   nombre: string;
   email: string;
-  rol: UserRole;
+  rol: string;
+  avatar_url?: string;
+  telefono?: string;
   activo: boolean;
-  fecha_creacion: string;
-  auth_id?: string;
-  empresa_id?: number;
-  empresa_anterior?: number;
-  fecha_transferencia?: string;
+  created_at: string;
 }
 
-export interface OrganizationCompany {
-  id: number;
-  nombre: string;
-}
-
-export function useOrganizationUsers() {
+export const useOrganizationUsers = () => {
   const { empresaId, isAdmin } = useUserRole();
-  const { canAddResource } = useResourceCounts();
   const queryClient = useQueryClient();
 
-  // Obtener usuarios de la organización actual
-  const {
-    data: users,
-    isLoading,
-    error,
-    refetch
-  } = useQuery({
+  const { data: users, isLoading, error, refetch } = useQuery({
     queryKey: ['organizationUsers', empresaId],
-    queryFn: async (): Promise<OrganizationUser[]> => {
-      if (!empresaId) return [];
+    queryFn: async () => {
+      try {
+        if (!empresaId) {
+          return [];
+        }
 
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('*')
-        .eq('empresa_id', empresaId)
-        .order('fecha_creacion', { ascending: false });
+        const { data, error } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('empresa_id', empresaId)
+          .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error al cargar usuarios:', error);
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        return data as OrganizationUser[];
+      } catch (error) {
+        console.error('Error fetching organization users:', error);
         throw error;
       }
-
-      return data.map(user => ({
-        ...user,
-        rol: user.rol as UserRole
-      })) || [];
     },
-    enabled: !!empresaId && !!isAdmin(),
+    enabled: !!empresaId
   });
 
-  // Activar/desactivar usuario
-  const toggleUserStatus = useMutation({
-    mutationFn: async ({ id, currentStatus }: { id: string, currentStatus: boolean }) => {
-      const { error } = await supabase
-        .from('usuarios')
-        .update({ activo: !currentStatus })
-        .eq('id', id);
-
-      if (error) throw error;
-      return { id, newStatus: !currentStatus };
-    },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['organizationUsers', empresaId] });
-      toast({
-        title: "Usuario actualizado",
-        description: `El usuario ha sido ${result.newStatus ? "activado" : "desactivado"} correctamente`,
-      });
-    },
-    onError: (error) => {
-      console.error('Error al actualizar usuario:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado del usuario",
-        variant: "destructive",
-      });
-    }
-  });
-
-  // Actualizar rol de usuario
-  const updateUserRole = useMutation({
-    mutationFn: async ({ id, newRole }: { id: string, newRole: UserRole }) => {
-      // Verificar si puede añadir un vendedor más (solo si cambio a rol vendedor)
-      if (newRole === 'vendedor') {
-        const canAdd = await canAddResource('vendedor');
-        if (!canAdd) {
-          toast({
-            title: "Límite alcanzado",
-            description: "Has alcanzado el límite de vendedores de tu plan",
-            variant: "destructive",
-          });
-          throw new Error('Límite de vendedores alcanzado');
+  const updateUser = useMutation({
+    mutationFn: async ({ id, ...updateData }: Partial<OrganizationUser> & { id: string }) => {
+      try {
+        const { data, error } = await supabase
+          .from('usuarios')
+          .update(updateData)
+          .eq('id', id)
+          .select()
+          .single();
+          
+        if (error) {
+          throw new Error(error.message);
         }
+        
+        return data as OrganizationUser;
+      } catch (error) {
+        console.error('Error updating user:', error);
+        throw error;
       }
-
-      const { error } = await supabase
-        .from('usuarios')
-        .update({ rol: newRole })
-        .eq('id', id);
-
-      if (error) throw error;
-      return { id, role: newRole };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['organizationUsers', empresaId] });
+      queryClient.invalidateQueries({ queryKey: ['organizationUsers'] });
       toast({
-        title: "Rol actualizado",
-        description: "El rol del usuario ha sido actualizado correctamente",
+        title: "Usuario actualizado",
+        description: "El usuario se ha actualizado correctamente",
       });
     },
     onError: (error) => {
-      console.error('Error al actualizar rol:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar el rol del usuario",
+        description: `No se pudo actualizar el usuario: ${error.message}`,
         variant: "destructive",
       });
-    }
+    },
   });
 
-  // Obtener empresas disponibles para transferencia
-  const {
-    data: companies,
-    isLoading: isLoadingCompanies
-  } = useQuery({
-    queryKey: ['organizationCompanies'],
-    queryFn: async (): Promise<OrganizationCompany[]> => {
-      // Solo superadmins pueden ver todas las empresas
-      const { data, error } = await supabase
-        .from('empresa_info')
-        .select('id, nombre')
-        .order('nombre');
+  const deleteUser = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        // No se necesita verificar límites de suscripción
+        
+        const { error } = await supabase
+          .from('usuarios')
+          .update({ activo: false })
+          .eq('id', id);
 
-      if (error) {
-        console.error('Error al cargar empresas:', error);
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        return id;
+      } catch (error) {
+        console.error('Error deactivating user:', error);
         throw error;
       }
-
-      return data || [];
     },
-    enabled: !!empresaId,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizationUsers'] });
+      toast({
+        title: "Usuario desactivado",
+        description: "El usuario se ha desactivado correctamente",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo desactivar el usuario: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const reactivateUser = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        // No se necesita verificar límites de suscripción
+        
+        const { error } = await supabase
+          .from('usuarios')
+          .update({ activo: true })
+          .eq('id', id);
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        return id;
+      } catch (error) {
+        console.error('Error reactivating user:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizationUsers'] });
+      toast({
+        title: "Usuario reactivado",
+        description: "El usuario se ha reactivado correctamente",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo reactivar el usuario: ${error.message}`,
+        variant: "destructive",
+      });
+    },
   });
 
   return {
-    users,
+    users: users || [],
     isLoading,
     error,
+    updateUser,
+    deleteUser,
+    reactivateUser,
     refetch,
-    toggleUserStatus,
-    updateUserRole,
-    companies,
-    isLoadingCompanies
+    canManageUsers: isAdmin()
   };
-}
+};
 
 export default useOrganizationUsers;

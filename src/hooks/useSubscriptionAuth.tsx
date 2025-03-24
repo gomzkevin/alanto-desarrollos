@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 
 export interface SubscriptionAuthOptions {
   requiresSubscription?: boolean;
@@ -12,8 +11,8 @@ export interface SubscriptionAuthOptions {
 }
 
 /**
- * Hook para autorización basada en roles (no en suscripciones)
- * Ahora simplemente verifica que el usuario sea admin o vendedor
+ * Hook simplificado para autorización basada únicamente en roles (admin/vendedor)
+ * Completamente removida la validación de suscripciones
  */
 export const useSubscriptionAuth = (options: SubscriptionAuthOptions = {}) => {
   const { 
@@ -23,9 +22,8 @@ export const useSubscriptionAuth = (options: SubscriptionAuthOptions = {}) => {
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const { userId, empresaId, isAdmin, authChecked } = useUserRole();
-  const { subscription } = useSubscriptionStatus();
   
-  // Efecto para verificar autorización
+  // Efecto para verificar autorización basada solo en roles
   useEffect(() => {
     const checkAuthorization = async () => {
       // Solo proceder cuando tenemos datos de usuario cargados
@@ -52,7 +50,7 @@ export const useSubscriptionAuth = (options: SubscriptionAuthOptions = {}) => {
         return;
       }
 
-      // Siempre autorizar a los usuarios autenticados con empresa
+      // Si el usuario está autenticado y tiene empresa, está autorizado
       setIsAuthorized(true);
     };
     
@@ -67,8 +65,7 @@ export const useSubscriptionAuth = (options: SubscriptionAuthOptions = {}) => {
 
   return {
     isAuthorized: isAuthorized === null ? true : isAuthorized,
-    isLoading: !authChecked || isAuthorized === null,
-    subscription
+    isLoading: !authChecked || isAuthorized === null
   };
 };
 

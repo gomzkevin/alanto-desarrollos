@@ -16,8 +16,9 @@ interface RequireSubscriptionProps {
 }
 
 /**
- * Componente simplificado que ahora solo verifica que el usuario tenga 
+ * Componente simplificado que solo verifica que el usuario tenga 
  * un rol válido (admin o vendedor) y una empresa asignada
+ * Sin validación de suscripciones
  */
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   children,
@@ -37,7 +38,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
     });
   }, [userId, empresaId, moduleName, isAdmin]);
   
-  // Usar el hook modificado de autorización
+  // Usar el hook modificado de autorización (sin validación de suscripciones)
   const { isAuthorized, isLoading } = useSubscriptionAuth({
     redirectPath: redirectTo
   });

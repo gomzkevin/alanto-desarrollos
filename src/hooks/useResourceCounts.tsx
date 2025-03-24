@@ -28,6 +28,10 @@ export interface ResourceCounts {
   percentVendorUsed: number;
 }
 
+/**
+ * Hook simplificado que devuelve conteos de recursos sin validación de límites
+ * (Versión sin suscripciones ni Stripe)
+ */
 export const useResourceCounts = () => {
   const { empresaId } = useUserRole();
   
