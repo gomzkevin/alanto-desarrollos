@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   ColumnDef,
@@ -24,8 +25,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { useOrganizationUsers, OrganizationUser } from '@/hooks/useOrganizationUsers';
 import { UserRole } from '@/hooks/useUserRole';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -106,6 +107,11 @@ export function UserManagementTable() {
     updateUserRole
   } = useOrganizationUsers();
 
+  // Fix the type error with the mutation function
+  const handleRoleChange = (id: string, newRole: UserRole) => {
+    updateUserRole.mutate({ id, newRole });
+  };
+
   const columns: ColumnDef<OrganizationUser>[] = [
     {
       accessorKey: 'nombre',
@@ -132,7 +138,7 @@ export function UserManagementTable() {
         <RoleSelect 
           currentRole={row.original.rol}
           userId={row.original.id}
-          onRoleChange={updateUserRole.mutate}
+          onRoleChange={handleRoleChange}
         />
       ),
     },
@@ -250,3 +256,5 @@ export function UserManagementTable() {
     </div>
   );
 }
+
+export default UserManagementTable;

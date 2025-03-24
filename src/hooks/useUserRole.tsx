@@ -56,8 +56,8 @@ export const useUserRole = () => {
         
         if (userData) {
           console.log('User data loaded:', userData);
-          // The role is now an enum in the database, no need for explicit cast
-          const roleToUse: UserRole = userData.rol;
+          // Ensure the role is one of the allowed types
+          const roleToUse = userData.rol as UserRole;
           
           setUserRole(roleToUse);
           setUserName(userData.nombre);
@@ -102,8 +102,8 @@ export const useUserRole = () => {
         if (!error && data) {
           console.log('User data from auth change:', data);
           
-          // The role is now an enum in the database
-          const roleToUse: UserRole = data.rol;
+          // Ensure the role is one of the allowed types
+          const roleToUse = data.rol as UserRole;
           
           setUserRole(roleToUse);
           setUserName(data.nombre);
