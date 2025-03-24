@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Check, Building, Home, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 
@@ -45,9 +44,8 @@ export function SubscriptionPlans() {
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { userId } = useUserRole();
-  const { subscriptionInfo } = useSubscriptionInfo();
+  const { subscription } = useSubscription();
 
-  // Helper function to ensure features is always an object
   const normalizeFeatures = (features: any): SubscriptionPlan['features'] => {
     if (!features) return {};
     if (typeof features === 'object' && !Array.isArray(features)) return features;
@@ -61,7 +59,6 @@ export function SubscriptionPlans() {
       try {
         setIsLoading(true);
         
-        // Fetch plans
         const { data: plansData, error: plansError } = await supabase
           .from('subscription_plans')
           .select('*')
@@ -71,7 +68,6 @@ export function SubscriptionPlans() {
           throw plansError;
         }
 
-        // Convert and ensure proper typing
         const typedPlans: SubscriptionPlan[] = plansData?.map(plan => ({
           ...plan,
           interval: plan.interval === 'year' ? 'year' : 'month' as 'month' | 'year',
@@ -80,7 +76,6 @@ export function SubscriptionPlans() {
 
         setPlans(typedPlans);
 
-        // Fetch current subscription
         const { data: subData, error: subError } = await supabase
           .from('subscriptions')
           .select('*, subscription_plans(*)')
@@ -92,7 +87,6 @@ export function SubscriptionPlans() {
           throw subError;
         }
 
-        // If we have subscription data, properly type it
         if (subData) {
           const typedSubscription: CurrentSubscription = {
             ...subData,
@@ -124,7 +118,6 @@ export function SubscriptionPlans() {
 
   const handleSubscribe = async (planId: string) => {
     try {
-      // Check if user already has a subscription
       if (currentSubscription) {
         toast({
           title: "Ya tienes una suscripción activa",
@@ -133,7 +126,6 @@ export function SubscriptionPlans() {
         return;
       }
 
-      // Simulate subscription creation
       setIsLoading(true);
       
       const { data: planData, error: planError } = await supabase
@@ -144,7 +136,6 @@ export function SubscriptionPlans() {
         
       if (planError) throw planError;
       
-      // For demo purposes, create a subscription directly
       const { data: subscriptionData, error: subscriptionError } = await supabase
         .from('subscriptions')
         .insert({
@@ -152,7 +143,7 @@ export function SubscriptionPlans() {
           plan_id: planId,
           status: 'active',
           current_period_start: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 days
+          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .select('*, subscription_plans(*)');
       
@@ -202,8 +193,7 @@ export function SubscriptionPlans() {
 
   return (
     <div className="space-y-6">
-      {/* Resumen de facturación */}
-      {subscriptionInfo.isActive && subscriptionInfo.currentPlan && (
+      {subscription.isActive && subscription.currentPlan && (
         <Card>
           <CardHeader>
             <CardTitle>Resumen de Facturación</CardTitle>
@@ -218,22 +208,22 @@ export function SubscriptionPlans() {
                 <div className="mt-2 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>
-                      {subscriptionInfo.resourceType === 'desarrollo' ? 'Desarrollos:' : 'Prototipos:'}
+                      {subscription.resourceType === 'desarrollo' ? 'Desarrollos:' : 'Prototipos:'}
                     </span>
                     <span className="font-medium">
-                      {subscriptionInfo.resourceCount}
-                      {subscriptionInfo.resourceLimit && (
-                        <> / {subscriptionInfo.resourceLimit}</>
+                      {subscription.resourceCount}
+                      {subscription.resourceLimit && (
+                        <> / {subscription.resourceLimit}</>
                       )}
                     </span>
                   </div>
-                  {subscriptionInfo.resourceLimit && (
+                  {subscription.resourceLimit && (
                     <Progress 
-                      value={subscriptionInfo.percentUsed} 
-                      className={subscriptionInfo.isOverLimit ? "bg-red-100" : ""}
+                      value={subscription.percentUsed} 
+                      className={subscription.isOverLimit ? "bg-red-100" : ""}
                     />
                   )}
-                  {subscriptionInfo.isOverLimit && (
+                  {subscription.isOverLimit && (
                     <div className="flex items-center text-red-500 text-xs gap-1">
                       <AlertTriangle className="h-3 w-3" />
                       <span>Excediste el límite de tu plan</span>
@@ -248,19 +238,19 @@ export function SubscriptionPlans() {
                   <div className="flex justify-between text-sm">
                     <span>Total de vendedores:</span>
                     <span className="font-medium">
-                      {subscriptionInfo.vendorCount}
-                      {subscriptionInfo.vendorLimit && (
-                        <> / {subscriptionInfo.vendorLimit}</>
+                      {subscription.vendorCount}
+                      {subscription.vendorLimit && (
+                        <> / {subscription.vendorLimit}</>
                       )}
                     </span>
                   </div>
-                  {subscriptionInfo.vendorLimit && (
+                  {subscription.vendorLimit && (
                     <Progress 
-                      value={(subscriptionInfo.vendorCount / subscriptionInfo.vendorLimit) * 100} 
-                      className={subscriptionInfo.isOverVendorLimit ? "bg-red-100" : ""}
+                      value={(subscription.vendorCount / subscription.vendorLimit) * 100} 
+                      className={subscription.isOverVendorLimit ? "bg-red-100" : ""}
                     />
                   )}
-                  {subscriptionInfo.isOverVendorLimit && (
+                  {subscription.isOverVendorLimit && (
                     <div className="flex items-center text-red-500 text-xs gap-1">
                       <AlertTriangle className="h-3 w-3" />
                       <span>Excediste el límite de vendedores</span>
@@ -278,19 +268,19 @@ export function SubscriptionPlans() {
                 <div className="space-y-1 mt-2">
                   <div className="flex justify-between text-sm">
                     <span>Plan base:</span>
-                    <span>${subscriptionInfo.currentPlan.price}/{subscriptionInfo.currentPlan.interval}</span>
+                    <span>${subscription.currentPlan.price}/{subscription.currentPlan.interval}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>
-                      {subscriptionInfo.resourceCount} {subscriptionInfo.resourceType === 'desarrollo' ? 'desarrollos' : 'prototipos'} x 
-                      ${subscriptionInfo.currentPlan.features.precio_por_unidad}:
+                      {subscription.resourceCount} {subscription.resourceType === 'desarrollo' ? 'desarrollos' : 'prototipos'} x 
+                      ${subscription.currentPlan.features.precio_por_unidad}:
                     </span>
-                    <span>${subscriptionInfo.currentBilling}</span>
+                    <span>${subscription.currentBilling}</span>
                   </div>
                   <Separator className="my-2" />
                   <div className="flex justify-between font-medium">
                     <span>Total estimado:</span>
-                    <span>${subscriptionInfo.currentPlan.price + subscriptionInfo.currentBilling}/{subscriptionInfo.currentPlan.interval}</span>
+                    <span>${subscription.currentPlan.price + subscription.currentBilling}/{subscription.currentPlan.interval}</span>
                   </div>
                 </div>
               </div>
@@ -300,7 +290,7 @@ export function SubscriptionPlans() {
                 <div className="space-y-1 mt-2">
                   <div className="flex justify-between text-sm">
                     <span>Plan actual:</span>
-                    <span>{subscriptionInfo.currentPlan.name}</span>
+                    <span>{subscription.currentPlan.name}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Estado:</span>
@@ -311,7 +301,7 @@ export function SubscriptionPlans() {
                   <div className="flex justify-between text-sm">
                     <span>Próxima renovación:</span>
                     <span>
-                      {subscriptionInfo.renewalDate?.toLocaleDateString() || 'No disponible'}
+                      {subscription.renewalDate?.toLocaleDateString() || 'No disponible'}
                     </span>
                   </div>
                 </div>
@@ -326,7 +316,6 @@ export function SubscriptionPlans() {
         </Card>
       )}
 
-      {/* Planes disponibles */}
       <Card>
         <CardHeader>
           <CardTitle>Planes de Suscripción</CardTitle>

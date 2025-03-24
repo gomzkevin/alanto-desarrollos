@@ -1,8 +1,6 @@
 
 import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useSubscriptionAuth } from '@/hooks/useSubscriptionAuth';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -26,13 +24,12 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   loadingFallback,
   unauthorizedFallback
 }) => {
-  const { isAuthorized, isLoading } = useSubscriptionAuth(moduleName, redirectTo);
-  const { isAdmin, userRole } = useUserRole();
-
-  // Admin users and vendors always have access to all modules
-  if (isAdmin() || userRole === 'vendedor') {
-    return <>{children}</>;
-  }
+  // Use the centralized subscription hook
+  const { isAuthorized, isLoading } = useSubscription({
+    requiresSubscription: true,
+    requiredModule: moduleName,
+    redirectPath: redirectTo
+  });
 
   // Show loading state
   if (isLoading) {
@@ -55,11 +52,6 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   if (!isAuthorized) {
     if (unauthorizedFallback) return <>{unauthorizedFallback}</>;
     
-    // Personalizar mensaje según el rol del usuario
-    const message = isAdmin() 
-      ? "Tu empresa no tiene una suscripción activa. Por favor, activa la suscripción en configuración."
-      : "Tu empresa no tiene una suscripción activa. Por favor, contacta al administrador.";
-    
     return (
       <DashboardLayout>
         <div className="p-6">
@@ -67,7 +59,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Acceso restringido</AlertTitle>
             <AlertDescription>
-              No tienes acceso al módulo de {moduleName}. {message}
+              No tienes acceso al módulo de {moduleName}. Por favor, contacta al administrador para activar la suscripción.
             </AlertDescription>
           </Alert>
         </div>
