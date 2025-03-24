@@ -67,7 +67,6 @@ import { useUserTransfer } from "@/hooks/useUserTransfer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type AuthServiceRole = 'admin' | 'vendedor' | 'cliente';
-
 type AllUserRoles = 'superadmin' | 'admin' | 'vendedor' | 'cliente';
 type InvitationRoles = 'admin' | 'vendedor' | 'cliente';
 
@@ -258,9 +257,14 @@ export function UserManagementTable() {
       return;
     }
 
+    const invitationRole: InvitationRoles = 
+      (newInvite.rol === 'admin' || newInvite.rol === 'vendedor' || newInvite.rol === 'cliente') 
+        ? newInvite.rol 
+        : 'vendedor';
+    
     const result = await createInvitacion(
       newInvite.email, 
-      newInvite.rol
+      invitationRole
     );
     
     if (result.success) {
@@ -904,3 +908,4 @@ export function UserManagementTable() {
 }
 
 export default UserManagementTable;
+
