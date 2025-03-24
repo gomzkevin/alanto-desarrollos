@@ -1,151 +1,124 @@
-
-import useCompanySubscription from '@/hooks/useCompanySubscription';
-import { toast } from '@/components/ui/use-toast';
-import { ResourceType } from './types';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
-import useOrganizationUsers from '@/hooks/useOrganizationUsers';
-import { supabase } from '@/integrations/supabase/client';
+import useUnidades from '@/hooks/useUnidades';
+import { useUserRole } from '@/hooks/useUserRole';
 
-interface ResourceActionsOptions {
-  resourceType: ResourceType;
-  resourceId?: string;
-  onSuccess?: () => void;
-  selectedAmenities?: string[];
-  clientConfig?: {
-    isExistingClient: boolean;
-    newClientData: {
-      nombre: string;
-      email: string;
-      telefono: string;
-    };
-  };
-}
+type ResourceKey = 'leads' | 'desarrollos' | 'prototipos' | 'unidades';
 
-export const useResourceActions = (resourceType: ResourceType) => {
-  const { userId, empresaId, isAdmin } = useUserRole();
-  const { subscriptionInfo } = useCompanySubscription();
+// Fix the expected arguments error
+export const useResourceActions = (resource: ResourceKey) => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const { empresaId } = useUserRole();
   
-  const { desarrollos } = useDesarrollos({});
-  
-  const { users: vendedores } = useOrganizationUsers();
-  
-  const { prototipos } = usePrototipos();
-  
-  const canAddResource = (resourceType: ResourceType): boolean => {
-    return !!userId && !!empresaId;
-  };
-  
-  const getSelectOptions = (resourceType: ResourceType) => {
-    switch (resourceType) {
-      case 'desarrollos':
-        return [];
-      case 'prototipos':
-        return desarrollos.map(d => ({ label: d.nombre, value: d.id }));
+  // Obtener las funciones correctas según el tipo de recurso
+  const getActions = () => {
+    switch (resource) {
       case 'leads':
-        return [];
-      case 'cotizaciones':
-        return [
-          {
-            label: 'Desarrollos',
-            options: desarrollos.map(d => ({ label: d.nombre, value: d.id }))
-          }
-        ];
+        const { createLead, updateLead, deleteLead } = useLeads({ empresa_id: empresaId }); // Pass empresaId here
+        return { 
+          create: createLead, 
+          update: updateLead, 
+          delete: deleteLead 
+        };
+        
+      case 'desarrollos':
+        const { createDesarrollo, updateDesarrollo, deleteDesarrollo } = useDesarrollos({ empresa_id: empresaId });
+        return { 
+          create: createDesarrollo, 
+          update: updateDesarrollo, 
+          delete: deleteDesarrollo 
+        };
+        
+      case 'prototipos':
+        const { createPrototipo, updatePrototipo, deletePrototipo } = usePrototipos();
+        return { 
+          create: createPrototipo, 
+          update: updatePrototipo, 
+          delete: deletePrototipo 
+        };
+        
       case 'unidades':
-        return prototipos.map(p => ({ label: p.nombre, value: p.id }));
+        const { createUnidad, updateUnidad, deleteUnidad } = useUnidades();
+        return { 
+          create: createUnidad, 
+          update: updateUnidad, 
+          delete: deleteUnidad 
+        };
+        
       default:
-        return [];
+        throw new Error(`Resource type ${resource} is not supported`);
     }
   };
-
-  const saveResource = async (resource: any) => {
+  
+  const actions = getActions();
+  
+  // Función genérica para crear un recurso
+  const handleCreate = async (data: any) => {
     try {
-      if (!resource) return false;
-      
-      if (resourceType === 'desarrollos') {
-        const { error } = await supabase
-          .from('desarrollos')
-          .upsert([{ ...resource, empresa_id: empresaId }]);
-          
-        if (error) throw error;
-      } else if (resourceType === 'prototipos') {
-        const { error } = await supabase
-          .from('prototipos')
-          .upsert([resource]);
-          
-        if (error) throw error;
-      } else if (resourceType === 'leads') {
-        const { error } = await supabase
-          .from('leads')
-          .upsert([{ ...resource, empresa_id: empresaId }]);
-          
-        if (error) throw error;
-      } else if (resourceType === 'cotizaciones') {
-        const { error } = await supabase
-          .from('cotizaciones')
-          .upsert([{ ...resource, empresa_id: empresaId }]);
-          
-        if (error) throw error;
-      } else if (resourceType === 'unidades') {
-        const { error } = await supabase
-          .from('unidades')
-          .upsert([resource]);
-          
-        if (error) throw error;
-      }
-      
+      await actions.create(data);
       toast({
-        title: "Éxito",
-        description: "Recurso guardado correctamente"
+        title: `${resource.slice(0, -1)} creado`,
+        description: `El ${resource.slice(0, -1)} ha sido creado exitosamente`
       });
-      
-      return true;
     } catch (error: any) {
+      console.error(`Error al crear ${resource.slice(0, -1)}:`, error);
       toast({
         title: "Error",
-        description: `Error al guardar el recurso: ${error.message}`,
+        description: `No se pudo crear el ${resource.slice(0, -1)}: ${error.message}`,
         variant: "destructive"
       });
-      return false;
     }
   };
-
-  const handleImageUpload = async (file: File) => {
+  
+  // Función genérica para actualizar un recurso
+  const handleUpdate = async (id: string, data: any) => {
     try {
-      if (!file) return null;
-      
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${resourceType}/${fileName}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('prototipo-images')
-        .upload(filePath, file);
-        
-      if (uploadError) throw uploadError;
-      
-      const { data } = supabase.storage
-        .from('prototipo-images')
-        .getPublicUrl(filePath);
-        
-      return data.publicUrl;
+      await actions.update(id, data);
+      toast({
+        title: `${resource.slice(0, -1)} actualizado`,
+        description: `El ${resource.slice(0, -1)} ha sido actualizado exitosamente`
+      });
     } catch (error: any) {
+      console.error(`Error al actualizar ${resource.slice(0, -1)}:`, error);
       toast({
         title: "Error",
-        description: `Error al subir la imagen: ${error.message}`,
+        description: `No se pudo actualizar el ${resource.slice(0, -1)}: ${error.message}`,
         variant: "destructive"
       });
-      return null;
     }
+  };
+  
+  // Función genérica para eliminar un recurso
+  const handleDelete = async (id: string) => {
+    try {
+      await actions.delete(id);
+      toast({
+        title: `${resource.slice(0, -1)} eliminado`,
+        description: `El ${resource.slice(0, -1)} ha sido eliminado exitosamente`
+      });
+    } catch (error: any) {
+      console.error(`Error al eliminar ${resource.slice(0, -1)}:`, error);
+      toast({
+        title: "Error",
+        description: `No se pudo eliminar el ${resource.slice(0, -1)}: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Función genérica para redireccionar a la página del recurso
+  const handleView = (id: string) => {
+    navigate(`/dashboard/${resource}/${id}`);
   };
   
   return {
-    canAdd: canAddResource(resourceType),
-    getSelectOptions,
-    saveResource,
-    handleImageUpload
+    create: handleCreate,
+    update: handleUpdate,
+    delete: handleDelete,
+    view: handleView
   };
 };
-
-export default useResourceActions;

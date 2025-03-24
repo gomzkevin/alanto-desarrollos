@@ -47,6 +47,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
     try {
       console.log('Fetching ventas with empresaId:', empresaId);
       
+      // Solo intentar obtener ventas si hay un empresaId
       if (!empresaId) {
         console.log('No empresaId available, returning empty ventas array');
         return [];
@@ -86,14 +87,23 @@ export const useVentas = (filters: VentasFilter = {}) => {
 
       console.log('Ventas raw data:', data);
 
-      // Filtrar las ventas por empresa_id si está disponible
-      const filteredData = empresaId
-        ? (data || []).filter(venta => {
-            const ventaEmpresaId = venta.unidad?.prototipo?.desarrollo?.empresa_id;
-            console.log('Filtering venta:', venta.id, 'empresa_id:', ventaEmpresaId);
-            return ventaEmpresaId === empresaId;
-          })
-        : [];
+      // Filtrar las ventas por empresa_id de manera más segura
+      if (!data || data.length === 0) {
+        console.log('No ventas data returned from database');
+        return [];
+      }
+      
+      const filteredData = data.filter(venta => {
+        // Verificar si unidad y sus propiedades anidadas existen
+        if (!venta.unidad || !venta.unidad.prototipo || !venta.unidad.prototipo.desarrollo) {
+          console.log('Venta sin datos completos de unidad/prototipo/desarrollo:', venta.id);
+          return false;
+        }
+        
+        const ventaEmpresaId = venta.unidad.prototipo.desarrollo.empresa_id;
+        console.log('Comparing venta:', venta.id, 'empresa_id:', ventaEmpresaId, 'with current empresaId:', empresaId);
+        return ventaEmpresaId === empresaId;
+      });
       
       console.log('Filtered ventas:', filteredData.length);
 

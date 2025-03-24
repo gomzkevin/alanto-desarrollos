@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useSubscriptionInfo } from '@/hooks/useSubscriptionInfo';
@@ -29,6 +29,32 @@ export const useSubscriptionAuth = ({
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [lastCheck, setLastCheck] = useState(0);
   
+  // Función para verificar la autorización
+  const checkAuthorization = useCallback(() => {
+    // Por el momento, solo validamos que tenga suscripción activa
+    // En el futuro, podemos implementar validación por módulos específicos
+    const hasActiveSubscription = subscriptionInfo && subscriptionInfo.isActive;
+    
+    // Para usuarios administradores, siempre darles acceso
+    const isAdmin = userRole === 'admin';
+    
+    // Por ahora, autorizamos si tiene suscripción o es admin
+    const hasPermission = isAdmin || !!hasActiveSubscription;
+    
+    console.log('useSubscriptionAuth - Authorization result:', { 
+      hasPermission, 
+      userId, 
+      empresaId,
+      userRole,
+      requiredModule,
+      subscriptionActive: subscriptionInfo?.isActive,
+      isAdmin
+    });
+    
+    return hasPermission;
+  }, [userId, empresaId, userRole, subscriptionInfo, requiredModule]);
+  
+  // Efecto principal para verificación de autorización
   useEffect(() => {
     // Medir tiempo desde el último intento
     const now = Date.now();
@@ -66,26 +92,7 @@ export const useSubscriptionAuth = ({
     
     // Si ya tenemos userId, verificar autorización
     if (userId) {
-      // Por el momento, solo validamos que tenga suscripción activa
-      // En el futuro, podemos implementar validación por módulos específicos
-      const hasActiveSubscription = subscriptionInfo && subscriptionInfo.isActive;
-      
-      // Para usuarios administradores, siempre darles acceso
-      const isAdmin = userRole === 'admin';
-      
-      // Por ahora, autorizamos si tiene suscripción o es admin
-      const hasPermission = isAdmin || !!hasActiveSubscription;
-      
-      console.log('useSubscriptionAuth - Authorization result:', { 
-        hasPermission, 
-        userId, 
-        empresaId,
-        userRole,
-        requiredModule,
-        subscriptionActive: subscriptionInfo?.isActive,
-        isAdmin
-      });
-      
+      const hasPermission = checkAuthorization();
       setIsAuthorized(hasPermission);
       
       // Redireccionar si no está autorizado y hay una ruta de redirección
@@ -117,7 +124,8 @@ export const useSubscriptionAuth = ({
     maxRetries, 
     userLoading, 
     subscriptionLoading,
-    toast
+    toast,
+    checkAuthorization
   ]);
   
   const isLoading = userLoading || subscriptionLoading || isAuthorized === null;

@@ -53,7 +53,10 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
   // Fetch all payments for ventas to accurately display progress
   useEffect(() => {
     const fetchVentasPayments = async () => {
-      if (!ventas.length) return;
+      if (!ventas || ventas.length === 0) {
+        console.log('No hay ventas para cargar pagos');
+        return;
+      }
       
       setLoadingPayments(true);
       try {
@@ -154,6 +157,8 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
     navigate(`/dashboard/ventas/${ventaId}`);
   };
 
+  console.log("Rendering VentasTable:", { isLoading, loadingPayments, ventasCount: ventas?.length });
+
   if (isLoading || loadingPayments) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -165,7 +170,7 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
     );
   }
 
-  if (ventas.length === 0) {
+  if (!ventas || ventas.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center">
         <h3 className="text-xl font-semibold mb-2">No hay ventas registradas</h3>
