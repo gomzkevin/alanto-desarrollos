@@ -16,8 +16,8 @@ interface RequireSubscriptionProps {
 }
 
 /**
- * Componente que asegura que la empresa del usuario tiene una suscripción activa
- * Versión simplificada: usa el nuevo hook de autorización de suscripciones
+ * Componente simplificado que ahora solo verifica que el usuario tenga 
+ * un rol válido (admin o vendedor) y una empresa asignada
  */
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   children,
@@ -26,36 +26,22 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   loadingFallback,
   unauthorizedFallback
 }) => {
-  const { userId, empresaId, userRole, isAdmin, isSuperAdmin } = useUserRole();
+  const { userId, empresaId, isAdmin } = useUserRole();
   
   // Logs para depuración
   useEffect(() => {
     console.log(`RequireSubscription (${moduleName}) - User data:`, {
       userId,
       empresaId,
-      userRole,
-      isAdmin: isAdmin(),
-      isSuperAdmin: isSuperAdmin()
+      isAdmin: isAdmin()
     });
-  }, [userId, empresaId, userRole, moduleName, isAdmin, isSuperAdmin]);
+  }, [userId, empresaId, moduleName, isAdmin]);
   
-  // Usar el hook de autorización de suscripciones
-  const { isAuthorized, isLoading, subscription } = useSubscriptionAuth({
-    requiresSubscription: true,
-    requiredModule: moduleName,
+  // Usar el hook modificado de autorización
+  const { isAuthorized, isLoading } = useSubscriptionAuth({
     redirectPath: redirectTo
   });
   
-  // Logs de depuración
-  useEffect(() => {
-    console.log(`RequireSubscription (${moduleName}) - Estado de autorización:`, {
-      isAuthorized,
-      isLoading,
-      subscriptionActive: subscription?.isActive,
-      planName: subscription?.currentPlan?.name
-    });
-  }, [isAuthorized, isLoading, subscription, moduleName]);
-
   // Mostrar estado de carga
   if (isLoading) {
     if (loadingFallback) return <>{loadingFallback}</>;
@@ -84,7 +70,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Acceso restringido</AlertTitle>
             <AlertDescription>
-              Tu empresa no tiene acceso al módulo de {moduleName}. Por favor, contacta al administrador para activar la suscripción.
+              No tienes acceso al módulo de {moduleName}. Por favor, contacta al administrador.
             </AlertDescription>
           </Alert>
         </div>

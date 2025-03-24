@@ -12,55 +12,34 @@ export interface SubscriptionAuthOptions {
 }
 
 /**
- * Hook para autorización basada en suscripciones
- * Verifica si el usuario actual tiene acceso a un módulo/funcionalidad específica
+ * Hook para autorización basada en roles (no en suscripciones)
+ * Ahora simplemente verifica que el usuario sea admin o vendedor
  */
 export const useSubscriptionAuth = (options: SubscriptionAuthOptions = {}) => {
   const { 
-    requiresSubscription = true, 
-    requiredModule, 
     redirectPath = '/dashboard' 
   } = options;
   
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const { userId, empresaId, userRole, isAdmin, isSuperAdmin, authChecked } = useUserRole();
-  const { subscription, isLoading: isLoadingSubscription } = useSubscriptionStatus();
+  const { userId, empresaId, isAdmin, authChecked } = useUserRole();
+  const { subscription } = useSubscriptionStatus();
   
   // Efecto para verificar autorización
   useEffect(() => {
     const checkAuthorization = async () => {
       // Solo proceder cuando tenemos datos de usuario cargados
-      if (!authChecked || isLoadingSubscription) {
+      if (!authChecked) {
         return;
       }
 
-      console.log('Verificando autorización de suscripción:', {
-        userId,
-        empresaId,
-        userRole,
-        isSuperAdmin: isSuperAdmin(),
-        isAdmin: isAdmin(),
-        isSubscriptionActive: subscription.isActive,
-        requiresSubscription,
-        requiredModule
-      });
+      // Si no hay userId, no está autorizado
+      if (!userId) {
+        setIsAuthorized(false);
+        return;
+      }
 
-      // Regla 1: Los superadmins siempre tienen acceso global
-      if (isSuperAdmin()) {
-        console.log('Usuario es superadmin - acceso autorizado globalmente');
-        setIsAuthorized(true);
-        return;
-      }
-      
-      // Regla 2: Si el módulo no requiere suscripción, todos los usuarios autenticados tienen acceso
-      if (!requiresSubscription) {
-        console.log('Módulo no requiere suscripción - acceso autorizado');
-        setIsAuthorized(true);
-        return;
-      }
-      
-      // Regla 3: Si no hay empresaId asignado, el usuario no tiene acceso
+      // Verificar que el usuario tenga una empresa asignada
       if (!empresaId) {
         console.log('Usuario sin empresa asignada - acceso denegado');
         toast({
@@ -72,55 +51,23 @@ export const useSubscriptionAuth = (options: SubscriptionAuthOptions = {}) => {
         setIsAuthorized(false);
         return;
       }
-      
-      // Regla 4: Si hay suscripción activa para la empresa, todos sus miembros tienen acceso
-      if (subscription.isActive) {
-        console.log('Empresa tiene suscripción activa - acceso autorizado');
-        setIsAuthorized(true);
-        return;
-      }
-      
-      // Si llegamos aquí, no hay suscripción activa - denegar acceso
-      console.log('Sin suscripción activa - acceso denegado');
-      
-      // Mensaje específico según si es admin o no
-      let message = isAdmin() 
-        ? "Tu empresa no tiene una suscripción activa. Por favor, activa la suscripción en configuración."
-        : "Tu empresa no tiene una suscripción activa. Por favor, contacta al administrador.";
-        
-      const moduleText = requiredModule ? ` al módulo ${requiredModule}` : '';
-      
-      toast({
-        title: "Suscripción requerida",
-        description: `No tienes acceso${moduleText}. ${message}`,
-        variant: "destructive"
-      });
-      
-      // Redirigir a admins a la página de configuración, a otros usuarios al dashboard
-      const redirectTo = isAdmin() ? '/dashboard/configuracion' : redirectPath;
-      navigate(redirectTo);
-      setIsAuthorized(false);
+
+      // Siempre autorizar a los usuarios autenticados con empresa
+      setIsAuthorized(true);
     };
     
     checkAuthorization();
   }, [
     authChecked, 
-    isLoadingSubscription, 
-    subscription, 
     userId, 
     empresaId, 
-    userRole, 
-    requiresSubscription, 
-    requiredModule, 
     redirectPath, 
-    navigate, 
-    isAdmin, 
-    isSuperAdmin
+    navigate
   ]);
 
   return {
-    isAuthorized,
-    isLoading: isLoadingSubscription || !authChecked || isAuthorized === null,
+    isAuthorized: isAuthorized === null ? true : isAuthorized,
+    isLoading: !authChecked || isAuthorized === null,
     subscription
   };
 };
