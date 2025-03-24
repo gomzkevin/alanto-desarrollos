@@ -7,6 +7,15 @@ import { Card } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { VentaProgress } from './VentaProgress';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface VentasTableProps {
   refreshTrigger?: number;
@@ -22,13 +31,24 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
   const { ventas, isLoading, refetch } = useVentas();
   const [ventasPayments, setVentasPayments] = useState<Record<string, VentaWithPayments>>({});
   const [loadingPayments, setLoadingPayments] = useState(false);
+  const { empresaId } = useUserRole();
   const navigate = useNavigate();
   
+  // Efecto para refrescar cuando cambia el trigger
   useEffect(() => {
     if (refreshTrigger > 0) {
+      console.log('Refrescando ventas por trigger:', refreshTrigger);
       refetch();
     }
   }, [refreshTrigger, refetch]);
+
+  // Efecto para refrescar cuando cambia empresaId
+  useEffect(() => {
+    if (empresaId) {
+      console.log('Refrescando ventas por cambio de empresaId:', empresaId);
+      refetch();
+    }
+  }, [empresaId, refetch]);
 
   // Fetch all payments for ventas to accurately display progress
   useEffect(() => {
@@ -39,15 +59,21 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
       try {
         // First get all compradores_venta for all ventas
         const ventaIds = ventas.map(v => v.id);
+        console.log('Fetching payments for ventas:', ventaIds);
+        
         const { data: compradoresVenta, error: errorCompradores } = await supabase
           .from('compradores_venta')
           .select('id, venta_id')
           .in('venta_id', ventaIds);
         
-        if (errorCompradores) throw errorCompradores;
+        if (errorCompradores) {
+          console.error('Error fetching compradores:', errorCompradores);
+          throw errorCompradores;
+        }
         
-        if (!compradoresVenta.length) {
+        if (!compradoresVenta || compradoresVenta.length === 0) {
           // No compradores found for any ventas
+          console.log('No compradores found for ventas');
           const emptyPayments = ventaIds.reduce((acc, ventaId) => {
             acc[ventaId] = { id: ventaId, progreso: 0, montoPagado: 0 };
             return acc;
@@ -73,14 +99,16 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
           let montoPagado = 0;
           
           if (compradorIds.length > 0) {
-            // Get pagos for each comprador - now using 'registrado' instead of 'verificado'
+            // Get pagos for each comprador
             const { data: pagos, error: errorPagos } = await supabase
               .from('pagos')
               .select('monto, estado')
               .in('comprador_venta_id', compradorIds)
-              .eq('estado', 'registrado'); // Cambiado de 'verificado' a 'registrado'
+              .eq('estado', 'registrado');
             
-            if (!errorPagos && pagos) {
+            if (errorPagos) {
+              console.error('Error fetching pagos:', errorPagos);
+            } else if (pagos) {
               montoPagado = pagos.reduce((sum, pago) => sum + pago.monto, 0);
             }
           }
@@ -129,7 +157,10 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
   if (isLoading || loadingPayments) {
     return (
       <div className="flex justify-center items-center h-64">
-        <p className="text-muted-foreground">Cargando ventas...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Cargando ventas...</p>
+        </div>
       </div>
     );
   }
@@ -149,55 +180,55 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
     <div className="space-y-4">
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-muted/50">
-                <th className="text-left p-4 font-medium w-[35%]">Desarrollo / Unidad</th>
-                <th className="text-left p-4 font-medium w-[12%]">Tipo</th>
-                <th className="text-left p-4 font-medium w-[15%]">Precio Total</th>
-                <th className="text-left p-4 font-medium w-[25%]">Progreso</th>
-                <th className="text-left p-4 font-medium w-[13%]">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="w-[35%]">Desarrollo / Unidad</TableHead>
+                <TableHead className="w-[12%]">Tipo</TableHead>
+                <TableHead className="w-[15%]">Precio Total</TableHead>
+                <TableHead className="w-[25%]">Progreso</TableHead>
+                <TableHead className="w-[13%]">Estado</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {ventas.map((venta) => {
                 const paymentData = ventasPayments[venta.id] || { progreso: 0, montoPagado: 0 };
                 
                 return (
-                  <tr 
+                  <TableRow 
                     key={venta.id} 
-                    className="border-t hover:bg-muted/30 cursor-pointer"
+                    className="cursor-pointer hover:bg-muted/30"
                     onClick={() => handleRowClick(venta.id)}
                   >
-                    <td className="p-4">
+                    <TableCell>
                       <div>
                         <p className="font-medium">{venta.unidad?.prototipo?.desarrollo?.nombre || 'Desarrollo'}</p>
                         <p className="text-sm text-muted-foreground">
                           {venta.unidad?.prototipo?.nombre || 'Prototipo'} - Unidad {venta.unidad?.numero || 'N/A'}
                         </p>
                       </div>
-                    </td>
-                    <td className="p-4">
+                    </TableCell>
+                    <TableCell>
                       {venta.es_fraccional ? (
                         <Badge variant="outline">Fraccional</Badge>
                       ) : (
                         <Badge variant="outline">Individual</Badge>
                       )}
-                    </td>
-                    <td className="p-4">{formatCurrency(venta.precio_total)}</td>
-                    <td className="p-4">
+                    </TableCell>
+                    <TableCell>{formatCurrency(venta.precio_total)}</TableCell>
+                    <TableCell>
                       <VentaProgress 
                         progreso={paymentData.progreso} 
                         montoTotal={venta.precio_total} 
                         montoPagado={paymentData.montoPagado}
                       />
-                    </td>
-                    <td className="p-4">{getEstadoBadge(venta.estado)}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell>{getEstadoBadge(venta.estado)}</TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </Card>
     </div>

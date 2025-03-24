@@ -47,6 +47,11 @@ export const useVentas = (filters: VentasFilter = {}) => {
     try {
       console.log('Fetching ventas with empresaId:', empresaId);
       
+      if (!empresaId) {
+        console.log('No empresaId available, returning empty ventas array');
+        return [];
+      }
+      
       let query = supabase
         .from('ventas')
         .select(`
@@ -84,10 +89,11 @@ export const useVentas = (filters: VentasFilter = {}) => {
       // Filtrar las ventas por empresa_id si está disponible
       const filteredData = empresaId
         ? (data || []).filter(venta => {
-            console.log('Filtering venta:', venta.id, 'empresa_id:', venta.unidad?.prototipo?.desarrollo?.empresa_id);
-            return venta.unidad?.prototipo?.desarrollo?.empresa_id === empresaId;
+            const ventaEmpresaId = venta.unidad?.prototipo?.desarrollo?.empresa_id;
+            console.log('Filtering venta:', venta.id, 'empresa_id:', ventaEmpresaId);
+            return ventaEmpresaId === empresaId;
           })
-        : (data || []);
+        : [];
       
       console.log('Filtered ventas:', filteredData.length);
 
@@ -105,7 +111,9 @@ export const useVentas = (filters: VentasFilter = {}) => {
   const { data = [], isLoading, error, refetch } = useQuery({
     queryKey: ['ventas', filters, empresaId],
     queryFn: fetchVentas,
-    enabled: !!empresaId // Sólo ejecutar la consulta si hay un empresaId
+    enabled: !!empresaId, // Sólo ejecutar la consulta si hay un empresaId
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    refetchOnWindowFocus: false
   });
 
   // Función para crear una venta

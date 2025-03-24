@@ -5,7 +5,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useSubscriptionAuth } from '@/hooks/useSubscriptionAuth';
-import { useUserRole } from '@/hooks/useUserRole';
 
 interface RequireSubscriptionProps {
   children: React.ReactNode;
@@ -61,7 +60,6 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   }
 
   // Si el usuario está autenticado pero no tiene empresaId, darle acceso temporalmente
-  // Esto arregla el problema de que a veces empresaId no se carga correctamente
   if (!isAuthorized && userId && !empresaId) {
     console.log(`RequireSubscription (${moduleName}) - Usuario ${userId} sin empresa asignada, pero dando acceso temporal`);
     return <>{children}</>;

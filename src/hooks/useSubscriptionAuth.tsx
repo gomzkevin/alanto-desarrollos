@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useSubscriptionInfo } from '@/hooks/useSubscriptionInfo';
+import { useToast } from '@/hooks/use-toast';
 
 interface UseSubscriptionAuthProps {
   redirectPath?: string;
@@ -11,7 +12,7 @@ interface UseSubscriptionAuthProps {
 }
 
 /**
- * Hook para verificar si un usuario tiene acceso a ciertas funcionalidades
+ * Hook mejorado para verificar si un usuario tiene acceso a ciertas funcionalidades
  * basado en su suscripción y permisos.
  */
 export const useSubscriptionAuth = ({ 
@@ -22,6 +23,7 @@ export const useSubscriptionAuth = ({
   const navigate = redirectPath ? useNavigate() : null;
   const { userId, empresaId, userRole, isLoading: userLoading } = useUserRole();
   const { subscriptionInfo, isLoading: subscriptionLoading } = useSubscriptionInfo();
+  const { toast } = useToast();
   
   const [retryCount, setRetryCount] = useState(0);
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
@@ -42,6 +44,16 @@ export const useSubscriptionAuth = ({
     // Verificar directamente si está cargando cualquiera de los hooks
     const isLoading = userLoading || subscriptionLoading;
     
+    // Para debug
+    console.log('useSubscriptionAuth - Estado de carga:', {
+      userLoading,
+      subscriptionLoading,
+      retryCount,
+      userId,
+      empresaId,
+      userRole
+    });
+    
     // Si no hay datos de usuario o suscripción y no está cargando, reintentar hasta maxRetries
     if (!userId && !isLoading && retryCount < maxRetries) {
       const timer = setTimeout(() => {
@@ -52,20 +64,17 @@ export const useSubscriptionAuth = ({
       return () => clearTimeout(timer);
     }
     
-    // Si ya tenemos empresaId, verificar autorización
-    if (empresaId) {
-      // Verificar si el módulo requerido está permitido por la suscripción
-      let hasPermission = true;
+    // Si ya tenemos userId, verificar autorización
+    if (userId) {
+      // Por el momento, solo validamos que tenga suscripción activa
+      // En el futuro, podemos implementar validación por módulos específicos
+      const hasActiveSubscription = subscriptionInfo && subscriptionInfo.isActive;
       
-      // Si requiere un módulo específico, verificar en la suscripción
-      if (requiredModule) {
-        // Verificar si tiene una suscripción activa
-        const hasActiveSubscription = subscriptionInfo && subscriptionInfo.isActive;
-        
-        // Por ahora, simplemente autorizar si tiene suscripción activa
-        // Aquí se puede implementar lógica más compleja para verificar módulos específicos
-        hasPermission = !!hasActiveSubscription;
-      }
+      // Para usuarios administradores, siempre darles acceso
+      const isAdmin = userRole === 'admin';
+      
+      // Por ahora, autorizamos si tiene suscripción o es admin
+      const hasPermission = isAdmin || !!hasActiveSubscription;
       
       console.log('useSubscriptionAuth - Authorization result:', { 
         hasPermission, 
@@ -73,7 +82,8 @@ export const useSubscriptionAuth = ({
         empresaId,
         userRole,
         requiredModule,
-        subscriptionActive: subscriptionInfo?.isActive
+        subscriptionActive: subscriptionInfo?.isActive,
+        isAdmin
       });
       
       setIsAuthorized(hasPermission);
@@ -81,12 +91,17 @@ export const useSubscriptionAuth = ({
       // Redireccionar si no está autorizado y hay una ruta de redirección
       if (!hasPermission && redirectPath && navigate) {
         console.log(`useSubscriptionAuth - Redirecting to ${redirectPath} due to lack of permissions`);
+        
+        toast({
+          title: "Acceso restringido",
+          description: `No tienes acceso al módulo ${requiredModule || "solicitado"}`,
+          variant: "destructive"
+        });
+        
         navigate(redirectPath);
       }
-    } else {
-      // Si no tiene empresaId pero tiene userId, probablemente esté en proceso de carga
-      // No establecer autorización como falsa todavía
-      console.log('useSubscriptionAuth - User authenticated but no empresa_id yet');
+    } else if (isLoading) {
+      // Si está cargando, mantener en estado indeterminado
       setIsAuthorized(null);
     }
   }, [
@@ -101,7 +116,8 @@ export const useSubscriptionAuth = ({
     lastCheck, 
     maxRetries, 
     userLoading, 
-    subscriptionLoading
+    subscriptionLoading,
+    toast
   ]);
   
   const isLoading = userLoading || subscriptionLoading || isAuthorized === null;
