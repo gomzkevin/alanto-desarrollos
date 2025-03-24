@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,7 +78,7 @@ export const useSubscriptionInfo = () => {
       // Si encontramos una suscripción activa para la empresa, la usamos
       if (empresaSubscription) {
         console.log('Found active subscription for empresa:', empresaSubscription);
-        return processSubscription(empresaSubscription, empresaId);
+        return await processSubscription(empresaSubscription, empresaId);
       }
       
       // Si no hay suscripción de empresa, verificamos si el usuario tiene una suscripción personal
@@ -99,13 +100,13 @@ export const useSubscriptionInfo = () => {
       }
 
       console.log('Found active subscription for user:', userSubscription);
-      return processSubscription(userSubscription, empresaId);
+      return await processSubscription(userSubscription, empresaId);
     },
     enabled: !!userId,
   });
 
   // Función auxiliar para procesar los datos de la suscripción
-  const processSubscription = (subscription: any, empresaId: number | null): SubscriptionInfo => {
+  const processSubscription = async (subscription: any, empresaId: number | null): Promise<SubscriptionInfo> => {
     // Extract plan features safely
     const planFeatures = subscription.subscription_plans.features || {};
     let features = {
