@@ -1,3 +1,4 @@
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDesarrollos, usePrototipos } from '@/hooks';
 import { useEffect } from 'react';
@@ -15,10 +16,8 @@ export const ProyeccionFilters = ({
   onDesarrolloChange,
   onPrototipoChange
 }: ProyeccionFiltersProps) => {
-  const { desarrollos, isLoading: isLoadingDesarrollos } = useDesarrollos({
-    onSuccess: () => {},
-    onError: (error) => console.error("Error fetching desarrollos:", error)
-  });
+  const { desarrollos, isLoading: isLoadingDesarrollos } = useDesarrollos();
+  
   const { prototipos = [], isLoading: prototiposLoading } = usePrototipos({ 
     desarrolloId: selectedDesarrolloId !== 'global' ? selectedDesarrolloId : null
   });

@@ -10,6 +10,8 @@ export type Desarrollo = Tables<'desarrollos'>;
 
 interface UseDesarrollosOptions {
   empresa_id?: number;
+  onSuccess?: (data: Desarrollo[]) => void;
+  onError?: (error: Error) => void;
 }
 
 export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
@@ -50,7 +52,9 @@ export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
     queryKey: ['desarrollos', options.empresa_id, empresaId],
     queryFn: fetchDesarrollos,
     staleTime: 1000 * 60 * 5, // 5 minutos
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    onSuccess: options.onSuccess,
+    onError: options.onError
   });
 
   // Fix create function to handle field type issues
@@ -127,7 +131,7 @@ export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
   };
 
   return {
-    desarrollos,
+    desarrollos: desarrollos || [],
     isLoading,
     error,
     refetch,
@@ -140,5 +144,4 @@ export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
   };
 };
 
-// Add default export that returns the same hook
 export default useDesarrollos;

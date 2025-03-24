@@ -26,10 +26,7 @@ const TIPOS_PROPIEDADES = [
 export const useResourceFields = (resourceType: ResourceType, selectedStatus?: string | null) => {
   const [fields, setFields] = useState<FieldDefinition[]>([]);
   const { leads } = useLeads();
-  const { desarrollos } = useDesarrollos({
-    onSuccess: () => {},
-    onError: (error) => console.error("Error fetching desarrollos:", error)
-  });
+  const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos();
   
   // Obtener la lista de vendedores desde la tabla de usuarios

@@ -25,10 +25,8 @@ export const InterestSelector: React.FC<InterestSelectorProps> = ({
   );
   
   // Fetch data
-  const { desarrollos } = useDesarrollos({
-    onSuccess: () => {},
-    onError: (error) => console.error("Error fetching desarrollos:", error)
-  });
+  const { desarrollos } = useDesarrollos();
+  
   const { prototipos } = usePrototipos({
     desarrolloId: selectedDesarrolloId || undefined
   });

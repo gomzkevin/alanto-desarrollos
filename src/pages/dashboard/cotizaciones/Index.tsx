@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useCotizaciones, ExtendedCotizacion } from '@/hooks/useCotizaciones';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -34,7 +36,11 @@ import { formatCurrency } from '@/lib/utils';
 import useLeads from '@/hooks/useLeads';
 import useCotizaciones from '@/hooks/useCotizaciones';
 
-const CotizacionesPage = () => {
+interface CotizacionesPageProps {
+  // ... keep existing code (props interface)
+}
+
+const CotizacionesPage: React.FC<CotizacionesPageProps> = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
@@ -42,12 +48,9 @@ const CotizacionesPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const {
-    cotizaciones,
-    isLoading,
-    error,
-    refetch,
-  } = useCotizaciones({ empresa_id: empresaId });
+  const { cotizaciones, isLoading } = useCotizaciones({ 
+    withRelations: true 
+  });
 
   const { leads } = useLeads({ empresa_id: empresaId });
   const { desarrollos } = useDesarrollos({ empresa_id: empresaId });
@@ -93,6 +96,21 @@ const CotizacionesPage = () => {
         return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Vencida</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const renderCellContent = (cotizacion: ExtendedCotizacion, key: string) => {
+    switch (key) {
+      case 'monto_total':
+        const prototipo = cotizacion.prototipo;
+        const monto = prototipo ? prototipo.precio : 0;
+        return formatCurrency(monto);
+        
+      case 'estado':
+        return cotizacion.estado || 'pendiente';
+        
+      default:
+        return cotizacion[key];
     }
   };
 
@@ -162,7 +180,7 @@ const CotizacionesPage = () => {
                       <TableRow key={cotizacion.id} onClick={() => handleRowClick(cotizacion.id)} className="cursor-pointer hover:bg-muted">
                         <TableCell className="font-medium">{getLeadName(cotizacion.lead_id)}</TableCell>
                         <TableCell>{getDesarrolloName(cotizacion.desarrollo_id)}</TableCell>
-                        <TableCell>{formatCurrency(cotizacion.monto_total || 0)}</TableCell>
+                        <TableCell>{renderCellContent(cotizacion, 'monto_total')}</TableCell>
                         <TableCell>{getStatusBadge(cotizacion.estado || 'pendiente')}</TableCell>
                         <TableCell>{new Date(cotizacion.created_at).toLocaleDateString()}</TableCell>
                       </TableRow>

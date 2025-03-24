@@ -13,13 +13,13 @@ export interface ExtendedCotizacion extends Omit<Cotizacion, 'fecha_finiquito' |
     nombre: string;
     email?: string | null;
     telefono?: string | null; 
-    origen?: string | null; // Add the origen property
+    origen?: string | null;
   } | null;
   desarrollo?: {
     id: string;
     nombre: string;
     empresa_id: number;
-    ubicacion?: string | null; // Add the ubicacion property
+    ubicacion?: string | null;
   } | null;
   prototipo?: {
     id: string;
@@ -32,11 +32,15 @@ export interface ExtendedCotizacion extends Omit<Cotizacion, 'fecha_finiquito' |
   monto_finiquito?: number | null;
   usar_finiquito?: boolean | null;
   notas?: string | null;
+  // Additional calculated properties
+  monto_total?: number;
+  estado?: string;
 }
 
 type FetchCotizacionesOptions = {
   limit?: number;
   withRelations?: boolean;
+  empresa_id?: number;
 };
 
 export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
@@ -47,6 +51,9 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
   // Function to fetch cotizaciones
   const fetchCotizaciones = async (): Promise<ExtendedCotizacion[]> => {
     console.log('Fetching cotizaciones with options:', options, 'for empresa:', empresaId);
+    
+    // Use provided empresa_id or fall back to the user's empresaId
+    const effectiveEmpresaId = options.empresa_id || empresaId;
     
     try {
       // Build the basic query - we don't filter by empresa_id here since cotizaciones table doesn't have it
@@ -65,7 +72,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       }
       
       // If no cotizaciones or no empresa_id, return empty array or all cotizaciones
-      if (!cotizaciones || cotizaciones.length === 0 || !empresaId) {
+      if (!cotizaciones || cotizaciones.length === 0 || !effectiveEmpresaId) {
         console.log('No cotizaciones found or no empresa ID');
         return cotizaciones as ExtendedCotizacion[] || [];
       }
@@ -91,7 +98,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         // Filter cotizaciones that belong to the user's empresa
         // We do this by filtering desarrollos by empresa_id
         const empresaDesarrolloIds = desarrollos
-          .filter(d => d.empresa_id === empresaId)
+          .filter(d => d.empresa_id === effectiveEmpresaId)
           .map(d => d.id);
         
         // Only include cotizaciones whose desarrollo_id is in empresaDesarrolloIds
@@ -101,13 +108,18 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         
         console.log('Filtered cotizaciones by empresa:', filteredCotizaciones.length);
         
-        // Map related entities to cotizaciones
+        // Map related entities to cotizaciones and add calculated fields
         const extendedCotizaciones = filteredCotizaciones.map(cotizacion => {
+          const prototipo = prototipos.find(p => p.id === cotizacion.prototipo_id);
+          const monto_total = prototipo ? prototipo.precio : 0;
+          
           return {
             ...cotizacion,
             lead: leads.find(l => l.id === cotizacion.lead_id) || null,
             desarrollo: desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null,
-            prototipo: prototipos.find(p => p.id === cotizacion.prototipo_id) || null
+            prototipo: prototipo || null,
+            monto_total: monto_total,
+            estado: 'pendiente' // Default status
           } as ExtendedCotizacion;
         });
         
@@ -120,7 +132,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       const { data: desarrollos, error: desarrollosError } = await supabase
         .from('desarrollos')
         .select('id, empresa_id')
-        .eq('empresa_id', empresaId);
+        .eq('empresa_id', effectiveEmpresaId);
       
       if (desarrollosError) {
         console.error('Error fetching desarrollos:', desarrollosError);
@@ -135,7 +147,15 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       );
       
       console.log('Cotizaciones filtered by empresa:', filteredCotizaciones.length);
-      return filteredCotizaciones as ExtendedCotizacion[];
+      
+      // Add basic calculated fields for the table view
+      const extendedCotizaciones = filteredCotizaciones.map(cotizacion => ({
+        ...cotizacion,
+        monto_total: 0, // This will be populated when relations are fetched
+        estado: 'pendiente' // Default status
+      })) as ExtendedCotizacion[];
+      
+      return extendedCotizaciones;
     } catch (error) {
       console.error('Error in fetchCotizaciones:', error);
       throw error;
@@ -144,7 +164,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
 
   // Use React Query to fetch and cache the data
   const queryResult = useQuery({
-    queryKey: ['cotizaciones', limit, withRelations, empresaId],
+    queryKey: ['cotizaciones', limit, withRelations, options.empresa_id, empresaId],
     queryFn: fetchCotizaciones
   });
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DialogHeader } from './DialogHeader';
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
@@ -42,16 +41,12 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
     cotizacion.fecha_finiquito ? parseISO(cotizacion.fecha_finiquito) : undefined
   );
 
-  const { desarrollos } = useDesarrollos({
-    onSuccess: () => {},
-    onError: (error) => console.error("Error fetching desarrollos:", error)
-  });
+  const { desarrollos } = useDesarrollos();
   
   const { prototipos } = usePrototipos({ 
     desarrolloId: cotizacion.desarrollo_id 
   });
   
-  // Add this hook to get leads data
   const { leads = [] } = useLeads();
 
   const form = useForm({

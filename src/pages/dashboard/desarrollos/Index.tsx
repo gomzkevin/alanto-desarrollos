@@ -1,274 +1,142 @@
-
-import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
+import React, { useState } from 'react';
+import { useDesarrollos } from '@/hooks/useDesarrollos';
+import { useUserRole } from '@/hooks/useUserRole';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { PlusCircle, AlertCircle } from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useToast } from "@/hooks/use-toast"
-import { supabase } from '@/integrations/supabase/client';
-import { useDesarrollos } from '@/hooks/useDesarrollos';
-import { useUserRole } from '@/hooks/useUserRole';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import RequireSubscription from '@/components/auth/RequireSubscription';
+import { Button } from "@/components/ui/button"
+import { PlusCircle } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { MoreHorizontal } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
 
 interface DesarrolloFormData {
+  // Define required fields for DesarrolloFormData
   nombre: string;
   ubicacion: string;
   total_unidades: number;
   unidades_disponibles: number;
-  fecha_inicio: string;
+  // Add other fields as needed
 }
 
-const DesarrollosPage = () => {
+const DesarrollosPage: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
   const { empresaId } = useUserRole();
-  const navigate = useNavigate();
-
-  const {
-    desarrollos,
-    isLoading,
-    error,
-    refetch,
-  } = useDesarrollos({ empresa_id: empresaId });
-
-  const queryClient = useQueryClient();
   
-  // Fix the mutation setup
-  const createDesarrolloMutation = useMutation({
-    mutationFn: async (data: DesarrolloFormData) => {
-      const { data: response, error } = await supabase
-        .from('desarrollos')
-        .insert([data])
-        .select();
-
-      if (error) {
-        console.error("Error creating desarrollo:", error);
-        throw error;
-      }
-
-      return response;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['desarrollos'] });
-      refetch();
-    },
-  });
-
-  const openDialog = () => setIsDialogOpen(true);
-  const closeDialog = () => setIsDialogOpen(false);
-
-  // Fix the type issue in createDesarrollo
-  const createDesarrollo = async (formData: DesarrolloFormData) => {
+  const { desarrollos, isLoading, refetch } = useDesarrollos();
+  
+  // Fix the createDesarrollos function to correctly handle form data
+  const createDesarrollos = async (formData: DesarrolloFormData) => {
+    if (!empresaId) {
+      console.error('No empresa ID available');
+      return null;
+    }
+    
     try {
-      setIsSubmitting(true);
-      
-      // Ensure required fields have values
-      const preparedData = {
+      // Add the empresa_id to the form data
+      const dataToInsert = {
         ...formData,
-        fecha_inicio: formData.fecha_inicio || new Date().toISOString(),
-        empresa_id: empresaId,
-        total_unidades: formData.total_unidades || 0,
-        unidades_disponibles: formData.unidades_disponibles || 0
+        empresa_id: empresaId
       };
       
-      await createDesarrolloMutation.mutateAsync(preparedData);
+      const { data, error } = await supabase
+        .from('desarrollos')
+        .insert(dataToInsert)
+        .select();
+        
+      if (error) throw error;
       
-      toast({
-        title: "Desarrollo creado",
-        description: "El desarrollo ha sido creado exitosamente"
-      });
-      
-      setIsDialogOpen(false);
-    } catch (error: any) {
-      console.error("Error creating desarrollo:", error);
-      toast({
-        title: "Error",
-        description: `No se pudo crear el desarrollo: ${error.message}`,
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
+      refetch();
+      return data;
+    } catch (error) {
+      console.error('Error creating desarrollo:', error);
+      return null;
     }
   };
-
-  const handleRowClick = (desarrolloId: string) => {
-    navigate(`/dashboard/desarrollos/${desarrolloId}`);
+  
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return format(date, 'PPP', { locale: es });
   };
 
   return (
-    <RequireSubscription moduleName="Desarrollos">
-      <DashboardLayout>
-        <div className="container py-10">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold">Desarrollos</h1>
-            <Button onClick={openDialog} disabled={createDesarrolloMutation.isPending || isSubmitting}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Agregar Desarrollo
-            </Button>
-          </div>
-
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Lista de Desarrollos</CardTitle>
-              <CardDescription>
-                Administra tus desarrollos y su información.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="grid gap-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4">
-                      <Skeleton className="h-12 w-12 rounded-full" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-[250px]" />
-                        <Skeleton className="h-4 w-[200px]" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : error ? (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>
-                    {error.message || "Failed to fetch desarrollos."}
-                  </AlertDescription>
-                </Alert>
-              ) : desarrollos && desarrollos.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Ubicación</TableHead>
-                      <TableHead>Total Unidades</TableHead>
-                      <TableHead>Unidades Disponibles</TableHead>
-                      <TableHead>Fecha Inicio</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {desarrollos.map((desarrollo) => (
-                      <TableRow key={desarrollo.id} onClick={() => handleRowClick(desarrollo.id)} className="cursor-pointer hover:bg-muted">
-                        <TableCell className="font-medium">{desarrollo.nombre}</TableCell>
-                        <TableCell>{desarrollo.ubicacion}</TableCell>
-                        <TableCell>{desarrollo.total_unidades}</TableCell>
-                        <TableCell>{desarrollo.unidades_disponibles}</TableCell>
-                        <TableCell>{new Date(desarrollo.fecha_inicio).toLocaleDateString()}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Sin Desarrollos</AlertTitle>
-                  <AlertDescription>
-                    No hay desarrollos creados aún.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Dialog */}
-          {isDialogOpen && (
-            <div className="fixed inset-0 z-50 overflow-auto bg-black/50">
-              <div className="container flex items-center justify-center min-h-screen">
-                <Card className="max-w-md w-full">
-                  <CardHeader>
-                    <CardTitle>Crear Desarrollo</CardTitle>
-                    <CardDescription>
-                      Ingresa la información del nuevo desarrollo.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form
-                      onSubmit={async (e) => {
-                        e.preventDefault();
-                        const form = e.target as HTMLFormElement;
-                        const formData = {
-                          nombre: (form.querySelector('#nombre') as HTMLInputElement).value,
-                          ubicacion: (form.querySelector('#ubicacion') as HTMLInputElement).value,
-                          total_unidades: parseInt((form.querySelector('#total_unidades') as HTMLInputElement).value),
-                          unidades_disponibles: parseInt((form.querySelector('#unidades_disponibles') as HTMLInputElement).value),
-                          fecha_inicio: (form.querySelector('#fecha_inicio') as HTMLInputElement).value,
-                        };
-                        await createDesarrollo(formData);
-                      }}
-                    >
-                      <div className="grid gap-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="nombre">Nombre</Label>
-                          <Input id="nombre" type="text" required />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="ubicacion">Ubicación</Label>
-                          <Input id="ubicacion" type="text" required />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="total_unidades">Total Unidades</Label>
-                          <Input
-                            id="total_unidades"
-                            type="number"
-                            defaultValue={0}
-                            required
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="unidades_disponibles">Unidades Disponibles</Label>
-                          <Input
-                            id="unidades_disponibles"
-                            type="number"
-                            defaultValue={0}
-                            required
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="fecha_inicio">Fecha Inicio</Label>
-                          <Input id="fecha_inicio" type="date" required />
-                        </div>
-                        <Button type="submit" disabled={isSubmitting || createDesarrolloMutation.isPending}>
-                          {isSubmitting || createDesarrolloMutation.isPending ? "Creando..." : "Crear"}
-                        </Button>
-                      </div>
-                    </form>
-                    <Button
-                      variant="ghost"
-                      className="mt-4"
-                      onClick={closeDialog}
-                      disabled={isSubmitting || createDesarrolloMutation.isPending}
-                    >
-                      Cancelar
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-semibold">Desarrollos</h1>
+        <AdminResourceDialog
+          resourceType="desarrollos"
+          buttonText="Nuevo desarrollo"
+          buttonIcon={<PlusCircle className="mr-2 h-4 w-4" />}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
+      </div>
+      
+      <Table>
+        <TableCaption>Lista de desarrollos de la empresa</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">Nombre</TableHead>
+            <TableHead>Ubicación</TableHead>
+            <TableHead>Total Unidades</TableHead>
+            <TableHead>Unidades Disponibles</TableHead>
+            <TableHead>Fecha Inicio</TableHead>
+            <TableHead>Fecha Entrega</TableHead>
+            <TableHead className="text-right">Acciones</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {desarrollos?.map((desarrollo) => (
+            <TableRow key={desarrollo.id}>
+              <TableCell className="font-medium">{desarrollo.nombre}</TableCell>
+              <TableCell>{desarrollo.ubicacion}</TableCell>
+              <TableCell>{desarrollo.total_unidades}</TableCell>
+              <TableCell>{desarrollo.unidades_disponibles}</TableCell>
+              <TableCell>{desarrollo.fecha_inicio ? formatDate(desarrollo.fecha_inicio) : 'N/A'}</TableCell>
+              <TableCell>{desarrollo.fecha_entrega ? formatDate(desarrollo.fecha_entrega) : 'N/A'}</TableCell>
+              <TableCell className="text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Abrir menú</span>
+                      <MoreHorizontal className="h-4 w-4" />
                     </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          )}
-        </div>
-      </DashboardLayout>
-    </RequireSubscription>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                    <DropdownMenuItem>
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      Eliminar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
 

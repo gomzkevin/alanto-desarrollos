@@ -9,60 +9,67 @@ import { useUserRole } from '@/hooks/useUserRole';
 
 type ResourceKey = 'leads' | 'desarrollos' | 'prototipos' | 'unidades';
 
-// Fix the expected arguments error
 export const useResourceActions = (resource: ResourceKey) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { empresaId } = useUserRole();
   
-  // Obtener las funciones correctas según el tipo de recurso
+  // Get the appropriate hook functions based on resource type
+  const getLeadsFunctions = () => {
+    const { createLead, updateLead, deleteLead } = useLeads({ empresa_id: empresaId });
+    return { 
+      create: createLead, 
+      update: updateLead, 
+      delete: deleteLead 
+    };
+  };
+  
+  const getDesarrollosFunctions = () => {
+    const { createDesarrollo, updateDesarrollo, deleteDesarrollo } = useDesarrollos({ empresa_id: empresaId });
+    return { 
+      create: createDesarrollo, 
+      update: updateDesarrollo, 
+      delete: deleteDesarrollo 
+    };
+  };
+  
+  const getPrototiposFunctions = () => {
+    return { 
+      create: async (data: any) => {
+        console.log('Creating prototipo with data:', data);
+        // Implementation placeholder
+      }, 
+      update: async (id: string, data: any) => {
+        console.log('Updating prototipo with id:', id, 'and data:', data);
+        // Implementation placeholder
+      }, 
+      delete: async (id: string) => {
+        console.log('Deleting prototipo with id:', id);
+        // Implementation placeholder
+      } 
+    };
+  };
+  
+  const getUnidadesFunctions = () => {
+    const { createUnidad, updateUnidad, deleteUnidad } = useUnidades();
+    return { 
+      create: createUnidad, 
+      update: updateUnidad, 
+      delete: deleteUnidad 
+    };
+  };
+  
+  // Get the appropriate functions based on resource type
   const getActions = () => {
     switch (resource) {
       case 'leads':
-        const { createLead, updateLead, deleteLead } = useLeads({ empresa_id: empresaId }); // Pass empresaId here
-        return { 
-          create: createLead, 
-          update: updateLead, 
-          delete: deleteLead 
-        };
-        
+        return getLeadsFunctions();
       case 'desarrollos':
-        const { createDesarrollo, updateDesarrollo, deleteDesarrollo } = useDesarrollos({ empresa_id: empresaId });
-        return { 
-          create: createDesarrollo, 
-          update: updateDesarrollo, 
-          delete: deleteDesarrollo 
-        };
-        
+        return getDesarrollosFunctions();
       case 'prototipos':
-        const prototipoCrud = usePrototipos();
-        // Access the appropriate functions from the usePrototipos hook
-        return { 
-          create: async (data: any) => {
-            // Implementation of create function
-            console.log('Creating prototipo with data:', data);
-            // Add implementation when available
-          }, 
-          update: async (id: string, data: any) => {
-            // Implementation of update function
-            console.log('Updating prototipo with id:', id, 'and data:', data);
-            // Add implementation when available
-          }, 
-          delete: async (id: string) => {
-            // Implementation of delete function
-            console.log('Deleting prototipo with id:', id);
-            // Add implementation when available
-          } 
-        };
-        
+        return getPrototiposFunctions();
       case 'unidades':
-        const { createUnidad, updateUnidad, deleteUnidad } = useUnidades();
-        return { 
-          create: createUnidad, 
-          update: updateUnidad, 
-          delete: deleteUnidad 
-        };
-        
+        return getUnidadesFunctions();
       default:
         throw new Error(`Resource type ${resource} is not supported`);
     }
@@ -70,7 +77,7 @@ export const useResourceActions = (resource: ResourceKey) => {
   
   const actions = getActions();
   
-  // Función genérica para crear un recurso
+  // Generic function to create a resource
   const handleCreate = async (data: any) => {
     try {
       await actions.create(data);
@@ -88,7 +95,7 @@ export const useResourceActions = (resource: ResourceKey) => {
     }
   };
   
-  // Función genérica para actualizar un recurso
+  // Generic function to update a resource
   const handleUpdate = async (id: string, data: any) => {
     try {
       await actions.update(id, data);
@@ -106,7 +113,7 @@ export const useResourceActions = (resource: ResourceKey) => {
     }
   };
   
-  // Función genérica para eliminar un recurso
+  // Generic function to delete a resource
   const handleDelete = async (id: string) => {
     try {
       await actions.delete(id);
@@ -124,7 +131,7 @@ export const useResourceActions = (resource: ResourceKey) => {
     }
   };
   
-  // Función genérica para redireccionar a la página del recurso
+  // Generic function to redirect to the resource page
   const handleView = (id: string) => {
     navigate(`/dashboard/${resource}/${id}`);
   };
