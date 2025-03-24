@@ -55,7 +55,6 @@ export function InvitationAccept() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Clear error when typing
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };

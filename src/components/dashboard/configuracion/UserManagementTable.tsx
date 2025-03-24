@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -63,7 +62,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole, UserRole } from "@/hooks/useUserRole";
 import { signUpWithEmailPassword } from "@/services/authService";
 import { useOrganizationUsers } from "@/hooks/useOrganizationUsers";
-import { useInvitaciones, Invitacion } from "@/hooks/useInvitaciones";
+import { useInvitaciones, InvitationRole } from "@/hooks/useInvitaciones";
 import { useUserTransfer } from "@/hooks/useUserTransfer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -85,7 +84,7 @@ export function UserManagementTable() {
 
   const [newInvite, setNewInvite] = useState({
     email: "",
-    rol: "vendedor" as UserRole,
+    rol: "vendedor" as InvitationRole,
   });
 
   const [transferData, setTransferData] = useState({
@@ -123,7 +122,6 @@ export function UserManagementTable() {
     loading: transferLoading
   } = useUserTransfer();
 
-  // Handle user form validation
   const validateUserForm = () => {
     const errors: Record<string, string> = {};
     
@@ -147,7 +145,6 @@ export function UserManagementTable() {
     return Object.keys(errors).length === 0;
   };
 
-  // Handle invitation form validation
   const validateInviteForm = () => {
     const errors: Record<string, string> = {};
     
@@ -197,7 +194,6 @@ export function UserManagementTable() {
     }
   };
 
-  // Create a new user directly
   const createNewUser = async () => {
     if (!isAdmin()) {
       toast({
@@ -213,12 +209,11 @@ export function UserManagementTable() {
     }
 
     try {
-      // Pass the selected role to the signup function
       const authResult = await signUpWithEmailPassword(
         newUser.email, 
         newUser.password, 
         empresaId || undefined, 
-        newUser.rol as 'admin' | 'vendedor' | 'cliente'
+        newUser.rol === 'superadmin' ? 'admin' : newUser.rol as 'admin' | 'vendedor' | 'cliente'
       );
 
       if (!authResult.success) {
@@ -247,27 +242,27 @@ export function UserManagementTable() {
     }
   };
 
-  // Send invitation to new user
   const sendInvitation = async () => {
     if (!validateInviteForm()) {
       return;
     }
 
+    const invitationRole = newInvite.rol === 'superadmin' ? 'admin' as InvitationRole : newInvite.rol;
+    
     const result = await createInvitacion(
       newInvite.email, 
-      newInvite.rol as 'admin' | 'vendedor' | 'cliente'
+      invitationRole
     );
     
     if (result.success) {
       setNewInvite({
         email: "",
-        rol: "vendedor" as UserRole,
+        rol: "vendedor" as InvitationRole,
       });
       setIsInviteDialogOpen(false);
     }
   };
 
-  // Transfer user to another organization
   const handleTransferUser = async () => {
     if (!selectedUserId || transferData.targetEmpresaId === 0) {
       toast({
@@ -291,7 +286,6 @@ export function UserManagementTable() {
     }
   };
 
-  // Get transfer history for a user
   const handleViewTransferHistory = async (userId: string, userName: string) => {
     setSelectedUserId(userId);
     setSelectedUserName(userName);
@@ -301,13 +295,11 @@ export function UserManagementTable() {
     setIsTransferHistoryDialogOpen(true);
   };
 
-  // Get company name by ID
   const getCompanyName = (id: number): string => {
     const company = companies?.find(c => c.id === id);
     return company ? company.nombre : `Empresa #${id}`;
   };
 
-  // Render different content based on active tab
   const renderTabContent = () => {
     switch (activeTab) {
       case "invitaciones":
@@ -318,7 +310,6 @@ export function UserManagementTable() {
     }
   };
 
-  // Render users table
   const renderUsersTable = () => {
     if (isLoadingUsers) {
       return (
@@ -449,7 +440,6 @@ export function UserManagementTable() {
     );
   };
 
-  // Render invitations table
   const renderInvitationsTable = () => {
     if (isLoadingInvites) {
       return (
@@ -541,7 +531,6 @@ export function UserManagementTable() {
                         {(isPending && !isExpired) && (
                           <DropdownMenuItem 
                             onClick={() => {
-                              // Copy invitation URL to clipboard
                               const inviteUrl = `${window.location.origin}/auth/invitation?token=${invitacion.token}`;
                               navigator.clipboard.writeText(inviteUrl);
                               toast({
@@ -776,7 +765,6 @@ export function UserManagementTable() {
         
         {renderTabContent()}
         
-        {/* Transfer User Dialog */}
         <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -864,7 +852,6 @@ export function UserManagementTable() {
           </DialogContent>
         </Dialog>
         
-        {/* Transfer History Dialog */}
         <Dialog open={isTransferHistoryDialogOpen} onOpenChange={setIsTransferHistoryDialogOpen}>
           <DialogContent>
             <DialogHeader>

@@ -8,6 +8,7 @@ import { useResourceCounts } from './useResourceCounts';
 import { UserRole } from './useUserRole';
 
 export type InvitationRole = 'admin' | 'vendedor' | 'cliente';
+export type InvitationStatus = 'pendiente' | 'aceptada' | 'rechazada' | 'expirada';
 
 export interface Invitacion {
   id: string;
@@ -16,7 +17,7 @@ export interface Invitacion {
   rol: InvitationRole;
   token: string;
   creado_por: string | null;
-  estado: 'pendiente' | 'aceptada' | 'rechazada' | 'expirada';
+  estado: InvitationStatus;
   fecha_creacion: string;
   fecha_expiracion: string;
 }
@@ -60,7 +61,8 @@ export function useInvitaciones() {
 
       return (data || []).map(item => ({
         ...item,
-        rol: item.rol as InvitationRole
+        rol: item.rol as InvitationRole,
+        estado: item.estado as InvitationStatus
       }));
     },
     enabled: !!empresaId,
