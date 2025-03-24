@@ -85,15 +85,22 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
       console.log('Fetching subscription info for empresaId:', empresaId);
 
       try {
-        // Verificar suscripción activa para esta empresa
+        // IMPORTANTE: Verificar explícitamente que la query se está ejecutando con el parámetro correcto
+        console.log(`SUBSCRIPTION CHECK: Executing query to find active subscription for empresa_id=${empresaId}`);
+        
+        // Verificar suscripción activa para esta empresa - Query simplificada para depuración
         const { data: empresaSubscription, error: empresaError } = await supabase
           .from('subscriptions')
-          .select('*, subscription_plans(*)')
+          .select('id, status, empresa_id, plan_id, created_at, current_period_end, subscription_plans(id, name, price, interval, features)')
           .eq('empresa_id', empresaId)
           .eq('status', 'active')
           .maybeSingle();
 
-        console.log('Subscription query result:', { empresaSubscription, empresaError });
+        console.log('SUBSCRIPTION CHECK: Active subscription query result:', { 
+          empresaSubscription, 
+          empresaError,
+          queryParams: { empresa_id: empresaId, status: 'active' }
+        });
 
         if (empresaError) {
           console.error('Error fetching empresa subscription:', empresaError);
