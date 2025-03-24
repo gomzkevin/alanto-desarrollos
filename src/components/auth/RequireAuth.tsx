@@ -1,5 +1,5 @@
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState, useRef } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -10,29 +10,42 @@ interface RequireAuthProps {
 export default function RequireAuth({ children }: RequireAuthProps) {
   const { userId, authChecked, isLoading } = useUserRole();
   const location = useLocation();
-  const [redirectAttempted, setRedirectAttempted] = useState(false);
   const [shouldRedirect, setShouldRedirect] = useState(false);
+  const redirectAttemptedRef = useRef(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Reset the redirect state when location changes
   useEffect(() => {
-    // Reset the redirect attempt flag when location changes
-    setRedirectAttempted(false);
+    redirectAttemptedRef.current = false;
     setShouldRedirect(false);
+    
+    // Limpiar cualquier timeout pendiente
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
   }, [location.pathname]);
 
-  // Only check auth status when we have a definitive answer
+  // Check auth status only once we have definitive answer
   useEffect(() => {
-    if (!isLoading && authChecked && !userId && !redirectAttempted) {
+    if (!isLoading && authChecked && !userId && !redirectAttemptedRef.current) {
       console.log("Usuario no autenticado, redirigiendo a /auth");
-      setRedirectAttempted(true);
+      redirectAttemptedRef.current = true;
       
       // Use a timeout to avoid excessive history.replaceState() calls
-      const timer = setTimeout(() => {
+      // Increase the delay to prevent rapid redirects
+      timeoutRef.current = setTimeout(() => {
         setShouldRedirect(true);
-      }, 100);
+      }, 500);
       
-      return () => clearTimeout(timer);
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+      };
     }
-  }, [userId, authChecked, isLoading, redirectAttempted, location.pathname]);
+  }, [userId, authChecked, isLoading, location.pathname]);
 
   // Only return the Navigate component when shouldRedirect is true
   if (shouldRedirect) {

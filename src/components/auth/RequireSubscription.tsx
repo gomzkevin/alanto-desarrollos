@@ -1,11 +1,11 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import useAuth from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RequireSubscriptionProps {
   children: React.ReactNode;
@@ -27,28 +27,39 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   unauthorizedFallback
 }) => {
   const navigate = useNavigate();
-  const [redirectAttempted, setRedirectAttempted] = useState(false);
-  
-  // Utilizar el hook centralizado de autorización con los parámetros necesarios
   const { isAuthorized, isLoading } = useAuth({
     requiresSubscription: true,
     requiredModule: moduleName,
     redirectPath: redirectTo
   });
+  
+  const [redirectInProgress, setRedirectInProgress] = useState(false);
+  const redirectAttemptedRef = useRef(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Effect to handle unauthorized access
+  // Effect to handle unauthorized access with debounce
   useEffect(() => {
-    if (!isLoading && !isAuthorized && !redirectAttempted) {
-      setRedirectAttempted(true);
+    if (!isLoading && !isAuthorized && !redirectAttemptedRef.current) {
+      redirectAttemptedRef.current = true;
       
-      // Use timeout to prevent too many navigation actions
-      const timer = setTimeout(() => {
-        navigate(redirectTo);
-      }, 300);
+      // Prevent multiple redirects
+      if (!redirectInProgress) {
+        setRedirectInProgress(true);
+        
+        // Use timeout with increased delay to prevent rapid navigation
+        timeoutRef.current = setTimeout(() => {
+          navigate(redirectTo);
+        }, 500);
+      }
       
-      return () => clearTimeout(timer);
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+      };
     }
-  }, [isAuthorized, isLoading, navigate, redirectTo, redirectAttempted]);
+  }, [isAuthorized, isLoading, navigate, redirectTo, redirectInProgress]);
 
   // Mostrar estado de carga
   if (isLoading) {

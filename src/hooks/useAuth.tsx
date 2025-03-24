@@ -1,5 +1,6 @@
 
 import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -14,14 +15,16 @@ export const useAuth = ({ redirectTo, requiresSubscription, requiredModule, redi
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const { toast } = useToast();
   const lastAuthCheckRef = useRef(0);
+  const navigate = redirectTo ? useNavigate() : null;
+  const redirectAttemptsRef = useRef(0);
 
   useEffect(() => {
-    // Only run the auth check if we're not already processing it
-    // and if at least 2 seconds have passed since the last check
+    // Limitar la frecuencia de verificaciones de autenticación
     const now = Date.now();
     if (isProcessingAuth || (now - lastAuthCheckRef.current < 2000 && lastAuthCheckRef.current !== 0)) return;
 
@@ -42,18 +45,19 @@ export const useAuth = ({ redirectTo, requiresSubscription, requiredModule, redi
           
           // Check subscription authorization if required
           if (requiresSubscription && requiredModule && data.session?.user?.id) {
-            // This is a placeholder - in a real app, you would check if the user
-            // has access to the specified module based on their subscription
-            setIsAuthorized(true); // For now, always authorize
+            // Placeholder - implementación real verificaría acceso basado en suscripción
+            setIsAuthorized(true);
           } else {
-            setIsAuthorized(true); // No subscription check required
+            setIsAuthorized(true);
           }
         }
+        
+        setAuthChecked(true);
       } catch (err) {
         console.error("Error in useAuth:", err);
       } finally {
         setIsLoading(false);
-        // Add a small delay before allowing another auth check
+        // Añadir un pequeño retraso antes de permitir otra verificación
         setTimeout(() => {
           setIsProcessingAuth(false);
         }, 2000);
@@ -62,18 +66,18 @@ export const useAuth = ({ redirectTo, requiresSubscription, requiredModule, redi
     
     checkAuth();
     
-    // Set up auth state change listener with debounce
+    // Configurar listener de cambio de estado de autenticación con debounce
     let authChangeTimeout: NodeJS.Timeout;
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log("Auth state changed:", event);
         
-        // Clear any pending timeout
+        // Limpiar cualquier timeout pendiente
         if (authChangeTimeout) {
           clearTimeout(authChangeTimeout);
         }
         
-        // Debounce auth state changes
+        // Debounce para cambios de estado de autenticación
         authChangeTimeout = setTimeout(async () => {
           if (!isProcessingAuth) {
             setIsProcessingAuth(true);
@@ -81,11 +85,12 @@ export const useAuth = ({ redirectTo, requiresSubscription, requiredModule, redi
             
             setUserId(session?.user?.id || null);
             setUserEmail(session?.user?.email || null);
+            setAuthChecked(true);
             
-            // Release the processing lock after a delay
+            // Liberar el bloqueo de procesamiento después de un retraso
             setTimeout(() => setIsProcessingAuth(false), 2000);
           }
-        }, 500); // Debounce for 500ms
+        }, 500); // Debounce por 500ms
       }
     );
     
@@ -96,6 +101,28 @@ export const useAuth = ({ redirectTo, requiresSubscription, requiredModule, redi
       authListener.subscription.unsubscribe();
     };
   }, [isProcessingAuth, requiresSubscription, requiredModule]);
+
+  // Manejar la redirección solo cuando esté habilitada y sea necesaria
+  useEffect(() => {
+    if (
+      redirectTo && 
+      navigate && 
+      authChecked && 
+      !isLoading && 
+      !userId && 
+      redirectAttemptsRef.current < 2
+    ) {
+      redirectAttemptsRef.current += 1;
+      console.log(`Redirecting to ${redirectTo}, attempt: ${redirectAttemptsRef.current}`);
+      
+      // Usar un timeout para evitar llamadas excesivas a replaceState
+      const timer = setTimeout(() => {
+        navigate(redirectTo, { replace: true });
+      }, 100 * redirectAttemptsRef.current); // Incrementar delay con cada intento
+      
+      return () => clearTimeout(timer);
+    }
+  }, [redirectTo, navigate, authChecked, isLoading, userId]);
 
   // Handle login
   const login = async (email: string, password: string) => {
@@ -177,7 +204,7 @@ export const useAuth = ({ redirectTo, requiresSubscription, requiredModule, redi
     }
   };
 
-  return { userId, userEmail, isLoading, isAuthorized, login, signup, logout };
+  return { userId, userEmail, isLoading, isAuthorized, authChecked, login, signup, logout };
 };
 
 export default useAuth;
