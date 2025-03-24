@@ -12,10 +12,14 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
   description
 }) => {
   return (
-    <ShadcnDialogHeader>
-      <DialogTitle className="text-2xl font-bold text-indigo-900">{title}</DialogTitle>
+    <ShadcnDialogHeader className="pb-4 border-b border-indigo-100">
+      <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-700 to-indigo-500 bg-clip-text text-transparent">
+        {title}
+      </DialogTitle>
       {description && (
-        <DialogDescription className="text-gray-600 mt-1">{description}</DialogDescription>
+        <DialogDescription className="text-gray-600 mt-1 text-base">
+          {description}
+        </DialogDescription>
       )}
     </ShadcnDialogHeader>
   );

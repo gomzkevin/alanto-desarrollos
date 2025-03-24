@@ -929,6 +929,12 @@ export type Database = {
         }
         Returns: Json
       }
+      get_user_subscription_status: {
+        Args: {
+          user_uuid: string
+        }
+        Returns: Json
+      }
       has_active_subscription: {
         Args: {
           user_uuid: string

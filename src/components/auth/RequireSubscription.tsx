@@ -17,6 +17,7 @@ interface RequireSubscriptionProps {
 
 /**
  * Componente que asegura que la empresa del usuario tiene una suscripción activa
+ * Versión optimizada: Usa la nueva función SQL para verificar suscripciones
  */
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   children,
@@ -25,7 +26,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   loadingFallback,
   unauthorizedFallback
 }) => {
-  const { empresaId, userId, userRole } = useUserRole();
+  const { userId, empresaId, userRole } = useUserRole();
   
   // Agregar logs para depurar la carga de datos del usuario
   useEffect(() => {
@@ -36,7 +37,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
     });
   }, [userId, empresaId, userRole, moduleName]);
   
-  // Usar el hook de acceso a suscripciones
+  // Usar el hook de acceso a suscripciones - versión simplificada
   const { isAuthorized, isLoading, subscription } = useSubscriptionAccess({
     requiresSubscription: true,
     requiredModule: moduleName,
@@ -48,12 +49,12 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
     console.log(`RequireSubscription (${moduleName}) - subscription status:`, {
       isActive: subscription?.isActive,
       planName: subscription?.currentPlan?.name,
-      empresa: empresaId,
+      empresa: subscription?.empresa_id,
       userId
     });
     console.log(`RequireSubscription (${moduleName}) - isAuthorized:`, isAuthorized);
     console.log(`RequireSubscription (${moduleName}) - isLoading:`, isLoading);
-  }, [isAuthorized, isLoading, subscription, moduleName, empresaId, userId]);
+  }, [isAuthorized, isLoading, subscription, moduleName, userId]);
 
   // Mostrar estado de carga
   if (isLoading) {
