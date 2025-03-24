@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -26,7 +25,6 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-// Define which navigation items require an active subscription
 const REQUIRE_SUBSCRIPTION = [
   'Desarrollos',
   'Propiedades',
@@ -37,14 +35,12 @@ const REQUIRE_SUBSCRIPTION = [
 ];
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  // Always call hooks at the top level, regardless of any conditions
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [attemptedAuth, setAttemptedAuth] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { isLoading, userId, userEmail, userName, authChecked, isAdmin: isUserAdmin } = useUserRole();
   
-  // Always call this hook unconditionally at the top level
   const { subscriptionInfo } = useSubscriptionInfo();
   
   const getUserInitials = () => {
@@ -61,11 +57,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     return 'U';
   };
   
-  // Determine subscription warning outside of JSX
   const showSubscriptionWarning = isUserAdmin && userId && 
     (subscriptionInfo && (!subscriptionInfo.isActive || subscriptionInfo.isOverLimit));
   
-  // Check if subscription is active
   const hasActiveSubscription = subscriptionInfo && subscriptionInfo.isActive;
   
   useEffect(() => {
@@ -131,7 +125,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: 'Configuración', href: '/dashboard/configuracion', icon: Settings, current: location.pathname === '/dashboard/configuracion' },
   ];
 
-  // Filter navigation items based on subscription status
   const filteredNavigation = navigation.filter(item => 
     !item.requiresSubscription || hasActiveSubscription
   );
