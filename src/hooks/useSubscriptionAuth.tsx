@@ -25,7 +25,8 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
         userId,
         empresaId,
         isSubscriptionActive: subscriptionInfo.isActive,
-        moduleName: requiredModule
+        moduleName: requiredModule,
+        isAdmin: isAdmin()
       });
 
       // Verificación de empresa asignada
@@ -44,12 +45,20 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
       // Verificación de suscripción activa para módulos que lo requieren
       if (!subscriptionInfo.isActive) {
         console.log('Suscripción inactiva para módulo:', requiredModule);
+        
+        // Mensaje específico según si es admin o no
+        let message = isAdmin() 
+          ? "Tu empresa no tiene una suscripción activa. Por favor, activa la suscripción en configuración."
+          : "Tu empresa no tiene una suscripción activa. Por favor, contacta al administrador.";
+          
         const moduleText = requiredModule ? ` al módulo ${requiredModule}` : '';
+        
         toast({
           title: "Suscripción requerida",
-          description: `No tienes acceso${moduleText}. La empresa necesita una suscripción activa.`,
+          description: `No tienes acceso${moduleText}. ${message}`,
           variant: "destructive"
         });
+        
         navigate(redirectPath);
         setIsAuthorized(false);
         return;
@@ -59,7 +68,7 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
       console.log('Usuario autorizado para acceder al módulo:', requiredModule);
       setIsAuthorized(true);
     }
-  }, [userId, empresaId, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule]);
+  }, [userId, empresaId, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule, isAdmin]);
 
   // Devolver estado de autorización y carga
   return {
