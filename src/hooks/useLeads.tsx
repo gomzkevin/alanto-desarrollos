@@ -1,165 +1,112 @@
-
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from '@/components/ui/use-toast';
 
-export const LEAD_STATUS_OPTIONS = [
-  { value: 'nuevo', label: 'Nuevo' },
-  { value: 'contactado', label: 'Contactado' },
-  { value: 'interesado', label: 'Interesado' },
-  { value: 'calificado', label: 'Calificado' },
-  { value: 'negociación', label: 'En Negociación' },
-  { value: 'ganado', label: 'Ganado' },
-  { value: 'perdido', label: 'Perdido' },
-  { value: 'inactivo', label: 'Inactivo' }
-];
-
-export const LEAD_SUBSTATUS_OPTIONS = {
-  nuevo: [
-    { value: 'sin_contactar', label: 'Sin Contactar' },
-    { value: 'pendiente_validacion', label: 'Pendiente de Validación' }
-  ],
-  contactado: [
-    { value: 'mensaje_enviado', label: 'Mensaje Enviado' },
-    { value: 'llamada_realizada', label: 'Llamada Realizada' },
-    { value: 'reunión_agendada', label: 'Reunión Agendada' }
-  ],
-  interesado: [
-    { value: 'solicitó_información', label: 'Solicitó Información' },
-    { value: 'interesado_visitar', label: 'Interesado en Visitar' },
-    { value: 'evaluando_opciones', label: 'Evaluando Opciones' }
-  ],
-  calificado: [
-    { value: 'capacidad_compra', label: 'Capacidad de Compra' },
-    { value: 'intención_compra', label: 'Intención de Compra' },
-    { value: 'buscando_financiamiento', label: 'Buscando Financiamiento' }
-  ],
-  negociación: [
-    { value: 'enviada_cotización', label: 'Cotización Enviada' },
-    { value: 'negociando_terminos', label: 'Negociando Términos' },
-    { value: 'decidiendo', label: 'Tomando Decisión' }
-  ],
-  ganado: [
-    { value: 'contrato_firmado', label: 'Contrato Firmado' },
-    { value: 'anticipo_recibido', label: 'Anticipo Recibido' },
-    { value: 'venta_completada', label: 'Venta Completada' }
-  ],
-  perdido: [
-    { value: 'precio', label: 'Precio' },
-    { value: 'competencia', label: 'Competencia' },
-    { value: 'timing', label: 'Timing' },
-    { value: 'no_interesado', label: 'No Interesado' },
-    { value: 'sin_respuesta', label: 'Sin Respuesta' }
-  ],
-  inactivo: [
-    { value: 'fuera_mercado', label: 'Fuera del Mercado' },
-    { value: 'seguimiento_futuro', label: 'Seguimiento Futuro' },
-    { value: 'datos_incorrectos', label: 'Datos Incorrectos' }
-  ]
-};
-
-export const LEAD_ORIGIN_OPTIONS = [
-  { value: 'sitio_web', label: 'Sitio Web' },
-  { value: 'redes_sociales', label: 'Redes Sociales' },
-  { value: 'referido', label: 'Referido' },
-  { value: 'llamada', label: 'Llamada' },
-  { value: 'email', label: 'Email' },
-  { value: 'portal', label: 'Portal Inmobiliario' },
-  { value: 'evento', label: 'Evento' },
-  { value: 'otro', label: 'Otro' }
-];
-
-export interface LeadType {
+export interface Lead {
   id: string;
   nombre: string;
-  email: string;
-  telefono: string;
-  estado: string;
-  subestado: string;
-  origen: string;
-  interes_en: string;
-  notas: string;
-  agente: string;
-  empresa_id: number;
-  fecha_creacion: string;
-  ultimo_contacto: string;
+  email: string | null;
+  telefono: string | null;
+  estado: string | null;
+  subestado: string | null;
+  origen: string | null;
+  interes_en: string | null;
+  notas: string | null;
+  agente: string | null;
+  ultimo_contacto: string | null;
+  fecha_creacion: string | null;
+  empresa_id: number | null;
 }
-
-// Export LeadType as Lead for backward compatibility
-export type Lead = LeadType;
 
 interface UseLeadsOptions {
-  estado?: string;
   search?: string;
-  empresa_id?: number;
+  estado?: string;
+  origen?: string;
   limit?: number;
+  onSuccess?: (data: Lead[]) => void;
+  onError?: (error: Error) => void;
 }
 
-const useLeads = (options: UseLeadsOptions = {}) => {
+const DEFAULT_OPTIONS: UseLeadsOptions = {
+  onSuccess: () => {},
+  onError: () => {}
+};
+
+export const useLeads = (options: UseLeadsOptions = DEFAULT_OPTIONS) => {
   const { empresaId } = useUserRole();
   const queryClient = useQueryClient();
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   
-  const empresa_id = options.empresa_id || empresaId;
-
-  // Fetch leads
+  const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
+  const { search, estado, origen, limit } = mergedOptions;
+  
   const { data: leads = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['leads', empresa_id, options.estado, options.search, options.limit],
+    queryKey: ['leads', empresaId, search, estado, origen, limit],
     queryFn: async () => {
-      let query = supabase
-        .from('leads')
-        .select('*')
-        .eq('empresa_id', empresa_id)
-        .order('fecha_creacion', { ascending: false });
-
-      if (options.estado) {
-        query = query.eq('estado', options.estado);
-      }
-
-      if (options.search && options.search.length > 2) {
-        query = query.or(`nombre.ilike.%${options.search}%,email.ilike.%${options.search}%,telefono.ilike.%${options.search}%`);
-      }
-
-      if (options.limit) {
-        query = query.limit(options.limit);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
+      try {
+        let query = supabase
+          .from('leads')
+          .select('*')
+          .eq('empresa_id', empresaId)
+          .order('fecha_creacion', { ascending: false });
+        
+        if (search) {
+          query = query.or(`nombre.ilike.%${search}%,email.ilike.%${search}%,telefono.ilike.%${search}%`);
+        }
+        
+        if (estado) {
+          query = query.eq('estado', estado);
+        }
+        
+        if (origen) {
+          query = query.eq('origen', origen);
+        }
+        
+        if (limit) {
+          query = query.limit(limit);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        
+        return data as Lead[];
+      } catch (error: any) {
+        console.error('Error fetching leads:', error);
         throw new Error(error.message);
       }
-
-      return data || [];
     },
-    enabled: !!empresa_id,
+    enabled: !!empresaId,
+    ...mergedOptions
   });
-
-  // Create lead
+  
   const createLead = useMutation({
-    mutationFn: async (newLead: any) => {
-      const { data, error } = await supabase
-        .from('leads')
-        .insert([{ ...newLead, empresa_id: empresa_id }])
-        .select()
-        .single();
-
-      if (error) {
+    mutationFn: async (newLead: Omit<Lead, 'id' | 'fecha_creacion'>) => {
+      try {
+        const { data, error } = await supabase
+          .from('leads')
+          .insert([{ ...newLead, empresa_id: empresaId }])
+          .select()
+          .single();
+          
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        return data as Lead;
+      } catch (error: any) {
+        console.error('Error creating lead:', error);
         throw new Error(error.message);
       }
-
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       toast({
         title: "Lead creado",
-        description: "El lead ha sido creado exitosamente.",
+        description: "El lead se ha creado correctamente",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: `No se pudo crear el lead: ${error.message}`,
@@ -168,30 +115,34 @@ const useLeads = (options: UseLeadsOptions = {}) => {
     },
   });
 
-  // Update lead
   const updateLead = useMutation({
-    mutationFn: async ({ id, ...updateData }: { id: string; [key: string]: any }) => {
-      const { data, error } = await supabase
-        .from('leads')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
+    mutationFn: async (lead: Lead) => {
+      try {
+        const { data, error } = await supabase
+          .from('leads')
+          .update(lead)
+          .eq('id', lead.id)
+          .select()
+          .single();
+          
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        return data as Lead;
+      } catch (error: any) {
+        console.error('Error updating lead:', error);
         throw new Error(error.message);
       }
-
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       toast({
         title: "Lead actualizado",
-        description: "El lead ha sido actualizado exitosamente.",
+        description: "El lead se ha actualizado correctamente",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: `No se pudo actualizar el lead: ${error.message}`,
@@ -200,28 +151,32 @@ const useLeads = (options: UseLeadsOptions = {}) => {
     },
   });
 
-  // Delete lead
   const deleteLead = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('leads')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
+      try {
+        const { error } = await supabase
+          .from('leads')
+          .delete()
+          .eq('id', id);
+          
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        return id;
+      } catch (error: any) {
+        console.error('Error deleting lead:', error);
         throw new Error(error.message);
       }
-
-      return id;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       toast({
         title: "Lead eliminado",
-        description: "El lead ha sido eliminado exitosamente.",
+        description: "El lead se ha eliminado correctamente",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
         description: `No se pudo eliminar el lead: ${error.message}`,
@@ -229,28 +184,7 @@ const useLeads = (options: UseLeadsOptions = {}) => {
       });
     },
   });
-
-  // Helper functions to get labels
-  const getStatusLabel = (status: string | null) => {
-    if (!status) return '';
-    const statusOption = LEAD_STATUS_OPTIONS.find(opt => opt.value === status);
-    return statusOption ? statusOption.label : status;
-  };
-
-  const getSubstatusLabel = (status: string | null, substatus: string | null) => {
-    if (!status || !substatus) return '';
-    
-    const substatusOptions = LEAD_SUBSTATUS_OPTIONS[status as keyof typeof LEAD_SUBSTATUS_OPTIONS] || [];
-    const option = substatusOptions.find(opt => opt.value === substatus);
-    return option ? option.label : substatus;
-  };
-
-  const getOriginLabel = (origin: string | null) => {
-    if (!origin) return '';
-    const originOption = LEAD_ORIGIN_OPTIONS.find(opt => opt.value === origin);
-    return originOption ? originOption.label : origin;
-  };
-
+  
   return {
     leads,
     isLoading,
@@ -258,14 +192,9 @@ const useLeads = (options: UseLeadsOptions = {}) => {
     refetch,
     createLead,
     updateLead,
-    deleteLead,
-    selectedStatus,
-    setSelectedStatus,
-    statusOptions: LEAD_STATUS_OPTIONS,
-    getStatusLabel,
-    getSubstatusLabel,
-    getOriginLabel
+    deleteLead
   };
 };
 
 export default useLeads;
+export type { Lead };

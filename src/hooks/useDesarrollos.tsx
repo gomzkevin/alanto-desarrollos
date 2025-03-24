@@ -3,13 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from '@/components/ui/use-toast';
-import { Tables } from '@/integrations/supabase/types';
+import { Tables, Json } from '@/integrations/supabase/types';
 
-// Define the interface with all required fields to match the database structure
+// Define a complete interface for Desarrollo with all properties from the database
 export interface Desarrollo {
   id: string;
   nombre: string;
-  descripcion: string;
+  descripcion: string | null;
   ubicacion: string;
   latitud?: number | null;
   longitud?: number | null;
@@ -17,23 +17,23 @@ export interface Desarrollo {
   fecha_inicio?: string | null;
   fecha_finalizacion_estimada?: string | null;
   empresa_id: number;
-  user_id: string;
+  user_id?: string | null;
   total_unidades: number;
   unidades_disponibles: number;
-  avance_porcentaje: number;
-  comision_operador: number;
-  moneda: string;
+  avance_porcentaje: number | null;
+  comision_operador: number | null;
+  moneda: string | null;
   fecha_entrega: string | null;
-  adr_base: number;
-  ocupacion_anual: number;
-  es_impuestos_porcentaje: boolean;
-  impuestos: number;
-  es_gastos_variables_porcentaje: boolean;
-  gastos_variables: number;
-  gastos_fijos: number;
-  es_gastos_fijos_porcentaje: boolean;
-  es_mantenimiento_porcentaje: boolean;
-  mantenimiento_valor: number;
+  adr_base: number | null;
+  ocupacion_anual: number | null;
+  es_impuestos_porcentaje: boolean | null;
+  impuestos: number | null;
+  es_gastos_variables_porcentaje: boolean | null;
+  gastos_variables: number | null;
+  gastos_fijos: number | null;
+  es_gastos_fijos_porcentaje: boolean | null;
+  es_mantenimiento_porcentaje: boolean | null;
+  mantenimiento_valor: number | null;
   imagen_url: string | null;
   amenidades: string[] | null;
   created_at?: string;
@@ -90,8 +90,8 @@ export const useDesarrollos = (options: UseDesarrollosOptions = DEFAULT_OPTIONS)
           nombre: desarrollo.nombre,
           descripcion: desarrollo.descripcion || '',
           ubicacion: desarrollo.ubicacion,
-          latitud: desarrollo.latitud !== undefined ? desarrollo.latitud : null,
-          longitud: desarrollo.longitud !== undefined ? desarrollo.longitud : null,
+          latitud: desarrollo.latitud || null,
+          longitud: desarrollo.longitud || null,
           estado: desarrollo.estado || null,
           fecha_inicio: desarrollo.fecha_inicio || null,
           fecha_finalizacion_estimada: desarrollo.fecha_finalizacion_estimada || null,
@@ -134,11 +134,25 @@ export const useDesarrollos = (options: UseDesarrollosOptions = DEFAULT_OPTIONS)
           empresa_id: empresaId,
         };
         
-        // We need to be explicit about what we're inserting
-        // to ensure it matches the expected database structure
+        // Normalize data for the insert operation
+        const dataToInsert = {
+          nombre: desarrolloWithEmpresa.nombre || '',
+          ubicacion: desarrolloWithEmpresa.ubicacion || '',
+          descripcion: desarrolloWithEmpresa.descripcion || '',
+          total_unidades: desarrolloWithEmpresa.total_unidades || 0,
+          unidades_disponibles: desarrolloWithEmpresa.unidades_disponibles || 0,
+          empresa_id: desarrolloWithEmpresa.empresa_id,
+          // Include other fields with proper defaults
+          avance_porcentaje: desarrolloWithEmpresa.avance_porcentaje || 0,
+          moneda: desarrolloWithEmpresa.moneda || 'MXN',
+          user_id: desarrolloWithEmpresa.user_id || null,
+          imagen_url: desarrolloWithEmpresa.imagen_url || null,
+          amenidades: desarrolloWithEmpresa.amenidades || null
+        };
+        
         const { data, error } = await supabase
           .from('desarrollos')
-          .insert([desarrolloWithEmpresa])
+          .insert([dataToInsert])
           .select()
           .single();
           
