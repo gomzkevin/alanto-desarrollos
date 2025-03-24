@@ -133,7 +133,11 @@ export function UserManagementTable() {
         }
 
         console.log("Users fetched:", data?.length);
-        setUsers(data || []);
+        // Cast the rol string to UserRole type
+        setUsers(data?.map(user => ({
+          ...user,
+          rol: user.rol as UserRole
+        })) || []);
       } catch (error) {
         console.error("Error fetching users:", error);
         toast({
@@ -188,7 +192,8 @@ export function UserManagementTable() {
   };
 
   const handleRoleChange = (value: string) => {
-    setNewUser((prev) => ({ ...prev, rol: value }));
+    // Ensure the value is cast to UserRole type
+    setNewUser((prev) => ({ ...prev, rol: value as UserRole }));
   };
 
   const createNewUser = async () => {
@@ -289,7 +294,7 @@ export function UserManagementTable() {
             .from('usuarios')
             .update({
               nombre: newUser.nombre,
-              rol: newUser.rol, // Ensure role is explicitly set
+              rol: newUser.rol, // This is already properly typed as UserRole
               activo: true,
               empresa_id: empresaId
             })
@@ -310,7 +315,7 @@ export function UserManagementTable() {
             auth_id: authUserId,
             nombre: newUser.nombre,
             email: newUser.email,
-            rol: newUser.rol, // Ensure role is explicitly set
+            rol: newUser.rol, // This is already properly typed as UserRole
             empresa_id: empresaId,
             activo: true
           };
@@ -345,7 +350,7 @@ export function UserManagementTable() {
       setNewUser({
         nombre: "",
         email: "",
-        rol: "vendedor",
+        rol: "vendedor" as UserRole,
         password: "",
       });
       setIsNewUserDialogOpen(false);
@@ -357,7 +362,11 @@ export function UserManagementTable() {
         .order('fecha_creacion', { ascending: false });
 
       if (!error) {
-        setUsers(data || []);
+        // Cast roles to UserRole type when setting users
+        setUsers(data?.map(user => ({
+          ...user,
+          rol: user.rol as UserRole
+        })) || []);
       }
     } catch (error: any) {
       console.error("Error creating user:", error);

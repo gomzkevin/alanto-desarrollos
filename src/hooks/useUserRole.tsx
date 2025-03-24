@@ -64,7 +64,7 @@ export const useUserRole = () => {
         
         if (userData) {
           console.log('User data loaded:', userData);
-          // Usar directamente el rol del usuario (convertir 'admin' con is_company_admin a 'admin')
+          // Explicit cast string role to UserRole type
           const roleToUse: UserRole = userData.rol as UserRole;
           
           setUserRole(roleToUse);
@@ -109,7 +109,7 @@ export const useUserRole = () => {
         
         if (!error && data) {
           console.log('User data from auth change:', data);
-          // Usar directamente el rol del usuario
+          // Explicit cast string role to UserRole type
           const roleToUse: UserRole = data.rol as UserRole;
           
           setUserRole(roleToUse);
