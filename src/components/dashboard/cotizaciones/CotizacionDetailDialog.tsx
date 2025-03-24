@@ -81,7 +81,7 @@ const getAmenityIcon = (amenityId: string) => {
     "wifi": { icon: <Wifi className="h-3.5 w-3.5 mr-1" />, label: "WiFi" }
   };
 
-  return amenityMap[amenidadId] || { icon: <Check className="h-3.5 w-3.5 mr-1" />, label: amenityId };
+  return amenityMap[amenityId] || { icon: <Check className="h-3.5 w-3.5 mr-1" />, label: amenityId };
 };
 
 const CotizacionDetailDialog = ({ 
