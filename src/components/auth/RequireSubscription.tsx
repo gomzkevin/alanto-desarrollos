@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
+import { useSubscriptionAuth } from '@/hooks/useSubscriptionAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 
 interface RequireSubscriptionProps {
@@ -17,7 +17,7 @@ interface RequireSubscriptionProps {
 
 /**
  * Componente que asegura que la empresa del usuario tiene una suscripción activa
- * Versión optimizada: Usa la nueva función SQL para verificar suscripciones
+ * Versión simplificada: usa el nuevo hook de autorización de suscripciones
  */
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   children,
@@ -28,9 +28,9 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
 }) => {
   const { userId, empresaId, userRole, isAdmin, isSuperAdmin } = useUserRole();
   
-  // Agregar logs para depurar la carga de datos del usuario
+  // Logs para depuración
   useEffect(() => {
-    console.log(`RequireSubscription for ${moduleName} - User data:`, {
+    console.log(`RequireSubscription (${moduleName}) - User data:`, {
       userId,
       empresaId,
       userRole,
@@ -39,24 +39,22 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
     });
   }, [userId, empresaId, userRole, moduleName, isAdmin, isSuperAdmin]);
   
-  // Usar el hook de acceso a suscripciones - versión simplificada
-  const { isAuthorized, isLoading, subscription } = useSubscriptionAccess({
+  // Usar el hook de autorización de suscripciones
+  const { isAuthorized, isLoading, subscription } = useSubscriptionAuth({
     requiresSubscription: true,
     requiredModule: moduleName,
     redirectPath: redirectTo
   });
   
-  // Console logs para depuración
+  // Logs de depuración
   useEffect(() => {
-    console.log(`RequireSubscription (${moduleName}) - subscription status:`, {
-      isActive: subscription?.isActive,
-      planName: subscription?.currentPlan?.name,
-      empresa: subscription?.empresa_id,
-      userId
+    console.log(`RequireSubscription (${moduleName}) - Estado de autorización:`, {
+      isAuthorized,
+      isLoading,
+      subscriptionActive: subscription?.isActive,
+      planName: subscription?.currentPlan?.name
     });
-    console.log(`RequireSubscription (${moduleName}) - isAuthorized:`, isAuthorized);
-    console.log(`RequireSubscription (${moduleName}) - isLoading:`, isLoading);
-  }, [isAuthorized, isLoading, subscription, moduleName, userId]);
+  }, [isAuthorized, isLoading, subscription, moduleName]);
 
   // Mostrar estado de carga
   if (isLoading) {
