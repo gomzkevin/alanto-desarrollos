@@ -53,8 +53,10 @@ export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
     queryFn: fetchDesarrollos,
     staleTime: 1000 * 60 * 5, // 5 minutos
     refetchOnWindowFocus: false,
-    onSuccess: options.onSuccess,
-    onError: options.onError
+    meta: {
+      onSuccess: options.onSuccess,
+      onError: options.onError
+    }
   });
 
   // Fix create function to handle field type issues

@@ -1,31 +1,22 @@
 import React, { useState } from 'react';
-import { useDesarrollos } from '@/hooks/useDesarrollos';
-import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, Filter, Eye, Plus, Building, Home } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
-import { format } from 'date-fns';
-import useLeads, { LEAD_STATUS_OPTIONS } from '@/hooks/useLeads';
-import { usePrototipos } from '@/hooks/usePrototipos';
-import { useUserRole } from '@/hooks';
+import { Button } from "@/components/ui/button";
+import { AlertCircle, Info, MoreVertical, PlusCircle, Search, SlidersHorizontal } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import RequireSubscription from "@/components/auth/RequireSubscription";
+import ResourceDialog from "@/components/dashboard/ResourceDialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import useLeads from "@/hooks/useLeads";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useNavigate } from "react-router-dom";
+import { useDesarrollos } from "@/hooks/useDesarrollos";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 const getBadgeVariant = (estado: string) => {
   switch (estado?.toLowerCase()) {

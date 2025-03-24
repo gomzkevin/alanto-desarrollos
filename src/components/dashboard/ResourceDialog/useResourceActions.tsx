@@ -34,19 +34,11 @@ export const useResourceActions = (resource: ResourceKey) => {
   };
   
   const getPrototiposFunctions = () => {
+    const { createPrototipo, updatePrototipo, deletePrototipo } = usePrototipos();
     return { 
-      create: async (data: any) => {
-        console.log('Creating prototipo with data:', data);
-        // Implementation placeholder
-      }, 
-      update: async (id: string, data: any) => {
-        console.log('Updating prototipo with id:', id, 'and data:', data);
-        // Implementation placeholder
-      }, 
-      delete: async (id: string) => {
-        console.log('Deleting prototipo with id:', id);
-        // Implementation placeholder
-      } 
+      create: createPrototipo, 
+      update: updatePrototipo, 
+      delete: deletePrototipo 
     };
   };
   
@@ -80,11 +72,12 @@ export const useResourceActions = (resource: ResourceKey) => {
   // Generic function to create a resource
   const handleCreate = async (data: any) => {
     try {
-      await actions.create(data);
+      const result = await actions.create(data);
       toast({
         title: `${resource.slice(0, -1)} creado`,
         description: `El ${resource.slice(0, -1)} ha sido creado exitosamente`
       });
+      return result;
     } catch (error: any) {
       console.error(`Error al crear ${resource.slice(0, -1)}:`, error);
       toast({
@@ -92,17 +85,19 @@ export const useResourceActions = (resource: ResourceKey) => {
         description: `No se pudo crear el ${resource.slice(0, -1)}: ${error.message}`,
         variant: "destructive"
       });
+      throw error;
     }
   };
   
   // Generic function to update a resource
   const handleUpdate = async (id: string, data: any) => {
     try {
-      await actions.update(id, data);
+      const result = await actions.update(id, data);
       toast({
         title: `${resource.slice(0, -1)} actualizado`,
         description: `El ${resource.slice(0, -1)} ha sido actualizado exitosamente`
       });
+      return result;
     } catch (error: any) {
       console.error(`Error al actualizar ${resource.slice(0, -1)}:`, error);
       toast({
@@ -110,6 +105,7 @@ export const useResourceActions = (resource: ResourceKey) => {
         description: `No se pudo actualizar el ${resource.slice(0, -1)}: ${error.message}`,
         variant: "destructive"
       });
+      throw error;
     }
   };
   
@@ -128,6 +124,7 @@ export const useResourceActions = (resource: ResourceKey) => {
         description: `No se pudo eliminar el ${resource.slice(0, -1)}: ${error.message}`,
         variant: "destructive"
       });
+      throw error;
     }
   };
   

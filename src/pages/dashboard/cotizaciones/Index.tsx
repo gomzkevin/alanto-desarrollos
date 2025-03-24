@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCotizaciones, ExtendedCotizacion } from '@/hooks/useCotizaciones';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useDesarrollos } from '@/hooks/useDesarrollos';
+import useLeads from '@/hooks/useLeads';
 import {
   Card,
   CardHeader,
@@ -11,7 +13,6 @@ import {
   CardContent,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -25,30 +26,20 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { PlusCircle, AlertCircle, Search } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
-import { supabase } from '@/integrations/supabase/client';
-import { useDesarrollos } from '@/hooks/useDesarrollos';
-import { useUserRole } from '@/hooks/useUserRole';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import RequireSubscription from '@/components/auth/RequireSubscription';
 import CotizacionDialog from '@/components/dashboard/ResourceDialog/CotizacionDialog';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import useLeads from '@/hooks/useLeads';
-import useCotizaciones from '@/hooks/useCotizaciones';
 
-interface CotizacionesPageProps {
-  // ... keep existing code (props interface)
-}
-
-const CotizacionesPage: React.FC<CotizacionesPageProps> = () => {
+const CotizacionesPage: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   const { empresaId } = useUserRole();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
-  const { cotizaciones, isLoading } = useCotizaciones({ 
+  const { cotizaciones, isLoading, error, refetch } = useCotizaciones({ 
     withRelations: true 
   });
 
@@ -99,19 +90,18 @@ const CotizacionesPage: React.FC<CotizacionesPageProps> = () => {
     }
   };
 
-  const renderCellContent = (cotizacion: ExtendedCotizacion, key: string) => {
-    switch (key) {
-      case 'monto_total':
-        const prototipo = cotizacion.prototipo;
-        const monto = prototipo ? prototipo.precio : 0;
-        return formatCurrency(monto);
-        
-      case 'estado':
-        return cotizacion.estado || 'pendiente';
-        
-      default:
-        return cotizacion[key];
+  const renderCellContent = (cotizacion: ExtendedCotizacion, key: keyof ExtendedCotizacion) => {
+    if (key === 'monto_total') {
+      const prototipo = cotizacion.prototipo;
+      const monto = prototipo ? prototipo.precio : 0;
+      return formatCurrency(monto);
     }
+    
+    if (key === 'estado') {
+      return cotizacion.estado || 'pendiente';
+    }
+    
+    return cotizacion[key];
   };
 
   return (
@@ -161,7 +151,7 @@ const CotizacionesPage: React.FC<CotizacionesPageProps> = () => {
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription>
-                    {error.message || "Failed to fetch cotizaciones."}
+                    {error instanceof Error ? error.message : "Failed to fetch cotizaciones."}
                   </AlertDescription>
                 </Alert>
               ) : filteredCotizaciones && filteredCotizaciones.length > 0 ? (
@@ -180,8 +170,8 @@ const CotizacionesPage: React.FC<CotizacionesPageProps> = () => {
                       <TableRow key={cotizacion.id} onClick={() => handleRowClick(cotizacion.id)} className="cursor-pointer hover:bg-muted">
                         <TableCell className="font-medium">{getLeadName(cotizacion.lead_id)}</TableCell>
                         <TableCell>{getDesarrolloName(cotizacion.desarrollo_id)}</TableCell>
-                        <TableCell>{renderCellContent(cotizacion, 'monto_total')}</TableCell>
-                        <TableCell>{getStatusBadge(cotizacion.estado || 'pendiente')}</TableCell>
+                        <TableCell>{renderCellContent(cotizacion, 'monto_total' as keyof ExtendedCotizacion)}</TableCell>
+                        <TableCell>{getStatusBadge(renderCellContent(cotizacion, 'estado' as keyof ExtendedCotizacion) as string)}</TableCell>
                         <TableCell>{new Date(cotizacion.created_at).toLocaleDateString()}</TableCell>
                       </TableRow>
                     ))}
