@@ -52,14 +52,14 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useUserRole, UserRole } from "@/hooks/useUserRole";
 import { signUpWithEmailPassword } from "@/services/authService";
 
 type User = {
   id: string;
   nombre: string;
   email: string;
-  rol: string;
+  rol: UserRole;
   activo: boolean;
   fecha_creacion: string;
   empresa_id?: number;
@@ -73,7 +73,7 @@ export function UserManagementTable() {
   const [newUser, setNewUser] = useState({
     nombre: "",
     email: "",
-    rol: "vendedor",
+    rol: "vendedor" as UserRole,
     password: "",
   });
   const [activeSubscription, setActiveSubscription] = useState<any>(null);
@@ -523,7 +523,7 @@ export function UserManagementTable() {
                 <Label htmlFor="rol">Rol</Label>
                 <Select 
                   value={newUser.rol}
-                  onValueChange={handleRoleChange}
+                  onValueChange={(value) => setNewUser(prev => ({ ...prev, rol: value as UserRole }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un rol" />
@@ -531,6 +531,7 @@ export function UserManagementTable() {
                   <SelectContent>
                     <SelectItem value="admin">Administrador</SelectItem>
                     <SelectItem value="vendedor">Vendedor</SelectItem>
+                    <SelectItem value="cliente">Cliente</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -3,21 +3,21 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
+export type UserRole = 'superadmin' | 'admin' | 'vendedor' | 'cliente';
+
 interface UserData {
   id: string;
   email: string;
-  role: string;
+  role: UserRole;
   name?: string;
-  isAdmin?: boolean;
   empresaId?: number;
 }
 
 export const useUserRole = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [empresaId, setEmpresaId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
@@ -64,15 +64,13 @@ export const useUserRole = () => {
         
         if (userData) {
           console.log('User data loaded:', userData);
-          setUserRole(userData.rol);
+          // Usar directamente el rol del usuario (convertir 'admin' con is_company_admin a 'admin')
+          const roleToUse: UserRole = userData.rol as UserRole;
+          
+          setUserRole(roleToUse);
           setUserName(userData.nombre);
           
-          // Set isAdmin based on is_company_admin flag or role being 'admin'
-          const adminStatus = userData.is_company_admin || userData.rol === 'admin';
-          console.log('Admin status:', adminStatus);
-          setIsAdmin(adminStatus);
-          
-          // Important: Set empresaId for organization-based access
+          // Establecer empresaId para acceso basado en organización
           setEmpresaId(userData.empresa_id);
           console.log('Empresa ID set:', userData.empresa_id);
         } else {
@@ -111,15 +109,13 @@ export const useUserRole = () => {
         
         if (!error && data) {
           console.log('User data from auth change:', data);
-          setUserRole(data.rol);
+          // Usar directamente el rol del usuario
+          const roleToUse: UserRole = data.rol as UserRole;
+          
+          setUserRole(roleToUse);
           setUserName(data.nombre);
           
-          // Set isAdmin based on is_company_admin flag or role being 'admin'
-          const adminStatus = data.is_company_admin || data.rol === 'admin';
-          console.log('Admin status after auth change:', adminStatus);
-          setIsAdmin(adminStatus);
-          
-          // Important: Set empresaId for organization-based access
+          // Establecer empresaId para acceso basado en organización
           setEmpresaId(data.empresa_id);
           console.log('Empresa ID after auth change:', data.empresa_id);
         }
@@ -129,7 +125,6 @@ export const useUserRole = () => {
         setUserEmail(null);
         setUserRole(null);
         setUserName(null);
-        setIsAdmin(false);
         setEmpresaId(null);
       }
     });
@@ -141,11 +136,15 @@ export const useUserRole = () => {
 
   // Helper methods
   const isUserAdmin = () => {
-    return isAdmin;
+    return userRole === 'admin' || userRole === 'superadmin';
+  };
+
+  const isSuperAdmin = () => {
+    return userRole === 'superadmin';
   };
 
   const canCreateResource = () => {
-    return isAdmin || userRole === 'vendedor';
+    return isUserAdmin() || userRole === 'vendedor';
   };
 
   return {
@@ -154,6 +153,7 @@ export const useUserRole = () => {
     userRole,
     userName,
     isAdmin: isUserAdmin,
+    isSuperAdmin,
     canCreateResource,
     empresaId,
     isLoading,
