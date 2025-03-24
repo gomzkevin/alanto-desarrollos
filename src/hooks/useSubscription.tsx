@@ -106,13 +106,22 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
         } 
         
         // Si no hay suscripción activa, verificar específicamente por qué la empresa no tiene suscripción
-        console.log(`Empresa ID ${empresaId} has no active subscription. Checking all subscriptions:`);
+        console.log(`Empresa ID ${empresaId} has no active subscription. Checking ALL subscriptions for this empresa (including inactive):`);
         const { data: allSubs, error: allSubsError } = await supabase
           .from('subscriptions')
           .select('id, status, empresa_id, plan_id, created_at, subscription_plans(name)')
           .eq('empresa_id', empresaId);
           
         console.log(`All subscriptions for empresa ${empresaId}:`, allSubs, 'Error:', allSubsError);
+        
+        // Consultar todas las suscripciones activas en el sistema para depuración
+        console.log(`DEBUG: Checking ALL active subscriptions in the system:`);
+        const { data: allActiveSubs, error: allActiveSubsError } = await supabase
+          .from('subscriptions')
+          .select('id, status, empresa_id, plan_id')
+          .eq('status', 'active');
+          
+        console.log(`DEBUG: All active subscriptions in the system:`, allActiveSubs, 'Error:', allActiveSubsError);
         
         // Si no hay suscripción de empresa y es superadmin, tiene acceso global
         if (isSuperAdmin()) {

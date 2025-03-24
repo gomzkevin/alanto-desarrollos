@@ -6,6 +6,7 @@ import { AlertCircle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useUserRole } from '@/hooks/useUserRole';
+import { toast } from '@/components/ui/use-toast';
 
 interface RequireSubscriptionProps {
   children: React.ReactNode;
@@ -40,15 +41,32 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   }, [userId, empresaId, userRole, moduleName, isAdmin, isSuperAdmin]);
   
   // Usar el hook central de suscripciones
-  const { isAuthorized, isLoading } = useSubscription({
+  const { isAuthorized, isLoading, subscription, error } = useSubscription({
     requiresSubscription: true,
     requiredModule: moduleName,
     redirectPath: redirectTo
   });
   
   // Console logs para depuración
-  console.log(`RequireSubscription (${moduleName}) - isAuthorized:`, isAuthorized);
-  console.log(`RequireSubscription (${moduleName}) - isLoading:`, isLoading);
+  useEffect(() => {
+    console.log(`RequireSubscription (${moduleName}) - subscription info:`, {
+      isActive: subscription?.isActive,
+      planName: subscription?.currentPlan?.name,
+      error
+    });
+    console.log(`RequireSubscription (${moduleName}) - isAuthorized:`, isAuthorized);
+    console.log(`RequireSubscription (${moduleName}) - isLoading:`, isLoading);
+    
+    // Mostrar toast informativo cuando hay error en consulta de suscripción
+    if (error) {
+      console.error(`RequireSubscription (${moduleName}) - Error:`, error);
+      toast({
+        title: "Error al verificar suscripción",
+        description: "Hubo un problema al verificar el estado de tu suscripción. Por favor, intenta de nuevo más tarde.",
+        variant: "destructive"
+      });
+    }
+  }, [isAuthorized, isLoading, subscription, error, moduleName]);
 
   // Mostrar estado de carga
   if (isLoading) {
