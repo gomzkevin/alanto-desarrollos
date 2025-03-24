@@ -27,35 +27,35 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const { userId, empresaId, userRole, isAdmin, isSuperAdmin, authChecked, isLoading: isUserLoading } = useUserRole();
   
-  // Usar el nuevo hook dedicado para obtener la información de suscripción de la empresa
+  // Obtener información de suscripción de la empresa
   const { subscriptionInfo, isLoading: isSubscriptionLoading } = useCompanySubscription(empresaId);
 
   // Efecto para verificar autorización basada en estado de suscripción
   useEffect(() => {
-    // Solo proceder cuando tenemos todos los datos necesarios y user data está cargada
+    // Solo proceder cuando tenemos todos los datos cargados
     const isInitialLoadComplete = !isUserLoading && !isSubscriptionLoading && authChecked;
     
     if (isInitialLoadComplete && requiresSubscription) {
-      console.log('Verifying subscription authorization:', {
+      console.log('Verificando acceso por suscripción:', {
         userId,
         empresaId,
+        userRole,
         isSubscriptionActive: subscriptionInfo?.isActive,
         moduleName: requiredModule,
         isAdmin: isAdmin(),
-        isSuperAdmin: isSuperAdmin(),
-        userRole
+        isSuperAdmin: isSuperAdmin()
       });
 
       // REGLA 1: Los superadmins siempre tienen acceso completo global
       if (isSuperAdmin()) {
-        console.log('User is superadmin with global system access - authorized');
+        console.log('El usuario es superadmin con acceso global - autorizado');
         setIsAuthorized(true);
         return;
       }
 
       // REGLA 2: Verificar que el usuario tenga una empresa asignada
       if (!empresaId) {
-        console.log('User has no assigned company - unauthorized');
+        console.log('Usuario sin empresa asignada - no autorizado');
         toast({
           title: "Sin acceso",
           description: "No tienes una empresa asignada. Contacta al administrador.",
@@ -66,16 +66,15 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
         return;
       }
 
-      // REGLA 3: Autorizar si la empresa tiene suscripción activa
-      // Todos los usuarios de la empresa tienen acceso si hay suscripción activa
+      // REGLA 3: Si la empresa tiene suscripción activa, TODOS los usuarios tienen acceso
       if (subscriptionInfo?.isActive) {
-        console.log('Company has active subscription - authorized access for all company users');
+        console.log('La empresa tiene suscripción activa - acceso autorizado para todos los usuarios');
         setIsAuthorized(true);
         return;
       }
 
       // Si llegamos aquí, no hay suscripción activa - denegar acceso
-      console.log('No active company subscription - unauthorized');
+      console.log('No hay suscripción activa para la empresa - no autorizado');
       
       // Mensaje específico según si es admin o no
       let message = isAdmin() 

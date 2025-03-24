@@ -56,7 +56,7 @@ export const useCompanySubscription = (empresaId: number | null) => {
   const { data: subscriptionInfo, isLoading, error, refetch } = useQuery({
     queryKey: ['companySubscription', empresaId],
     queryFn: async (): Promise<SubscriptionInfo> => {
-      // Si no hay empresaId, no podemos verificar suscripciones
+      // Si no hay empresaId, retornamos información vacía
       if (!empresaId) {
         console.log('No empresaId provided, returning default subscription info');
         return getDefaultSubscriptionInfo();
@@ -65,7 +65,7 @@ export const useCompanySubscription = (empresaId: number | null) => {
       console.log('Fetching subscription info for empresaId:', empresaId);
 
       try {
-        // SIMPLIFICACIÓN: Consulta directa para verificar suscripciones activas de la empresa
+        // Consulta directa para verificar suscripciones activas de la empresa
         const { data: subscriptions, error: subError } = await supabase
           .from('subscriptions')
           .select('*, subscription_plans(*)')
