@@ -27,8 +27,11 @@ export const useResourceActions = (resourceType: ResourceType) => {
   const { userId, empresaId, isAdmin } = useUserRole();
   const { subscriptionInfo } = useCompanySubscription();
   
-  // Fix: Add an empty options object as required by the useDesarrollos hook
-  const { desarrollos } = useDesarrollos({ onSuccess: () => {} });
+  // Pass the required options object to useDesarrollos
+  const { desarrollos } = useDesarrollos({ 
+    onSuccess: () => {},
+    onError: () => {} 
+  });
   
   // Obtener información de vendedores
   const { users: vendedores } = useOrganizationUsers();
