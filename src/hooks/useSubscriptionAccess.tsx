@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 export interface SubscriptionAccessOptions {
   requiresSubscription?: boolean;
@@ -74,20 +75,33 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
         
         console.log('Estado de suscripción recibido:', data);
         
-        // Convertir explícitamente el resultado a SubscriptionStatus
-        const subscriptionData = data as SubscriptionStatus;
-        setSubscription(subscriptionData);
-        
-        // Si el módulo no requiere suscripción, autorizar automáticamente
-        if (!requiresSubscription) {
-          setIsAuthorized(true);
-          return;
-        }
-        
-        // Si tiene suscripción activa, está autorizado
-        if (subscriptionData && subscriptionData.isActive) {
-          console.log('Suscripción activa encontrada - acceso autorizado');
-          setIsAuthorized(true);
+        // Validar que data tenga la estructura esperada antes de convertirlo
+        if (data && typeof data === 'object' && 'isActive' in data) {
+          // Ahora podemos convertir con seguridad
+          const subscriptionData: SubscriptionStatus = {
+            isActive: !!data.isActive,
+            currentPlan: data.currentPlan || null,
+            renewalDate: data.renewalDate || null,
+            empresa_id: data.empresa_id as number | undefined
+          };
+          
+          setSubscription(subscriptionData);
+          
+          // Si el módulo no requiere suscripción, autorizar automáticamente
+          if (!requiresSubscription) {
+            setIsAuthorized(true);
+            return;
+          }
+          
+          // Si tiene suscripción activa, está autorizado
+          if (subscriptionData.isActive) {
+            console.log('Suscripción activa encontrada - acceso autorizado');
+            setIsAuthorized(true);
+            return;
+          }
+        } else {
+          console.error('Formato de datos de suscripción inválido:', data);
+          setIsAuthorized(false);
           return;
         }
         
