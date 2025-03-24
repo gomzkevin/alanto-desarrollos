@@ -122,11 +122,34 @@ export const useResourceCounts = () => {
   const processSubscriptionData = (data: any): ResourceCounts => {
     if (!data) return getDefaultCounts();
     
+    // Due to the JSON structure from Supabase, we need to cast and extract properly
+    const subscriptionData = data as {
+      isActive: boolean;
+      currentPlan: {
+        id: string;
+        name: string;
+        price: number;
+        interval: string;
+        features: {
+          tipo?: string;
+          precio_por_unidad?: number;
+          max_vendedores?: number;
+          max_recursos?: number;
+        };
+      } | null;
+      renewalDate: string | null;
+      resourceType: string | null;
+      resourceLimit: number | null;
+      resourceCount: number;
+      vendorLimit: number | null;
+      vendorCount: number;
+    };
+    
     // Calculate derived values
-    const resourceLimit = data.resourceLimit || null;
-    const resourceCount = data.resourceCount || 0;
-    const vendorLimit = data.vendorLimit || null;
-    const vendorCount = data.vendorCount || 0;
+    const resourceLimit = subscriptionData.resourceLimit || null;
+    const resourceCount = subscriptionData.resourceCount || 0;
+    const vendorLimit = subscriptionData.vendorLimit || null;
+    const vendorCount = subscriptionData.vendorCount || 0;
     
     // Check if over limits
     const isOverLimit = resourceLimit !== null && resourceCount > resourceLimit;
@@ -142,10 +165,19 @@ export const useResourceCounts = () => {
       : 0;
     
     return {
-      isActive: data.isActive || false,
-      currentPlan: data.currentPlan || null,
-      renewalDate: data.renewalDate || null,
-      resourceType: data.resourceType || null,
+      isActive: subscriptionData.isActive || false,
+      currentPlan: subscriptionData.currentPlan ? {
+        ...subscriptionData.currentPlan,
+        interval: subscriptionData.currentPlan.interval as 'month' | 'year',
+        features: {
+          tipo: subscriptionData.currentPlan.features.tipo as 'desarrollo' | 'prototipo' | undefined,
+          precio_por_unidad: subscriptionData.currentPlan.features.precio_por_unidad,
+          max_vendedores: subscriptionData.currentPlan.features.max_vendedores,
+          max_recursos: subscriptionData.currentPlan.features.max_recursos
+        }
+      } : null,
+      renewalDate: subscriptionData.renewalDate,
+      resourceType: subscriptionData.resourceType as 'desarrollo' | 'prototipo' | null,
       resourceLimit,
       resourceCount,
       vendorLimit,

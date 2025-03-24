@@ -162,18 +162,39 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
         return 0;
       }
       
-      if (!data || !data.currentPlan || !data.currentPlan.features) {
+      if (!data) {
         return 0;
       }
       
-      const resourceType = data.resourceType;
-      const precioUnidad = data.currentPlan.features.precio_por_unidad || 0;
+      // Data is a JSONB object, we need to properly type it
+      const subscriptionData = data as {
+        isActive: boolean;
+        currentPlan: {
+          id: string;
+          name: string;
+          price: number;
+          interval: string;
+          features: {
+            tipo?: string;
+            precio_por_unidad?: number;
+          };
+        } | null;
+        resourceType: string | null;
+        resourceCount: number;
+      };
+      
+      if (!subscriptionData.currentPlan || !subscriptionData.currentPlan.features) {
+        return 0;
+      }
+      
+      const resourceType = subscriptionData.resourceType;
+      const precioUnidad = subscriptionData.currentPlan.features.precio_por_unidad || 0;
       
       if (resourceType !== 'desarrollo') {
         return 0;
       }
       
-      return data.resourceCount * precioUnidad;
+      return subscriptionData.resourceCount * precioUnidad;
     } catch (error) {
       console.error("Error calculating billing:", error);
       return 0;
