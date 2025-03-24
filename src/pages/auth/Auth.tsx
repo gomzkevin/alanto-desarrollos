@@ -1,101 +1,54 @@
 
-import { useState, useEffect } from "react";
-import { Link, Navigate } from "react-router-dom";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { isAuthenticated } from "@/lib/supabase";
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation, Routes, Route } from "react-router-dom";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { SignupForm } from "@/components/auth/SignupForm";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { InvitationAccept } from "@/components/auth/InvitationAccept";
 
-export function Auth() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [activeTab, setActiveTab] = useState("login");
+export function AuthPage() {
+  const [view, setView] = useState<"login" | "signup">("login");
+  const { userId, isLoading } = useAuth({});
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Check if user is already authenticated
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        setCheckingAuth(true);
-        const auth = await isAuthenticated();
-        setIsLoggedIn(auth);
-      } catch (error) {
-        console.error("Error checking authentication:", error);
-      } finally {
-        setCheckingAuth(false);
-      }
-    };
-    
-    checkAuth();
-    
-    // Also listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event);
-      setIsLoggedIn(!!session);
-    });
-    
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
+    // Si el usuario está autenticado, redirige a la página principal
+    if (userId && !isLoading) {
+      // Obtener ruta de redirección de location.state o usar default
+      const from = location.state?.from?.pathname || "/dashboard";
+      navigate(from, { replace: true });
+    }
+  }, [userId, isLoading, navigate, location.state]);
 
-  // If user is authenticated, redirect to dashboard
-  if (isLoggedIn && !checkingAuth) {
-    return <Navigate to="/dashboard" replace />;
+  // Si está cargando, mostrar spinner
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+          <p className="text-slate-600">Verificando autenticación...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Renderizar formulario de login o registro basado en la ruta
+  if (location.pathname === "/auth/invitation") {
+    return <InvitationAccept />;
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50 p-4">
+    <div className="flex h-screen items-center justify-center bg-slate-50">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-indigo-600 mb-2">Alanto</h1>
-          <p className="text-slate-600">Plataforma de gestión de inversiones inmobiliarias</p>
-        </div>
-        
-        <Tabs 
-          value={activeTab} 
-          onValueChange={setActiveTab} 
-          className="w-full"
-        >
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-            <TabsTrigger value="signup">Registrarse</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="login">
-            <Card>
-              <CardHeader>
-                <CardTitle>Iniciar Sesión</CardTitle>
-                <CardDescription>
-                  Ingresa tus credenciales para acceder a tu cuenta
-                </CardDescription>
-              </CardHeader>
-              <LoginForm onSuccess={() => console.log("Login exitoso")} />
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="signup">
-            <Card>
-              <CardHeader>
-                <CardTitle>Crear cuenta</CardTitle>
-                <CardDescription>
-                  Regístrate para acceder a la plataforma
-                </CardDescription>
-              </CardHeader>
-              <SignupForm onSuccess={() => setActiveTab("login")} />
-            </Card>
-          </TabsContent>
-        </Tabs>
-        
-        <div className="mt-8 text-center">
-          <Link to="/" className="text-indigo-600 hover:text-indigo-800 text-sm">
-            Regresar a la página principal
-          </Link>
-        </div>
+        {view === "login" ? (
+          <LoginForm onViewChange={() => setView("signup")} />
+        ) : (
+          <SignupForm onViewChange={() => setView("login")} />
+        )}
       </div>
     </div>
   );
 }
 
-export default Auth;
+export default AuthPage;

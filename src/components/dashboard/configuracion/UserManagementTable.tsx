@@ -22,6 +22,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -48,114 +49,82 @@ import {
   Loader2, 
   Check, 
   AlertCircle, 
-  X 
+  X,
+  UserPlus,
+  Mail,
+  CalendarClock,
+  MailCheck,
+  ExternalLink,
+  MoveRight,
+  History
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole, UserRole } from "@/hooks/useUserRole";
 import { signUpWithEmailPassword } from "@/services/authService";
-
-type User = {
-  id: string;
-  nombre: string;
-  email: string;
-  rol: UserRole;
-  activo: boolean;
-  fecha_creacion: string;
-  empresa_id?: number;
-};
+import { useOrganizationUsers } from "@/hooks/useOrganizationUsers";
+import { useInvitaciones, Invitacion } from "@/hooks/useInvitaciones";
+import { useUserTransfer } from "@/hooks/useUserTransfer";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function UserManagementTable() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("usuarios");
   const [isNewUserDialogOpen, setIsNewUserDialogOpen] = useState(false);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+  const [isTransferHistoryDialogOpen, setIsTransferHistoryDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState<string>("");
+
   const [newUser, setNewUser] = useState({
     nombre: "",
     email: "",
     rol: "vendedor" as UserRole,
     password: "",
   });
-  const [activeSubscription, setActiveSubscription] = useState<any>(null);
-  const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(true);
-  const { isAdmin, userId, empresaId } = useUserRole();
+
+  const [newInvite, setNewInvite] = useState({
+    email: "",
+    rol: "vendedor" as UserRole,
+  });
+
+  const [transferData, setTransferData] = useState({
+    targetEmpresaId: 0,
+    preserveRole: true,
+    newRole: "vendedor" as UserRole,
+  });
+
+  const [transferHistory, setTransferHistory] = useState<any[]>([]);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    const checkSubscription = async () => {
-      if (!userId) return;
-      
-      try {
-        setIsSubscriptionLoading(true);
-        const { data, error } = await supabase
-          .from('subscriptions')
-          .select('*, subscription_plans(*)')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .maybeSingle();
+  const { isAdmin, empresaId, isSuperAdmin } = useUserRole();
+  
+  const { 
+    users,
+    isLoading: isLoadingUsers,
+    toggleUserStatus,
+    updateUserRole,
+    companies,
+    isLoadingCompanies
+  } = useOrganizationUsers();
 
-        if (error) {
-          console.error("Error checking subscription:", error);
-        }
+  const {
+    invitaciones,
+    isLoading: isLoadingInvites,
+    createInvitacion,
+    cancelarInvitacion,
+    reenviarInvitacion,
+    loading: inviteLoading
+  } = useInvitaciones();
 
-        setActiveSubscription(data);
-      } catch (error) {
-        console.error("Error checking subscription:", error);
-      } finally {
-        setIsSubscriptionLoading(false);
-      }
-    };
-    
-    checkSubscription();
-  }, [userId]);
+  const {
+    transferUser,
+    getTransferHistory,
+    loading: transferLoading
+  } = useUserTransfer();
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      if (!userId) return;
-      
-      try {
-        setIsLoading(true);
-        console.log("Fetching users for empresa_id:", empresaId);
-        
-        let query = supabase
-          .from('usuarios')
-          .select('*')
-          .order('fecha_creacion', { ascending: false });
-          
-        if (empresaId) {
-          query = query.eq('empresa_id', empresaId);
-        }
-        
-        const { data, error } = await query;
-
-        if (error) {
-          throw error;
-        }
-
-        console.log("Users fetched:", data?.length);
-        // Cast the rol string to UserRole type
-        setUsers(data?.map(user => ({
-          ...user,
-          rol: user.rol as UserRole
-        })) || []);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los usuarios.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (userId) {
-      fetchUsers();
-    }
-  }, [userId, empresaId]);
-
-  const validateForm = () => {
+  // Handle user form validation
+  const validateUserForm = () => {
     const errors: Record<string, string> = {};
     
     if (!newUser.nombre.trim()) {
@@ -178,6 +147,20 @@ export function UserManagementTable() {
     return Object.keys(errors).length === 0;
   };
 
+  // Handle invitation form validation
+  const validateInviteForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!newInvite.email.trim()) {
+      errors.inviteEmail = "El correo electrónico es obligatorio";
+    } else if (!/\S+@\S+\.\S+/.test(newInvite.email)) {
+      errors.inviteEmail = "El correo electrónico no es válido";
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleNewUserChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewUser((prev) => ({ ...prev, [name]: value }));
@@ -191,11 +174,30 @@ export function UserManagementTable() {
     }
   };
 
-  const handleRoleChange = (value: string) => {
-    // Ensure the value is cast to UserRole type
-    setNewUser((prev) => ({ ...prev, rol: value as UserRole }));
+  const handleNewInviteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewInvite((prev) => ({ ...prev, [name]: value }));
+    
+    if (validationErrors.inviteEmail) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.inviteEmail;
+        return newErrors;
+      });
+    }
   };
 
+  const handleRoleChange = (value: string, formType: 'user' | 'invite' | 'transfer') => {
+    if (formType === 'user') {
+      setNewUser((prev) => ({ ...prev, rol: value as UserRole }));
+    } else if (formType === 'invite') {
+      setNewInvite((prev) => ({ ...prev, rol: value as UserRole }));
+    } else if (formType === 'transfer') {
+      setTransferData((prev) => ({ ...prev, newRole: value as UserRole }));
+    }
+  };
+
+  // Create a new user directly
   const createNewUser = async () => {
     if (!isAdmin()) {
       toast({
@@ -206,49 +208,11 @@ export function UserManagementTable() {
       return;
     }
     
-    if (!validateForm()) {
+    if (!validateUserForm()) {
       return;
     }
 
-    if (activeSubscription?.subscription_plans?.features?.max_vendedores) {
-      const vendedorCount = users.filter(u => u.rol === 'vendedor' && u.activo).length;
-      const maxVendedores = activeSubscription.subscription_plans.features.max_vendedores;
-      
-      if (vendedorCount >= maxVendedores && newUser.rol === 'vendedor') {
-        toast({
-          title: "Límite alcanzado",
-          description: `Tu plan actual permite ${maxVendedores} vendedores. Actualiza tu suscripción para añadir más.`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
     try {
-      setIsCreatingUser(true);
-
-      const { data: existingUsers, error: checkError } = await supabase
-        .from('usuarios')
-        .select('email, auth_id')
-        .eq('email', newUser.email)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error("Error checking existing user:", checkError);
-      }
-
-      if (existingUsers) {
-        toast({
-          title: "Usuario ya existe",
-          description: "Ya existe un usuario con este correo electrónico.",
-          variant: "destructive",
-        });
-        setIsCreatingUser(false);
-        return;
-      }
-
-      console.log("Creating user with role:", newUser.rol);
-      
       // Pass the selected role to the signup function
       const authResult = await signUpWithEmailPassword(
         newUser.email, 
@@ -261,92 +225,6 @@ export function UserManagementTable() {
         throw new Error(authResult.error || "No se pudo crear el usuario");
       }
 
-      let authUserId;
-      
-      if (authResult.user) {
-        authUserId = authResult.user.id;
-      } else if (authResult.autoSignIn) {
-        const { data } = await supabase.auth.getUser();
-        authUserId = data.user?.id;
-      } else {
-        const { data: userData, error: userError } = await supabase
-          .from('usuarios')
-          .select('auth_id')
-          .eq('email', newUser.email)
-          .maybeSingle();
-          
-        if (!userError && userData?.auth_id) {
-          authUserId = userData.auth_id;
-        } else {
-          console.log("Could not find user ID, but will continue with user creation");
-        }
-      }
-      
-      if (authUserId) {
-        const { data: existingAuthUser } = await supabase
-          .from('usuarios')
-          .select('id')
-          .eq('auth_id', authUserId)
-          .maybeSingle();
-
-        if (existingAuthUser) {
-          const { error: updateError } = await supabase
-            .from('usuarios')
-            .update({
-              nombre: newUser.nombre,
-              rol: newUser.rol, // This is already properly typed as UserRole
-              activo: true,
-              empresa_id: empresaId
-            })
-            .eq('auth_id', authUserId);
-
-          if (updateError) {
-            console.error("Error updating existing user:", updateError);
-            throw updateError;
-          }
-
-          toast({
-            title: "Usuario actualizado",
-            description: "El usuario existente ha sido actualizado.",
-            variant: "default",
-          });
-        } else {
-          const userData = {
-            auth_id: authUserId,
-            nombre: newUser.nombre,
-            email: newUser.email,
-            rol: newUser.rol, // This is already properly typed as UserRole
-            empresa_id: empresaId,
-            activo: true
-          };
-          
-          console.log("Creating user record with data:", userData);
-          
-          const { error: userError } = await supabase
-            .from('usuarios')
-            .insert(userData);
-
-          if (userError) {
-            console.error("Error creating user record:", userError);
-            throw userError;
-          }
-
-          toast({
-            title: "Usuario creado",
-            description: "El usuario ha sido creado exitosamente.",
-            variant: "default",
-          });
-        }
-      } else {
-        toast({
-          title: "Error",
-          description: "No se pudo obtener el ID del usuario.",
-          variant: "destructive",
-        });
-        setIsCreatingUser(false);
-        return;
-      }
-
       setNewUser({
         nombre: "",
         email: "",
@@ -355,19 +233,10 @@ export function UserManagementTable() {
       });
       setIsNewUserDialogOpen(false);
 
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('*')
-        .eq('empresa_id', empresaId)
-        .order('fecha_creacion', { ascending: false });
-
-      if (!error) {
-        // Cast roles to UserRole type when setting users
-        setUsers(data?.map(user => ({
-          ...user,
-          rol: user.rol as UserRole
-        })) || []);
-      }
+      toast({
+        title: "Usuario creado",
+        description: "El usuario ha sido creado exitosamente.",
+      });
     } catch (error: any) {
       console.error("Error creating user:", error);
       toast({
@@ -375,51 +244,338 @@ export function UserManagementTable() {
         description: error.message || "Ocurrió un error al crear el usuario.",
         variant: "destructive",
       });
-    } finally {
-      setIsCreatingUser(false);
     }
   };
 
-  const toggleUserStatus = async (id: string, currentStatus: boolean) => {
-    if (!isAdmin()) {
+  // Send invitation to new user
+  const sendInvitation = async () => {
+    if (!validateInviteForm()) {
+      return;
+    }
+
+    const result = await createInvitacion(newInvite.email, newInvite.rol);
+    
+    if (result.success) {
+      setNewInvite({
+        email: "",
+        rol: "vendedor" as UserRole,
+      });
+      setIsInviteDialogOpen(false);
+    }
+  };
+
+  // Transfer user to another organization
+  const handleTransferUser = async () => {
+    if (!selectedUserId || transferData.targetEmpresaId === 0) {
       toast({
-        title: "Acceso denegado",
-        description: "Solo los administradores pueden modificar usuarios.",
+        title: "Datos incompletos",
+        description: "Por favor selecciona una empresa destino",
         variant: "destructive",
       });
       return;
     }
 
-    try {
-      setIsLoading(true);
-      const { error } = await supabase
-        .from('usuarios')
-        .update({ activo: !currentStatus })
-        .eq('id', id);
+    const result = await transferUser({
+      userId: selectedUserId,
+      targetEmpresaId: transferData.targetEmpresaId,
+      preserveRole: transferData.preserveRole,
+      newRole: !transferData.preserveRole ? transferData.newRole : undefined
+    });
 
-      if (error) {
-        throw error;
-      }
-
-      setUsers(users.map(user => 
-        user.id === id ? { ...user, activo: !currentStatus } : user
-      ));
-
-      toast({
-        title: "Usuario actualizado",
-        description: `El usuario ha sido ${!currentStatus ? "activado" : "desactivado"} exitosamente.`,
-        variant: "default",
-      });
-    } catch (error) {
-      console.error("Error updating user:", error);
-      toast({
-        title: "Error",
-        description: "Ocurrió un error al actualizar el usuario.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    if (result.success) {
+      setIsTransferDialogOpen(false);
+      setSelectedUserId(null);
     }
+  };
+
+  // Get transfer history for a user
+  const handleViewTransferHistory = async (userId: string, userName: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserName(userName);
+    
+    const history = await getTransferHistory(userId);
+    setTransferHistory(history);
+    setIsTransferHistoryDialogOpen(true);
+  };
+
+  // Get company name by ID
+  const getCompanyName = (id: number): string => {
+    const company = companies?.find(c => c.id === id);
+    return company ? company.nombre : `Empresa #${id}`;
+  };
+
+  // Render different content based on active tab
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "invitaciones":
+        return renderInvitationsTable();
+      case "usuarios":
+      default:
+        return renderUsersTable();
+    }
+  };
+
+  // Render users table
+  const renderUsersTable = () => {
+    if (isLoadingUsers) {
+      return (
+        <div className="flex justify-center py-6">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p className="ml-2">Cargando usuarios...</p>
+        </div>
+      );
+    }
+
+    if (!users || users.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-6 text-center">
+          <User className="h-10 w-10 text-slate-400" />
+          <h3 className="mt-4 text-lg font-semibold">No hay usuarios</h3>
+          <p className="mt-2 text-sm text-slate-500">
+            Aún no se han creado usuarios en el sistema.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nombre</TableHead>
+              <TableHead>Correo</TableHead>
+              <TableHead>Rol</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">{user.nombre}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  <Badge 
+                    variant={user.rol === 'admin' ? "default" : 
+                            user.rol === 'superadmin' ? "destructive" : "outline"}
+                  >
+                    {user.rol === 'admin' ? 'Administrador' : 
+                     user.rol === 'superadmin' ? 'Super Admin' : 
+                     user.rol === 'vendedor' ? 'Vendedor' : 'Cliente'}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge 
+                    variant={user.activo ? "success" : "destructive"}
+                    className="flex w-fit items-center"
+                  >
+                    {user.activo ? (
+                      <>
+                        <Check className="mr-1 h-3 w-3" /> Activo
+                      </>
+                    ) : (
+                      <>
+                        <X className="mr-1 h-3 w-3" /> Inactivo
+                      </>
+                    )}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem 
+                        onClick={() => toggleUserStatus.mutate({ id: user.id, currentStatus: user.activo })}
+                      >
+                        {user.activo ? 'Desactivar' : 'Activar'} Usuario
+                      </DropdownMenuItem>
+                      
+                      {user.rol !== 'superadmin' && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem disabled={user.rol === 'admin'} 
+                            onClick={() => updateUserRole.mutate({ id: user.id, newRole: 'admin' })}>
+                            Cambiar a Administrador
+                          </DropdownMenuItem>
+                          <DropdownMenuItem disabled={user.rol === 'vendedor'} 
+                            onClick={() => updateUserRole.mutate({ id: user.id, newRole: 'vendedor' })}>
+                            Cambiar a Vendedor
+                          </DropdownMenuItem>
+                          <DropdownMenuItem disabled={user.rol === 'cliente'} 
+                            onClick={() => updateUserRole.mutate({ id: user.id, newRole: 'cliente' })}>
+                            Cambiar a Cliente
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      
+                      {isSuperAdmin() && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setSelectedUserId(user.id);
+                              setIsTransferDialogOpen(true);
+                            }}>
+                            Transferir a otra empresa
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      
+                      {user.empresa_anterior && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleViewTransferHistory(user.id, user.nombre)}>
+                            Ver historial de transferencias
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
+  // Render invitations table
+  const renderInvitationsTable = () => {
+    if (isLoadingInvites) {
+      return (
+        <div className="flex justify-center py-6">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p className="ml-2">Cargando invitaciones...</p>
+        </div>
+      );
+    }
+
+    if (!invitaciones || invitaciones.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-6 text-center">
+          <Mail className="h-10 w-10 text-slate-400" />
+          <h3 className="mt-4 text-lg font-semibold">No hay invitaciones</h3>
+          <p className="mt-2 text-sm text-slate-500">
+            No se han enviado invitaciones a nuevos usuarios.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Correo</TableHead>
+              <TableHead>Rol</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Fecha Creación</TableHead>
+              <TableHead>Expira</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {invitaciones.map((invitacion) => {
+              const isExpired = new Date(invitacion.fecha_expiracion) < new Date();
+              const isPending = invitacion.estado === 'pendiente';
+              
+              return (
+                <TableRow key={invitacion.id}>
+                  <TableCell className="font-medium">{invitacion.email}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {invitacion.rol === 'admin' ? 'Administrador' : 
+                      invitacion.rol === 'vendedor' ? 'Vendedor' : 'Cliente'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={
+                        invitacion.estado === 'aceptada' ? "success" : 
+                        invitacion.estado === 'rechazada' ? "destructive" : 
+                        invitacion.estado === 'expirada' || (isPending && isExpired) ? "outline" : 
+                        "default"
+                      }
+                      className="flex w-fit items-center"
+                    >
+                      {invitacion.estado === 'aceptada' ? (
+                        <>
+                          <Check className="mr-1 h-3 w-3" /> Aceptada
+                        </>
+                      ) : invitacion.estado === 'rechazada' ? (
+                        <>
+                          <X className="mr-1 h-3 w-3" /> Rechazada
+                        </>
+                      ) : invitacion.estado === 'expirada' || (isPending && isExpired) ? (
+                        <>
+                          <AlertCircle className="mr-1 h-3 w-3" /> Expirada
+                        </>
+                      ) : (
+                        <>
+                          <MailCheck className="mr-1 h-3 w-3" /> Pendiente
+                        </>
+                      )}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{new Date(invitacion.fecha_creacion).toLocaleString()}</TableCell>
+                  <TableCell>{new Date(invitacion.fecha_expiracion).toLocaleString()}</TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {(isPending && !isExpired) && (
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              // Copy invitation URL to clipboard
+                              const inviteUrl = `${window.location.origin}/auth/invitation?token=${invitacion.token}`;
+                              navigator.clipboard.writeText(inviteUrl);
+                              toast({
+                                title: "URL copiada",
+                                description: "El enlace de invitación ha sido copiado al portapapeles"
+                              });
+                            }}
+                          >
+                            Copiar enlace de invitación
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {(isPending && !isExpired) && (
+                          <DropdownMenuItem 
+                            onClick={() => cancelarInvitacion.mutate(invitacion.id)}
+                          >
+                            Cancelar invitación
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {(invitacion.estado === 'expirada' || (isPending && isExpired)) && (
+                          <DropdownMenuItem 
+                            onClick={() => reenviarInvitacion.mutate(invitacion.id)}
+                          >
+                            Reenviar invitación
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    );
   };
 
   if (!isAdmin()) {
@@ -435,17 +591,6 @@ export function UserManagementTable() {
     );
   }
 
-  const canAddMoreUsers = () => {
-    if (!activeSubscription?.subscription_plans?.features?.max_vendedores) {
-      return true;
-    }
-    
-    const vendedorCount = users.filter(u => u.rol === 'vendedor' && u.activo).length;
-    const maxVendedores = activeSubscription.subscription_plans.features.max_vendedores;
-    
-    return vendedorCount < maxVendedores;
-  };
-
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -453,195 +598,307 @@ export function UserManagementTable() {
           <CardTitle>Gestión de Usuarios</CardTitle>
           <CardDescription>
             Administra los usuarios que tienen acceso a la plataforma.
-            {activeSubscription?.subscription_plans?.features?.max_vendedores && (
-              <p className="mt-1">
-                Vendedores activos: {users.filter(u => u.rol === 'vendedor' && u.activo).length} / 
-                {activeSubscription.subscription_plans.features.max_vendedores}
-              </p>
-            )}
-            {!activeSubscription && !isSubscriptionLoading && (
-              <p className="text-red-500 mt-1">
-                Necesitas una suscripción activa para gestionar usuarios.
-              </p>
-            )}
           </CardDescription>
         </div>
-        <Dialog open={isNewUserDialogOpen} onOpenChange={setIsNewUserDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              size="sm"
-              disabled={isLoading || (activeSubscription?.subscription_plans?.features?.max_vendedores && !canAddMoreUsers())}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Usuario
-            </Button>
-          </DialogTrigger>
+        
+        <div className="flex space-x-2">
+          <Dialog open={isNewUserDialogOpen} onOpenChange={setIsNewUserDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Usuario
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+                <DialogDescription>
+                  Añade un nuevo usuario con acceso directo a la plataforma.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="grid w-full items-center gap-2">
+                  <Label htmlFor="nombre">Nombre</Label>
+                  <Input
+                    id="nombre"
+                    name="nombre"
+                    placeholder="Nombre completo"
+                    value={newUser.nombre}
+                    onChange={handleNewUserChange}
+                    className={validationErrors.nombre ? "border-red-500" : ""}
+                  />
+                  {validationErrors.nombre && (
+                    <p className="text-sm text-red-500">{validationErrors.nombre}</p>
+                  )}
+                </div>
+                <div className="grid w-full items-center gap-2">
+                  <Label htmlFor="email">Correo Electrónico</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="correo@ejemplo.com"
+                    value={newUser.email}
+                    onChange={handleNewUserChange}
+                    className={validationErrors.email ? "border-red-500" : ""}
+                  />
+                  {validationErrors.email && (
+                    <p className="text-sm text-red-500">{validationErrors.email}</p>
+                  )}
+                </div>
+                <div className="grid w-full items-center gap-2">
+                  <Label htmlFor="password">Contraseña</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="Contraseña segura"
+                    value={newUser.password}
+                    onChange={handleNewUserChange}
+                    className={validationErrors.password ? "border-red-500" : ""}
+                  />
+                  {validationErrors.password && (
+                    <p className="text-sm text-red-500">{validationErrors.password}</p>
+                  )}
+                </div>
+                <div className="grid w-full items-center gap-2">
+                  <Label htmlFor="rol">Rol</Label>
+                  <Select 
+                    value={newUser.rol}
+                    onValueChange={(value) => handleRoleChange(value, 'user')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un rol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="vendedor">Vendedor</SelectItem>
+                      <SelectItem value="cliente">Cliente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsNewUserDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={createNewUser}>
+                  Crear Usuario
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
+          <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Invitar Usuario
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Invitar Usuario</DialogTitle>
+                <DialogDescription>
+                  Envía una invitación por correo electrónico para unirse a la plataforma.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="grid w-full items-center gap-2">
+                  <Label htmlFor="email">Correo Electrónico</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="correo@ejemplo.com"
+                    value={newInvite.email}
+                    onChange={handleNewInviteChange}
+                    className={validationErrors.inviteEmail ? "border-red-500" : ""}
+                  />
+                  {validationErrors.inviteEmail && (
+                    <p className="text-sm text-red-500">{validationErrors.inviteEmail}</p>
+                  )}
+                </div>
+                <div className="grid w-full items-center gap-2">
+                  <Label htmlFor="rol">Rol</Label>
+                  <Select 
+                    value={newInvite.rol}
+                    onValueChange={(value) => handleRoleChange(value, 'invite')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un rol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="vendedor">Vendedor</SelectItem>
+                      <SelectItem value="cliente">Cliente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="rounded-md bg-slate-50 p-4">
+                  <div className="flex">
+                    <div className="shrink-0">
+                      <AlertCircle className="h-5 w-5 text-slate-400" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-slate-600">
+                        Se generará un token único y se mostrará un enlace que puedes compartir con el usuario.
+                        Por el momento, deberás compartir este enlace manualmente.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={sendInvitation} disabled={inviteLoading}>
+                  {inviteLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Crear Invitación
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      
+      <CardContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList>
+            <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
+            <TabsTrigger value="invitaciones">Invitaciones</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        
+        {renderTabContent()}
+        
+        {/* Transfer User Dialog */}
+        <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+              <DialogTitle>Transferir Usuario</DialogTitle>
               <DialogDescription>
-                Añade un nuevo usuario con acceso a la plataforma.
+                Transfiere este usuario a otra empresa manteniendo su historial.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="grid w-full items-center gap-2">
-                <Label htmlFor="nombre">Nombre</Label>
-                <Input
-                  id="nombre"
-                  name="nombre"
-                  placeholder="Nombre completo"
-                  value={newUser.nombre}
-                  onChange={handleNewUserChange}
-                  className={validationErrors.nombre ? "border-red-500" : ""}
-                />
-                {validationErrors.nombre && (
-                  <p className="text-sm text-red-500">{validationErrors.nombre}</p>
-                )}
-              </div>
-              <div className="grid w-full items-center gap-2">
-                <Label htmlFor="email">Correo Electrónico</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="correo@ejemplo.com"
-                  value={newUser.email}
-                  onChange={handleNewUserChange}
-                  className={validationErrors.email ? "border-red-500" : ""}
-                />
-                {validationErrors.email && (
-                  <p className="text-sm text-red-500">{validationErrors.email}</p>
-                )}
-              </div>
-              <div className="grid w-full items-center gap-2">
-                <Label htmlFor="password">Contraseña</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Contraseña segura"
-                  value={newUser.password}
-                  onChange={handleNewUserChange}
-                  className={validationErrors.password ? "border-red-500" : ""}
-                />
-                {validationErrors.password && (
-                  <p className="text-sm text-red-500">{validationErrors.password}</p>
-                )}
-              </div>
-              <div className="grid w-full items-center gap-2">
-                <Label htmlFor="rol">Rol</Label>
+                <Label htmlFor="targetEmpresa">Empresa Destino</Label>
                 <Select 
-                  value={newUser.rol}
-                  onValueChange={(value) => setNewUser(prev => ({ ...prev, rol: value as UserRole }))}
+                  value={transferData.targetEmpresaId.toString()}
+                  onValueChange={(value) => setTransferData(prev => ({ ...prev, targetEmpresaId: parseInt(value) }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un rol" />
+                    <SelectValue placeholder="Selecciona una empresa" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                    <SelectItem value="vendedor">Vendedor</SelectItem>
-                    <SelectItem value="cliente">Cliente</SelectItem>
+                    {companies?.filter(c => c.id !== empresaId).map(company => (
+                      <SelectItem key={company.id} value={company.id.toString()}>
+                        {company.nombre}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="preserveRole"
+                  checked={transferData.preserveRole}
+                  onChange={(e) => setTransferData(prev => ({ ...prev, preserveRole: e.target.checked }))}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="preserveRole">Mantener rol actual</Label>
+              </div>
+              
+              {!transferData.preserveRole && (
+                <div className="grid w-full items-center gap-2">
+                  <Label htmlFor="newRole">Nuevo Rol</Label>
+                  <Select 
+                    value={transferData.newRole}
+                    onValueChange={(value) => handleRoleChange(value, 'transfer')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un rol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="vendedor">Vendedor</SelectItem>
+                      <SelectItem value="cliente">Cliente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
+              <div className="rounded-md bg-amber-50 p-4">
+                <div className="flex">
+                  <div className="shrink-0">
+                    <AlertCircle className="h-5 w-5 text-amber-400" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-amber-800">
+                      Esta acción transferirá al usuario a otra empresa, manteniendo un registro de su empresa anterior.
+                      El usuario seguirá teniendo acceso a sus datos, pero ahora bajo la nueva empresa.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsNewUserDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setIsTransferDialogOpen(false)}>
                 Cancelar
               </Button>
               <Button 
-                onClick={createNewUser} 
-                disabled={isCreatingUser}
+                onClick={handleTransferUser} 
+                disabled={transferLoading || transferData.targetEmpresaId === 0}
               >
-                {isCreatingUser ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creando...
-                  </>
-                ) : (
-                  "Crear Usuario"
-                )}
+                {transferLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MoveRight className="mr-2 h-4 w-4" />}
+                Transferir Usuario
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center py-6">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <p className="ml-2">Cargando usuarios...</p>
-          </div>
-        ) : users.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <User className="h-10 w-10 text-slate-400" />
-            <h3 className="mt-4 text-lg font-semibold">No hay usuarios</h3>
-            <p className="mt-2 text-sm text-slate-500">
-              Aún no se han creado usuarios en el sistema.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Correo</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.nombre}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={user.rol === 'admin' ? "default" : "outline"}
-                      >
-                        {user.rol === 'admin' ? 'Administrador' : 'Vendedor'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={user.activo ? "success" : "destructive"}
-                        className="flex w-fit items-center"
-                      >
-                        {user.activo ? (
-                          <>
-                            <Check className="mr-1 h-3 w-3" /> Activo
-                          </>
-                        ) : (
-                          <>
-                            <X className="mr-1 h-3 w-3" /> Inactivo
-                          </>
-                        )}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
-                            onClick={() => toggleUserStatus(user.id, user.activo)}
-                          >
-                            {user.activo ? 'Desactivar' : 'Activar'} Usuario
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+        
+        {/* Transfer History Dialog */}
+        <Dialog open={isTransferHistoryDialogOpen} onOpenChange={setIsTransferHistoryDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Historial de Transferencias</DialogTitle>
+              <DialogDescription>
+                Historial de transferencias entre empresas para {selectedUserName}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              {transferHistory.length === 0 ? (
+                <div className="text-center py-6">
+                  <History className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500">No hay historial de transferencias</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {transferHistory.map((record, index) => (
+                    <div key={index} className="border rounded-md p-4 flex justify-between items-center">
+                      <div>
+                        <p className="font-medium">Desde: {getCompanyName(record.empresa_anterior)}</p>
+                        <p className="text-sm text-slate-500">
+                          {new Date(record.fecha_transferencia).toLocaleString()}
+                        </p>
+                      </div>
+                      <MoveRight className="h-5 w-5 text-slate-400" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setIsTransferHistoryDialogOpen(false)}>
+                Cerrar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
