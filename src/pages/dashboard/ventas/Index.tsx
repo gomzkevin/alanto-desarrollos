@@ -22,7 +22,7 @@ const VentasPage = () => {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="space-y-4">
+        <div className="space-y-4 p-6">
           <Skeleton className="h-10 w-1/3" />
           <Skeleton className="h-8 w-full" />
           <div className="grid gap-4">
@@ -37,13 +37,15 @@ const VentasPage = () => {
   if (!isAuthorized) {
     return (
       <DashboardLayout>
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Acceso restringido</AlertTitle>
-          <AlertDescription>
-            No tienes acceso al módulo de Ventas. Por favor, contacta al administrador o verifica que tu empresa tenga una suscripción activa.
-          </AlertDescription>
-        </Alert>
+        <div className="p-6">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Acceso restringido</AlertTitle>
+            <AlertDescription>
+              No tienes acceso al módulo de Ventas. Por favor, contacta al administrador o verifica que tu empresa tenga una suscripción activa.
+            </AlertDescription>
+          </Alert>
+        </div>
       </DashboardLayout>
     );
   }
@@ -51,27 +53,29 @@ const VentasPage = () => {
   // Render authorized state
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Ventas</h1>
-        <div className="text-sm text-muted-foreground">
-          Las ventas se crean automáticamente al cambiar el estado de las unidades
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">Ventas</h1>
+          <div className="text-sm text-muted-foreground">
+            Las ventas se crean automáticamente al cambiar el estado de las unidades
+          </div>
         </div>
-      </div>
 
-      <Tabs defaultValue="list" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="list">Lista de Ventas</TabsTrigger>
-          <TabsTrigger value="stats">Estadísticas</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="list" className="space-y-4">
-          <VentasTable refreshTrigger={refreshTrigger} />
-        </TabsContent>
-        
-        <TabsContent value="stats">
-          <VentasStatistics />
-        </TabsContent>
-      </Tabs>
+        <Tabs defaultValue="list" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="list">Lista de Ventas</TabsTrigger>
+            <TabsTrigger value="stats">Estadísticas</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="list" className="space-y-4">
+            <VentasTable refreshTrigger={refreshTrigger} />
+          </TabsContent>
+          
+          <TabsContent value="stats">
+            <VentasStatistics />
+          </TabsContent>
+        </Tabs>
+      </div>
     </DashboardLayout>
   );
 };
