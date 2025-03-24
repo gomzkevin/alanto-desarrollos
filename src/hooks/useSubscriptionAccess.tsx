@@ -80,14 +80,17 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
           // Verificar y convertir currentPlan de forma segura
           let currentPlanData = null;
           if (data.currentPlan && typeof data.currentPlan === 'object') {
-            // Asegurarse de que todos los campos necesarios estén presentes
-            currentPlanData = {
-              id: String(data.currentPlan.id || ''),
-              name: String(data.currentPlan.name || ''),
-              price: Number(data.currentPlan.price || 0),
-              interval: String(data.currentPlan.interval || ''),
-              features: data.currentPlan.features || {}
-            };
+            // Verificar que currentPlan no sea un array antes de acceder a sus propiedades
+            if (!Array.isArray(data.currentPlan)) {
+              // Asegurarse de que todos los campos necesarios estén presentes
+              currentPlanData = {
+                id: String(data.currentPlan.id || ''),
+                name: String(data.currentPlan.name || ''),
+                price: Number(data.currentPlan.price || 0),
+                interval: String(data.currentPlan.interval || ''),
+                features: data.currentPlan.features || {}
+              };
+            }
           }
           
           // Construir objeto SubscriptionStatus con conversiones seguras
