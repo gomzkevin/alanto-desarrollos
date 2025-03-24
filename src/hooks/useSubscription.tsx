@@ -58,7 +58,8 @@ export interface SubscriptionAuthOptions {
 }
 
 /**
- * Centralized hook that manages subscription data, authorization, and access control
+ * Hook centralizado que gestiona datos de suscripción, autorización y control de acceso
+ * Versión simplificada: Solo considera suscripciones a nivel de empresa
  */
 export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
   const { 
@@ -71,11 +72,11 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const { userId, empresaId, isAdmin, isSuperAdmin, userRole, authChecked } = useUserRole();
   
-  // Fetch subscription data
+  // Consultar información de suscripción de la empresa
   const { data: subscriptionInfo, isLoading: isLoadingSubscription, error } = useQuery({
-    queryKey: ['subscriptionInfo', userId, empresaId],
+    queryKey: ['subscriptionInfo', empresaId],
     queryFn: async (): Promise<SubscriptionInfo> => {
-      // If no empresaId, we can't verify company subscriptions
+      // Si no hay empresaId, no podemos verificar suscripciones
       if (!empresaId) {
         console.log('No empresaId provided, returning default subscription info');
         return getDefaultSubscriptionInfo();
@@ -83,8 +84,8 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
 
       console.log('Fetching subscription info for empresaId:', empresaId);
 
-      // SIMPLIFIED APPROACH: First check company subscription, as it's the most likely scenario
       try {
+        // Verificar suscripción activa para esta empresa
         const { data: empresaSubscription, error: empresaError } = await supabase
           .from('subscriptions')
           .select('*, subscription_plans(*)')
@@ -94,56 +95,37 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
 
         if (empresaError) {
           console.error('Error fetching empresa subscription:', empresaError);
-        } else if (empresaSubscription) {
+          return getDefaultSubscriptionInfo();
+        } 
+        
+        if (empresaSubscription) {
           console.log('Found active subscription for empresa:', empresaSubscription);
           return await processSubscription(empresaSubscription, empresaId);
-        } else {
-          console.log('No active company subscription found');
-        }
-
-        // If no company subscription and user is superadmin, they always have global access
+        } 
+        
+        // Si no hay suscripción de empresa y es superadmin, tiene acceso global
         if (isSuperAdmin()) {
           console.log('User is superadmin with global access privileges');
-          // For superadmins, return a special "always active" subscription
           return {
             ...getDefaultSubscriptionInfo(),
-            isActive: true, // Superadmins always have an "active" subscription for access control
+            isActive: true, // Los superadmins siempre tienen una suscripción "activa" para control de acceso
           };
         }
 
-        // If user is a regular admin, check personal subscription
-        if (userId && isAdmin()) {
-          const { data: userSubscription, error: userSubError } = await supabase
-            .from('subscriptions')
-            .select('*, subscription_plans(*)')
-            .eq('user_id', userId)
-            .eq('status', 'active')
-            .maybeSingle();
-
-          if (userSubError) {
-            console.error('Error fetching user subscription:', userSubError);
-          } else if (userSubscription) {
-            console.log('Found active subscription for admin user:', userSubscription);
-            return await processSubscription(userSubscription, empresaId);
-          } else {
-            console.log('Admin user without personal subscription');
-          }
-        }
-
-        // No subscription found
-        console.log('No active subscription found for company or admin');
+        // Sin suscripción activa
+        console.log('No active subscription found for empresa');
         return getDefaultSubscriptionInfo();
       } catch (error) {
         console.error('Error fetching subscription info:', error);
         return getDefaultSubscriptionInfo();
       }
     },
-    enabled: !!authChecked && (!!empresaId || !!userId),
+    enabled: !!authChecked && !!empresaId,
   });
 
-  // Helper function to process subscription data
-  const processSubscription = async (subscription: any, empresaId: number | null): Promise<SubscriptionInfo> => {
-    // Extract plan features safely
+  // Función auxiliar para procesar datos de suscripción
+  const processSubscription = async (subscription: any, empresaId: number): Promise<SubscriptionInfo> => {
+    // Extraer características del plan de forma segura
     const planFeatures = subscription.subscription_plans.features || {};
     let features = {
       tipo: undefined as 'desarrollo' | 'prototipo' | undefined,
@@ -152,7 +134,7 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
       max_recursos: undefined as number | undefined
     };
     
-    // Check if features is an object and assign properties safely
+    // Verificar si features es un objeto y asignar propiedades de forma segura
     if (planFeatures && typeof planFeatures === 'object' && !Array.isArray(planFeatures)) {
       const featuresObj = planFeatures as { [key: string]: Json };
       
@@ -164,7 +146,7 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
       };
     }
     
-    // Extract plan details
+    // Extraer detalles del plan
     const plan: SubscriptionPlan = {
       id: subscription.subscription_plans.id,
       name: subscription.subscription_plans.name,
@@ -173,18 +155,15 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
       features: features
     };
 
-    console.log('Extracted plan:', plan);
-
-    // Get resource type and count from the plan
+    // Obtener tipo y conteo de recursos del plan
     const resourceType = plan.features.tipo || null;
-    console.log('Resource type:', resourceType);
     
     let resourceCount = 0;
     let vendorCount = 0;
     
     if (empresaId) {
       try {
-        // Count resources (desarrollos or prototipos) based on resource type
+        // Contar recursos según el tipo
         if (resourceType === 'desarrollo') {
           const { count, error: countError } = await supabase
             .from('desarrollos')
@@ -197,7 +176,7 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
             resourceCount = count;
           }
         } else if (resourceType === 'prototipo') {
-          // Get desarrollo IDs for this company
+          // Obtener IDs de desarrollo para esta empresa
           const { data: desarrollos, error: desarError } = await supabase
             .from('desarrollos')
             .select('id')
@@ -208,7 +187,7 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
           } else if (desarrollos && desarrollos.length > 0) {
             const desarrolloIds = desarrollos.map(d => d.id);
             
-            // Count prototipos for these desarrollos
+            // Contar prototipos para estos desarrollos
             const { count: protoCount, error: protoError } = await supabase
               .from('prototipos')
               .select('*', { count: 'exact', head: true })
@@ -222,7 +201,7 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
           }
         }
       
-        // Get vendor count
+        // Obtener conteo de vendedores
         const { count: vendors, error: vendorError } = await supabase
           .from('usuarios')
           .select('*', { count: 'exact', head: true })
@@ -239,20 +218,20 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
       }
     }
     
-    // Resource and vendor limits
+    // Límites de recursos y vendedores
     const resourceLimit = plan.features.max_recursos || null;
     const vendorLimit = plan.features.max_vendedores || null;
     
-    // Calculate billing amount
+    // Calcular monto de facturación
     const precioUnidad = plan.features.precio_por_unidad || 0;
     const currentBilling = resourceCount * precioUnidad;
     
-    // Get renewal date
+    // Obtener fecha de renovación
     const renewalDate = subscription.current_period_end 
       ? new Date(subscription.current_period_end)
       : null;
     
-    // Calculate limits
+    // Calcular límites
     const isOverLimit = resourceLimit !== null && resourceCount > resourceLimit;
     const percentUsed = resourceLimit ? Math.min(100, (resourceCount / resourceLimit) * 100) : 0;
     const isOverVendorLimit = vendorLimit !== null && vendorCount > vendorLimit;
@@ -273,9 +252,9 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
     };
   };
 
-  // Effect to check authorization based on subscription status
+  // Efecto para verificar autorización basada en estado de suscripción
   useEffect(() => {
-    // Only proceed when we have all the necessary data
+    // Solo proceder cuando tenemos todos los datos necesarios
     if (!isLoadingSubscription && authChecked && requiresSubscription) {
       console.log('Verifying subscription authorization:', {
         userId,
@@ -287,57 +266,14 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
         userRole
       });
 
-      // Superadmins always have full access to everything
+      // Los superadmins siempre tienen acceso completo a todo
       if (isSuperAdmin()) {
         console.log('User is superadmin with global system access');
         setIsAuthorized(true);
         return;
       }
 
-      // Regular admins need a valid subscription (company or personal)
-      if (isAdmin()) {
-        if (subscriptionInfo?.isActive) {
-          console.log('Admin with active subscription, access authorized');
-          setIsAuthorized(true);
-        } else {
-          console.log('Admin without active subscription, showing subscription required');
-          toast({
-            title: "Suscripción requerida",
-            description: "Tu empresa no tiene una suscripción activa. Por favor, activa una suscripción para acceder a este módulo.",
-            variant: "destructive"
-          });
-          navigate('/dashboard/configuracion');
-          setIsAuthorized(false);
-        }
-        return;
-      }
-
-      // Vendedores get access if their company has an active subscription
-      if (userRole === 'vendedor') {
-        if (subscriptionInfo?.isActive) {
-          console.log('Vendedor with company subscription, access authorized');
-          setIsAuthorized(true);
-        } else {
-          console.log('Vendedor without company subscription, access denied');
-          toast({
-            title: "Sin acceso",
-            description: "Tu empresa no tiene una suscripción activa. Contacta al administrador.",
-            variant: "destructive"
-          });
-          navigate(redirectPath);
-          setIsAuthorized(false);
-        }
-        return;
-      }
-
-      // Clientes and other users also need company subscription
-      if (subscriptionInfo?.isActive) {
-        console.log('User with active company subscription, access authorized');
-        setIsAuthorized(true);
-        return;
-      }
-
-      // Check for assigned company for other roles
+      // Verificar que el usuario tenga una empresa asignada
       if (!empresaId) {
         console.log('User has no assigned company');
         toast({
@@ -350,11 +286,22 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
         return;
       }
 
-      // Any other case: not authorized
-      console.log('No active subscription for module:', requiredModule);
+      // Verificar si la empresa tiene una suscripción activa
+      if (subscriptionInfo?.isActive) {
+        console.log('Company has active subscription, access authorized');
+        setIsAuthorized(true);
+        return;
+      }
+
+      // Si llegamos aquí, no hay suscripción activa
+      console.log('No active company subscription');
       
+      // Mensaje específico según si es admin o no
+      let message = isAdmin() 
+        ? "Tu empresa no tiene una suscripción activa. Por favor, activa la suscripción en configuración."
+        : "Tu empresa no tiene una suscripción activa. Por favor, contacta al administrador.";
+        
       const moduleText = requiredModule ? ` al módulo ${requiredModule}` : '';
-      const message = "Tu empresa no tiene una suscripción activa. Por favor, contacta al administrador.";
       
       toast({
         title: "Suscripción requerida",
@@ -362,10 +309,12 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
         variant: "destructive"
       });
       
-      navigate(redirectPath);
+      // Redirigir a admins a la página de configuración, a otros usuarios al dashboard
+      const redirectTo = isAdmin() ? '/dashboard/configuracion' : redirectPath;
+      navigate(redirectTo);
       setIsAuthorized(false);
     } else if (!requiresSubscription) {
-      // If the module doesn't require subscription, automatically authorize
+      // Si el módulo no requiere suscripción, autorizar automáticamente
       setIsAuthorized(true);
     }
   }, [

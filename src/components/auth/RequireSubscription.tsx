@@ -15,7 +15,7 @@ interface RequireSubscriptionProps {
 }
 
 /**
- * Componente que asegura que el usuario tiene una suscripción activa
+ * Componente que asegura que la empresa del usuario tiene una suscripción activa
  * para acceder al contenido, utilizando el hook centralizado useSubscription
  */
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
@@ -64,7 +64,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Acceso restringido</AlertTitle>
             <AlertDescription>
-              No tienes acceso al módulo de {moduleName}. Por favor, contacta al administrador para activar la suscripción.
+              Tu empresa no tiene acceso al módulo de {moduleName}. Por favor, contacta al administrador para activar la suscripción.
             </AlertDescription>
           </Alert>
         </div>
