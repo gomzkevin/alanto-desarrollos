@@ -7,26 +7,31 @@ import { useUserRole } from './useUserRole';
 export type Cotizacion = Tables<"cotizaciones">;
 
 // Define basic types without circular references
-export interface ExtendedCotizacion extends Cotizacion {
+export interface ExtendedCotizacion extends Omit<Cotizacion, 'fecha_finiquito' | 'fecha_inicio_pagos' | 'monto_finiquito' | 'usar_finiquito' | 'notas'> {
   lead?: {
     id: string;
     nombre: string;
     email?: string | null;
     telefono?: string | null; 
+    origen?: string | null; // Add the origen property
   } | null;
   desarrollo?: {
     id: string;
     nombre: string;
     empresa_id: number;
+    ubicacion?: string | null; // Add the ubicacion property
   } | null;
   prototipo?: {
     id: string;
     nombre: string;
     precio: number;
   } | null;
-  // These fields are now part of the database schema
+  // These fields are now declared with their proper optional types
   fecha_inicio_pagos?: string | null;
   fecha_finiquito?: string | null;
+  monto_finiquito?: number | null;
+  usar_finiquito?: boolean | null;
+  notas?: string | null;
 }
 
 type FetchCotizacionesOptions = {
@@ -74,8 +79,8 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         
         // Fetch all related entities in batch queries
         const [leadsResponse, desarrollosResponse, prototipesResponse] = await Promise.all([
-          supabase.from('leads').select('id, nombre, email, telefono').in('id', leadIds),
-          supabase.from('desarrollos').select('id, nombre, empresa_id').in('id', desarrolloIds),
+          supabase.from('leads').select('id, nombre, email, telefono, origen').in('id', leadIds),
+          supabase.from('desarrollos').select('id, nombre, empresa_id, ubicacion').in('id', desarrolloIds),
           supabase.from('prototipos').select('id, nombre, precio').in('id', prototipoIds)
         ]);
         
