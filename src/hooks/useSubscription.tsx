@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
+import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
 import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
@@ -271,12 +271,13 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
         isSubscriptionActive: subscriptionInfo?.isActive,
         moduleName: requiredModule,
         isAdmin: isAdmin(),
+        isSuperAdmin: isSuperAdmin(),
         userRole
       });
 
-      // SuperAdmins and admins always have access
+      // SuperAdmins and admins always have access - THIS IS THE KEY FIX
       if (isSuperAdmin() || isAdmin()) {
-        console.log('User is admin, access authorized');
+        console.log('User is admin or superadmin, access authorized regardless of subscription');
         setIsAuthorized(true);
         return;
       }

@@ -39,13 +39,6 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   console.log(`RequireSubscription (${moduleName}) - isAuthorized:`, isAuthorized);
   console.log(`RequireSubscription (${moduleName}) - isLoading:`, isLoading);
 
-  // Redirigir si no está autorizado y ha terminado de cargar
-  useEffect(() => {
-    if (!isLoading && !isAuthorized) {
-      navigate(redirectTo);
-    }
-  }, [isAuthorized, isLoading, navigate, redirectTo]);
-
   // Mostrar estado de carga
   if (isLoading) {
     if (loadingFallback) return <>{loadingFallback}</>;
