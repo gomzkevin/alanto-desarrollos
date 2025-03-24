@@ -105,16 +105,14 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
           return await processSubscription(empresaSubscription, empresaId);
         } 
         
-        // Si no hay suscripción activa, verificar específicamente why la empresa 1 no tiene suscripción
-        if (empresaId === 1) {
-          console.log('Empresa ID 1 has no active subscription. Checking all subscriptions for empresa 1:');
-          const { data: allSubs, error: allSubsError } = await supabase
-            .from('subscriptions')
-            .select('*, subscription_plans(*)')
-            .eq('empresa_id', empresaId);
-            
-          console.log('All subscriptions for empresa 1:', allSubs, 'Error:', allSubsError);
-        }
+        // Si no hay suscripción activa, verificar específicamente por qué la empresa no tiene suscripción
+        console.log(`Empresa ID ${empresaId} has no active subscription. Checking all subscriptions:`);
+        const { data: allSubs, error: allSubsError } = await supabase
+          .from('subscriptions')
+          .select('id, status, empresa_id, plan_id, created_at, subscription_plans(name)')
+          .eq('empresa_id', empresaId);
+          
+        console.log(`All subscriptions for empresa ${empresaId}:`, allSubs, 'Error:', allSubsError);
         
         // Si no hay suscripción de empresa y es superadmin, tiene acceso global
         if (isSuperAdmin()) {
@@ -281,7 +279,7 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
         userRole
       });
 
-      // Solo los superadmins tienen acceso completo global
+      // Los superadmins siempre tienen acceso completo global
       if (isSuperAdmin()) {
         console.log('User is superadmin with global system access');
         setIsAuthorized(true);
@@ -302,6 +300,7 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
       }
 
       // Verificar si la empresa tiene una suscripción activa
+      // La única condición para autorizar es que la empresa tenga suscripción activa
       if (subscriptionInfo?.isActive) {
         console.log('Company has active subscription, access authorized');
         setIsAuthorized(true);
