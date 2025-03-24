@@ -7,14 +7,27 @@ import { useUserRole } from './useUserRole';
 export type Cotizacion = Tables<"cotizaciones">;
 
 // Define basic types without circular references
-export type ExtendedCotizacion = Cotizacion & {
-  lead?: Tables<"leads"> | null;
-  desarrollo?: Tables<"desarrollos"> | null;
-  prototipo?: Tables<"prototipos"> | null;
+export interface ExtendedCotizacion extends Cotizacion {
+  lead?: {
+    id: string;
+    nombre: string;
+    email?: string | null;
+    telefono?: string | null; 
+  } | null;
+  desarrollo?: {
+    id: string;
+    nombre: string;
+    empresa_id: number;
+  } | null;
+  prototipo?: {
+    id: string;
+    nombre: string;
+    precio: number;
+  } | null;
   // These fields are now part of the database schema
   fecha_inicio_pagos?: string | null;
   fecha_finiquito?: string | null;
-};
+}
 
 type FetchCotizacionesOptions = {
   limit?: number;
@@ -31,13 +44,8 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
     console.log('Fetching cotizaciones with options:', options, 'for empresa:', empresaId);
     
     try {
-      // Build the basic query
+      // Build the basic query - we don't filter by empresa_id here since cotizaciones table doesn't have it
       let query = supabase.from('cotizaciones').select('*');
-      
-      // Filter by empresa_id if it exists
-      if (empresaId) {
-        query = query.eq('empresa_id', empresaId);
-      }
       
       // Apply limit if provided
       if (limit) {
@@ -51,40 +59,78 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         throw new Error(error.message);
       }
       
+      // If no cotizaciones or no empresa_id, return empty array or all cotizaciones
+      if (!cotizaciones || cotizaciones.length === 0 || !empresaId) {
+        console.log('No cotizaciones found or no empresa ID');
+        return cotizaciones as ExtendedCotizacion[] || [];
+      }
+      
       // If relations are requested, fetch them for each cotizacion
-      if (withRelations && cotizaciones && cotizaciones.length > 0) {
+      if (withRelations) {
         // Get all unique IDs for related entities
-        const leadIds = [...new Set(cotizaciones.map(c => c.lead_id))];
-        const desarrolloIds = [...new Set(cotizaciones.map(c => c.desarrollo_id))];
-        const prototipoIds = [...new Set(cotizaciones.map(c => c.prototipo_id))];
+        const leadIds = [...new Set(cotizaciones.map(c => c.lead_id).filter(Boolean))];
+        const desarrolloIds = [...new Set(cotizaciones.map(c => c.desarrollo_id).filter(Boolean))];
+        const prototipoIds = [...new Set(cotizaciones.map(c => c.prototipo_id).filter(Boolean))];
         
         // Fetch all related entities in batch queries
         const [leadsResponse, desarrollosResponse, prototipesResponse] = await Promise.all([
-          supabase.from('leads').select('*').in('id', leadIds),
-          supabase.from('desarrollos').select('*').in('id', desarrolloIds),
-          supabase.from('prototipos').select('*').in('id', prototipoIds)
+          supabase.from('leads').select('id, nombre, email, telefono').in('id', leadIds),
+          supabase.from('desarrollos').select('id, nombre, empresa_id').in('id', desarrolloIds),
+          supabase.from('prototipos').select('id, nombre, precio').in('id', prototipoIds)
         ]);
         
         const leads = leadsResponse.error ? [] : leadsResponse.data;
         const desarrollos = desarrollosResponse.error ? [] : desarrollosResponse.data;
         const prototipos = prototipesResponse.error ? [] : prototipesResponse.data;
         
+        // Filter cotizaciones that belong to the user's empresa
+        // We do this by filtering desarrollos by empresa_id
+        const empresaDesarrolloIds = desarrollos
+          .filter(d => d.empresa_id === empresaId)
+          .map(d => d.id);
+        
+        // Only include cotizaciones whose desarrollo_id is in empresaDesarrolloIds
+        const filteredCotizaciones = cotizaciones.filter(
+          cotizacion => empresaDesarrolloIds.includes(cotizacion.desarrollo_id)
+        );
+        
+        console.log('Filtered cotizaciones by empresa:', filteredCotizaciones.length);
+        
         // Map related entities to cotizaciones
-        const extendedCotizaciones: ExtendedCotizacion[] = cotizaciones.map(cotizacion => {
+        const extendedCotizaciones = filteredCotizaciones.map(cotizacion => {
           return {
             ...cotizacion,
             lead: leads.find(l => l.id === cotizacion.lead_id) || null,
             desarrollo: desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null,
             prototipo: prototipos.find(p => p.id === cotizacion.prototipo_id) || null
-          };
+          } as ExtendedCotizacion;
         });
         
-        console.log('Extended cotizaciones fetched:', extendedCotizaciones);
+        console.log('Extended cotizaciones fetched:', extendedCotizaciones.length);
         return extendedCotizaciones;
       }
       
-      console.log('Cotizaciones fetched:', cotizaciones);
-      return cotizaciones as ExtendedCotizacion[];
+      // If not requesting relations, we still need to filter by empresa_id
+      // So we need to fetch the desarrollos first to get the empresa_id
+      const { data: desarrollos, error: desarrollosError } = await supabase
+        .from('desarrollos')
+        .select('id, empresa_id')
+        .eq('empresa_id', empresaId);
+      
+      if (desarrollosError) {
+        console.error('Error fetching desarrollos:', desarrollosError);
+        return [] as ExtendedCotizacion[];
+      }
+      
+      const empresaDesarrolloIds = desarrollos.map(d => d.id);
+      
+      // Filter cotizaciones by desarrollo_id
+      const filteredCotizaciones = cotizaciones.filter(
+        cotizacion => empresaDesarrolloIds.includes(cotizacion.desarrollo_id)
+      );
+      
+      console.log('Cotizaciones filtered by empresa:', filteredCotizaciones.length);
+      return filteredCotizaciones as ExtendedCotizacion[];
     } catch (error) {
       console.error('Error in fetchCotizaciones:', error);
       throw error;

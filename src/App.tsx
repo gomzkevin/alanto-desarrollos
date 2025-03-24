@@ -4,6 +4,8 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { supabase } from '@/integrations/supabase/client';
+import RequireAuth from './components/auth/RequireAuth';
+import RequireSubscription from './components/auth/RequireSubscription';
 
 // Pages
 import HomePage from '@/pages/Index';
@@ -92,18 +94,105 @@ function App() {
           <Route path="/404" element={<NotFoundPage />} />
           
           {/* Dashboard Routes */}
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/dashboard/leads" element={<LeadsPage />} />
-          <Route path="/dashboard/desarrollos" element={<DesarrollosPage />} />
-          <Route path="/dashboard/desarrollos/:id" element={<DesarrolloDetailPage />} />
-          <Route path="/dashboard/propiedades" element={<PropiedadesPage />} />
-          <Route path="/dashboard/cotizaciones" element={<CotizacionesPage />} />
-          <Route path="/dashboard/cotizaciones/nueva" element={<NuevaCotizacionPage />} />
-          <Route path="/dashboard/ventas" element={<VentasPage />} />
-          <Route path="/dashboard/ventas/:ventaId" element={<VentaDetail />} />
-          <Route path="/dashboard/prototipos/:id" element={<PrototipoDetailPage />} />
-          <Route path="/dashboard/configuracion" element={<ConfiguracionPage />} />
-          <Route path="/dashboard/proyecciones" element={<ProyeccionesPage />} />
+          <Route path="/dashboard" element={
+            <RequireAuth>
+              <DashboardPage />
+            </RequireAuth>
+          } />
+          
+          {/* Leads - Protected by subscription */}
+          <Route path="/dashboard/leads" element={
+            <RequireAuth>
+              <RequireSubscription moduleName="Leads">
+                <LeadsPage />
+              </RequireSubscription>
+            </RequireAuth>
+          } />
+          
+          {/* Desarrollos - Protected by subscription */}
+          <Route path="/dashboard/desarrollos" element={
+            <RequireAuth>
+              <RequireSubscription moduleName="Desarrollos">
+                <DesarrollosPage />
+              </RequireSubscription>
+            </RequireAuth>
+          } />
+          
+          <Route path="/dashboard/desarrollos/:id" element={
+            <RequireAuth>
+              <RequireSubscription moduleName="Desarrollos">
+                <DesarrolloDetailPage />
+              </RequireSubscription>
+            </RequireAuth>
+          } />
+          
+          {/* Propiedades - Protected by subscription */}
+          <Route path="/dashboard/propiedades" element={
+            <RequireAuth>
+              <RequireSubscription moduleName="Propiedades">
+                <PropiedadesPage />
+              </RequireSubscription>
+            </RequireAuth>
+          } />
+          
+          {/* Cotizaciones - Protected by subscription */}
+          <Route path="/dashboard/cotizaciones" element={
+            <RequireAuth>
+              <RequireSubscription moduleName="Cotizaciones">
+                <CotizacionesPage />
+              </RequireSubscription>
+            </RequireAuth>
+          } />
+          
+          <Route path="/dashboard/cotizaciones/nueva" element={
+            <RequireAuth>
+              <RequireSubscription moduleName="Cotizaciones">
+                <NuevaCotizacionPage />
+              </RequireSubscription>
+            </RequireAuth>
+          } />
+          
+          {/* Ventas - Protected by subscription */}
+          <Route path="/dashboard/ventas" element={
+            <RequireAuth>
+              <RequireSubscription moduleName="Ventas">
+                <VentasPage />
+              </RequireSubscription>
+            </RequireAuth>
+          } />
+          
+          <Route path="/dashboard/ventas/:ventaId" element={
+            <RequireAuth>
+              <RequireSubscription moduleName="Ventas">
+                <VentaDetail />
+              </RequireSubscription>
+            </RequireAuth>
+          } />
+          
+          {/* Prototipos - Protected by subscription */}
+          <Route path="/dashboard/prototipos/:id" element={
+            <RequireAuth>
+              <RequireSubscription moduleName="Prototipos">
+                <PrototipoDetailPage />
+              </RequireSubscription>
+            </RequireAuth>
+          } />
+          
+          {/* Configuración - Always accessible */}
+          <Route path="/dashboard/configuracion" element={
+            <RequireAuth>
+              <ConfiguracionPage />
+            </RequireAuth>
+          } />
+          
+          {/* Proyecciones - Protected by subscription */}
+          <Route path="/dashboard/proyecciones" element={
+            <RequireAuth>
+              <RequireSubscription moduleName="Proyecciones">
+                <ProyeccionesPage />
+              </RequireSubscription>
+            </RequireAuth>
+          } />
           
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/404" replace />} />

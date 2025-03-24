@@ -20,13 +20,15 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
 
   useEffect(() => {
     // Solo verificar cuando tengamos toda la información necesaria
-    if (!isLoadingSubscription && authChecked && userId) {
+    if (!isLoadingSubscription && authChecked) {
       console.log('Verificando autorización de suscripción:', {
         userId,
         empresaId,
-        isSubscriptionActive: subscriptionInfo.isActive
+        isSubscriptionActive: subscriptionInfo.isActive,
+        moduleName: requiredModule
       });
 
+      // Verificación de empresa asignada
       if (!empresaId) {
         console.log('Usuario sin empresa asignada');
         toast({
@@ -39,8 +41,9 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
         return;
       }
 
+      // Verificación de suscripción activa para módulos que lo requieren
       if (!subscriptionInfo.isActive) {
-        console.log('Suscripción inactiva');
+        console.log('Suscripción inactiva para módulo:', requiredModule);
         const moduleText = requiredModule ? ` al módulo ${requiredModule}` : '';
         toast({
           title: "Suscripción requerida",
@@ -53,10 +56,12 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
       }
 
       // Si llegamos aquí, el usuario está autorizado
+      console.log('Usuario autorizado para acceder al módulo:', requiredModule);
       setIsAuthorized(true);
     }
   }, [userId, empresaId, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule]);
 
+  // Devolver estado de autorización y carga
   return {
     isAuthorized,
     isLoading: isLoadingSubscription || !authChecked || isAuthorized === null
