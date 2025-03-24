@@ -48,7 +48,7 @@ const getDefaultSubscriptionInfo = (): SubscriptionInfo => ({
 });
 
 /**
- * Hook para obtener la información de suscripción de una empresa
+ * Hook simplificado para obtener la información de suscripción de una empresa
  * @param empresaId ID de la empresa para la que se quiere consultar la suscripción
  */
 export const useCompanySubscription = (empresaId: number | null) => {
@@ -65,7 +65,7 @@ export const useCompanySubscription = (empresaId: number | null) => {
       console.log('Fetching subscription info for empresaId:', empresaId);
 
       try {
-        // Consulta directa para verificar suscripciones activas de la empresa
+        // Consulta directa y simplificada para verificar suscripciones activas de la empresa
         const { data: subscriptions, error: subError } = await supabase
           .from('subscriptions')
           .select('*, subscription_plans(*)')

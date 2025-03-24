@@ -17,7 +17,6 @@ interface RequireSubscriptionProps {
 
 /**
  * Componente que asegura que la empresa del usuario tiene una suscripción activa
- * Implementación simplificada que usa el nuevo hook useSubscriptionAccess
  */
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   children,
@@ -26,20 +25,18 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   loadingFallback,
   unauthorizedFallback
 }) => {
-  const { empresaId, userId, userRole, isAdmin, isSuperAdmin } = useUserRole();
+  const { empresaId, userId, userRole } = useUserRole();
   
   // Agregar logs para depurar la carga de datos del usuario
   useEffect(() => {
     console.log(`RequireSubscription for ${moduleName} - User data:`, {
       userId,
       empresaId,
-      userRole,
-      isAdmin: isAdmin(),
-      isSuperAdmin: isSuperAdmin()
+      userRole
     });
-  }, [userId, empresaId, userRole, moduleName, isAdmin, isSuperAdmin]);
+  }, [userId, empresaId, userRole, moduleName]);
   
-  // Usar el nuevo hook de acceso a suscripciones
+  // Usar el hook de acceso a suscripciones
   const { isAuthorized, isLoading, subscription } = useSubscriptionAccess({
     requiresSubscription: true,
     requiredModule: moduleName,
