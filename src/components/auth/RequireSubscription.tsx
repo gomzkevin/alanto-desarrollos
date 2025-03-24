@@ -49,9 +49,11 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   
   // Console logs para depuración
   useEffect(() => {
-    console.log(`RequireSubscription (${moduleName}) - subscription info:`, {
+    console.log(`RequireSubscription (${moduleName}) - subscription status:`, {
       isActive: subscription?.isActive,
       planName: subscription?.currentPlan?.name,
+      empresa: empresaId,
+      userId,
       error
     });
     console.log(`RequireSubscription (${moduleName}) - isAuthorized:`, isAuthorized);
@@ -66,7 +68,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
         variant: "destructive"
       });
     }
-  }, [isAuthorized, isLoading, subscription, error, moduleName]);
+  }, [isAuthorized, isLoading, subscription, error, moduleName, empresaId, userId]);
 
   // Mostrar estado de carga
   if (isLoading) {

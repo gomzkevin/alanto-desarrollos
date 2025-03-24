@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,52 +84,27 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
       console.log('Fetching subscription info for empresaId:', empresaId);
 
       try {
-        // IMPORTANTE: Verificar explícitamente que la query se está ejecutando con el parámetro correcto
-        console.log(`SUBSCRIPTION CHECK: Executing query to find active subscription for empresa_id=${empresaId}`);
-        
-        // Verificar suscripción activa para esta empresa - Query simplificada para depuración
-        const { data: empresaSubscription, error: empresaError } = await supabase
+        // Verificar si la empresa tiene una suscripción activa
+        const { data: subscriptions, error: subError } = await supabase
           .from('subscriptions')
           .select('id, status, empresa_id, plan_id, created_at, current_period_end, subscription_plans(id, name, price, interval, features)')
           .eq('empresa_id', empresaId)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        console.log('SUBSCRIPTION CHECK: Active subscription query result:', { 
-          empresaSubscription, 
-          empresaError,
-          queryParams: { empresa_id: empresaId, status: 'active' }
-        });
-
-        if (empresaError) {
-          console.error('Error fetching empresa subscription:', empresaError);
+          .eq('status', 'active');
+          
+        console.log(`Found ${subscriptions?.length || 0} active subscriptions for empresa ${empresaId}:`, subscriptions);
+        
+        if (subError) {
+          console.error('Error fetching empresa subscriptions:', subError);
           return getDefaultSubscriptionInfo();
         } 
         
-        if (empresaSubscription) {
-          console.log('Found active subscription for empresa:', empresaSubscription);
-          return await processSubscription(empresaSubscription, empresaId);
-        } 
+        // Si encontramos al menos una suscripción activa, usamos la primera
+        if (subscriptions && subscriptions.length > 0) {
+          console.log('Using active subscription:', subscriptions[0]);
+          return await processSubscription(subscriptions[0], empresaId);
+        }
         
-        // Si no hay suscripción activa, verificar específicamente por qué la empresa no tiene suscripción
-        console.log(`Empresa ID ${empresaId} has no active subscription. Checking ALL subscriptions for this empresa (including inactive):`);
-        const { data: allSubs, error: allSubsError } = await supabase
-          .from('subscriptions')
-          .select('id, status, empresa_id, plan_id, created_at, subscription_plans(name)')
-          .eq('empresa_id', empresaId);
-          
-        console.log(`All subscriptions for empresa ${empresaId}:`, allSubs, 'Error:', allSubsError);
-        
-        // Consultar todas las suscripciones activas en el sistema para depuración
-        console.log(`DEBUG: Checking ALL active subscriptions in the system:`);
-        const { data: allActiveSubs, error: allActiveSubsError } = await supabase
-          .from('subscriptions')
-          .select('id, status, empresa_id, plan_id')
-          .eq('status', 'active');
-          
-        console.log(`DEBUG: All active subscriptions in the system:`, allActiveSubs, 'Error:', allActiveSubsError);
-        
-        // Si no hay suscripción de empresa y es superadmin, tiene acceso global
+        // Si no hay suscripción activa para esta empresa, verificar si el usuario es superadmin
         if (isSuperAdmin()) {
           console.log('User is superadmin with global access privileges');
           return {
@@ -138,7 +112,7 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
             isActive: true, // Los superadmins siempre tienen una suscripción "activa" para control de acceso
           };
         }
-
+        
         // Sin suscripción activa
         console.log('No active subscription found for empresa');
         return getDefaultSubscriptionInfo();
@@ -288,11 +262,11 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
       console.log('Verifying subscription authorization:', {
         userId,
         empresaId,
+        userRole,
         isSubscriptionActive: subscriptionInfo?.isActive,
         moduleName: requiredModule,
         isAdmin: isAdmin(),
-        isSuperAdmin: isSuperAdmin(),
-        userRole
+        isSuperAdmin: isSuperAdmin()
       });
 
       // Los superadmins siempre tienen acceso completo global
@@ -315,10 +289,10 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
         return;
       }
 
-      // Verificar si la empresa tiene una suscripción activa
-      // La única condición para autorizar es que la empresa tenga suscripción activa
+      // REGLA PRINCIPAL: La única condición para autorizar es que la empresa tenga suscripción activa
+      // Todos los usuarios de la empresa tienen acceso si la empresa tiene suscripción
       if (subscriptionInfo?.isActive) {
-        console.log('Company has active subscription, access authorized');
+        console.log('Company has active subscription, access authorized for all company users');
         setIsAuthorized(true);
         return;
       }
