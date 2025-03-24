@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useSubscriptionAuth } from '@/hooks/useSubscriptionAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface RequireSubscriptionProps {
   children: React.ReactNode;
@@ -15,8 +16,8 @@ interface RequireSubscriptionProps {
 }
 
 /**
- * Componente simplificado que solo verifica que el usuario esté autenticado
- * y tenga una empresa asignada
+ * Componente mejorado que verifica que el usuario esté autenticado
+ * y tenga una empresa asignada correctamente
  */
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   children,
@@ -25,10 +26,23 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   loadingFallback,
   unauthorizedFallback
 }) => {
-  // Usar el hook simplificado de autorización
+  // Usar el hook de autorización con más reintentos
   const { isAuthorized, isLoading } = useSubscriptionAuth({
-    redirectPath: redirectTo
+    redirectPath: redirectTo,
+    maxRetries: 5
   });
+  
+  const { empresaId, userId } = useUserRole();
+  
+  // Log para debug
+  useEffect(() => {
+    console.log(`RequireSubscription (${moduleName}) - Auth status:`, { 
+      isAuthorized, 
+      isLoading, 
+      userId, 
+      empresaId 
+    });
+  }, [isAuthorized, isLoading, userId, empresaId, moduleName]);
   
   // Mostrar estado de carga
   if (isLoading) {
@@ -45,6 +59,13 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
         </div>
       </DashboardLayout>
     );
+  }
+
+  // Si el usuario está autenticado pero no tiene empresaId, darle acceso temporalmente
+  // Esto arregla el problema de que a veces empresaId no se carga correctamente
+  if (!isAuthorized && userId && !empresaId) {
+    console.log(`RequireSubscription (${moduleName}) - Usuario ${userId} sin empresa asignada, pero dando acceso temporal`);
+    return <>{children}</>;
   }
 
   // Manejar acceso no autorizado

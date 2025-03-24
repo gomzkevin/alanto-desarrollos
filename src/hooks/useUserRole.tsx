@@ -14,6 +14,7 @@ export const useUserRole = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [empresaChecks, setEmpresaChecks] = useState(0);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -71,22 +72,38 @@ export const useUserRole = () => {
           if (userData.empresa_id) {
             setEmpresaId(userData.empresa_id);
             console.log('Empresa ID set:', userData.empresa_id);
-          } else if (retryCount < 3) {
-            // If empresa_id is not set but should be, try to update it in the database
-            console.log('No empresa_id found for user, attempting to set default empresa_id');
+          } else {
+            // Si el usuario no tiene empresa_id pero debería tenerlo (no es superadmin)
+            console.log('No empresa_id found for user, checking further');
             
-            // For users who should have empresa_id 1
-            const { error: updateError } = await supabase
+            // Intentamos hacer una búsqueda directa para asegurar que no sea un problema de timing
+            const { data: directData, error: directError } = await supabase
               .from('usuarios')
-              .update({ empresa_id: 1 })
-              .eq('id', userData.id);
+              .select('empresa_id')
+              .eq('auth_id', user.id)
+              .single();
               
-            if (updateError) {
-              console.error('Failed to update empresa_id:', updateError);
+            if (!directError && directData && directData.empresa_id) {
+              console.log('Found empresa_id from direct check:', directData.empresa_id);
+              setEmpresaId(directData.empresa_id);
+            } else if (retryCount < 3) {
+              // Intentar actualizar el usuario con empresa_id=1 para usuarios sin empresa asignada
+              console.log('Still no empresa_id, attempting to set default empresa_id=1');
+              
+              const { error: updateError } = await supabase
+                .from('usuarios')
+                .update({ empresa_id: 1 })
+                .eq('id', userData.id);
+                
+              if (updateError) {
+                console.error('Failed to update empresa_id:', updateError);
+              } else {
+                console.log('Updated user with empresa_id: 1');
+                setEmpresaId(1);
+                setRetryCount(prev => prev + 1);
+              }
             } else {
-              console.log('Updated user with empresa_id: 1');
-              setEmpresaId(1);
-              setRetryCount(prev => prev + 1);
+              console.error('Failed to find or set empresa_id after multiple attempts');
             }
           }
         } else {
@@ -176,6 +193,38 @@ export const useUserRole = () => {
       authListener.subscription.unsubscribe();
     };
   }, [retryCount]);
+
+  // Efecto adicional para verificar la empresa_id periódicamente si no se ha cargado
+  useEffect(() => {
+    // Si ya tenemos empresaId o se han hecho demasiados intentos, salir
+    if (empresaId || empresaChecks >= 5 || !userId) return;
+
+    const checkEmpresaId = async () => {
+      try {
+        console.log(`Verificación adicional de empresa_id (intento ${empresaChecks + 1})`);
+        const { data, error } = await supabase
+          .from('usuarios')
+          .select('empresa_id')
+          .eq('auth_id', userId)
+          .single();
+          
+        if (!error && data && data.empresa_id) {
+          console.log('Found empresa_id in additional check:', data.empresa_id);
+          setEmpresaId(data.empresa_id);
+        } else {
+          console.log('Additional check did not find empresa_id');
+          setEmpresaChecks(prev => prev + 1);
+        }
+      } catch (error) {
+        console.error('Error in additional empresa_id check:', error);
+        setEmpresaChecks(prev => prev + 1);
+      }
+    };
+
+    // Esperar 1 segundo antes de verificar para dar tiempo a otras operaciones
+    const timeoutId = setTimeout(checkEmpresaId, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [userId, empresaId, empresaChecks]);
 
   // Helper methods - Implementación consistente de verificaciones de rol
   const isUserAdmin = () => {

@@ -1,3 +1,4 @@
+
 import useCompanySubscription from '@/hooks/useCompanySubscription';
 import { toast } from '@/components/ui/use-toast';
 import { ResourceType } from './types';
@@ -26,7 +27,7 @@ export const useResourceActions = (resourceType: ResourceType) => {
   const { userId, empresaId, isAdmin } = useUserRole();
   const { subscriptionInfo } = useCompanySubscription();
   
-  // Obtener información de desarrollos - pass empty options object to satisfy parameter requirement
+  // Obtener información de desarrollos - pass empty options object to fix the TypeScript error
   const { desarrollos } = useDesarrollos({ onSuccess: () => {} });
   
   // Obtener información de vendedores

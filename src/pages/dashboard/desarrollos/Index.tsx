@@ -82,7 +82,7 @@ const DesarrollosPage = () => {
 
   const normalizeDesarrollos = (desarrollosData: Desarrollo[]): Desarrollo[] => {
     return desarrollosData.map(desarrollo => {
-      const normalizedDesarrollo: Partial<Desarrollo> = {
+      return {
         ...desarrollo,
         unidades_disponibles: Math.min(
           desarrollo.unidades_disponibles || 0,
@@ -91,9 +91,7 @@ const DesarrollosPage = () => {
         avance_porcentaje: desarrollo.total_unidades 
           ? Math.round(((desarrollo.total_unidades - (desarrollo.unidades_disponibles || 0)) / desarrollo.total_unidades) * 100)
           : 0
-      };
-      
-      return normalizedDesarrollo as Desarrollo;
+      } as Desarrollo;
     });
   };
 
