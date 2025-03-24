@@ -10,10 +10,9 @@ interface PrototipoHeaderProps {
   onBack: () => void;
   onEdit: () => void;
   updatePrototipoImage: (imageUrl: string) => Promise<boolean>;
-  canEdit?: boolean;
 }
 
-const PrototipoHeader = ({ prototipo, onBack, onEdit, updatePrototipoImage, canEdit = false }: PrototipoHeaderProps) => {
+const PrototipoHeader = ({ prototipo, onBack, onEdit, updatePrototipoImage }: PrototipoHeaderProps) => {
   const handleImageUploaded = async (imageUrl: string) => {
     console.log("Image uploaded in PrototipoHeader:", imageUrl);
     const success = await updatePrototipoImage(imageUrl);
@@ -31,12 +30,10 @@ const PrototipoHeader = ({ prototipo, onBack, onEdit, updatePrototipoImage, canE
           Volver
         </Button>
         
-        {canEdit && (
-          <Button variant="outline" size="sm" onClick={onEdit}>
-            <Edit className="mr-1 h-4 w-4" />
-            Editar
-          </Button>
-        )}
+        <Button variant="outline" size="sm" onClick={onEdit}>
+          <Edit className="mr-1 h-4 w-4" />
+          Editar
+        </Button>
       </div>
       
       <div className="flex flex-col sm:flex-row gap-6">
@@ -47,7 +44,6 @@ const PrototipoHeader = ({ prototipo, onBack, onEdit, updatePrototipoImage, canE
             folderPath="prototipos"
             currentImageUrl={prototipo.imagen_url}
             onImageUploaded={handleImageUploaded}
-            disabled={!canEdit}
           />
         </div>
         

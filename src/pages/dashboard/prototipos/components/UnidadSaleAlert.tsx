@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, ArrowRight } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -20,20 +20,9 @@ export const UnidadSaleAlert: React.FC<UnidadSaleAlertProps> = ({
 }) => {
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState(10);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const navigatingRef = useRef(false);
   
   // Reset timer when visibility changes
   useEffect(() => {
-    // Clear existing timer if any
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    
-    // Reset state
-    navigatingRef.current = false;
-    
     if (!isVisible) {
       setTimeLeft(10);
       return;
@@ -41,59 +30,31 @@ export const UnidadSaleAlert: React.FC<UnidadSaleAlertProps> = ({
     
     console.log('Sale alert visible with ventaId:', ventaId, 'and unidadId:', unidadId);
     
-    // Start a new timer with a slightly slower rate (1.5 second) to reduce state updates
-    timerRef.current = setInterval(() => {
+    const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          // Clean up timer
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-          
-          // Avoid navigation if already navigating
-          if (!navigatingRef.current && ventaId) {
-            navigatingRef.current = true;
-            // Use setTimeout to avoid immediate navigation that might cause excessive history changes
-            setTimeout(() => {
-              navigate(`/dashboard/ventas/${ventaId}`);
-              onClose();
-            }, 100);
+          clearInterval(timer);
+          // Auto-redirect when timer reaches zero
+          if (ventaId) {
+            navigate(`/dashboard/ventas/${ventaId}`);
+            onClose();
           }
           return 0;
         }
         return prev - 1;
       });
-    }, 1500); // Increased interval to 1.5 seconds
+    }, 1000);
     
-    // Cleanup
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
+    return () => clearInterval(timer);
   }, [isVisible, ventaId, navigate, onClose, unidadId]);
   
   if (!isVisible || !ventaId) return null;
   
   const handleGoToSale = () => {
-    // Avoid multiple clicks
-    if (navigatingRef.current) return;
-    
-    // Stop timer
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+    if (ventaId) {
+      navigate(`/dashboard/ventas/${ventaId}`);
     }
-    
-    // Set navigating flag and add a small delay to prevent rapid state updates
-    navigatingRef.current = true;
-    setTimeout(() => {
-      if (ventaId) {
-        navigate(`/dashboard/ventas/${ventaId}`);
-      }
-      onClose();
-    }, 100);
+    onClose();
   };
   
   return (

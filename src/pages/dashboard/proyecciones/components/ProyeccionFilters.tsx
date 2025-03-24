@@ -16,8 +16,7 @@ export const ProyeccionFilters = ({
   onDesarrolloChange,
   onPrototipoChange
 }: ProyeccionFiltersProps) => {
-  const { desarrollos, isLoading: isLoadingDesarrollos } = useDesarrollos();
-  
+  const { desarrollos = [], isLoading: desarrollosLoading } = useDesarrollos();
   const { prototipos = [], isLoading: prototiposLoading } = usePrototipos({ 
     desarrolloId: selectedDesarrolloId !== 'global' ? selectedDesarrolloId : null
   });

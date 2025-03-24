@@ -8,12 +8,11 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { signUpWithEmailPassword } from "@/services/authService";
 
-export interface SignupFormProps {
+interface SignupFormProps {
   onSuccess?: () => void;
-  onViewChange?: () => void;
 }
 
-export function SignupForm({ onSuccess, onViewChange }: SignupFormProps) {
+export function SignupForm({ onSuccess }: SignupFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);

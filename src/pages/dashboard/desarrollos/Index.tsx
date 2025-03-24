@@ -1,142 +1,206 @@
-import React, { useState } from 'react';
-import { useDesarrollos } from '@/hooks/useDesarrollos';
+
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import useDesarrollos from '@/hooks/useDesarrollos';
+import DesarrolloCard from '@/components/dashboard/DesarrolloCard';
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { useUserRole } from '@/hooks/useUserRole';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { PlusCircle } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { MoreHorizontal } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import AdminResourceDialog from '@/components/dashboard/AdminResourceDialog';
+import { Tables } from '@/integrations/supabase/types';
+import useUnidades from '@/hooks/useUnidades';
+import { toast } from '@/hooks/use-toast';
 
-interface DesarrolloFormData {
-  // Define required fields for DesarrolloFormData
-  nombre: string;
-  ubicacion: string;
-  total_unidades: number;
-  unidades_disponibles: number;
-  // Add other fields as needed
-}
+type Desarrollo = Tables<"desarrollos">;
 
-const DesarrollosPage: React.FC = () => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { empresaId } = useUserRole();
+const DesarrollosPage = () => {
+  const navigate = useNavigate();
+  const [openDialog, setOpenDialog] = useState(false);
+  const [desarrollosWithRealCounts, setDesarrollosWithRealCounts] = useState<Desarrollo[]>([]);
+  const [hasTriedInitialLoad, setHasTriedInitialLoad] = useState(false);
   
-  const { desarrollos, isLoading, refetch } = useDesarrollos();
+  // Get user info from useUserRole hook
+  const { 
+    userId,
+    empresaId,
+    isAdmin,
+    isLoading: isUserLoading 
+  } = useUserRole();
   
-  // Fix the createDesarrollos function to correctly handle form data
-  const createDesarrollos = async (formData: DesarrolloFormData) => {
-    if (!empresaId) {
-      console.error('No empresa ID available');
-      return null;
+  // Use empresa_id instead of user_id for filtering desarrollos
+  const { 
+    desarrollos = [], 
+    isLoading, 
+    error,
+    refetch,
+    isFetched
+  } = useDesarrollos({ 
+    withPrototipos: true,
+    empresaId // Use empresaId instead of userId
+  });
+  
+  const { countDesarrolloUnidadesByStatus } = useUnidades();
+
+  const canCreateResource = () => {
+    return isAdmin();
+  };
+
+  // Force a refetch when empresaId becomes available
+  useEffect(() => {
+    if (empresaId !== null && !hasTriedInitialLoad) {
+      console.log('Empresa ID available, forcing refetch:', empresaId);
+      refetch();
+      setHasTriedInitialLoad(true);
     }
+  }, [empresaId, refetch, hasTriedInitialLoad]);
+
+  // Update unit counts when desarrollos change
+  useEffect(() => {
+    const updateRealUnitCounts = async () => {
+      if (desarrollos.length === 0 || isLoading) return;
+      
+      try {
+        const updatedDesarrollos = await Promise.all(
+          desarrollos.map(async (desarrollo) => {
+            try {
+              const counts = await countDesarrolloUnidadesByStatus(desarrollo.id);
+              
+              return {
+                ...desarrollo,
+                unidades_disponibles: counts.disponibles,
+                total_unidades: counts.total || 0
+              };
+            } catch (error) {
+              console.error('Error updating real counts for desarrollo:', desarrollo.id, error);
+              return desarrollo;
+            }
+          })
+        );
+        
+        setDesarrollosWithRealCounts(updatedDesarrollos);
+      } catch (error) {
+        console.error('Error updating unit counts:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los conteos de unidades",
+          variant: "destructive"
+        });
+      }
+    };
     
-    try {
-      // Add the empresa_id to the form data
-      const dataToInsert = {
-        ...formData,
-        empresa_id: empresaId
+    updateRealUnitCounts();
+  }, [desarrollos, isLoading]);
+
+  const normalizeDesarrollos = (desarrollos: Desarrollo[]): Desarrollo[] => {
+    return desarrollos.map(desarrollo => {
+      const normalizedDesarrollo = {
+        ...desarrollo,
+        unidades_disponibles: Math.min(
+          desarrollo.unidades_disponibles || 0,
+          desarrollo.total_unidades || 0
+        ),
+        avance_porcentaje: desarrollo.total_unidades 
+          ? Math.round(((desarrollo.total_unidades - (desarrollo.unidades_disponibles || 0)) / desarrollo.total_unidades) * 100)
+          : 0
       };
       
-      const { data, error } = await supabase
-        .from('desarrollos')
-        .insert(dataToInsert)
-        .select();
-        
-      if (error) throw error;
-      
-      refetch();
-      return data;
-    } catch (error) {
-      console.error('Error creating desarrollo:', error);
-      return null;
-    }
-  };
-  
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return format(date, 'PPP', { locale: es });
+      return normalizedDesarrollo;
+    });
   };
 
+  const handleDesarrolloClick = (id: string) => {
+    navigate(`/dashboard/desarrollos/${id}`);
+  };
+
+  const displayDesarrollos = desarrollosWithRealCounts.length > 0 
+    ? normalizeDesarrollos(desarrollosWithRealCounts)
+    : normalizeDesarrollos(desarrollos as Desarrollo[]);
+
+  // Unified loading state
+  const isActuallyLoading = isUserLoading || (isLoading && !isFetched);
+  
+  // Add debug logs to help troubleshoot
+  console.log('Desarrollo page render:', { 
+    userId,
+    empresaId,
+    isUserLoading,
+    isLoading,
+    isFetched,
+    hasTriedInitialLoad,
+    desarrollosCount: desarrollos.length,
+    displayDesarrollosCount: displayDesarrollos.length
+  });
+
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-semibold">Desarrollos</h1>
-        <AdminResourceDialog
-          resourceType="desarrollos"
-          buttonText="Nuevo desarrollo"
-          buttonIcon={<PlusCircle className="mr-2 h-4 w-4" />}
-          onSuccess={() => {
-            refetch();
-          }}
-        />
+    <DashboardLayout>
+      <div className="space-y-6 p-6 pb-16">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold text-slate-800">Desarrollos Inmobiliarios</h1>
+            <p className="text-slate-600">Gestiona y monitorea tus desarrollos inmobiliarios</p>
+          </div>
+          
+          {canCreateResource() && (
+            <Button 
+              onClick={() => setOpenDialog(true)}
+              className="flex items-center gap-2"
+            >
+              Nuevo desarrollo
+            </Button>
+          )}
+          
+          <AdminResourceDialog 
+            resourceType="desarrollos" 
+            buttonText="Nuevo desarrollo" 
+            onSuccess={refetch}
+            open={openDialog}
+            onClose={() => setOpenDialog(false)}
+            defaultValues={empresaId ? { empresa_id: empresaId } : undefined}
+          />
+        </div>
+
+        {isActuallyLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-[400px] bg-slate-100 animate-pulse rounded-xl" />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-10">
+            <p className="text-red-500">Error al cargar desarrollos</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => refetch()}
+            >
+              Intentar de nuevo
+            </Button>
+          </div>
+        ) : displayDesarrollos.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-slate-600">No tienes desarrollos inmobiliarios</p>
+            {canCreateResource() && (
+              <Button 
+                className="mt-4"
+                onClick={() => setOpenDialog(true)}
+              >
+                Crear tu primer desarrollo
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayDesarrollos.map((desarrollo) => (
+              <DesarrolloCard 
+                key={desarrollo.id} 
+                desarrollo={desarrollo}
+                onViewDetails={handleDesarrolloClick}
+              />
+            ))}
+          </div>
+        )}
       </div>
-      
-      <Table>
-        <TableCaption>Lista de desarrollos de la empresa</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[100px]">Nombre</TableHead>
-            <TableHead>Ubicación</TableHead>
-            <TableHead>Total Unidades</TableHead>
-            <TableHead>Unidades Disponibles</TableHead>
-            <TableHead>Fecha Inicio</TableHead>
-            <TableHead>Fecha Entrega</TableHead>
-            <TableHead className="text-right">Acciones</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {desarrollos?.map((desarrollo) => (
-            <TableRow key={desarrollo.id}>
-              <TableCell className="font-medium">{desarrollo.nombre}</TableCell>
-              <TableCell>{desarrollo.ubicacion}</TableCell>
-              <TableCell>{desarrollo.total_unidades}</TableCell>
-              <TableCell>{desarrollo.unidades_disponibles}</TableCell>
-              <TableCell>{desarrollo.fecha_inicio ? formatDate(desarrollo.fecha_inicio) : 'N/A'}</TableCell>
-              <TableCell>{desarrollo.fecha_entrega ? formatDate(desarrollo.fecha_entrega) : 'N/A'}</TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Abrir menú</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                    <DropdownMenuItem>
-                      Editar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      Eliminar
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    </DashboardLayout>
   );
 };
 

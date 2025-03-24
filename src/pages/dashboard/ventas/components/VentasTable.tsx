@@ -7,15 +7,6 @@ import { Card } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { VentaProgress } from './VentaProgress';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserRole } from '@/hooks/useUserRole';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 interface VentasTableProps {
   refreshTrigger?: number;
@@ -31,52 +22,32 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
   const { ventas, isLoading, refetch } = useVentas();
   const [ventasPayments, setVentasPayments] = useState<Record<string, VentaWithPayments>>({});
   const [loadingPayments, setLoadingPayments] = useState(false);
-  const { empresaId } = useUserRole();
   const navigate = useNavigate();
   
-  // Efecto para refrescar cuando cambia el trigger
   useEffect(() => {
     if (refreshTrigger > 0) {
-      console.log('Refrescando ventas por trigger:', refreshTrigger);
       refetch();
     }
   }, [refreshTrigger, refetch]);
 
-  // Efecto para refrescar cuando cambia empresaId
-  useEffect(() => {
-    if (empresaId) {
-      console.log('Refrescando ventas por cambio de empresaId:', empresaId);
-      refetch();
-    }
-  }, [empresaId, refetch]);
-
   // Fetch all payments for ventas to accurately display progress
   useEffect(() => {
     const fetchVentasPayments = async () => {
-      if (!ventas || ventas.length === 0) {
-        console.log('No hay ventas para cargar pagos');
-        return;
-      }
+      if (!ventas.length) return;
       
       setLoadingPayments(true);
       try {
         // First get all compradores_venta for all ventas
         const ventaIds = ventas.map(v => v.id);
-        console.log('Fetching payments for ventas:', ventaIds);
-        
         const { data: compradoresVenta, error: errorCompradores } = await supabase
           .from('compradores_venta')
           .select('id, venta_id')
           .in('venta_id', ventaIds);
         
-        if (errorCompradores) {
-          console.error('Error fetching compradores:', errorCompradores);
-          throw errorCompradores;
-        }
+        if (errorCompradores) throw errorCompradores;
         
-        if (!compradoresVenta || compradoresVenta.length === 0) {
+        if (!compradoresVenta.length) {
           // No compradores found for any ventas
-          console.log('No compradores found for ventas');
           const emptyPayments = ventaIds.reduce((acc, ventaId) => {
             acc[ventaId] = { id: ventaId, progreso: 0, montoPagado: 0 };
             return acc;
@@ -102,16 +73,14 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
           let montoPagado = 0;
           
           if (compradorIds.length > 0) {
-            // Get pagos for each comprador
+            // Get pagos for each comprador - now using 'registrado' instead of 'verificado'
             const { data: pagos, error: errorPagos } = await supabase
               .from('pagos')
               .select('monto, estado')
               .in('comprador_venta_id', compradorIds)
-              .eq('estado', 'registrado');
+              .eq('estado', 'registrado'); // Cambiado de 'verificado' a 'registrado'
             
-            if (errorPagos) {
-              console.error('Error fetching pagos:', errorPagos);
-            } else if (pagos) {
+            if (!errorPagos && pagos) {
               montoPagado = pagos.reduce((sum, pago) => sum + pago.monto, 0);
             }
           }
@@ -157,20 +126,15 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
     navigate(`/dashboard/ventas/${ventaId}`);
   };
 
-  console.log("Rendering VentasTable:", { isLoading, loadingPayments, ventasCount: ventas?.length });
-
   if (isLoading || loadingPayments) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Cargando ventas...</p>
-        </div>
+        <p className="text-muted-foreground">Cargando ventas...</p>
       </div>
     );
   }
 
-  if (!ventas || ventas.length === 0) {
+  if (ventas.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center">
         <h3 className="text-xl font-semibold mb-2">No hay ventas registradas</h3>
@@ -185,55 +149,55 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
     <div className="space-y-4">
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-[35%]">Desarrollo / Unidad</TableHead>
-                <TableHead className="w-[12%]">Tipo</TableHead>
-                <TableHead className="w-[15%]">Precio Total</TableHead>
-                <TableHead className="w-[25%]">Progreso</TableHead>
-                <TableHead className="w-[13%]">Estado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <table className="w-full">
+            <thead>
+              <tr className="bg-muted/50">
+                <th className="text-left p-4 font-medium w-[35%]">Desarrollo / Unidad</th>
+                <th className="text-left p-4 font-medium w-[12%]">Tipo</th>
+                <th className="text-left p-4 font-medium w-[15%]">Precio Total</th>
+                <th className="text-left p-4 font-medium w-[25%]">Progreso</th>
+                <th className="text-left p-4 font-medium w-[13%]">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
               {ventas.map((venta) => {
                 const paymentData = ventasPayments[venta.id] || { progreso: 0, montoPagado: 0 };
                 
                 return (
-                  <TableRow 
+                  <tr 
                     key={venta.id} 
-                    className="cursor-pointer hover:bg-muted/30"
+                    className="border-t hover:bg-muted/30 cursor-pointer"
                     onClick={() => handleRowClick(venta.id)}
                   >
-                    <TableCell>
+                    <td className="p-4">
                       <div>
                         <p className="font-medium">{venta.unidad?.prototipo?.desarrollo?.nombre || 'Desarrollo'}</p>
                         <p className="text-sm text-muted-foreground">
                           {venta.unidad?.prototipo?.nombre || 'Prototipo'} - Unidad {venta.unidad?.numero || 'N/A'}
                         </p>
                       </div>
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="p-4">
                       {venta.es_fraccional ? (
                         <Badge variant="outline">Fraccional</Badge>
                       ) : (
                         <Badge variant="outline">Individual</Badge>
                       )}
-                    </TableCell>
-                    <TableCell>{formatCurrency(venta.precio_total)}</TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="p-4">{formatCurrency(venta.precio_total)}</td>
+                    <td className="p-4">
                       <VentaProgress 
                         progreso={paymentData.progreso} 
                         montoTotal={venta.precio_total} 
                         montoPagado={paymentData.montoPagado}
                       />
-                    </TableCell>
-                    <TableCell>{getEstadoBadge(venta.estado)}</TableCell>
-                  </TableRow>
+                    </td>
+                    <td className="p-4">{getEstadoBadge(venta.estado)}</td>
+                  </tr>
                 );
               })}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       </Card>
     </div>

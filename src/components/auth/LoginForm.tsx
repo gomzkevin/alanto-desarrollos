@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,9 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface LoginFormProps {
   onSuccess?: () => void;
-  onViewChange?: () => void;
 }
 
-export function LoginForm({ onSuccess, onViewChange }: LoginFormProps) {
+export function LoginForm({ onSuccess }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,14 +35,17 @@ export function LoginForm({ onSuccess, onViewChange }: LoginFormProps) {
           description: "Bienvenido de nuevo",
         });
         
+        // After successful login, redirect to dashboard
         navigate("/dashboard");
         if (onSuccess) onSuccess();
       } else {
+        // Personalizar mensaje de error para hacerlo más amigable
         let errorMsg = result.error || "Error desconocido al iniciar sesión";
         
         if (errorMsg.includes("Email not confirmed") || errorMsg.includes("Correo no confirmado")) {
           errorMsg = "Su correo electrónico no ha sido confirmado. Intentando confirmar automáticamente...";
           
+          // Intentamos iniciar sesión nuevamente después de un breve retraso
           setTimeout(async () => {
             const retryResult = await signInWithEmailPassword(email, password, true);
             if (retryResult.success) {
@@ -113,18 +116,6 @@ export function LoginForm({ onSuccess, onViewChange }: LoginFormProps) {
             ¿Olvidó su contraseña?
           </Link>
         </div>
-        {onViewChange && (
-          <div className="text-sm text-center mt-2">
-            ¿No tiene una cuenta?{" "}
-            <button
-              type="button"
-              onClick={onViewChange}
-              className="text-indigo-600 hover:text-indigo-800"
-            >
-              Registrarse
-            </button>
-          </div>
-        )}
       </CardFooter>
     </form>
   );

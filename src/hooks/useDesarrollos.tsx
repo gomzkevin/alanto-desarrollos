@@ -1,148 +1,245 @@
 
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
-import { Tables } from '@/integrations/supabase/types';
+import { Tables, Json } from '@/integrations/supabase/types';
+import { toast } from '@/components/ui/use-toast';
 
-export type Desarrollo = Tables<'desarrollos'>;
+export type Desarrollo = Tables<"desarrollos"> & {
+  amenidades?: string[] | null;
+};
 
-interface UseDesarrollosOptions {
-  empresa_id?: number;
-  onSuccess?: (data: Desarrollo[]) => void;
-  onError?: (error: Error) => void;
-}
+// Define extended type with prototipos relation
+export type ExtendedDesarrollo = Desarrollo & {
+  prototipos?: Tables<"prototipos">[] | null;
+};
 
-export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
-  const [isCreating, setIsCreating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const { toast } = useToast();
-  const { empresaId } = useUserRole();
+type FetchDesarrollosOptions = {
+  limit?: number;
+  withPrototipos?: boolean;
+  empresaId?: number | null;
+};
 
-  const fetchDesarrollos = async (): Promise<Desarrollo[]> => {
-    try {
-      let query = supabase
-        .from('desarrollos')
-        .select('*')
-        .order('nombre', { ascending: true });
-
-      if (options.empresa_id) {
-        query = query.eq('empresa_id', options.empresa_id);
-      } else if (empresaId) {
-        query = query.eq('empresa_id', empresaId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error al obtener desarrollos:', error);
-        throw error;
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching desarrollos:', error);
-      return [];
-    }
-  };
-
-  const { data: desarrollos, isLoading, error, refetch } = useQuery({
-    queryKey: ['desarrollos', options.empresa_id, empresaId],
-    queryFn: fetchDesarrollos,
-    staleTime: 1000 * 60 * 5, // 5 minutos
-    refetchOnWindowFocus: false,
-    meta: {
-      onSuccess: options.onSuccess,
-      onError: options.onError
-    }
-  });
-
-  // Fix create function to handle field type issues
-  const createDesarrollo = async (desarrolloData: Partial<Desarrollo>) => {
-    setIsCreating(true);
+export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
+  const { limit, withPrototipos = false, empresaId = null } = options;
+  
+  // Function to fetch desarrollos
+  const fetchDesarrollos = async (): Promise<ExtendedDesarrollo[]> => {
+    console.log('Fetching desarrollos with options:', options);
     
     try {
-      // Remove fields that don't exist in the database schema
-      const { latitud, longitud, estado, fecha_finalizacion_estimada, ...validData } = desarrolloData as any;
+      // Build the select query
+      let query = supabase.from('desarrollos').select('*');
       
-      // Ensure required fields have default values if not provided
-      const dataToInsert = {
-        ...validData,
-        empresa_id: options.empresa_id || empresaId || 1,
-        total_unidades: validData.total_unidades || 0,
-        unidades_disponibles: validData.unidades_disponibles || 0,
-        fecha_inicio: validData.fecha_inicio || new Date().toISOString(),
-        fecha_entrega: validData.fecha_entrega || null
-      };
+      // Filter by empresa_id if provided
+      if (empresaId) {
+        // Filter desarrollos by empresa_id instead of user_id
+        query = query.eq('empresa_id', empresaId);
+        console.log(`Filtering desarrollos by empresa_id: ${empresaId}`);
+      }
       
-      const { data, error } = await supabase
-        .from('desarrollos')
-        .insert(dataToInsert)
-        .select();
+      // Apply limit if provided
+      if (limit) {
+        query = query.limit(limit);
+      }
+      
+      // Order by nombre
+      query = query.order('nombre');
+      
+      const { data: desarrollos, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching desarrollos:', error);
+        throw new Error(error.message);
+      }
+      
+      // Process desarrollos to handle JSON amenidades
+      const processedDesarrollos = desarrollos.map(desarrollo => {
+        // Parse amenidades from JSON to string array if it exists
+        let amenidades: string[] | null = null;
         
-      if (error) throw error;
+        // Check if amenidades exists and handle different possible formats
+        if (desarrollo.amenidades) {
+          if (Array.isArray(desarrollo.amenidades)) {
+            // If it's already an array, convert all items to strings
+            amenidades = desarrollo.amenidades.map(item => String(item));
+          } else if (typeof desarrollo.amenidades === 'string') {
+            // If it's a JSON string, parse it
+            try {
+              const parsed = JSON.parse(desarrollo.amenidades);
+              if (Array.isArray(parsed)) {
+                amenidades = parsed.map(item => String(item));
+              }
+            } catch (e) {
+              // If parsing fails, use the string as a single item array
+              amenidades = [desarrollo.amenidades];
+            }
+          } else {
+            // Handle object case by converting to array of strings
+            const jsonObj = desarrollo.amenidades as Json;
+            
+            // For objects we'll extract their values as strings, if they have an id property
+            if (typeof jsonObj === 'object' && jsonObj !== null) {
+              if (Array.isArray(jsonObj)) {
+                amenidades = jsonObj.map(item => String(item));
+              } else {
+                // Just use the keys if it's a regular object
+                amenidades = Object.values(jsonObj).map(val => String(val));
+              }
+            }
+          }
+        }
+        
+        const processedDesarrollo: ExtendedDesarrollo = {
+          ...desarrollo,
+          amenidades
+        };
+        
+        return processedDesarrollo;
+      });
       
-      await refetch();
-      return data;
+      // If relations are requested, fetch them for each desarrollo
+      if (withPrototipos && processedDesarrollos && processedDesarrollos.length > 0) {
+        const extendedDesarrollos: ExtendedDesarrollo[] = await Promise.all(
+          processedDesarrollos.map(async (desarrollo) => {
+            const { data: prototipos, error: prototiposError } = await supabase
+              .from('prototipos')
+              .select('*')
+              .eq('desarrollo_id', desarrollo.id);
+            
+            return {
+              ...desarrollo,
+              prototipos: prototiposError ? null : prototipos
+            };
+          })
+        );
+        
+        console.log('Extended desarrollos fetched:', extendedDesarrollos);
+        return extendedDesarrollos;
+      }
+      
+      console.log('Desarrollos fetched:', processedDesarrollos);
+      return processedDesarrollos;
     } catch (error) {
-      console.error('Error al crear desarrollo:', error);
+      console.error('Error in fetchDesarrollos:', error);
       throw error;
-    } finally {
-      setIsCreating(false);
     }
   };
 
-  const updateDesarrollo = async (id: string, updates: Partial<Desarrollo>) => {
-    setIsUpdating(true);
-    try {
-      const { data, error } = await supabase
-        .from('desarrollos')
-        .update(updates)
-        .eq('id', id)
-        .select();
+  // Use React Query to fetch and cache the data
+  const queryResult = useQuery({
+    queryKey: ['desarrollos', limit, withPrototipos, empresaId],
+    queryFn: fetchDesarrollos,
+    // Only enable when empresaId is available or we're not filtering by empresaId
+    enabled: empresaId !== null || options.empresaId === undefined,
+    staleTime: 0 // Force a fresh fetch on each component mount
+  });
 
-      if (error) throw error;
-      await refetch();
-      return data;
+  // Check if can add more desarrollos based on subscription limits
+  const canAddDesarrollo = async () => {
+    try {
+      // Fetch subscription data directly instead of using the hook
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return false;
+      
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*, subscription_plans(*)')
+        .eq('user_id', userData.user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      
+      if (!subscription) {
+        toast({
+          title: "Suscripción requerida",
+          description: "Necesitas una suscripción activa para crear desarrollos.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      // Extract plan features safely
+      const planFeatures = subscription.subscription_plans.features || {};
+      let resourceType: 'desarrollo' | 'prototipo' | undefined = undefined;
+      let resourceLimit: number | undefined = undefined;
+      
+      // Check if features is an object (not array) and assign properties safely
+      if (planFeatures && typeof planFeatures === 'object' && !Array.isArray(planFeatures)) {
+        const featuresObj = planFeatures as { [key: string]: Json };
+        resourceType = featuresObj.tipo as 'desarrollo' | 'prototipo' | undefined;
+        resourceLimit = typeof featuresObj.max_recursos === 'number' ? featuresObj.max_recursos : undefined;
+      }
+      
+      if (resourceType !== 'desarrollo' && resourceType !== undefined) {
+        toast({
+          title: "Plan incompatible",
+          description: "Tu plan actual no permite la creación de desarrollos. Considera cambiar a un plan por desarrollo.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (resourceLimit !== undefined && queryResult.data && queryResult.data.length >= resourceLimit) {
+        toast({
+          title: "Límite alcanzado",
+          description: `Has alcanzado el límite de ${resourceLimit} desarrollos de tu plan. Contacta a soporte para aumentar tu límite.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      return true;
     } catch (error) {
-      console.error('Error al actualizar desarrollo:', error);
-      throw error;
-    } finally {
-      setIsUpdating(false);
+      console.error("Error checking subscription:", error);
+      return false;
     }
   };
 
-  const deleteDesarrollo = async (id: string) => {
-    setIsDeleting(true);
+  // Calculate billing amount for desarrollos
+  const calculateBillingAmount = async () => {
     try {
-      const { error } = await supabase
-        .from('desarrollos')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      await refetch();
+      // Fetch subscription data directly
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return 0;
+      
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*, subscription_plans(*)')
+        .eq('user_id', userData.user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      
+      if (!subscription) return 0;
+      
+      // Extract plan features safely
+      const planFeatures = subscription.subscription_plans.features || {};
+      let resourceType: 'desarrollo' | 'prototipo' | undefined = undefined;
+      let precioUnidad: number = 0;
+      
+      // Check if features is an object (not array) and assign properties safely
+      if (planFeatures && typeof planFeatures === 'object' && !Array.isArray(planFeatures)) {
+        const featuresObj = planFeatures as { [key: string]: Json };
+        resourceType = featuresObj.tipo as 'desarrollo' | 'prototipo' | undefined;
+        precioUnidad = typeof featuresObj.precio_por_unidad === 'number' ? featuresObj.precio_por_unidad : 0;
+      }
+      
+      if (resourceType !== 'desarrollo') return 0;
+      
+      return (queryResult.data?.length || 0) * precioUnidad;
     } catch (error) {
-      console.error('Error al eliminar desarrollo:', error);
-      throw error;
-    } finally {
-      setIsDeleting(false);
+      console.error("Error calculating billing:", error);
+      return 0;
     }
   };
 
   return {
-    desarrollos: desarrollos || [],
-    isLoading,
-    error,
-    refetch,
-    createDesarrollo,
-    updateDesarrollo,
-    deleteDesarrollo,
-    isCreating,
-    isUpdating,
-    isDeleting
+    desarrollos: queryResult.data || [],
+    isLoading: queryResult.isLoading,
+    error: queryResult.error,
+    refetch: queryResult.refetch,
+    empresaId, // Expose empresaId for reference
+    isFetched: queryResult.isFetched,
+    canAddDesarrollo,
+    calculateBillingAmount
   };
 };
 

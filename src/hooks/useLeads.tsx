@@ -1,269 +1,255 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserRole } from '@/hooks/useUserRole';
-import { toast } from '@/components/ui/use-toast';
+import { Tables } from '@/integrations/supabase/types';
+import { useToast } from '@/hooks/use-toast';
+import useDesarrollos from './useDesarrollos';
+import usePrototipos from './usePrototipos';
+import useUserRole from './useUserRole';
 
-// Define the lead status options
+export type Lead = Tables<"leads">;
+
+// Status principal options
 export const LEAD_STATUS_OPTIONS = [
   { value: 'nuevo', label: 'Nuevo' },
-  { value: 'seguimiento', label: 'En seguimiento' },
+  { value: 'seguimiento', label: 'Seguimiento' },
   { value: 'convertido', label: 'Convertido' },
   { value: 'perdido', label: 'Perdido' }
 ];
 
-// Define substatus options for each status
-export const LEAD_SUBSTATUS_OPTIONS: Record<string, { value: string; label: string }[]> = {
+// Substatus options based on main status
+export const LEAD_SUBSTATUS_OPTIONS = {
   nuevo: [
+    { value: 'sin_contactar', label: 'Sin contactar' },
     { value: 'contacto_inicial', label: 'Contacto inicial' },
-    { value: 'recibido', label: 'Recibido' },
-    { value: 'por_contactar', label: 'Por contactar' }
+    { value: 'solicito_info', label: 'Solicitó información' }
   ],
   seguimiento: [
-    { value: 'interesado', label: 'Interesado' },
-    { value: 'en_negociacion', label: 'En negociación' },
-    { value: 'visitando_propiedades', label: 'Visitando propiedades' },
-    { value: 'analizando_propuestas', label: 'Analizando propuestas' }
+    { value: 'cotizacion_enviada', label: 'Cotización enviada' },
+    { value: 'negociacion', label: 'En negociación' },
+    { value: 'decidiendo', label: 'Decidiendo' },
+    { value: 'requiere_visita', label: 'Requiere visita' }
   ],
   convertido: [
-    { value: 'reserva_pagada', label: 'Reserva pagada' },
-    { value: 'contrato_firmado', label: 'Contrato firmado' },
-    { value: 'venta_finalizada', label: 'Venta finalizada' }
+    { value: 'anticipo', label: 'Anticipo' },
+    { value: 'venta', label: 'Venta' },
+    { value: 'plan_pagos', label: 'Plan de pagos' },
+    { value: 'finiquito', label: 'Finiquito' }
   ],
   perdido: [
-    { value: 'no_interesado', label: 'No interesado' },
-    { value: 'no_califica', label: 'No califica' },
-    { value: 'eligio_competencia', label: 'Eligió competencia' },
-    { value: 'contacto_perdido', label: 'Contacto perdido' }
+    { value: 'sin_respuesta', label: 'Sin respuesta' },
+    { value: 'cambio_opinion', label: 'Cambió de opinión' },
+    { value: 'precio_alto', label: 'Precio alto' },
+    { value: 'otro_desarrollo', label: 'Eligió otro desarrollo' },
+    { value: 'otro', label: 'Otro motivo' }
   ]
 };
 
-// Define lead origin options
 export const LEAD_ORIGIN_OPTIONS = [
   { value: 'sitio_web', label: 'Sitio web' },
-  { value: 'referencia', label: 'Referencia' },
+  { value: 'referido', label: 'Referido' },
+  { value: 'evento', label: 'Evento' },
+  { value: 'llamada', label: 'Llamada' },
   { value: 'redes_sociales', label: 'Redes sociales' },
-  { value: 'inmobiliaria', label: 'Inmobiliaria' },
-  { value: 'ferias', label: 'Ferias y exposiciones' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'portal_inmobiliario', label: 'Portal inmobiliario' },
   { value: 'visita_fisica', label: 'Visita física' },
-  { value: 'publicidad', label: 'Publicidad' },
+  { value: 'campaña_email', label: 'Campaña de email' },
   { value: 'otro', label: 'Otro' }
 ];
 
-export interface Lead {
-  id: string;
-  nombre: string;
-  email: string | null;
-  telefono: string | null;
-  estado: string | null;
-  subestado: string | null;
-  origen: string | null;
-  interes_en: string | null;
-  notas: string | null;
-  agente: string | null;
-  ultimo_contacto: string | null;
-  fecha_creacion: string | null;
-  empresa_id: number | null;
-}
-
-interface UseLeadsOptions {
-  search?: string;
+type FetchLeadsOptions = {
   estado?: string;
-  origen?: string;
+  agente?: string;
   limit?: number;
+  search?: string;
   empresa_id?: number;
-  onSuccess?: (data: Lead[]) => void;
-  onError?: (error: Error) => void;
-}
-
-const DEFAULT_OPTIONS: UseLeadsOptions = {
-  onSuccess: () => {},
-  onError: () => {}
 };
 
-export const useLeads = (options: UseLeadsOptions = DEFAULT_OPTIONS) => {
+export const useLeads = (options: FetchLeadsOptions = {}) => {
+  const { estado, agente, limit, search, empresa_id } = options;
+  const { toast } = useToast();
+  const { desarrollos } = useDesarrollos();
+  const { prototipos } = usePrototipos();
   const { empresaId } = useUserRole();
-  const queryClient = useQueryClient();
   
-  const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
-  const { search, estado, origen, limit } = mergedOptions;
+  const effectiveEmpresaId = empresa_id || empresaId;
   
-  const { data: leads = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['leads', empresaId, search, estado, origen, limit],
-    queryFn: async () => {
-      try {
-        let query = supabase
-          .from('leads')
-          .select('*')
-          .eq('empresa_id', empresaId)
-          .order('fecha_creacion', { ascending: false });
+  console.log("useLeads initialization with options:", { ...options, empresaId: effectiveEmpresaId });
+  console.log("Lead status options:", LEAD_STATUS_OPTIONS);
+  console.log("Lead origin options:", LEAD_ORIGIN_OPTIONS);
+  
+  // Function to fetch leads
+  const fetchLeads = async () => {
+    console.log('Fetching leads with options:', { ...options, empresaId: effectiveEmpresaId });
+    
+    try {
+      let query = supabase
+        .from('leads')
+        .select('*');
         
-        if (search) {
-          query = query.or(`nombre.ilike.%${search}%,email.ilike.%${search}%,telefono.ilike.%${search}%`);
-        }
-        
-        if (estado) {
-          query = query.eq('estado', estado);
-        }
-        
-        if (origen) {
-          query = query.eq('origen', origen);
-        }
-        
-        if (limit) {
-          query = query.limit(limit);
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) throw error;
-        
-        return data as Lead[];
-      } catch (error: any) {
+      // Apply filters
+      if (estado) {
+        query = query.eq('estado', estado);
+      }
+      
+      if (agente) {
+        query = query.eq('agente', agente);
+      }
+      
+      if (search) {
+        query = query.or(`nombre.ilike.%${search}%,email.ilike.%${search}%,telefono.ilike.%${search}%`);
+      }
+      
+      // Filter by empresa_id if provided
+      if (effectiveEmpresaId) {
+        query = query.eq('empresa_id', effectiveEmpresaId);
+      }
+      
+      // Apply limit if provided
+      if (limit) {
+        query = query.limit(limit);
+      }
+      
+      // Order by fecha_creacion descending
+      query = query.order('fecha_creacion', { ascending: false });
+      
+      const { data, error } = await query;
+      
+      if (error) {
         console.error('Error fetching leads:', error);
+        toast({
+          title: 'Error',
+          description: `Error al cargar los prospectos: ${error.message}`,
+          variant: 'destructive',
+        });
         throw new Error(error.message);
       }
-    },
-    enabled: !!empresaId,
-    ...mergedOptions
-  });
-  
-  const createLead = useMutation({
-    mutationFn: async (newLead: Omit<Lead, 'id' | 'fecha_creacion'>) => {
-      try {
-        const { data, error } = await supabase
-          .from('leads')
-          .insert([{ ...newLead, empresa_id: empresaId }])
-          .select()
-          .single();
-          
-        if (error) {
-          throw new Error(error.message);
-        }
-        
-        return data as Lead;
-      } catch (error: any) {
-        console.error('Error creating lead:', error);
-        throw new Error(error.message);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      
+      console.log('Leads fetched:', data);
+      return data as Lead[];
+    } catch (error) {
+      console.error('Error in fetchLeads:', error);
       toast({
-        title: "Lead creado",
-        description: "El lead se ha creado correctamente",
+        title: 'Error de conexión',
+        description: 'No se pudieron cargar los prospectos. Intente nuevamente.',
+        variant: 'destructive',
       });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: `No se pudo crear el lead: ${error.message}`,
-        variant: "destructive",
-      });
-    },
-  });
+      throw error;
+    }
+  };
 
-  const updateLead = useMutation({
-    mutationFn: async (lead: Lead) => {
-      try {
-        const { data, error } = await supabase
-          .from('leads')
-          .update(lead)
-          .eq('id', lead.id)
-          .select()
-          .single();
-          
-        if (error) {
-          throw new Error(error.message);
-        }
-        
-        return data as Lead;
-      } catch (error: any) {
+  // Function to update lead
+  const updateLead = async (id: string, updatedData: Partial<Lead>) => {
+    try {
+      console.log('Updating lead with data:', updatedData);
+      
+      // Ensure empresa_id is set if not already present
+      if (!updatedData.empresa_id && effectiveEmpresaId) {
+        updatedData.empresa_id = effectiveEmpresaId;
+      }
+      
+      const { data, error } = await supabase
+        .from('leads')
+        .update(updatedData)
+        .eq('id', id)
+        .select();
+      
+      if (error) {
         console.error('Error updating lead:', error);
+        toast({
+          title: 'Error',
+          description: `No se pudo actualizar el prospecto: ${error.message}`,
+          variant: 'destructive',
+        });
         throw new Error(error.message);
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      
       toast({
-        title: "Lead actualizado",
-        description: "El lead se ha actualizado correctamente",
+        title: 'Prospecto actualizado',
+        description: 'El prospecto se ha actualizado correctamente',
       });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: `No se pudo actualizar el lead: ${error.message}`,
-        variant: "destructive",
-      });
-    },
+      
+      return data;
+    } catch (error) {
+      console.error('Error in updateLead:', error);
+      throw error;
+    }
+  };
+
+  // Use React Query to fetch and cache the data
+  const queryResult = useQuery({
+    queryKey: ['leads', estado, agente, limit, search, effectiveEmpresaId],
+    queryFn: fetchLeads,
+    retry: 3,
+    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
   });
 
-  const deleteLead = useMutation({
-    mutationFn: async (id: string) => {
-      try {
-        const { error } = await supabase
-          .from('leads')
-          .delete()
-          .eq('id', id);
-          
-        if (error) {
-          throw new Error(error.message);
-        }
-        
-        return id;
-      } catch (error: any) {
-        console.error('Error deleting lead:', error);
-        throw new Error(error.message);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leads'] });
-      toast({
-        title: "Lead eliminado",
-        description: "El lead se ha eliminado correctamente",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: `No se pudo eliminar el lead: ${error.message}`,
-        variant: "destructive",
-      });
-    },
-  });
-  
-  // Helper functions for label mapping
-  const getStatusLabel = (statusValue: string | null) => {
-    if (!statusValue) return 'No definido';
-    const status = LEAD_STATUS_OPTIONS.find(option => option.value === statusValue);
-    return status ? status.label : statusValue;
+  // Function to get substatus options based on a status
+  const getSubstatusOptions = (status: string) => {
+    console.log("Getting substatus options for status:", status);
+    const options = LEAD_SUBSTATUS_OPTIONS[status as keyof typeof LEAD_SUBSTATUS_OPTIONS] || [];
+    console.log("Substatus options:", options);
+    return options;
   };
 
-  const getSubstatusLabel = (statusValue: string | null, substatusValue: string | null) => {
-    if (!statusValue || !substatusValue) return 'No definido';
-    const substatus = LEAD_SUBSTATUS_OPTIONS[statusValue]?.find(option => option.value === substatusValue);
-    return substatus ? substatus.label : substatusValue;
+  // Function to find label for a given status value
+  const getStatusLabel = (value: string | null) => {
+    if (!value) return '';
+    const option = LEAD_STATUS_OPTIONS.find(opt => opt.value === value);
+    return option ? option.label : value;
   };
 
-  const getOriginLabel = (originValue: string | null) => {
-    if (!originValue) return 'No definido';
-    const origin = LEAD_ORIGIN_OPTIONS.find(option => option.value === originValue);
-    return origin ? origin.label : originValue;
+  // Function to find label for a given substatus value
+  const getSubstatusLabel = (status: string | null, substatus: string | null) => {
+    if (!status || !substatus) return '';
+    const options = getSubstatusOptions(status);
+    const option = options.find(opt => opt.value === substatus);
+    return option ? option.label : substatus;
   };
-  
+
+  // Function to find label for a given origin value
+  const getOriginLabel = (value: string | null) => {
+    if (!value) return '';
+    const option = LEAD_ORIGIN_OPTIONS.find(opt => opt.value === value);
+    return option ? option.label : value;
+  };
+
+  // Function to get the interest text based on the interest_en value
+  const getInterestText = (interest: string | null) => {
+    if (!interest) return '';
+    
+    if (interest.startsWith('desarrollo:')) {
+      const desarrolloId = interest.split(':')[1];
+      const desarrollo = desarrollos.find(d => d.id === desarrolloId);
+      return desarrollo ? `Desarrollo: ${desarrollo.nombre}` : interest;
+    } else if (interest.startsWith('prototipo:')) {
+      const prototipoId = interest.split(':')[1];
+      const prototipo = prototipos.find(p => p.id === prototipoId);
+      const desarrollo = prototipo 
+        ? desarrollos.find(d => d.id === prototipo.desarrollo_id) 
+        : null;
+      return prototipo 
+        ? `${prototipo.nombre}${desarrollo ? ` en ${desarrollo.nombre}` : ''}` 
+        : interest;
+    }
+    
+    return interest;
+  };
+
   return {
-    leads,
-    isLoading,
-    error,
-    refetch,
-    createLead,
+    leads: queryResult.data || [],
+    isLoading: queryResult.isLoading,
+    error: queryResult.error,
+    refetch: queryResult.refetch,
     updateLead,
-    deleteLead,
     statusOptions: LEAD_STATUS_OPTIONS,
+    getSubstatusOptions,
+    originOptions: LEAD_ORIGIN_OPTIONS,
     getStatusLabel,
     getSubstatusLabel,
-    getOriginLabel
+    getOriginLabel,
+    getInterestText
   };
 };
 

@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { FormValues } from './types';
 import { CotizacionDialogContent } from './components/CotizacionDialogContent';
 import useResourceData from './useResourceData';
-import { useResourceActions } from './useResourceActions';
+import useResourceActions from './useResourceActions';
 import { useResourceFields } from './hooks/useResourceFields';
 
 interface CotizacionDialogProps {
@@ -57,7 +58,24 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
 
   const fields = useResourceFields(resourceType, selectedStatus);
 
-  const actions = useResourceActions('leads');
+  const { saveResource, handleImageUpload: uploadResourceImage } = useResourceActions({
+    resourceType,
+    resourceId,
+    onSuccess,
+    selectedAmenities,
+    clientConfig: {
+      isExistingClient,
+      newClientData
+    }
+  });
+
+  useEffect(() => {
+    if (open) {
+      if (desarrolloId) {
+        setSelectedDesarrolloId(desarrolloId);
+      }
+    }
+  }, [open, desarrolloId]);
 
   const handleChange = (values: FormValues) => {
     if (resource) {
@@ -118,7 +136,7 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     setUploading(true);
     
     try {
-      const imageUrl = await uploadFile(file);
+      const imageUrl = await uploadResourceImage(file);
       
       if (imageUrl && resource) {
         const updatedResource = {
@@ -134,11 +152,6 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     }
   };
 
-  const uploadFile = async (file: File): Promise<string> => {
-    console.log('Uploading file:', file.name);
-    return URL.createObjectURL(file); // Temporary URL for development
-  };
-
   const handleSaveResource = async () => {
     console.log("handleSaveResource called with resource:", resource);
     if (!resource) return false;
@@ -146,11 +159,11 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     setIsSubmitting(true);
     
     try {
-      await actions.create(resource);
-      if (onSuccess) {
+      const success = await saveResource(resource);
+      if (success && onSuccess) {
         onSuccess();
       }
-      return true;
+      return success;
     } catch (error) {
       console.error('Error saving resource:', error);
       return false;

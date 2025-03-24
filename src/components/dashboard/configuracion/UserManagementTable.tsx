@@ -1,18 +1,29 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +33,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { UseFormReturn } from "react-hook-form";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -30,446 +41,599 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Loader2, MoreHorizontal, UserPlus, UserCog } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
+import { 
+  MoreHorizontal, 
+  Plus, 
+  User, 
+  Loader2, 
+  Check, 
+  AlertCircle, 
+  X 
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import useOrganizationUsers, { UserRole } from "@/hooks/useOrganizationUsers";
-import useInvitaciones from "@/hooks/useInvitaciones";
-import { format, formatDistance } from "date-fns";
-import { es } from "date-fns/locale";
+import { signUpWithEmailPassword } from "@/services/authService";
 
-function isBoolean(value: any): value is boolean {
-  return typeof value === 'boolean';
-}
+type User = {
+  id: string;
+  nombre: string;
+  email: string;
+  rol: string;
+  activo: boolean;
+  fecha_creacion: string;
+  empresa_id?: number;
+};
 
 export function UserManagementTable() {
-  const [isInviteOpen, setIsInviteOpen] = useState(false);
-  const [inviteForm, setInviteForm] = useState({
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [isNewUserDialogOpen, setIsNewUserDialogOpen] = useState(false);
+  const [newUser, setNewUser] = useState({
+    nombre: "",
     email: "",
     rol: "vendedor",
+    password: "",
   });
-  const [inviteErrors, setInviteErrors] = useState<{
-    email?: string;
-    rol?: string;
-  }>({});
+  const [activeSubscription, setActiveSubscription] = useState<any>(null);
+  const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(true);
+  const { isAdmin, userId, empresaId } = useUserRole();
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  const { isAdmin } = useUserRole();
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if (!userId) return;
+      
+      try {
+        setIsSubscriptionLoading(true);
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .select('*, subscription_plans(*)')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .maybeSingle();
 
-  const {
-    users,
-    isLoading: usersLoading,
-    updateUser,
-    deleteUser,
-    error: usersError,
-  } = useOrganizationUsers();
+        if (error) {
+          console.error("Error checking subscription:", error);
+        }
 
-  const {
-    invitaciones,
-    isLoading: isInvitacionesLoading,
-    createInvitacion,
-    deleteInvitacion,
-    resendInvitacion,
-  } = useInvitaciones();
+        setActiveSubscription(data);
+      } catch (error) {
+        console.error("Error checking subscription:", error);
+      } finally {
+        setIsSubscriptionLoading(false);
+      }
+    };
+    
+    checkSubscription();
+  }, [userId]);
 
-  const validateInviteForm = () => {
-    const errors: { email?: string; rol?: string } = {};
-    let isValid = true;
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!userId) return;
+      
+      try {
+        setIsLoading(true);
+        console.log("Fetching users for empresa_id:", empresaId);
+        
+        let query = supabase
+          .from('usuarios')
+          .select('*')
+          .order('fecha_creacion', { ascending: false });
+          
+        if (empresaId) {
+          query = query.eq('empresa_id', empresaId);
+        }
+        
+        const { data, error } = await query;
 
-    if (!inviteForm.email) {
-      errors.email = "El email es obligatorio";
-      isValid = false;
-    } else if (
-      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(inviteForm.email)
-    ) {
-      errors.email = "Email inválido";
-      isValid = false;
+        if (error) {
+          throw error;
+        }
+
+        console.log("Users fetched:", data?.length);
+        setUsers(data || []);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los usuarios.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (userId) {
+      fetchUsers();
+    }
+  }, [userId, empresaId]);
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!newUser.nombre.trim()) {
+      errors.nombre = "El nombre es obligatorio";
+    }
+    
+    if (!newUser.email.trim()) {
+      errors.email = "El correo electrónico es obligatorio";
+    } else if (!/\S+@\S+\.\S+/.test(newUser.email)) {
+      errors.email = "El correo electrónico no es válido";
+    }
+    
+    if (!newUser.password.trim()) {
+      errors.password = "La contraseña es obligatoria";
+    } else if (newUser.password.length < 6) {
+      errors.password = "La contraseña debe tener al menos 6 caracteres";
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleNewUserChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewUser((prev) => ({ ...prev, [name]: value }));
+    
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleRoleChange = (value: string) => {
+    setNewUser((prev) => ({ ...prev, rol: value }));
+  };
+
+  const createNewUser = async () => {
+    if (!isAdmin()) {
+      toast({
+        title: "Acceso denegado",
+        description: "Solo los administradores pueden crear usuarios.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!validateForm()) {
+      return;
     }
 
-    if (!inviteForm.rol) {
-      errors.rol = "El rol es obligatorio";
-      isValid = false;
+    if (activeSubscription?.subscription_plans?.features?.max_vendedores) {
+      const vendedorCount = users.filter(u => u.rol === 'vendedor' && u.activo).length;
+      const maxVendedores = activeSubscription.subscription_plans.features.max_vendedores;
+      
+      if (vendedorCount >= maxVendedores && newUser.rol === 'vendedor') {
+        toast({
+          title: "Límite alcanzado",
+          description: `Tu plan actual permite ${maxVendedores} vendedores. Actualiza tu suscripción para añadir más.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
-    setInviteErrors(errors);
-    return isValid;
-  };
+    try {
+      setIsCreatingUser(true);
 
-  const handleInvite = () => {
-    if (!validateInviteForm()) return;
+      const { data: existingUsers, error: checkError } = await supabase
+        .from('usuarios')
+        .select('email, auth_id')
+        .eq('email', newUser.email)
+        .maybeSingle();
 
-    createInvitacion.mutate(
-      {
-        email: inviteForm.email,
-        rol: inviteForm.rol,
-      },
-      {
-        onSuccess: () => {
-          setIsInviteOpen(false);
-          setInviteForm({
-            email: "",
-            rol: "vendedor",
-          });
-        },
+      if (checkError) {
+        console.error("Error checking existing user:", checkError);
       }
-    );
-  };
 
-  const handleResendInvite = (invitacionId: string) => {
-    resendInvitacion.mutate(invitacionId, {
-      onSuccess: () => {
+      if (existingUsers) {
         toast({
-          title: "Invitación reenviada",
-          description: "Se ha reenviado la invitación con éxito.",
+          title: "Usuario ya existe",
+          description: "Ya existe un usuario con este correo electrónico.",
+          variant: "destructive",
         });
-      },
-    });
-  };
-
-  const handleCancelInvite = (invitacionId: string) => {
-    deleteInvitacion.mutate(invitacionId, {
-      onSuccess: () => {
-        toast({
-          title: "Invitación cancelada",
-          description: "La invitación ha sido cancelada.",
-        });
-      },
-    });
-  };
-
-  const isLoading = usersLoading || isInvitacionesLoading;
-  const hasInvitations = invitaciones && invitaciones.length > 0;
-  const hasUsers = users && users.length > 0;
-
-  const handleChangeRole = (userId: string, newRole: string) => {
-    updateUser.mutate(
-      { id: userId, rol: newRole as UserRole },
-      {
-        onSuccess: () => {
-          toast({
-            title: "Rol actualizado",
-            description: "El rol del usuario ha sido actualizado con éxito.",
-          });
-        },
-        onError: (error) => {
-          toast({
-            title: "Error",
-            description: `No se pudo actualizar el rol: ${error.message}`,
-            variant: "destructive",
-          });
-        },
+        setIsCreatingUser(false);
+        return;
       }
+
+      console.log("Creating user with role:", newUser.rol);
+      
+      // Pass the selected role to the signup function
+      const authResult = await signUpWithEmailPassword(
+        newUser.email, 
+        newUser.password, 
+        empresaId || undefined, 
+        newUser.rol
+      );
+
+      if (!authResult.success) {
+        throw new Error(authResult.error || "No se pudo crear el usuario");
+      }
+
+      let authUserId;
+      
+      if (authResult.user) {
+        authUserId = authResult.user.id;
+      } else if (authResult.autoSignIn) {
+        const { data } = await supabase.auth.getUser();
+        authUserId = data.user?.id;
+      } else {
+        const { data: userData, error: userError } = await supabase
+          .from('usuarios')
+          .select('auth_id')
+          .eq('email', newUser.email)
+          .maybeSingle();
+          
+        if (!userError && userData?.auth_id) {
+          authUserId = userData.auth_id;
+        } else {
+          console.log("Could not find user ID, but will continue with user creation");
+        }
+      }
+      
+      if (authUserId) {
+        const { data: existingAuthUser } = await supabase
+          .from('usuarios')
+          .select('id')
+          .eq('auth_id', authUserId)
+          .maybeSingle();
+
+        if (existingAuthUser) {
+          const { error: updateError } = await supabase
+            .from('usuarios')
+            .update({
+              nombre: newUser.nombre,
+              rol: newUser.rol, // Ensure role is explicitly set
+              activo: true,
+              empresa_id: empresaId
+            })
+            .eq('auth_id', authUserId);
+
+          if (updateError) {
+            console.error("Error updating existing user:", updateError);
+            throw updateError;
+          }
+
+          toast({
+            title: "Usuario actualizado",
+            description: "El usuario existente ha sido actualizado.",
+            variant: "default",
+          });
+        } else {
+          const userData = {
+            auth_id: authUserId,
+            nombre: newUser.nombre,
+            email: newUser.email,
+            rol: newUser.rol, // Ensure role is explicitly set
+            empresa_id: empresaId,
+            activo: true
+          };
+          
+          console.log("Creating user record with data:", userData);
+          
+          const { error: userError } = await supabase
+            .from('usuarios')
+            .insert(userData);
+
+          if (userError) {
+            console.error("Error creating user record:", userError);
+            throw userError;
+          }
+
+          toast({
+            title: "Usuario creado",
+            description: "El usuario ha sido creado exitosamente.",
+            variant: "default",
+          });
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo obtener el ID del usuario.",
+          variant: "destructive",
+        });
+        setIsCreatingUser(false);
+        return;
+      }
+
+      setNewUser({
+        nombre: "",
+        email: "",
+        rol: "vendedor",
+        password: "",
+      });
+      setIsNewUserDialogOpen(false);
+
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('empresa_id', empresaId)
+        .order('fecha_creacion', { ascending: false });
+
+      if (!error) {
+        setUsers(data || []);
+      }
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Ocurrió un error al crear el usuario.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  const toggleUserStatus = async (id: string, currentStatus: boolean) => {
+    if (!isAdmin()) {
+      toast({
+        title: "Acceso denegado",
+        description: "Solo los administradores pueden modificar usuarios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const { error } = await supabase
+        .from('usuarios')
+        .update({ activo: !currentStatus })
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      setUsers(users.map(user => 
+        user.id === id ? { ...user, activo: !currentStatus } : user
+      ));
+
+      toast({
+        title: "Usuario actualizado",
+        description: `El usuario ha sido ${!currentStatus ? "activado" : "desactivado"} exitosamente.`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error al actualizar el usuario.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isAdmin()) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Gestión de Usuarios</CardTitle>
+          <CardDescription>
+            No tienes permisos para gestionar usuarios.
+          </CardDescription>
+        </CardHeader>
+      </Card>
     );
+  }
+
+  const canAddMoreUsers = () => {
+    if (!activeSubscription?.subscription_plans?.features?.max_vendedores) {
+      return true;
+    }
+    
+    const vendedorCount = users.filter(u => u.rol === 'vendedor' && u.activo).length;
+    const maxVendedores = activeSubscription.subscription_plans.features.max_vendedores;
+    
+    return vendedorCount < maxVendedores;
   };
 
   return (
-    <div className="space-y-4">
-      {isAdmin() && (
-        <div className="flex justify-end">
-          <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <UserPlus className="h-4 w-4" />
-                Invitar usuario
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Invitar nuevo usuario</DialogTitle>
-                <DialogDescription>
-                  Envía una invitación por correo electrónico al nuevo usuario.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    value={inviteForm.email}
-                    onChange={(e) =>
-                      setInviteForm({ ...inviteForm, email: e.target.value })
-                    }
-                    placeholder="usuario@ejemplo.com"
-                    className={inviteErrors.email ? "border-red-500" : ""}
-                  />
-                  {inviteErrors.email && (
-                    <p className="text-sm text-red-500">{inviteErrors.email}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="role">Rol</Label>
-                  <Select
-                    value={inviteForm.rol}
-                    onValueChange={(value) =>
-                      setInviteForm({ ...inviteForm, rol: value })
-                    }
-                  >
-                    <SelectTrigger
-                      className={inviteErrors.rol ? "border-red-500" : ""}
-                    >
-                      <SelectValue placeholder="Seleccionar rol" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Administrador</SelectItem>
-                      <SelectItem value="vendedor">Vendedor</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {inviteErrors.rol && (
-                    <p className="text-sm text-red-500">{inviteErrors.rol}</p>
-                  )}
-                </div>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Gestión de Usuarios</CardTitle>
+          <CardDescription>
+            Administra los usuarios que tienen acceso a la plataforma.
+            {activeSubscription?.subscription_plans?.features?.max_vendedores && (
+              <p className="mt-1">
+                Vendedores activos: {users.filter(u => u.rol === 'vendedor' && u.activo).length} / 
+                {activeSubscription.subscription_plans.features.max_vendedores}
+              </p>
+            )}
+            {!activeSubscription && !isSubscriptionLoading && (
+              <p className="text-red-500 mt-1">
+                Necesitas una suscripción activa para gestionar usuarios.
+              </p>
+            )}
+          </CardDescription>
+        </div>
+        <Dialog open={isNewUserDialogOpen} onOpenChange={setIsNewUserDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              size="sm"
+              disabled={isLoading || (activeSubscription?.subscription_plans?.features?.max_vendedores && !canAddMoreUsers())}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Usuario
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+              <DialogDescription>
+                Añade un nuevo usuario con acceso a la plataforma.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid w-full items-center gap-2">
+                <Label htmlFor="nombre">Nombre</Label>
+                <Input
+                  id="nombre"
+                  name="nombre"
+                  placeholder="Nombre completo"
+                  value={newUser.nombre}
+                  onChange={handleNewUserChange}
+                  className={validationErrors.nombre ? "border-red-500" : ""}
+                />
+                {validationErrors.nombre && (
+                  <p className="text-sm text-red-500">{validationErrors.nombre}</p>
+                )}
               </div>
-
-              <DialogFooter>
-                <Button
-                  type="submit"
-                  onClick={handleInvite}
-                  disabled={createInvitacion.isPending}
+              <div className="grid w-full items-center gap-2">
+                <Label htmlFor="email">Correo Electrónico</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="correo@ejemplo.com"
+                  value={newUser.email}
+                  onChange={handleNewUserChange}
+                  className={validationErrors.email ? "border-red-500" : ""}
+                />
+                {validationErrors.email && (
+                  <p className="text-sm text-red-500">{validationErrors.email}</p>
+                )}
+              </div>
+              <div className="grid w-full items-center gap-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Contraseña segura"
+                  value={newUser.password}
+                  onChange={handleNewUserChange}
+                  className={validationErrors.password ? "border-red-500" : ""}
+                />
+                {validationErrors.password && (
+                  <p className="text-sm text-red-500">{validationErrors.password}</p>
+                )}
+              </div>
+              <div className="grid w-full items-center gap-2">
+                <Label htmlFor="rol">Rol</Label>
+                <Select 
+                  value={newUser.rol}
+                  onValueChange={handleRoleChange}
                 >
-                  {createInvitacion.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enviando...
-                    </>
-                  ) : (
-                    "Enviar invitación"
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      )}
-
-      {isLoading ? (
-        <div className="flex justify-center p-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        <>
-          <Table>
-            <TableCaption>Miembros del equipo</TableCaption>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuario</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {hasUsers &&
-                users.map((user) => (
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un rol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                    <SelectItem value="vendedor">Vendedor</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsNewUserDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={createNewUser} 
+                disabled={isCreatingUser}
+              >
+                {isCreatingUser ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  "Crear Usuario"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="ml-2">Cargando usuarios...</p>
+          </div>
+        ) : users.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <User className="h-10 w-10 text-slate-400" />
+            <h3 className="mt-4 text-lg font-semibold">No hay usuarios</h3>
+            <p className="mt-2 text-sm text-slate-500">
+              Aún no se han creado usuarios en el sistema.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Correo</TableHead>
+                  <TableHead>Rol</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.nombre}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      {isAdmin() ? (
-                        <Select
-                          value={user.rol}
-                          onValueChange={(newRole) =>
-                            handleChangeRole(user.id, newRole)
-                          }
-                          disabled={updateUser.isPending || !isBoolean(user.activo) || !user.activo}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">Administrador</SelectItem>
-                            <SelectItem value="vendedor">Vendedor</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Badge
-                          variant={
-                            user.rol === "admin" ? "default" : "secondary"
-                          }
-                        >
-                          {user.rol === "admin"
-                            ? "Administrador"
-                            : user.rol === "vendedor"
-                            ? "Vendedor"
-                            : user.rol}
-                        </Badge>
-                      )}
+                      <Badge 
+                        variant={user.rol === 'admin' ? "default" : "outline"}
+                      >
+                        {user.rol === 'admin' ? 'Administrador' : 'Vendedor'}
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={
-                          user.activo ? "outline" : "destructive"
-                        }
+                      <Badge 
+                        variant={user.activo ? "success" : "destructive"}
+                        className="flex w-fit items-center"
                       >
-                        {user.activo ? "Activo" : "Inactivo"}
+                        {user.activo ? (
+                          <>
+                            <Check className="mr-1 h-3 w-3" /> Activo
+                          </>
+                        ) : (
+                          <>
+                            <X className="mr-1 h-3 w-3" /> Inactivo
+                          </>
+                        )}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {isAdmin() && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Abrir menú</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() =>
-                                toast({
-                                  title: "Info",
-                                  description:
-                                    "Esta función estará disponible pronto.",
-                                })
-                              }
-                            >
-                              Gestionar permisos
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                updateUser.mutate({
-                                  id: user.id,
-                                  activo: !user.activo,
-                                })
-                              }
-                            >
-                              {user.activo
-                                ? "Desactivar usuario"
-                                : "Activar usuario"}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={() => toggleUserStatus(user.id, user.activo)}
+                          >
+                            {user.activo ? 'Desactivar' : 'Activar'} Usuario
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
-            </TableBody>
-          </Table>
-
-          {hasInvitations && (
-            <>
-              <h3 className="text-lg font-medium mt-8 mb-4">
-                Invitaciones pendientes
-              </h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Rol</TableHead>
-                    <TableHead>Fecha de expiración</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invitaciones
-                    .filter((inv) => inv.estado === "pendiente")
-                    .map((invitation) => (
-                      <TableRow key={invitation.id}>
-                        <TableCell className="font-medium">
-                          {invitation.email}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              invitation.rol === "admin"
-                                ? "default"
-                                : "secondary"
-                            }
-                          >
-                            {invitation.rol === "admin"
-                              ? "Administrador"
-                              : invitation.rol === "vendedor"
-                              ? "Vendedor"
-                              : invitation.rol}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {invitation.fecha_expiracion
-                            ? format(
-                                new Date(invitation.fecha_expiracion),
-                                "PPP",
-                                { locale: es }
-                              )
-                            : "N/A"}
-                          <p className="text-xs text-gray-500">
-                            {invitation.fecha_expiracion &&
-                              formatDistance(
-                                new Date(invitation.fecha_expiracion),
-                                new Date(),
-                                {
-                                  addSuffix: true,
-                                  locale: es,
-                                }
-                              )}
-                          </p>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                handleResendInvite(invitation.id)
-                              }
-                              disabled={resendInvitacion.isPending}
-                            >
-                              Reenviar
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() =>
-                                handleCancelInvite(invitation.id)
-                              }
-                              disabled={deleteInvitacion.isPending}
-                            >
-                              Cancelar
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </>
-          )}
-
-          {!hasUsers && !hasInvitations && (
-            <div className="text-center py-8">
-              <UserCog className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-semibold text-gray-900">
-                No hay usuarios
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Comienza invitando a miembros a tu organización.
-              </p>
-              {isAdmin() && (
-                <div className="mt-6">
-                  <Button
-                    onClick={() => setIsInviteOpen(true)}
-                    className="flex items-center gap-2 mx-auto"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                    Invitar usuario
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
-    </div>
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

@@ -347,42 +347,6 @@ export type Database = {
         }
         Relationships: []
       }
-      invitaciones_empresa: {
-        Row: {
-          creado_por: string | null
-          email: string
-          empresa_id: number
-          estado: string
-          fecha_creacion: string
-          fecha_expiracion: string
-          id: string
-          rol: string
-          token: string
-        }
-        Insert: {
-          creado_por?: string | null
-          email: string
-          empresa_id: number
-          estado?: string
-          fecha_creacion?: string
-          fecha_expiracion?: string
-          id?: string
-          rol?: string
-          token: string
-        }
-        Update: {
-          creado_por?: string | null
-          email?: string
-          empresa_id?: number
-          estado?: string
-          fecha_creacion?: string
-          fecha_expiracion?: string
-          id?: string
-          rol?: string
-          token?: string
-        }
-        Relationships: []
-      }
       leads: {
         Row: {
           agente: string | null
@@ -814,10 +778,8 @@ export type Database = {
           activo: boolean | null
           auth_id: string | null
           email: string
-          empresa_anterior: number | null
           empresa_id: number | null
           fecha_creacion: string | null
-          fecha_transferencia: string | null
           id: string
           is_company_admin: boolean | null
           nombre: string
@@ -827,10 +789,8 @@ export type Database = {
           activo?: boolean | null
           auth_id?: string | null
           email: string
-          empresa_anterior?: number | null
           empresa_id?: number | null
           fecha_creacion?: string | null
-          fecha_transferencia?: string | null
           id?: string
           is_company_admin?: boolean | null
           nombre: string
@@ -840,10 +800,8 @@ export type Database = {
           activo?: boolean | null
           auth_id?: string | null
           email?: string
-          empresa_anterior?: number | null
           empresa_id?: number | null
           fecha_creacion?: string | null
-          fecha_transferencia?: string | null
           id?: string
           is_company_admin?: boolean | null
           nombre?: string
@@ -908,33 +866,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_subscription_limit: {
-        Args: {
-          company_id: number
-          resource_type: string
-          resources_to_add?: number
-        }
-        Returns: boolean
-      }
-      count_company_resources: {
-        Args: {
-          company_id: number
-          resource_type: string
-        }
-        Returns: number
-      }
-      get_subscription_status: {
-        Args: {
-          company_id: number
-        }
-        Returns: Json
-      }
-      get_user_subscription_status: {
-        Args: {
-          user_uuid: string
-        }
-        Returns: Json
-      }
       has_active_subscription: {
         Args: {
           user_uuid: string
@@ -948,22 +879,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      verificar_invitacion: {
-        Args: {
-          token_invitacion: string
-        }
-        Returns: {
-          id: string
-          empresa_id: number
-          email: string
-          rol: string
-          estado: string
-          es_valida: boolean
-        }[]
-      }
     }
     Enums: {
-      app_role: "superadmin" | "admin" | "vendedor" | "cliente"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DialogContent } from '@/components/ui/dialog';
 import { DialogHeader } from './DialogHeader';
@@ -66,7 +67,7 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
     if (resourceId) {
       return 'Editar cotización';
     } else {
-      return 'Nueva Cotización';
+      return 'Nueva cotización';
     }
   };
 
@@ -74,7 +75,7 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
     if (resourceId) {
       return 'Actualizar información de la cotización';
     } else {
-      return 'Ingresa los datos para la nueva cotización';
+      return 'Crear una nueva cotización';
     }
   };
 
@@ -85,9 +86,9 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
   };
 
   return (
-    <DialogContent className="p-0 border-0 shadow-lg rounded-2xl max-h-[90vh] overflow-hidden flex flex-col max-w-4xl bg-white">
+    <DialogContent className="p-0 border-2 border-gray-300 shadow-lg rounded-lg max-h-[90vh] overflow-hidden flex flex-col max-w-4xl">
       <form onSubmit={handleFormSubmit} className="flex flex-col h-full max-h-[90vh]">
-        <div className="px-8 py-6 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-indigo-100">
+        <div className="px-10 py-8">
           <DialogHeader 
             title={getResourceTitle()} 
             description={getResourceDescription()}
@@ -97,44 +98,48 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
         <div className="flex-1 overflow-hidden">
           {isLoading ? (
             <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
-              <span className="ml-2 text-indigo-700 font-medium">Cargando...</span>
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2">Cargando...</span>
             </div>
           ) : (
             <ScrollArea className="h-[calc(90vh-180px)]">
-              <div className="px-8 py-6">
-                <div className="space-y-8">
-                  <GenericForm
-                    resourceType="cotizaciones"
-                    fields={fields}
-                    values={resource}
-                    onChange={handleChange}
-                    onSelectChange={handleSelectChange}
-                    onSwitchChange={handleSwitchChange}
-                    onLeadSelect={handleLeadSelect}
-                    selectedAmenities={selectedAmenities}
-                    onAmenitiesChange={handleAmenitiesChange}
-                    isSubmitting={isSubmitting}
-                    desarrolloId={desarrolloId}
-                    prototipo_id={prototipo_id}
-                    lead_id={lead_id}
-                    onImageUpload={handleImageUpload}
-                    uploading={uploading}
-                    isExistingClient={isExistingClient}
-                    onExistingClientChange={onExistingClientChange}
-                    newClientData={newClientData}
-                    onNewClientDataChange={onNewClientDataChange}
-                    onDesarrolloSelect={onDesarrolloSelect}
-                    onDateChange={handleDateChange}
-                    formId="resource-form"
-                  />
+              <div className="px-10 py-6">
+                <div className="space-y-10">
+                  <div className="gap-y-8">
+                    <div className="bg-gray-50 rounded-xl p-8 shadow-sm border border-gray-100">
+                      <GenericForm
+                        resourceType="cotizaciones"
+                        fields={fields}
+                        values={resource}
+                        onChange={handleChange}
+                        onSelectChange={handleSelectChange}
+                        onSwitchChange={handleSwitchChange}
+                        onLeadSelect={handleLeadSelect}
+                        selectedAmenities={selectedAmenities}
+                        onAmenitiesChange={handleAmenitiesChange}
+                        isSubmitting={isSubmitting}
+                        desarrolloId={desarrolloId}
+                        prototipo_id={prototipo_id}
+                        lead_id={lead_id}
+                        onImageUpload={handleImageUpload}
+                        uploading={uploading}
+                        isExistingClient={isExistingClient}
+                        onExistingClientChange={onExistingClientChange}
+                        newClientData={newClientData}
+                        onNewClientDataChange={onNewClientDataChange}
+                        onDesarrolloSelect={onDesarrolloSelect}
+                        onDateChange={handleDateChange}
+                        formId="resource-form"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </ScrollArea>
           )}
         </div>
         
-        <div className="px-8 py-6 bg-gray-50 border-t border-gray-100">
+        <div className="px-10 py-8">
           <DialogFooter 
             onClose={onClose}
             onSave={async () => {

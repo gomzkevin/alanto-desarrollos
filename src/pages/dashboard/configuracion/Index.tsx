@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import CompanyProfileForm from "@/components/dashboard/configuracion/CompanyProfileForm";
-import { UserManagementTable } from "@/components/dashboard/configuracion/UserManagementTable";
+import UserManagementTable from "@/components/dashboard/configuracion/UserManagementTable";
 import SubscriptionPlans from "@/components/dashboard/configuracion/SubscriptionPlans";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";

@@ -1,142 +1,317 @@
 
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import useLeads from '@/hooks/useLeads';
-import { useDesarrollos } from '@/hooks/useDesarrollos';
+import { supabase } from '@/integrations/supabase/client';
+import { ResourceType, FormValues } from './types';
+import { getCurrentUserId } from '@/lib/supabase';
+import useUserRole from '@/hooks/useUserRole';
+import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
-import useUnidades from '@/hooks/useUnidades';
-import { useUserRole } from '@/hooks/useUserRole';
 
-type ResourceKey = 'leads' | 'desarrollos' | 'prototipos' | 'unidades';
+interface UseResourceActionsProps {
+  resourceType: ResourceType;
+  resourceId?: string;
+  onSuccess?: () => void;
+  selectedAmenities?: string[];
+  clientConfig?: {
+    isExistingClient: boolean;
+    newClientData: { nombre: string; email: string; telefono: string };
+  };
+}
 
-export const useResourceActions = (resource: ResourceKey) => {
+export default function useResourceActions({
+  resourceType,
+  resourceId,
+  onSuccess,
+  selectedAmenities = [],
+  clientConfig
+}: UseResourceActionsProps) {
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
   const { empresaId } = useUserRole();
-  
-  // Get the appropriate hook functions based on resource type
-  const getLeadsFunctions = () => {
-    const { createLead, updateLead, deleteLead } = useLeads({ empresa_id: empresaId });
-    return { 
-      create: createLead, 
-      update: updateLead, 
-      delete: deleteLead 
-    };
+  const { canAddDesarrollo } = useDesarrollos({ empresaId });
+  const { canAddPrototipo } = usePrototipos();
+
+  // Save resource function
+  const saveResource = async (values: FormValues) => {
+    setIsLoading(true);
+    console.log('Starting saveResource with:', values);
+
+    try {
+      console.log('Saving resource:', resourceType, values);
+      
+      // Verificar límites de suscripción antes de crear un nuevo recurso
+      if (!resourceId) {
+        if (resourceType === 'desarrollos' && !canAddDesarrollo()) {
+          setIsLoading(false);
+          return false;
+        } else if (resourceType === 'prototipos' && !canAddPrototipo()) {
+          setIsLoading(false);
+          return false;
+        }
+      }
+      
+      // Prepare the data to be saved
+      let data = { ...values };
+      
+      // Handle special cases for each resource type
+      if (resourceType === 'desarrollos' && selectedAmenities.length > 0) {
+        data.amenidades = selectedAmenities;
+      }
+      
+      // If creating a new desarrollo, ensure it has a user_id
+      if (resourceType === 'desarrollos' && !resourceId && !data.user_id) {
+        const userId = await getCurrentUserId();
+        
+        if (userId) {
+          data.user_id = userId;
+        } else {
+          toast({
+            title: 'Error',
+            description: 'No se pudo obtener el ID de usuario. Por favor, inicia sesión nuevamente.',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return false;
+        }
+      }
+      
+      // Ensure empresa_id is set for relevant resource types
+      if ((resourceType === 'desarrollos' || resourceType === 'leads' || resourceType === 'cotizaciones') 
+          && !data.empresa_id && empresaId) {
+        data.empresa_id = empresaId;
+      }
+      
+      // Handle client creation for cotizaciones
+      if (resourceType === 'cotizaciones' && !clientConfig?.isExistingClient) {
+        // Create a new lead first
+        const { data: newLead, error: leadError } = await supabase
+          .from('leads')
+          .insert({
+            nombre: clientConfig?.newClientData.nombre,
+            email: clientConfig?.newClientData.email,
+            telefono: clientConfig?.newClientData.telefono,
+            estado: 'nuevo',
+            subestado: 'sin_contactar',
+            empresa_id: empresaId
+          })
+          .select()
+          .single();
+        
+        if (leadError) {
+          console.error('Error creating new lead:', leadError);
+          toast({
+            title: 'Error',
+            description: `No se pudo crear el nuevo cliente: ${leadError.message}`,
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return false;
+        }
+        
+        // Update the cotizacion with the new lead_id
+        data.lead_id = newLead.id;
+      }
+      
+      // Handle update or insert based on resourceId
+      if (resourceId) {
+        // Update existing resource
+        console.log('Updating existing resource with id:', resourceId);
+        let error;
+        
+        if (resourceType === 'desarrollos') {
+          const result = await supabase
+            .from(resourceType)
+            .update({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any)
+            .eq('id', resourceId);
+          error = result.error;
+        } else if (resourceType === 'leads') {
+          const result = await supabase
+            .from(resourceType)
+            .update({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any)
+            .eq('id', resourceId);
+          error = result.error;
+        } else if (resourceType === 'cotizaciones') {
+          const result = await supabase
+            .from(resourceType)
+            .update({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any)
+            .eq('id', resourceId);
+          error = result.error;
+        } else {
+          const result = await supabase
+            .from(resourceType)
+            .update(data as any)
+            .eq('id', resourceId);
+          error = result.error;
+        }
+        
+        if (error) {
+          console.error(`Error updating ${resourceType}:`, error);
+          toast({
+            title: 'Error',
+            description: `No se pudo actualizar: ${error.message}`,
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return false;
+        }
+        
+        console.log(`Successfully updated ${resourceType} with id ${resourceId}`);
+        toast({
+          title: 'Actualizado',
+          description: `${getResourceLabel(resourceType)} actualizado correctamente`,
+        });
+      } else {
+        // Create new resource
+        console.log('Creating new resource');
+        let error;
+        
+        if (resourceType === 'desarrollos') {
+          const result = await supabase
+            .from(resourceType)
+            .insert({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any);
+          error = result.error;
+        } else if (resourceType === 'leads') {
+          const result = await supabase
+            .from(resourceType)
+            .insert({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any);
+          error = result.error;
+        } else if (resourceType === 'cotizaciones') {
+          const result = await supabase
+            .from(resourceType)
+            .insert({
+              ...data,
+              empresa_id: data.empresa_id || empresaId
+            } as any);
+          error = result.error;
+        } else {
+          const result = await supabase
+            .from(resourceType)
+            .insert(data as any);
+          error = result.error;
+        }
+        
+        if (error) {
+          console.error(`Error creating ${resourceType}:`, error);
+          toast({
+            title: 'Error',
+            description: `No se pudo crear: ${error.message}`,
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return false;
+        }
+        
+        console.log(`Successfully created new ${resourceType}`);
+        toast({
+          title: 'Creado',
+          description: `${getResourceLabel(resourceType)} creado correctamente`,
+        });
+      }
+      
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        console.log('Calling onSuccess callback');
+        onSuccess();
+      }
+      
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      console.error('Error in saveResource:', error);
+      toast({
+        title: 'Error',
+        description: 'Ha ocurrido un error inesperado',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return false;
+    }
   };
   
-  const getDesarrollosFunctions = () => {
-    const { createDesarrollo, updateDesarrollo, deleteDesarrollo } = useDesarrollos({ empresa_id: empresaId });
-    return { 
-      create: createDesarrollo, 
-      update: updateDesarrollo, 
-      delete: deleteDesarrollo 
-    };
+  // Function to handle image uploads
+  const handleImageUpload = async (file: File): Promise<string | null> => {
+    if (!file) return null;
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      let filePath = '';
+      
+      if (resourceType === 'desarrollos') {
+        filePath = `desarrollos/${fileName}`;
+      } else if (resourceType === 'prototipos') {
+        filePath = `prototipos/${fileName}`;
+      } else {
+        filePath = `otros/${fileName}`;
+      }
+      
+      const { error: uploadError } = await supabase.storage
+        .from('prototipo-images')
+        .upload(filePath, file);
+      
+      if (uploadError) {
+        console.error('Error uploading image:', uploadError);
+        toast({
+          title: 'Error',
+          description: `No se pudo subir la imagen: ${uploadError.message}`,
+          variant: 'destructive',
+        });
+        return null;
+      }
+      
+      const { data } = supabase.storage
+        .from('prototipo-images')
+        .getPublicUrl(filePath);
+      
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error in handleImageUpload:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo subir la imagen',
+        variant: 'destructive',
+      });
+      return null;
+    }
   };
   
-  const getPrototiposFunctions = () => {
-    const { createPrototipo, updatePrototipo, deletePrototipo } = usePrototipos();
-    return { 
-      create: createPrototipo, 
-      update: updatePrototipo, 
-      delete: deletePrototipo 
-    };
-  };
-  
-  const getUnidadesFunctions = () => {
-    const { createUnidad, updateUnidad, deleteUnidad } = useUnidades();
-    return { 
-      create: createUnidad, 
-      update: updateUnidad, 
-      delete: deleteUnidad 
-    };
-  };
-  
-  // Get the appropriate functions based on resource type
-  const getActions = () => {
-    switch (resource) {
-      case 'leads':
-        return getLeadsFunctions();
+  // Helper function to get user-friendly resource type label
+  const getResourceLabel = (type: ResourceType): string => {
+    switch (type) {
       case 'desarrollos':
-        return getDesarrollosFunctions();
+        return 'Desarrollo';
       case 'prototipos':
-        return getPrototiposFunctions();
+        return 'Prototipo';
+      case 'leads':
+        return 'Lead';
+      case 'cotizaciones':
+        return 'Cotización';
       case 'unidades':
-        return getUnidadesFunctions();
+        return 'Unidad';
       default:
-        throw new Error(`Resource type ${resource} is not supported`);
+        return 'Recurso';
     }
   };
-  
-  const actions = getActions();
-  
-  // Generic function to create a resource
-  const handleCreate = async (data: any) => {
-    try {
-      const result = await actions.create(data);
-      toast({
-        title: `${resource.slice(0, -1)} creado`,
-        description: `El ${resource.slice(0, -1)} ha sido creado exitosamente`
-      });
-      return result;
-    } catch (error: any) {
-      console.error(`Error al crear ${resource.slice(0, -1)}:`, error);
-      toast({
-        title: "Error",
-        description: `No se pudo crear el ${resource.slice(0, -1)}: ${error.message}`,
-        variant: "destructive"
-      });
-      throw error;
-    }
-  };
-  
-  // Generic function to update a resource
-  const handleUpdate = async (id: string, data: any) => {
-    try {
-      const result = await actions.update(id, data);
-      toast({
-        title: `${resource.slice(0, -1)} actualizado`,
-        description: `El ${resource.slice(0, -1)} ha sido actualizado exitosamente`
-      });
-      return result;
-    } catch (error: any) {
-      console.error(`Error al actualizar ${resource.slice(0, -1)}:`, error);
-      toast({
-        title: "Error",
-        description: `No se pudo actualizar el ${resource.slice(0, -1)}: ${error.message}`,
-        variant: "destructive"
-      });
-      throw error;
-    }
-  };
-  
-  // Generic function to delete a resource
-  const handleDelete = async (id: string) => {
-    try {
-      await actions.delete(id);
-      toast({
-        title: `${resource.slice(0, -1)} eliminado`,
-        description: `El ${resource.slice(0, -1)} ha sido eliminado exitosamente`
-      });
-    } catch (error: any) {
-      console.error(`Error al eliminar ${resource.slice(0, -1)}:`, error);
-      toast({
-        title: "Error",
-        description: `No se pudo eliminar el ${resource.slice(0, -1)}: ${error.message}`,
-        variant: "destructive"
-      });
-      throw error;
-    }
-  };
-  
-  // Generic function to redirect to the resource page
-  const handleView = (id: string) => {
-    navigate(`/dashboard/${resource}/${id}`);
-  };
-  
+
   return {
-    create: handleCreate,
-    update: handleUpdate,
-    delete: handleDelete,
-    view: handleView
+    isLoading,
+    saveResource,
+    handleImageUpload
   };
-};
+}

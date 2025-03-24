@@ -1,22 +1,30 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from 'react';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Search, Filter, Eye, Plus, Building, Home } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { AlertCircle, Info, MoreVertical, PlusCircle, Search, SlidersHorizontal } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import RequireSubscription from "@/components/auth/RequireSubscription";
-import ResourceDialog from "@/components/dashboard/ResourceDialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import useLeads from "@/hooks/useLeads";
-import { useUserRole } from "@/hooks/useUserRole";
-import { useNavigate } from "react-router-dom";
-import { useDesarrollos } from "@/hooks/useDesarrollos";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
+import { format } from 'date-fns';
+import useLeads from '@/hooks/useLeads';
+import useDesarrollos from '@/hooks/useDesarrollos';
+import usePrototipos from '@/hooks/usePrototipos';
+import { useUserRole } from '@/hooks';
 
 const getBadgeVariant = (estado: string) => {
   switch (estado?.toLowerCase()) {
@@ -33,7 +41,7 @@ const getBadgeVariant = (estado: string) => {
   }
 };
 
-const LeadsPage: React.FC = () => {
+const LeadsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEstado, setSelectedEstado] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -44,21 +52,17 @@ const LeadsPage: React.FC = () => {
     leads, 
     isLoading, 
     refetch, 
+    statusOptions, 
     getStatusLabel,
     getSubstatusLabel,
     getOriginLabel
   } = useLeads({
     estado: selectedEstado || undefined,
-    search: searchTerm.length > 2 ? searchTerm : undefined
-  });
-
-  const statusOptions = LEAD_STATUS_OPTIONS;
-  
-  const { desarrollos } = useDesarrollos({
-    onSuccess: () => {},
-    onError: (error) => console.error("Error fetching desarrollos:", error)
+    search: searchTerm.length > 2 ? searchTerm : undefined,
+    empresa_id: empresaId
   });
   
+  const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos();
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,7 +83,7 @@ const LeadsPage: React.FC = () => {
     
     if (interesEn.startsWith('desarrollo:')) {
       const desarrolloId = interesEn.split(':')[1];
-      const desarrollo = desarrollos?.find(d => d.id === desarrolloId);
+      const desarrollo = desarrollos.find(d => d.id === desarrolloId);
       
       return (
         <div className="flex items-center">
@@ -89,9 +93,9 @@ const LeadsPage: React.FC = () => {
       );
     } else if (interesEn.startsWith('prototipo:')) {
       const prototipoId = interesEn.split(':')[1];
-      const prototipo = prototipos?.find(p => p.id === prototipoId);
+      const prototipo = prototipos.find(p => p.id === prototipoId);
       const desarrollo = prototipo 
-        ? desarrollos?.find(d => d.id === prototipo.desarrollo_id) 
+        ? desarrollos.find(d => d.id === prototipo.desarrollo_id) 
         : null;
       
       return (
@@ -152,7 +156,7 @@ const LeadsPage: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos los estados</SelectItem>
-                {statusOptions?.map((option) => (
+                {statusOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -191,7 +195,7 @@ const LeadsPage: React.FC = () => {
                     <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
                   </TableRow>
                 ))
-              ) : leads && leads.length > 0 ? (
+              ) : leads.length > 0 ? (
                 leads.map((lead) => (
                   <TableRow key={lead.id} className="hover:bg-slate-50">
                     <TableCell className="font-medium">

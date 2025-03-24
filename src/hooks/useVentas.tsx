@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
 
 // Tipos básicos
 export interface Venta {
@@ -20,7 +19,6 @@ export interface Venta {
       nombre: string;
       desarrollo?: {
         nombre: string;
-        empresa_id?: number;
       };
     };
   };
@@ -37,22 +35,10 @@ export const useVentas = (filters: VentasFilter = {}) => {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
-  const { empresaId, userRole } = useUserRole();
-
-  console.log('useVentas - empresaId:', empresaId);
-  console.log('useVentas - userRole:', userRole);
 
   // Consulta para obtener las ventas
   const fetchVentas = async (): Promise<Venta[]> => {
     try {
-      console.log('Fetching ventas with empresaId:', empresaId);
-      
-      // Solo intentar obtener ventas si hay un empresaId
-      if (!empresaId) {
-        console.log('No empresaId available, returning empty ventas array');
-        return [];
-      }
-      
       let query = supabase
         .from('ventas')
         .select(`
@@ -62,8 +48,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
             prototipo:prototipos(
               nombre,
               desarrollo:desarrollos(
-                nombre,
-                empresa_id
+                nombre
               )
             )
           )
@@ -79,36 +64,11 @@ export const useVentas = (filters: VentasFilter = {}) => {
       }
 
       const { data, error } = await query;
-      
-      if (error) {
-        console.error('Error al obtener ventas:', error);
-        throw error;
-      }
 
-      console.log('Ventas raw data:', data);
-
-      // Filtrar las ventas por empresa_id de manera más segura
-      if (!data || data.length === 0) {
-        console.log('No ventas data returned from database');
-        return [];
-      }
-      
-      const filteredData = data.filter(venta => {
-        // Verificar si unidad y sus propiedades anidadas existen
-        if (!venta.unidad || !venta.unidad.prototipo || !venta.unidad.prototipo.desarrollo) {
-          console.log('Venta sin datos completos de unidad/prototipo/desarrollo:', venta.id);
-          return false;
-        }
-        
-        const ventaEmpresaId = venta.unidad.prototipo.desarrollo.empresa_id;
-        console.log('Comparing venta:', venta.id, 'empresa_id:', ventaEmpresaId, 'with current empresaId:', empresaId);
-        return ventaEmpresaId === empresaId;
-      });
-      
-      console.log('Filtered ventas:', filteredData.length);
+      if (error) throw error;
 
       // Calcular el progreso para cada venta (esto sería un cálculo real en la implementación final)
-      return filteredData.map(venta => ({
+      return (data || []).map(venta => ({
         ...venta,
         progreso: 30, // Este sería un valor calculado en base a los pagos
       }));
@@ -119,11 +79,8 @@ export const useVentas = (filters: VentasFilter = {}) => {
   };
 
   const { data = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['ventas', filters, empresaId],
+    queryKey: ['ventas', filters],
     queryFn: fetchVentas,
-    enabled: !!empresaId, // Sólo ejecutar la consulta si hay un empresaId
-    staleTime: 1000 * 60 * 5, // 5 minutos
-    refetchOnWindowFocus: false
   });
 
   // Función para crear una venta

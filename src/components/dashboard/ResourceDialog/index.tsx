@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { ResourceType, FormValues } from './types';
 import { ResourceDialogContent } from './components/ResourceDialogContent';
 import useResourceData from './useResourceData';
-import { useResourceActions } from './useResourceActions';
+import useResourceActions from './useResourceActions';
 import { useResourceFields } from './hooks/useResourceFields';
 
 interface ResourceDialogProps {
@@ -18,14 +19,7 @@ interface ResourceDialogProps {
   buttonText?: string;
   buttonIcon?: React.ReactNode;
   buttonVariant?: string;
-  defaultValues?: Record<string, any>;
-}
-
-interface ResourceActions {
-  create: (data: any) => Promise<void>;
-  update: (id: string, data: any) => Promise<void>;
-  delete: (id: string) => Promise<void>;
-  view: (id: string) => void;
+  defaultValues?: Record<string, any>; // Added defaultValues prop
 }
 
 const ResourceDialog: React.FC<ResourceDialogProps> = ({
@@ -64,14 +58,21 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     selectedAmenities,
     onStatusChange: setSelectedStatus,
     onAmenitiesChange: setSelectedAmenities,
-    defaultValues
+    defaultValues // Pass defaultValues to useResourceData
   });
 
   const fields = useResourceFields(resourceType, selectedStatus);
-  
-  const actions = useResourceActions(
-    resourceType as 'leads' | 'desarrollos' | 'prototipos' | 'unidades'
-  );
+
+  const { saveResource, handleImageUpload: uploadResourceImage } = useResourceActions({
+    resourceType,
+    resourceId,
+    onSuccess,
+    selectedAmenities,
+    clientConfig: {
+      isExistingClient,
+      newClientData
+    }
+  });
 
   useEffect(() => {
     if (open) {
@@ -161,7 +162,7 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     setUploading(true);
     
     try {
-      const imageUrl = await uploadFile(file);
+      const imageUrl = await uploadResourceImage(file);
       
       if (imageUrl && resource) {
         const updatedResource = {
@@ -177,11 +178,6 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     }
   };
 
-  const uploadFile = async (file: File): Promise<string> => {
-    console.log('Uploading file:', file.name);
-    return URL.createObjectURL(file);
-  };
-
   const handleSaveResource = async () => {
     console.log("handleSaveResource called with resource:", resource);
     if (!resource) return false;
@@ -189,11 +185,11 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     setIsSubmitting(true);
     
     try {
-      await actions.create(resource);
-      if (onSuccess) {
+      const success = await saveResource(resource);
+      if (success && onSuccess) {
         onSuccess();
       }
-      return true;
+      return success;
     } catch (error) {
       console.error('Error saving resource:', error);
       return false;

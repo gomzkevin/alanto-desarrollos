@@ -223,7 +223,7 @@ const CotizacionDetailDialog = ({
         cotizacion.monto_finiquito || 0,
         cotizacion.numero_pagos,
         startDate,
-        cotizacion.usar_finiquito || false,
+        cotizacion.usar_finiquito,
         finiquitoDate
       );
 
@@ -306,11 +306,9 @@ const CotizacionDetailDialog = ({
                   {cotizacion.desarrollo ? (
                     <div className="space-y-2">
                       <p className="text-lg font-medium">{cotizacion.desarrollo.nombre}</p>
-                      {cotizacion.desarrollo.ubicacion && (
-                        <p className="text-sm text-muted-foreground">
-                          {cotizacion.desarrollo.ubicacion}
-                        </p>
-                      )}
+                      <p className="text-sm text-muted-foreground">
+                        {cotizacion.desarrollo.ubicacion}
+                      </p>
                       {desarrolloImageUrl && (
                         <div className="mt-3 relative aspect-video w-full overflow-hidden rounded-md">
                           <img 

@@ -11,7 +11,6 @@ interface ImageUploaderProps {
   folderPath: string;
   currentImageUrl?: string;
   onImageUploaded: (imageUrl: string) => void;
-  disabled?: boolean;
 }
 
 const ImageUploader = ({ 
@@ -19,8 +18,7 @@ const ImageUploader = ({
   bucketName, 
   folderPath, 
   currentImageUrl, 
-  onImageUploaded,
-  disabled = false
+  onImageUploaded 
 }: ImageUploaderProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
@@ -131,7 +129,6 @@ const ImageUploader = ({
             size="icon" 
             className="absolute top-2 right-2 h-8 w-8 rounded-full opacity-90"
             onClick={handleRemoveImage}
-            disabled={disabled}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -151,7 +148,7 @@ const ImageUploader = ({
           type="button" 
           variant={previewUrl ? "outline" : "default"} 
           onClick={() => document.getElementById(`file-upload-${entityId}`)?.click()}
-          disabled={isUploading || disabled}
+          disabled={isUploading}
           className="gap-2"
         >
           {isUploading ? (
@@ -174,7 +171,6 @@ const ImageUploader = ({
         accept="image/*"
         onChange={handleFileChange}
         className="hidden"
-        disabled={disabled}
       />
     </div>
   );

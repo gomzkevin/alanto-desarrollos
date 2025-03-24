@@ -2,7 +2,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import CotizacionDialog from './ResourceDialog/CotizacionDialog';
-import { PlusCircle } from 'lucide-react';
 
 interface AdminCotizacionDialogProps {
   buttonText?: string;
@@ -19,7 +18,7 @@ interface AdminCotizacionDialogProps {
 
 const AdminCotizacionDialog: React.FC<AdminCotizacionDialogProps> = ({
   buttonText = "Nueva cotización",
-  buttonIcon = <PlusCircle className="mr-2 h-4 w-4" />,
+  buttonIcon,
   buttonVariant = 'default',
   onSuccess,
   desarrolloId,
@@ -59,7 +58,7 @@ const AdminCotizacionDialog: React.FC<AdminCotizacionDialogProps> = ({
         <Button 
           variant={buttonVariant} 
           onClick={handleOpen}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-4 py-2 shadow-md hover:shadow-lg transition-all duration-200"
+          className="border-2 border-gray-200 shadow-sm hover:bg-indigo-600"
         >
           {buttonIcon}
           {buttonText}

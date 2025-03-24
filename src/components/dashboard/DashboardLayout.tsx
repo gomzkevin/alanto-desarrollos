@@ -1,9 +1,9 @@
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Building2, Users, BarChart3, Calculator, Briefcase, 
-  Settings, Menu, X, ChevronDown, Home, DollarSign, AlertTriangle
+  Settings, Menu, X, ChevronDown, Home, DollarSign
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useUserRole } from '@/hooks/useUserRole';
-import { useSubscriptionInfo } from '@/hooks/useSubscriptionInfo';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 import LogoutButton from './LogoutButton';
@@ -27,16 +26,11 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  // Always call hooks at the top level, regardless of any conditions
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [attemptedAuth, setAttemptedAuth] = useState(false);
-  const authCheckRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { isLoading, userId, userEmail, userName, authChecked, isAdmin: isUserAdmin } = useUserRole();
-  
-  // Always call this hook unconditionally at the top level
-  const { subscriptionInfo } = useSubscriptionInfo();
+  const { isLoading, userId, userEmail, userName, authChecked } = useUserRole();
   
   const getUserInitials = () => {
     if (userName) {
@@ -52,17 +46,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     return 'U';
   };
   
-  // Determine subscription warning outside of JSX
-  const showSubscriptionWarning = isUserAdmin && userId && 
-    (subscriptionInfo && (!subscriptionInfo.isActive || subscriptionInfo.isOverLimit));
-  
   useEffect(() => {
     const checkAuth = async () => {
-      // Use ref to prevent multiple auth checks
-      if (attemptedAuth || authCheckRef.current) return;
+      if (attemptedAuth) return;
       
       try {
-        authCheckRef.current = true;
         setAttemptedAuth(true);
         const { data } = await supabase.auth.getSession();
         
@@ -83,11 +71,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           description: "Hubo un problema al verificar tu sesión",
           variant: "destructive"
         });
-      } finally {
-        // Release the ref after a delay to prevent rapid rechecks
-        setTimeout(() => {
-          authCheckRef.current = false;
-        }, 5000);
       }
     };
     
@@ -98,6 +81,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     setIsSidebarOpen(false);
   }, [location.pathname]);
 
+  // Mejora en la lógica para mostrar estados de carga
   if (isLoading || !authChecked) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
@@ -111,8 +95,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   
   if (!userId && authChecked) {
     console.log("No userId but authChecked, redirecting to auth");
-    // Instead of directly navigating here, let the RequireAuth component handle this
-    // to prevent excessive redirects
+    navigate('/auth');
     return null;
   }
 
@@ -126,9 +109,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: 'Proyecciones', href: '/dashboard/proyecciones', icon: Briefcase, current: location.pathname.includes('/dashboard/proyecciones') },
     { name: 'Configuración', href: '/dashboard/configuracion', icon: Settings, current: location.pathname === '/dashboard/configuracion' },
   ];
-
+  
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {/* Mobile sidebar overlay */}
       <div className={cn(
         "fixed inset-0 z-40 lg:hidden",
         isSidebarOpen ? "block" : "hidden"
@@ -138,6 +122,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           onClick={() => setIsSidebarOpen(false)}
         ></div>
         
+        {/* Mobile sidebar */}
         <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out">
           <div className="flex items-center justify-between h-16 px-4 border-b">
             <div className="text-lg font-semibold text-indigo-600">Alanto</div>
@@ -148,15 +133,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <X className="h-5 w-5 text-slate-500" />
             </button>
           </div>
-          
-          {showSubscriptionWarning && (
-            <div className="px-4 py-2 bg-amber-50 border-b border-amber-200">
-              <div className="flex items-center text-amber-600 text-xs">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                <span>{subscriptionInfo.isActive ? 'Has excedido el límite de tu plan' : 'Tu suscripción no está activa'}</span>
-              </div>
-            </div>
-          )}
           
           <nav className="mt-5 px-4 space-y-1">
             {navigation.map((item) => (
@@ -183,32 +159,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </div>
       
+      {/* Desktop sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
         <div className="flex flex-col w-64 border-r border-slate-200 bg-white">
           <div className="flex items-center h-16 px-4 border-b">
             <div className="text-lg font-semibold text-indigo-600">Alanto</div>
           </div>
-          
-          {showSubscriptionWarning && (
-            <div className="px-4 py-2 bg-amber-50 border-b border-amber-200">
-              <div className="flex items-center text-amber-600 text-xs">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                <span>
-                  {!subscriptionInfo.isActive 
-                    ? 'Tu suscripción no está activa' 
-                    : 'Has excedido el límite de tu plan'}
-                </span>
-              </div>
-              <div className="mt-1 flex justify-end">
-                <Link 
-                  to="/dashboard/configuracion" 
-                  className="text-xs text-indigo-600 hover:text-indigo-800"
-                >
-                  Gestionar suscripción
-                </Link>
-              </div>
-            </div>
-          )}
           
           <div className="flex flex-col flex-1 overflow-y-auto">
             <nav className="flex-1 px-4 py-4 space-y-1">
@@ -237,6 +193,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </div>
       
+      {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">
         <div className="bg-white border-b border-slate-200 z-10">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6">

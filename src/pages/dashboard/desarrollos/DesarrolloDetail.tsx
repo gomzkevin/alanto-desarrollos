@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -107,11 +106,8 @@ const parseAmenidades = (amenidades: string[] | string | undefined): string[] =>
 const DesarrolloDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAdmin, userRole } = useUserRole();
+  const { isAdmin } = useUserRole();
   const { countDesarrolloUnidadesByStatus } = useUnidades();
-  
-  // Check if user can create/edit prototipos (only admins, not vendors)
-  const canManagePrototipos = isAdmin() && userRole !== 'vendedor';
   
   const { 
     data: desarrollo, 
@@ -197,7 +193,7 @@ const DesarrolloDetailPage = () => {
   };
   
   const puedeCrearPrototipos = () => {
-    if (!desarrollo || !canManagePrototipos) return false;
+    if (!desarrollo) return false;
     
     const unidadesAsignadas = calcularUnidadesAsignadas();
     const unidadesDesarrollo = desarrollo.total_unidades || 0;
@@ -223,7 +219,7 @@ const DesarrolloDetailPage = () => {
             Volver
           </Button>
           
-          {desarrollo && canManagePrototipos && <DesarrolloEditButton desarrollo={desarrollo} onSuccess={handleRefresh} />}
+          {desarrollo && <DesarrolloEditButton desarrollo={desarrollo} onSuccess={handleRefresh} />}
         </div>
         
         {isLoading ? (
@@ -267,7 +263,7 @@ const DesarrolloDetailPage = () => {
                     Imágenes del desarrollo
                   </h2>
                 </div>
-                <DesarrolloImageCarousel desarrolloId={id as string} editable={canManagePrototipos} />
+                <DesarrolloImageCarousel desarrolloId={id as string} editable={isAdmin()} />
               </div>
               
               {desarrollo.descripcion && (
@@ -365,7 +361,20 @@ const DesarrolloDetailPage = () => {
                     )}
                   </div>
                 </div>
-                {canManagePrototipos && (
+                <AdminResourceDialog 
+                  resourceType="prototipos" 
+                  buttonText="Nuevo prototipo" 
+                  buttonIcon={<PlusCircle className="h-4 w-4 mr-2" />}
+                  buttonVariant="default"
+                  onSuccess={refetchPrototipos}
+                  desarrolloId={id}
+                />
+              </div>
+              
+              {prototipos.length === 0 ? (
+                <div className="text-center py-10 bg-slate-50 rounded-lg">
+                  <Home className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                  <p className="text-slate-700 mb-4">No hay prototipos registrados en este desarrollo</p>
                   <AdminResourceDialog 
                     resourceType="prototipos" 
                     buttonText="Nuevo prototipo" 
@@ -374,23 +383,6 @@ const DesarrolloDetailPage = () => {
                     onSuccess={refetchPrototipos}
                     desarrolloId={id}
                   />
-                )}
-              </div>
-              
-              {prototipos.length === 0 ? (
-                <div className="text-center py-10 bg-slate-50 rounded-lg">
-                  <Home className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                  <p className="text-slate-700 mb-4">No hay prototipos registrados en este desarrollo</p>
-                  {canManagePrototipos && (
-                    <AdminResourceDialog 
-                      resourceType="prototipos" 
-                      buttonText="Nuevo prototipo" 
-                      buttonIcon={<PlusCircle className="h-4 w-4 mr-2" />}
-                      buttonVariant="default"
-                      onSuccess={refetchPrototipos}
-                      desarrolloId={id}
-                    />
-                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
