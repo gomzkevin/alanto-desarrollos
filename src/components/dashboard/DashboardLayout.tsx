@@ -26,6 +26,16 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+// Define which navigation items require an active subscription
+const REQUIRE_SUBSCRIPTION = [
+  'Desarrollos',
+  'Propiedades',
+  'Leads',
+  'Cotizaciones',
+  'Ventas',
+  'Proyecciones'
+];
+
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // Always call hooks at the top level, regardless of any conditions
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -54,6 +64,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // Determine subscription warning outside of JSX
   const showSubscriptionWarning = isUserAdmin && userId && 
     (subscriptionInfo && (!subscriptionInfo.isActive || subscriptionInfo.isOverLimit));
+  
+  // Check if subscription is active
+  const hasActiveSubscription = subscriptionInfo && subscriptionInfo.isActive;
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -109,14 +122,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3, current: location.pathname === '/dashboard' },
-    { name: 'Desarrollos', href: '/dashboard/desarrollos', icon: Building2, current: location.pathname.includes('/dashboard/desarrollos') },
-    { name: 'Propiedades', href: '/dashboard/propiedades', icon: Home, current: location.pathname === '/dashboard/propiedades' },
-    { name: 'Leads', href: '/dashboard/leads', icon: Users, current: location.pathname.includes('/dashboard/leads') },
-    { name: 'Cotizaciones', href: '/dashboard/cotizaciones', icon: Calculator, current: location.pathname.includes('/dashboard/cotizaciones') },
-    { name: 'Ventas', href: '/dashboard/ventas', icon: DollarSign, current: location.pathname.includes('/dashboard/ventas') },
-    { name: 'Proyecciones', href: '/dashboard/proyecciones', icon: Briefcase, current: location.pathname.includes('/dashboard/proyecciones') },
+    { name: 'Desarrollos', href: '/dashboard/desarrollos', icon: Building2, current: location.pathname.includes('/dashboard/desarrollos'), requiresSubscription: true },
+    { name: 'Propiedades', href: '/dashboard/propiedades', icon: Home, current: location.pathname === '/dashboard/propiedades', requiresSubscription: true },
+    { name: 'Leads', href: '/dashboard/leads', icon: Users, current: location.pathname.includes('/dashboard/leads'), requiresSubscription: true },
+    { name: 'Cotizaciones', href: '/dashboard/cotizaciones', icon: Calculator, current: location.pathname.includes('/dashboard/cotizaciones'), requiresSubscription: true },
+    { name: 'Ventas', href: '/dashboard/ventas', icon: DollarSign, current: location.pathname.includes('/dashboard/ventas'), requiresSubscription: true },
+    { name: 'Proyecciones', href: '/dashboard/proyecciones', icon: Briefcase, current: location.pathname.includes('/dashboard/proyecciones'), requiresSubscription: true },
     { name: 'Configuración', href: '/dashboard/configuracion', icon: Settings, current: location.pathname === '/dashboard/configuracion' },
   ];
+
+  // Filter navigation items based on subscription status
+  const filteredNavigation = navigation.filter(item => 
+    !item.requiresSubscription || hasActiveSubscription
+  );
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -146,11 +164,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <AlertTriangle className="h-3 w-3 mr-1" />
                 <span>{subscriptionInfo.isActive ? 'Has excedido el límite de tu plan' : 'Tu suscripción no está activa'}</span>
               </div>
+              <div className="mt-1 flex justify-end">
+                <Link 
+                  to="/dashboard/configuracion" 
+                  className="text-xs text-indigo-600 hover:text-indigo-800"
+                >
+                  Gestionar suscripción
+                </Link>
+              </div>
             </div>
           )}
           
           <nav className="mt-5 px-4 space-y-1">
-            {navigation.map((item) => (
+            {filteredNavigation.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
@@ -203,7 +229,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           
           <div className="flex flex-col flex-1 overflow-y-auto">
             <nav className="flex-1 px-4 py-4 space-y-1">
-              {navigation.map((item) => (
+              {filteredNavigation.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}

@@ -103,7 +103,7 @@ function App() {
           {/* Leads - Protected by subscription */}
           <Route path="/dashboard/leads" element={
             <RequireAuth>
-              <RequireSubscription moduleName="Leads">
+              <RequireSubscription moduleName="Leads" redirectTo="/dashboard/configuracion">
                 <LeadsPage />
               </RequireSubscription>
             </RequireAuth>
@@ -112,7 +112,7 @@ function App() {
           {/* Desarrollos - Protected by subscription */}
           <Route path="/dashboard/desarrollos" element={
             <RequireAuth>
-              <RequireSubscription moduleName="Desarrollos">
+              <RequireSubscription moduleName="Desarrollos" redirectTo="/dashboard/configuracion">
                 <DesarrollosPage />
               </RequireSubscription>
             </RequireAuth>
@@ -120,7 +120,7 @@ function App() {
           
           <Route path="/dashboard/desarrollos/:id" element={
             <RequireAuth>
-              <RequireSubscription moduleName="Desarrollos">
+              <RequireSubscription moduleName="Desarrollos" redirectTo="/dashboard/configuracion">
                 <DesarrolloDetailPage />
               </RequireSubscription>
             </RequireAuth>
@@ -129,7 +129,7 @@ function App() {
           {/* Propiedades - Protected by subscription */}
           <Route path="/dashboard/propiedades" element={
             <RequireAuth>
-              <RequireSubscription moduleName="Propiedades">
+              <RequireSubscription moduleName="Propiedades" redirectTo="/dashboard/configuracion">
                 <PropiedadesPage />
               </RequireSubscription>
             </RequireAuth>
@@ -138,7 +138,7 @@ function App() {
           {/* Cotizaciones - Protected by subscription */}
           <Route path="/dashboard/cotizaciones" element={
             <RequireAuth>
-              <RequireSubscription moduleName="Cotizaciones">
+              <RequireSubscription moduleName="Cotizaciones" redirectTo="/dashboard/configuracion">
                 <CotizacionesPage />
               </RequireSubscription>
             </RequireAuth>
@@ -146,7 +146,7 @@ function App() {
           
           <Route path="/dashboard/cotizaciones/nueva" element={
             <RequireAuth>
-              <RequireSubscription moduleName="Cotizaciones">
+              <RequireSubscription moduleName="Cotizaciones" redirectTo="/dashboard/configuracion">
                 <NuevaCotizacionPage />
               </RequireSubscription>
             </RequireAuth>
@@ -155,7 +155,7 @@ function App() {
           {/* Ventas - Protected by subscription */}
           <Route path="/dashboard/ventas" element={
             <RequireAuth>
-              <RequireSubscription moduleName="Ventas">
+              <RequireSubscription moduleName="Ventas" redirectTo="/dashboard/configuracion">
                 <VentasPage />
               </RequireSubscription>
             </RequireAuth>
@@ -163,7 +163,7 @@ function App() {
           
           <Route path="/dashboard/ventas/:ventaId" element={
             <RequireAuth>
-              <RequireSubscription moduleName="Ventas">
+              <RequireSubscription moduleName="Ventas" redirectTo="/dashboard/configuracion">
                 <VentaDetail />
               </RequireSubscription>
             </RequireAuth>
@@ -172,7 +172,7 @@ function App() {
           {/* Prototipos - Protected by subscription */}
           <Route path="/dashboard/prototipos/:id" element={
             <RequireAuth>
-              <RequireSubscription moduleName="Prototipos">
+              <RequireSubscription moduleName="Prototipos" redirectTo="/dashboard/configuracion">
                 <PrototipoDetailPage />
               </RequireSubscription>
             </RequireAuth>
@@ -188,7 +188,7 @@ function App() {
           {/* Proyecciones - Protected by subscription */}
           <Route path="/dashboard/proyecciones" element={
             <RequireAuth>
-              <RequireSubscription moduleName="Proyecciones">
+              <RequireSubscription moduleName="Proyecciones" redirectTo="/dashboard/configuracion">
                 <ProyeccionesPage />
               </RequireSubscription>
             </RequireAuth>

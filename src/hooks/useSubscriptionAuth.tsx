@@ -8,9 +8,9 @@ import { useSubscriptionInfo } from './useSubscriptionInfo';
 /**
  * Hook para verificar si el usuario tiene acceso basado en suscripción
  * @param requiredModule - Módulo opcional que se intenta acceder (para mensajes específicos)
- * @param redirectPath - Ruta a la que redirigir si no hay acceso (por defecto: /dashboard)
+ * @param redirectPath - Ruta a la que redirigir si no hay acceso (por defecto: /dashboard/configuracion)
  */
-export const useSubscriptionAuth = (requiredModule?: string, redirectPath: string = '/dashboard') => {
+export const useSubscriptionAuth = (requiredModule?: string, redirectPath: string = '/dashboard/configuracion') => {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const navigate = useNavigate();
   

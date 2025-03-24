@@ -21,7 +21,7 @@ interface RequireSubscriptionProps {
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   children,
   moduleName,
-  redirectTo = '/dashboard',
+  redirectTo = '/dashboard/configuracion',
   loadingFallback,
   unauthorizedFallback
 }) => {
