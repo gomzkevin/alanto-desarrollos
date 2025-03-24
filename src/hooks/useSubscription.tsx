@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,7 +59,7 @@ export interface SubscriptionAuthOptions {
 
 /**
  * Hook centralizado que gestiona datos de suscripción, autorización y control de acceso
- * Versión simplificada: Solo considera suscripciones a nivel de empresa
+ * Versión corregida: Verifica correctamente suscripciones a nivel de empresa
  */
 export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
   const { 
@@ -85,9 +86,10 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
 
       try {
         // Verificar si la empresa tiene una suscripción activa
+        // CORREGIDO: Usar una consulta directa para verificar suscripciones activas de la empresa
         const { data: subscriptions, error: subError } = await supabase
           .from('subscriptions')
-          .select('id, status, empresa_id, plan_id, created_at, current_period_end, subscription_plans(id, name, price, interval, features)')
+          .select('*, subscription_plans(*)')
           .eq('empresa_id', empresaId)
           .eq('status', 'active');
           
@@ -98,9 +100,9 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
           return getDefaultSubscriptionInfo();
         } 
         
-        // Si encontramos al menos una suscripción activa, usamos la primera
+        // Si encontramos al menos una suscripción activa para la empresa, usamos la primera
         if (subscriptions && subscriptions.length > 0) {
-          console.log('Using active subscription:', subscriptions[0]);
+          console.log('Using active company subscription:', subscriptions[0]);
           return await processSubscription(subscriptions[0], empresaId);
         }
         
