@@ -1,10 +1,10 @@
 
 import React from 'react';
-import { useSubscription } from '@/hooks/useSubscription';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RequireSubscriptionProps {
   children: React.ReactNode;
@@ -15,7 +15,8 @@ interface RequireSubscriptionProps {
 }
 
 /**
- * Component that ensures the user has an active subscription to access the content
+ * Componente que asegura que el usuario tiene una suscripción activa
+ * para acceder al contenido, utilizando el hook centralizado useAuth
  */
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   children,
@@ -24,14 +25,14 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   loadingFallback,
   unauthorizedFallback
 }) => {
-  // Use the centralized subscription hook
-  const { isAuthorized, isLoading } = useSubscription({
+  // Utilizar el hook centralizado de autorización
+  const { isAuthorized, isLoading } = useAuth({
     requiresSubscription: true,
     requiredModule: moduleName,
     redirectPath: redirectTo
   });
 
-  // Show loading state
+  // Mostrar estado de carga
   if (isLoading) {
     if (loadingFallback) return <>{loadingFallback}</>;
     
@@ -48,7 +49,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
     );
   }
 
-  // Handle unauthorized access
+  // Manejar acceso no autorizado
   if (!isAuthorized) {
     if (unauthorizedFallback) return <>{unauthorizedFallback}</>;
     
@@ -67,7 +68,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
     );
   }
 
-  // Render children if authorized
+  // Renderizar contenido si está autorizado
   return <>{children}</>;
 };
 
