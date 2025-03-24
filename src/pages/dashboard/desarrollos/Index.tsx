@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -82,6 +83,7 @@ const DesarrollosPage = () => {
 
   const normalizeDesarrollos = (desarrollosData: Desarrollo[]): Desarrollo[] => {
     return desarrollosData.map(desarrollo => {
+      // Use type assertion to fix the type mismatch error
       const normalizedDesarrollo = {
         ...desarrollo,
         unidades_disponibles: Math.min(
