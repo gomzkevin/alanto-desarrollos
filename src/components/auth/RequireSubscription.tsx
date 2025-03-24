@@ -26,16 +26,18 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   loadingFallback,
   unauthorizedFallback
 }) => {
-  const { userId, empresaId, userRole } = useUserRole();
+  const { userId, empresaId, userRole, isAdmin, isSuperAdmin } = useUserRole();
   
   // Agregar logs para depurar la carga de datos del usuario
   useEffect(() => {
     console.log(`RequireSubscription for ${moduleName} - User data:`, {
       userId,
       empresaId,
-      userRole
+      userRole,
+      isAdmin: isAdmin(),
+      isSuperAdmin: isSuperAdmin()
     });
-  }, [userId, empresaId, userRole, moduleName]);
+  }, [userId, empresaId, userRole, moduleName, isAdmin, isSuperAdmin]);
   
   // Usar el hook de acceso a suscripciones - versión simplificada
   const { isAuthorized, isLoading, subscription } = useSubscriptionAccess({

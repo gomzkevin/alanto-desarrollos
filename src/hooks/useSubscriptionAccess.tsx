@@ -39,7 +39,7 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
-  const { userId, userRole, isAdmin, isSuperAdmin, authChecked, isLoading: isUserLoading } = useUserRole();
+  const { userId, userRole, isAdmin, isSuperAdmin, authChecked, isLoading: isUserLoading, empresaId } = useUserRole();
   const [isLoading, setIsLoading] = useState(true);
 
   // Efecto para obtener el estado de suscripción directamente desde Supabase
@@ -50,6 +50,10 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
       try {
         setIsLoading(true);
         console.log('Verificando suscripción para usuario:', userId);
+        console.log('Rol del usuario:', userRole);
+        console.log('Es admin:', isAdmin());
+        console.log('Es superadmin:', isSuperAdmin());
+        console.log('Empresa ID:', empresaId);
         
         // Si es superadmin, siempre está autorizado
         if (isSuperAdmin()) {
@@ -60,6 +64,56 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
             currentPlan: null,
             renewalDate: null
           });
+          setIsLoading(false);
+          return;
+        }
+        
+        // Si es admin de empresa, también otorgar acceso sin verificar suscripción
+        if (isAdmin() && !isSuperAdmin()) {
+          console.log('Usuario es admin de empresa - acceso autorizado');
+          // Para admins, obtenemos la información de suscripción pero no bloqueamos el acceso
+          if (empresaId) {
+            try {
+              const { data: subData, error: subError } = await supabase
+                .rpc('get_user_subscription_status', { user_uuid: userId });
+                
+              if (!subError && subData) {
+                console.log('Datos de suscripción para admin:', subData);
+                let currentPlanData = null;
+                
+                if (subData.currentPlan && typeof subData.currentPlan === 'object' && !Array.isArray(subData.currentPlan)) {
+                  currentPlanData = {
+                    id: String(subData.currentPlan.id || ''),
+                    name: String(subData.currentPlan.name || ''),
+                    price: Number(subData.currentPlan.price || 0),
+                    interval: String(subData.currentPlan.interval || ''),
+                    features: subData.currentPlan.features || {}
+                  };
+                }
+                
+                setSubscription({
+                  isActive: !!subData.isActive,
+                  currentPlan: currentPlanData,
+                  renewalDate: subData.renewalDate ? String(subData.renewalDate) : null,
+                  empresa_id: typeof subData.empresa_id === 'number' ? subData.empresa_id : undefined
+                });
+              }
+            } catch (e) {
+              console.error('Error al obtener datos de suscripción para admin:', e);
+            }
+          }
+          
+          // Independientemente de la suscripción, los admins siempre tienen acceso
+          setIsAuthorized(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Para usuarios regulares, verificar si requiere suscripción
+        if (!requiresSubscription) {
+          console.log('Módulo no requiere suscripción - acceso autorizado');
+          setIsAuthorized(true);
+          setIsLoading(false);
           return;
         }
         
@@ -70,6 +124,7 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
         if (error) {
           console.error('Error al obtener estado de suscripción:', error);
           setIsAuthorized(false);
+          setIsLoading(false);
           return;
         }
         
@@ -103,28 +158,21 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
           
           setSubscription(subscriptionData);
           
-          // Si el módulo no requiere suscripción, autorizar automáticamente
-          if (!requiresSubscription) {
-            setIsAuthorized(true);
-            return;
-          }
-          
           // Si tiene suscripción activa, está autorizado
           if (subscriptionData.isActive) {
             console.log('Suscripción activa encontrada - acceso autorizado');
             setIsAuthorized(true);
+            setIsLoading(false);
             return;
           }
         } else {
           console.error('Formato de datos de suscripción inválido:', data);
-          setIsAuthorized(false);
-          return;
         }
         
         // Sin suscripción activa - denegar acceso si se requiere
         console.log('Sin suscripción activa - acceso denegado');
         
-        // Mostrar mensaje sólo si se requiere suscripción
+        // Mostrar mensaje solo si se requiere suscripción
         if (requiresSubscription) {
           // Mensaje específico según si es admin o no
           let message = isAdmin() 
@@ -145,16 +193,16 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
         }
         
         setIsAuthorized(false);
+        setIsLoading(false);
       } catch (err) {
         console.error('Error inesperado en verificación de suscripción:', err);
         setIsAuthorized(false);
-      } finally {
         setIsLoading(false);
       }
     };
     
     checkSubscription();
-  }, [userId, authChecked, requiresSubscription, requiredModule, redirectPath, isAdmin, isSuperAdmin, navigate]);
+  }, [userId, authChecked, requiresSubscription, requiredModule, redirectPath, isAdmin, isSuperAdmin, navigate, empresaId, userRole]);
 
   return {
     isAuthorized,
