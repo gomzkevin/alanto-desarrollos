@@ -27,7 +27,7 @@ export const useResourceActions = (resourceType: ResourceType) => {
   const { userId, empresaId, isAdmin } = useUserRole();
   const { subscriptionInfo } = useCompanySubscription();
   
-  // Pass the required options object to useDesarrollos
+  // Corrigiendo la llamada a useDesarrollos con un objeto de opciones
   const { desarrollos } = useDesarrollos({ 
     onSuccess: () => {},
     onError: () => {} 

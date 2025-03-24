@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -83,7 +82,6 @@ const DesarrollosPage = () => {
 
   const normalizeDesarrollos = (desarrollosData: Desarrollo[]): Desarrollo[] => {
     return desarrollosData.map(desarrollo => {
-      // Create a complete normalized object with all required properties
       const normalizedDesarrollo: Desarrollo = {
         id: desarrollo.id,
         nombre: desarrollo.nombre,
