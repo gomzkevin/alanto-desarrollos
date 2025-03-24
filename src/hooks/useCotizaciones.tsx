@@ -7,17 +7,19 @@ import { useUserRole } from './useUserRole';
 export type Cotizacion = Tables<"cotizaciones">;
 
 // Define basic types without circular references
-export interface ExtendedCotizacion extends Cotizacion {
+export interface ExtendedCotizacion extends Omit<Cotizacion, 'fecha_finiquito' | 'fecha_inicio_pagos'> {
   lead?: {
     id: string;
     nombre: string;
     email?: string | null;
-    telefono?: string | null; 
+    telefono?: string | null;
+    origen?: string | null;
   } | null;
   desarrollo?: {
     id: string;
     nombre: string;
     empresa_id: number;
+    ubicacion?: string | null;
   } | null;
   prototipo?: {
     id: string;
@@ -62,7 +64,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       // If no cotizaciones or no empresa_id, return empty array or all cotizaciones
       if (!cotizaciones || cotizaciones.length === 0 || !empresaId) {
         console.log('No cotizaciones found or no empresa ID');
-        return cotizaciones as ExtendedCotizacion[] || [];
+        return (cotizaciones || []) as ExtendedCotizacion[];
       }
       
       // If relations are requested, fetch them for each cotizacion
@@ -74,8 +76,8 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         
         // Fetch all related entities in batch queries
         const [leadsResponse, desarrollosResponse, prototipesResponse] = await Promise.all([
-          supabase.from('leads').select('id, nombre, email, telefono').in('id', leadIds),
-          supabase.from('desarrollos').select('id, nombre, empresa_id').in('id', desarrolloIds),
+          supabase.from('leads').select('id, nombre, email, telefono, origen').in('id', leadIds),
+          supabase.from('desarrollos').select('id, nombre, empresa_id, ubicacion').in('id', desarrolloIds),
           supabase.from('prototipos').select('id, nombre, precio').in('id', prototipoIds)
         ]);
         

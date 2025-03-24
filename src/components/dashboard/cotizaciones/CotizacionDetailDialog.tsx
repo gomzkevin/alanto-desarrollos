@@ -81,7 +81,7 @@ const getAmenityIcon = (amenityId: string) => {
     "wifi": { icon: <Wifi className="h-3.5 w-3.5 mr-1" />, label: "WiFi" }
   };
 
-  return amenityMap[amenityId] || { icon: <Check className="h-3.5 w-3.5 mr-1" />, label: amenityId };
+  return amenityMap[amenidadId] || { icon: <Check className="h-3.5 w-3.5 mr-1" />, label: amenityId };
 };
 
 const CotizacionDetailDialog = ({ 
@@ -306,9 +306,11 @@ const CotizacionDetailDialog = ({
                   {cotizacion.desarrollo ? (
                     <div className="space-y-2">
                       <p className="text-lg font-medium">{cotizacion.desarrollo.nombre}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {cotizacion.desarrollo.ubicacion}
-                      </p>
+                      {cotizacion.desarrollo.ubicacion && (
+                        <p className="text-sm text-muted-foreground">
+                          {cotizacion.desarrollo.ubicacion}
+                        </p>
+                      )}
                       {desarrolloImageUrl && (
                         <div className="mt-3 relative aspect-video w-full overflow-hidden rounded-md">
                           <img 
