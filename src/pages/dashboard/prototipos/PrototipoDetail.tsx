@@ -12,6 +12,7 @@ import PrototipoHeader from './components/PrototipoHeader';
 import PrototipoSpecs from './components/PrototipoSpecs';
 import PrototipoUnidades from './components/PrototipoUnidades';
 import useUnitCounts from './hooks/useUnitCounts';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const PrototipoDetail = () => {
   const { toast } = useToast();
@@ -20,6 +21,10 @@ const PrototipoDetail = () => {
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const lastRefreshTimeRef = useRef(Date.now());
+  const { userRole, isAdmin } = useUserRole();
+  
+  // Check if user can edit prototipos (only admins, not vendors)
+  const canEditPrototipo = isAdmin() && userRole !== 'vendedor';
   
   // Estados estables para las unidades
   const { 
@@ -156,6 +161,7 @@ const PrototipoDetail = () => {
           onBack={handleBack} 
           onEdit={() => setOpenEditDialog(true)} 
           updatePrototipoImage={updatePrototipoImage}
+          canEdit={canEditPrototipo}
         />
         
         <div className="space-y-8">
@@ -173,13 +179,15 @@ const PrototipoDetail = () => {
         </div>
       </div>
       
-      <AdminResourceDialog 
-        resourceType="prototipos"
-        resourceId={id}
-        open={openEditDialog}
-        onClose={() => setOpenEditDialog(false)}
-        onSuccess={handleRefresh}
-      />
+      {canEditPrototipo && (
+        <AdminResourceDialog 
+          resourceType="prototipos"
+          resourceId={id}
+          open={openEditDialog}
+          onClose={() => setOpenEditDialog(false)}
+          onSuccess={handleRefresh}
+        />
+      )}
       
       <AdminResourceDialog 
         resourceType="unidades"
