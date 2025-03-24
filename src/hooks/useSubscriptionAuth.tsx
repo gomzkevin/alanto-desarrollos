@@ -46,9 +46,15 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
       if (!subscriptionInfo.isActive) {
         console.log('Suscripción inactiva para módulo:', requiredModule);
         const moduleText = requiredModule ? ` al módulo ${requiredModule}` : '';
+        
+        // Mensaje personalizado según el rol del usuario
+        const description = isAdmin() 
+          ? `No tienes acceso${moduleText}. Tu empresa necesita una suscripción activa.`
+          : `No tienes acceso${moduleText}. La empresa necesita una suscripción activa. Contacta al administrador de tu empresa.`;
+        
         toast({
           title: "Suscripción requerida",
-          description: `No tienes acceso${moduleText}. La empresa necesita una suscripción activa.`,
+          description,
           variant: "destructive"
         });
         navigate(redirectPath);
@@ -63,7 +69,7 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
       console.log('Usuario autorizado para acceder al módulo:', requiredModule, 'con rol:', userRole);
       setIsAuthorized(true);
     }
-  }, [userId, empresaId, userRole, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule]);
+  }, [userId, empresaId, userRole, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule, isAdmin]);
 
   // Devolver estado de autorización y carga
   return {
