@@ -1,4 +1,3 @@
-
 import useCompanySubscription from '@/hooks/useCompanySubscription';
 import { toast } from '@/components/ui/use-toast';
 import { ResourceType } from './types';
@@ -27,8 +26,8 @@ export const useResourceActions = (resourceType: ResourceType) => {
   const { userId, empresaId, isAdmin } = useUserRole();
   const { subscriptionInfo } = useCompanySubscription();
   
-  // Obtener información de desarrollos
-  const { desarrollos } = useDesarrollos({}); // Pass an empty object to satisfy the argument requirement
+  // Obtener información de desarrollos - pass empty options object to satisfy parameter requirement
+  const { desarrollos } = useDesarrollos({ onSuccess: () => {} });
   
   // Obtener información de vendedores
   const { users: vendedores } = useOrganizationUsers();
@@ -63,7 +62,6 @@ export const useResourceActions = (resourceType: ResourceType) => {
     }
   };
 
-  // Add saveResource method to fix missing property error
   const saveResource = async (resource: any) => {
     try {
       if (!resource) return false;
@@ -116,7 +114,6 @@ export const useResourceActions = (resourceType: ResourceType) => {
     }
   };
 
-  // Add handleImageUpload method to fix missing property error
   const handleImageUpload = async (file: File) => {
     try {
       if (!file) return null;
