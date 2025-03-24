@@ -17,7 +17,7 @@ interface RequireSubscriptionProps {
 
 /**
  * Componente mejorado que verifica que el usuario esté autenticado
- * y tenga una empresa asignada correctamente
+ * y tenga acceso al módulo correspondiente según su suscripción
  */
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   children,
@@ -27,12 +27,11 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   unauthorizedFallback
 }) => {
   // Usar el hook de autorización con más reintentos
-  const { isAuthorized, isLoading } = useSubscriptionAuth({
+  const { isAuthorized, isLoading, userId, empresaId } = useSubscriptionAuth({
     redirectPath: redirectTo,
-    maxRetries: 5
+    maxRetries: 5,
+    requiredModule: moduleName
   });
-  
-  const { empresaId, userId } = useUserRole();
   
   // Log para debug
   useEffect(() => {

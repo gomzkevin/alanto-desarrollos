@@ -1,110 +1,117 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from '@/components/ui/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-import { supabase } from '@/integrations/supabase/client';
+import { useSubscriptionInfo } from '@/hooks/useSubscriptionInfo';
 
-export interface SubscriptionAuthOptions {
+interface UseSubscriptionAuthProps {
   redirectPath?: string;
+  requiredModule?: string;
   maxRetries?: number;
 }
 
 /**
- * Hook mejorado que verifica si el usuario tiene 
- * una empresa asignada y un rol válido
+ * Hook para verificar si un usuario tiene acceso a ciertas funcionalidades
+ * basado en su suscripción y permisos.
  */
-export const useSubscriptionAuth = (options: SubscriptionAuthOptions = {}) => {
-  const { redirectPath = '/dashboard', maxRetries = 5 } = options;
+export const useSubscriptionAuth = ({ 
+  redirectPath,
+  requiredModule, 
+  maxRetries = 3 
+}: UseSubscriptionAuthProps = {}) => {
+  const navigate = redirectPath ? useNavigate() : null;
+  const { userId, empresaId, userRole, isLoading: userLoading } = useUserRole();
+  const { subscriptionInfo, isLoading: subscriptionLoading } = useSubscriptionInfo();
   
-  const navigate = useNavigate();
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const { userId, empresaId, authChecked, isLoading: isUserLoading } = useUserRole();
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const [lastCheck, setLastCheck] = useState(0);
   
-  // Efecto para verificar autorización básica
   useEffect(() => {
-    if (!authChecked) {
+    // Medir tiempo desde el último intento
+    const now = Date.now();
+    const timeSinceLastCheck = now - lastCheck;
+    
+    // Evitar verificaciones demasiado frecuentes
+    if (lastCheck > 0 && timeSinceLastCheck < 1000) {
       return;
     }
-
-    const checkUserCompany = async () => {
-      // Si no hay userId, no está autorizado
-      if (!userId) {
-        console.log('No hay userId, usuario no autorizado');
-        setIsAuthorized(false);
-        return;
-      }
-
-      try {
-        // Si ya tenemos un empresaId, el usuario está autorizado
-        if (empresaId) {
-          console.log('Usuario tiene empresaId asignado:', empresaId);
-          setIsAuthorized(true);
-          return;
-        }
-        
-        // Si no tenemos empresaId pero hemos intentado max veces, mostramos error
-        if (retryCount >= maxRetries) {
-          console.error('Máximo número de intentos alcanzado. No se pudo obtener empresa_id');
-          toast({
-            title: "Sin acceso",
-            description: "No tienes una empresa asignada. Contacta al administrador.",
-            variant: "destructive"
-          });
-          navigate(redirectPath);
-          setIsAuthorized(false);
-          return;
-        }
-
-        // Verificar explícitamente si el usuario tiene una empresa asignada en la tabla usuarios
-        const { data: userData, error } = await supabase
-          .from('usuarios')
-          .select('empresa_id, rol')
-          .eq('auth_id', userId)
-          .single();
-        
-        console.log('Verificación directa de empresa_id:', userData, error);
-          
-        if (error) {
-          console.error('Error al verificar empresa del usuario:', error);
-          // Incrementar contador y volver a intentar
-          setRetryCount(prev => prev + 1);
-          // Dejamos continuar temporalmente
-          setIsAuthorized(true);
-          return;
-        }
-          
-        if (!userData || !userData.empresa_id) {
-          console.error('Usuario sin empresa asignada:', userId);
-          toast({
-            title: "Sin acceso",
-            description: "No tienes una empresa asignada. Contacta al administrador.",
-            variant: "destructive"
-          });
-          navigate(redirectPath);
-          setIsAuthorized(false);
-          return;
-        }
-        
-        // Si llegamos aquí, significa que la base de datos tiene un empresa_id pero no se cargó correctamente
-        console.log('Usuario tiene empresa_id en la base de datos:', userData.empresa_id);
-        // Autorizar porque la base de datos tiene la información
-        setIsAuthorized(true);
-      } catch (error) {
-        console.error('Error verificando empresa del usuario:', error);
-        // Incrementar contador y volver a intentar
+    
+    setLastCheck(now);
+    
+    // Verificar directamente si está cargando cualquiera de los hooks
+    const isLoading = userLoading || subscriptionLoading;
+    
+    // Si no hay datos de usuario o suscripción y no está cargando, reintentar hasta maxRetries
+    if (!userId && !isLoading && retryCount < maxRetries) {
+      const timer = setTimeout(() => {
         setRetryCount(prev => prev + 1);
-        setIsAuthorized(false);
+        console.log(`useSubscriptionAuth - Retrying auth check (${retryCount + 1}/${maxRetries})`);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+    
+    // Si ya tenemos empresaId, verificar autorización
+    if (empresaId) {
+      // Verificar si el módulo requerido está permitido por la suscripción
+      let hasPermission = true;
+      
+      // Si requiere un módulo específico, verificar en la suscripción
+      if (requiredModule) {
+        // Verificar si tiene una suscripción activa
+        const hasActiveSubscription = subscriptionInfo && subscriptionInfo.isActive;
+        
+        // Por ahora, simplemente autorizar si tiene suscripción activa
+        // Aquí se puede implementar lógica más compleja para verificar módulos específicos
+        hasPermission = !!hasActiveSubscription;
       }
-    };
-
-    checkUserCompany();
-  }, [authChecked, userId, empresaId, redirectPath, navigate, retryCount, maxRetries]);
-
+      
+      console.log('useSubscriptionAuth - Authorization result:', { 
+        hasPermission, 
+        userId, 
+        empresaId,
+        userRole,
+        requiredModule,
+        subscriptionActive: subscriptionInfo?.isActive
+      });
+      
+      setIsAuthorized(hasPermission);
+      
+      // Redireccionar si no está autorizado y hay una ruta de redirección
+      if (!hasPermission && redirectPath && navigate) {
+        console.log(`useSubscriptionAuth - Redirecting to ${redirectPath} due to lack of permissions`);
+        navigate(redirectPath);
+      }
+    } else {
+      // Si no tiene empresaId pero tiene userId, probablemente esté en proceso de carga
+      // No establecer autorización como falsa todavía
+      console.log('useSubscriptionAuth - User authenticated but no empresa_id yet');
+      setIsAuthorized(null);
+    }
+  }, [
+    userId, 
+    empresaId, 
+    userRole, 
+    subscriptionInfo, 
+    retryCount, 
+    requiredModule, 
+    redirectPath, 
+    navigate, 
+    lastCheck, 
+    maxRetries, 
+    userLoading, 
+    subscriptionLoading
+  ]);
+  
+  const isLoading = userLoading || subscriptionLoading || isAuthorized === null;
+  
   return {
-    isAuthorized: isAuthorized === null ? true : isAuthorized,
-    isLoading: !authChecked || isAuthorized === null || isUserLoading
+    isAuthorized: isAuthorized === true,
+    isLoading,
+    userId,
+    empresaId,
+    retryCount
   };
 };
 
