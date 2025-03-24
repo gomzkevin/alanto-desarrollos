@@ -28,32 +28,19 @@ export interface ResourceCounts {
 }
 
 /**
- * Hook simplificado que devuelve conteos de recursos sin validación de límites
- * (Versión sin suscripciones ni Stripe)
+ * Hook dummy que elimina completamente el conteo de recursos
+ * y siempre retorna valores por defecto sin realizar ninguna consulta a Supabase
  */
 export const useResourceCounts = () => {
-  const { empresaId } = useUserRole();
-  
-  // Retornar siempre un plan ilimitado con conteos en cero
+  // Retornar valores por defecto simplificados sin ningún tipo de conteo
   const defaultCounts: ResourceCounts = {
     isActive: true,
-    currentPlan: {
-      id: 'unlimited-plan',
-      name: 'Plan Ilimitado',
-      price: 0,
-      interval: 'month',
-      features: {
-        tipo: 'desarrollo',
-        precio_por_unidad: 0,
-        max_vendedores: 999,
-        max_recursos: 999
-      }
-    },
+    currentPlan: null,
     renewalDate: null,
-    resourceType: 'desarrollo',
-    resourceLimit: 999,
+    resourceType: null,
+    resourceLimit: null,
     resourceCount: 0,
-    vendorLimit: 999,
+    vendorLimit: null,
     vendorCount: 0,
     isOverLimit: false,
     percentUsed: 0,

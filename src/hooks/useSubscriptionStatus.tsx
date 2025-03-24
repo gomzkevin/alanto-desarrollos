@@ -22,33 +22,22 @@ export interface SubscriptionStatus {
 }
 
 /**
- * Hook simplificado que siempre devuelve una suscripción activa sin validaciones
- * (Versión sin suscripciones ni Stripe)
+ * Hook dummy que elimina completamente la lógica de suscripciones
+ * y siempre retorna valores por defecto sin realizar ninguna consulta a Supabase
  */
 export const useSubscriptionStatus = () => {
   const { empresaId } = useUserRole();
   
-  // Plan ilimitado estático
-  const unlimitedPlan: SubscriptionStatus = {
+  // Valores por defecto simplificados
+  const defaultStatus: SubscriptionStatus = {
     isActive: true,
-    currentPlan: {
-      id: 'unlimited-plan',
-      name: 'Plan Ilimitado',
-      price: 0,
-      interval: 'month',
-      features: {
-        tipo: 'desarrollo',
-        precio_por_unidad: 0,
-        max_vendedores: 999,
-        max_recursos: 999
-      }
-    },
-    renewalDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+    currentPlan: null,
+    renewalDate: null,
     empresa_id: empresaId || undefined
   };
 
   return {
-    subscription: unlimitedPlan,
+    subscription: defaultStatus,
     isLoading: false,
     error: null
   };

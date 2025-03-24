@@ -15,24 +15,14 @@ export const useUserTransfer = () => {
   const queryClient = useQueryClient();
 
   const transferUser = useMutation({
-    mutationFn: async ({ userId, targetEmpresaId }: TransferUserRequest) => {
+    mutationFn: async ({ userId, targetEmpresaId, targetEmpresaNombre }: TransferUserRequest) => {
       try {
         if (!isAdmin()) {
           throw new Error('No tienes permiso para transferir usuarios');
         }
         
-        // Verificar si la empresa destino existe
-        const { data: empresaDestino, error: empresaError } = await supabase
-          .from('empresas')
-          .select('id, nombre')
-          .eq('id', targetEmpresaId)
-          .single();
-
-        if (empresaError) {
-          throw new Error('La empresa destino no existe o no se pudo verificar');
-        }
-
-        // Realizar la transferencia
+        // Realizar la transferencia directamente sin verificación adicional
+        // ya que targetEmpresaNombre debería ser proporcionado por el componente llamador
         const { data, error } = await supabase
           .from('usuarios')
           .update({ 
@@ -50,7 +40,7 @@ export const useUserTransfer = () => {
 
         return {
           ...data,
-          targetEmpresaNombre: empresaDestino?.nombre || 'la nueva empresa'
+          targetEmpresaNombre: targetEmpresaNombre || 'la nueva empresa'
         };
       } catch (error: any) {
         console.error('Error transferring user:', error);

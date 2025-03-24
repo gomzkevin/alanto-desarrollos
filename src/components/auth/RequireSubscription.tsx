@@ -15,9 +15,8 @@ interface RequireSubscriptionProps {
 }
 
 /**
- * Componente simplificado que solo verifica que el usuario tenga 
- * un rol válido (admin o vendedor) y una empresa asignada
- * Sin validación de suscripciones
+ * Componente simplificado que solo verifica que el usuario esté autenticado
+ * y tenga una empresa asignada
  */
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   children,
@@ -26,7 +25,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   loadingFallback,
   unauthorizedFallback
 }) => {
-  // Usar el hook modificado de autorización (sin validación de suscripciones)
+  // Usar el hook simplificado de autorización
   const { isAuthorized, isLoading } = useSubscriptionAuth({
     redirectPath: redirectTo
   });

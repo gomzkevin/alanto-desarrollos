@@ -3,8 +3,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-import { supabase } from '@/integrations/supabase/client';
-import { Json } from '@/integrations/supabase/types';
 
 export interface SubscriptionAccessOptions {
   requiresSubscription?: boolean;
@@ -12,162 +10,49 @@ export interface SubscriptionAccessOptions {
   redirectPath?: string;
 }
 
-export interface SubscriptionStatus {
-  isActive: boolean;
-  currentPlan: {
-    id: string;
-    name: string;
-    price: number;
-    interval: string;
-    features: any;
-  } | null;
-  renewalDate: string | null;
-  empresa_id?: number;
-}
-
 /**
- * Hook centralizado que gestiona autorización de acceso basado en suscripciones
- * Versión optimizada: Usa función SQL de Supabase para determinar el estado de suscripción directamente
+ * Hook simplificado que solo verifica autenticación básica
+ * Sin ninguna lógica de suscripciones
  */
 export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) => {
-  const { 
-    requiresSubscription = false, 
-    requiredModule, 
-    redirectPath = '/dashboard' 
-  } = options;
+  const { redirectPath = '/dashboard' } = options;
   
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
-  const { userId, userRole, isAdmin, isSuperAdmin, authChecked, isLoading: isUserLoading, empresaId } = useUserRole();
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Efecto para obtener el estado de suscripción directamente desde Supabase
+  const { userId, empresaId, authChecked, isLoading: isUserLoading } = useUserRole();
+  
+  // Efecto para verificar autorización básica
   useEffect(() => {
-    const checkSubscription = async () => {
-      if (!userId || !authChecked) return;
-      
-      try {
-        setIsLoading(true);
-        console.log('Verificando suscripción para usuario:', userId);
-        console.log('Rol del usuario:', userRole);
-        console.log('Es admin:', isAdmin());
-        console.log('Es superadmin:', isSuperAdmin());
-        console.log('Empresa ID:', empresaId);
-        
-        // Si es superadmin, siempre está autorizado
-        if (isSuperAdmin()) {
-          console.log('Usuario es superadmin - acceso autorizado globalmente');
-          setIsAuthorized(true);
-          setSubscription({
-            isActive: true,
-            currentPlan: null,
-            renewalDate: null
-          });
-          setIsLoading(false);
-          return;
-        }
-        
-        // Para usuarios regulares, verificar si requiere suscripción
-        if (!requiresSubscription) {
-          console.log('Módulo no requiere suscripción - acceso autorizado');
-          setIsAuthorized(true);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Usar la función de Supabase para obtener el estado de suscripción
-        const { data, error } = await supabase
-          .rpc('get_user_subscription_status', { user_uuid: userId });
-        
-        if (error) {
-          console.error('Error al obtener estado de suscripción:', error);
-          setIsAuthorized(false);
-          setIsLoading(false);
-          return;
-        }
-        
-        console.log('Estado de suscripción recibido:', data);
-        
-        // Validar que data tenga la estructura esperada antes de convertirlo
-        if (data && typeof data === 'object' && 'isActive' in data) {
-          // Verificar y convertir currentPlan de forma segura
-          let currentPlanData = null;
-          
-          if (data.currentPlan && typeof data.currentPlan === 'object') {
-            // Verificar que currentPlan no sea un array antes de acceder a sus propiedades
-            if (!Array.isArray(data.currentPlan)) {
-              // Asegurarse de que todos los campos necesarios estén presentes
-              currentPlanData = {
-                id: String(data.currentPlan.id || ''),
-                name: String(data.currentPlan.name || ''),
-                price: Number(data.currentPlan.price || 0),
-                interval: String(data.currentPlan.interval || ''),
-                features: data.currentPlan.features || {}
-              };
-            }
-          }
-          
-          // Construir objeto SubscriptionStatus con conversiones seguras
-          const subscriptionData: SubscriptionStatus = {
-            isActive: !!data.isActive,
-            currentPlan: currentPlanData,
-            renewalDate: data.renewalDate ? String(data.renewalDate) : null,
-            empresa_id: typeof data.empresa_id === 'number' ? data.empresa_id : undefined
-          };
-          
-          setSubscription(subscriptionData);
-          
-          // Si tiene suscripción activa, está autorizado
-          if (subscriptionData.isActive) {
-            console.log('Suscripción activa encontrada - acceso autorizado');
-            setIsAuthorized(true);
-            setIsLoading(false);
-            return;
-          }
-        } else {
-          console.error('Formato de datos de suscripción inválido:', data);
-        }
-        
-        // Sin suscripción activa - denegar acceso si se requiere
-        console.log('Sin suscripción activa - acceso denegado');
-        
-        // Mostrar mensaje solo si se requiere suscripción
-        if (requiresSubscription) {
-          // Mensaje específico según si es admin o no
-          let message = isAdmin() 
-            ? "Tu empresa no tiene una suscripción activa. Por favor, activa la suscripción en configuración."
-            : "Tu empresa no tiene una suscripción activa. Por favor, contacta al administrador.";
-            
-          const moduleText = requiredModule ? ` al módulo ${requiredModule}` : '';
-          
-          toast({
-            title: "Suscripción requerida",
-            description: `No tienes acceso${moduleText}. ${message}`,
-            variant: "destructive"
-          });
-          
-          // Redirigir a admins a la página de configuración, a otros usuarios al dashboard
-          const redirectTo = isAdmin() ? '/dashboard/configuracion' : redirectPath;
-          navigate(redirectTo);
-        }
-        
-        setIsAuthorized(false);
-        setIsLoading(false);
-      } catch (err) {
-        console.error('Error inesperado en verificación de suscripción:', err);
-        setIsAuthorized(false);
-        setIsLoading(false);
-      }
-    };
-    
-    checkSubscription();
-  }, [userId, authChecked, requiresSubscription, requiredModule, redirectPath, isAdmin, isSuperAdmin, navigate, empresaId, userRole]);
+    if (!authChecked) {
+      return;
+    }
+
+    // Si no hay userId, no está autorizado
+    if (!userId) {
+      setIsAuthorized(false);
+      return;
+    }
+
+    // Verificar que el usuario tenga una empresa asignada
+    if (!empresaId) {
+      toast({
+        title: "Sin acceso",
+        description: "No tienes una empresa asignada. Contacta al administrador.",
+        variant: "destructive"
+      });
+      navigate(redirectPath);
+      setIsAuthorized(false);
+      return;
+    }
+
+    // Si el usuario está autenticado y tiene empresa, está autorizado
+    setIsAuthorized(true);
+  }, [authChecked, userId, empresaId, redirectPath, navigate]);
 
   return {
-    isAuthorized,
-    isLoading: isLoading || isUserLoading || !authChecked || isAuthorized === null,
-    subscription
+    isAuthorized: isAuthorized === null ? true : isAuthorized,
+    isLoading: isUserLoading || !authChecked || isAuthorized === null,
+    subscription: { isActive: true, currentPlan: null, renewalDate: null }
   };
 };
 
