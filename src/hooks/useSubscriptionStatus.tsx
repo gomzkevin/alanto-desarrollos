@@ -68,8 +68,14 @@ export const useSubscriptionStatus = () => {
           return defaultStatus;
         }
         
-        if (!data || typeof data !== 'object') {
-          console.log('No se encontraron datos de suscripción válidos');
+        if (!data) {
+          console.log('No se encontraron datos de suscripción');
+          return defaultStatus;
+        }
+        
+        // Verificar que data es un objeto y no un array
+        if (Array.isArray(data)) {
+          console.error('Se recibió un array en lugar de un objeto:', data);
           return defaultStatus;
         }
         
@@ -92,7 +98,7 @@ export const useSubscriptionStatus = () => {
         
         // Construir estado de suscripción a partir de los datos recibidos
         return {
-          isActive: !!data.isActive,
+          isActive: Boolean(data.isActive),
           currentPlan,
           renewalDate: data.renewalDate ? new Date(data.renewalDate) : null,
           empresa_id: typeof data.empresa_id === 'number' ? data.empresa_id : undefined
