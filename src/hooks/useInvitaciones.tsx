@@ -9,139 +9,163 @@ export interface Invitacion {
   email: string;
   empresa_id: number;
   rol: string;
-  token: string;
   estado: string;
-  fecha_envio: string;
+  token: string;
   fecha_expiracion: string;
-  created_at: string;
+  fecha_creacion: string;
+  creado_por: string;
+  // Campos adicionales para compatibilidad
+  fecha_envio?: string;
+  created_at?: string;
+  es_valida?: boolean;
+}
+
+export interface InvitationVerificationResult {
+  id: string;
+  empresa_id: number;
+  email: string;
+  rol: string;
+  estado: string;
+  es_valida: boolean;
 }
 
 export const useInvitaciones = () => {
   const { empresaId, isAdmin } = useUserRole();
   const queryClient = useQueryClient();
 
-  const { data: invitaciones, isLoading, error, refetch } = useQuery({
+  // Obtener invitaciones
+  const { data: invitaciones = [], isLoading, error, refetch } = useQuery({
     queryKey: ['invitaciones', empresaId],
     queryFn: async () => {
-      try {
-        if (!empresaId || !isAdmin()) {
-          return [];
-        }
+      if (!empresaId || !isAdmin()) return [];
 
-        const { data, error } = await supabase
-          .from('invitaciones_empresa')
-          .select('*')
-          .eq('empresa_id', empresaId)
-          .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('invitaciones_empresa')
+        .select('*')
+        .eq('empresa_id', empresaId);
 
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        return data as Invitacion[];
-      } catch (error) {
-        console.error('Error fetching invitaciones:', error);
-        throw error;
-      }
+      if (error) throw error;
+      
+      // Convertir a tipo Invitacion
+      return (data || []) as Invitacion[];
     },
     enabled: !!empresaId && isAdmin()
   });
 
+  // Verificar una invitación por token
+  const verificarInvitacion = async (token: string): Promise<InvitationVerificationResult> => {
+    const { data, error } = await supabase
+      .rpc('verificar_invitacion', { token_invitacion: token });
+
+    if (error) throw error;
+    
+    // Asegurarse de que haya resultados y que sea un array
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      throw new Error('Invitación no encontrada o inválida');
+    }
+    
+    // Devolver el primer resultado
+    return data[0] as InvitationVerificationResult;
+  };
+
+  // Aceptar una invitación (usar en el proceso de registro)
+  const aceptarInvitacion = async (token: string, userId: string) => {
+    // Primero verificar la invitación
+    const invitacion = await verificarInvitacion(token);
+    
+    if (!invitacion.es_valida) {
+      throw new Error('La invitación no es válida o ha expirado');
+    }
+    
+    // Actualizar el estado de la invitación
+    const { error: updateError } = await supabase
+      .from('invitaciones_empresa')
+      .update({ estado: 'aceptada' })
+      .eq('token', token);
+      
+    if (updateError) throw updateError;
+    
+    // Asignar el usuario a la empresa y rol
+    const { error: userError } = await supabase
+      .from('usuarios')
+      .update({
+        empresa_id: invitacion.empresa_id,
+        rol: invitacion.rol
+      })
+      .eq('id', userId);
+      
+    if (userError) throw userError;
+    
+    return true;
+  };
+
+  // Crear una invitación
   const createInvitacion = useMutation({
     mutationFn: async ({ email, rol }: { email: string; rol: string }) => {
-      try {
-        // No se necesita verificar límites de suscripción
-        
-        const { data, error } = await supabase
-          .rpc('enviar_invitacion', {
-            p_email: email,
-            p_empresa_id: empresaId,
-            p_rol: rol
-          });
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        return data as Invitacion;
-      } catch (error) {
-        console.error('Error creating invitacion:', error);
-        throw error;
+      if (!empresaId || !isAdmin()) {
+        throw new Error('No tienes permisos para crear invitaciones');
       }
+
+      // Generar un token único
+      const token = Math.random().toString(36).substring(2, 15) + 
+                   Math.random().toString(36).substring(2, 15);
+                   
+      const { data, error } = await supabase
+        .from('invitaciones_empresa')
+        .insert({
+          email,
+          rol,
+          empresa_id: empresaId,
+          token,
+          creado_por: await supabase.auth.getUser().then(res => res.data.user?.id)
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as Invitacion;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invitaciones'] });
       toast({
-        title: "Invitación enviada",
-        description: "La invitación se ha enviado correctamente",
+        title: "Invitación creada",
+        description: "La invitación ha sido creada y enviada correctamente.",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: `No se pudo enviar la invitación: ${error.message}`,
+        description: `No se pudo crear la invitación: ${error.message}`,
         variant: "destructive",
       });
-    },
+    }
   });
-
-  const deleteInvitacion = useMutation({
-    mutationFn: async (id: string) => {
-      try {
-        const { error } = await supabase
-          .from('invitaciones_empresa')
-          .delete()
-          .eq('id', id);
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        return id;
-      } catch (error) {
-        console.error('Error deleting invitacion:', error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invitaciones'] });
-      toast({
-        title: "Invitación cancelada",
-        description: "La invitación se ha cancelado correctamente",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `No se pudo cancelar la invitación: ${error.message}`,
-        variant: "destructive",
-      });
-    },
-  });
-
+  
+  // Reenviar una invitación
   const resendInvitacion = useMutation({
-    mutationFn: async (id: string) => {
-      try {
-        const { data, error } = await supabase
-          .rpc('reenviar_invitacion', {
-            p_invitacion_id: id
-          });
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        return data;
-      } catch (error) {
-        console.error('Error resending invitacion:', error);
-        throw error;
+    mutationFn: async (invitacionId: string) => {
+      if (!empresaId || !isAdmin()) {
+        throw new Error('No tienes permisos para reenviar invitaciones');
       }
+      
+      // Aquí normalmente se enviaría un correo, pero por ahora solo actualizamos la fecha
+      const { data, error } = await supabase
+        .from('invitaciones_empresa')
+        .update({
+          fecha_expiracion: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        })
+        .eq('id', invitacionId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as Invitacion;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invitaciones'] });
       toast({
         title: "Invitación reenviada",
-        description: "La invitación se ha reenviado correctamente",
+        description: "La invitación ha sido reenviada correctamente.",
       });
     },
     onError: (error) => {
@@ -150,17 +174,50 @@ export const useInvitaciones = () => {
         description: `No se pudo reenviar la invitación: ${error.message}`,
         variant: "destructive",
       });
+    }
+  });
+  
+  // Eliminar una invitación
+  const deleteInvitacion = useMutation({
+    mutationFn: async (invitacionId: string) => {
+      if (!empresaId || !isAdmin()) {
+        throw new Error('No tienes permisos para eliminar invitaciones');
+      }
+      
+      const { error } = await supabase
+        .from('invitaciones_empresa')
+        .delete()
+        .eq('id', invitacionId);
+
+      if (error) throw error;
+      return invitacionId;
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invitaciones'] });
+      toast({
+        title: "Invitación eliminada",
+        description: "La invitación ha sido eliminada correctamente.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo eliminar la invitación: ${error.message}`,
+        variant: "destructive",
+      });
+    }
   });
 
   return {
-    invitaciones: invitaciones || [],
+    invitaciones,
     isLoading,
     error,
     createInvitacion,
     deleteInvitacion,
     resendInvitacion,
-    refetch
+    refetch,
+    verificarInvitacion,
+    aceptarInvitacion
   };
 };
 

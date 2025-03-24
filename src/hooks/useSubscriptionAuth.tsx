@@ -5,8 +5,6 @@ import { toast } from '@/components/ui/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 
 export interface SubscriptionAuthOptions {
-  requiresSubscription?: boolean;
-  requiredModule?: string;
   redirectPath?: string;
 }
 
@@ -21,7 +19,7 @@ export const useSubscriptionAuth = (options: SubscriptionAuthOptions = {}) => {
   
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const { userId, empresaId, isAdmin, authChecked } = useUserRole();
+  const { userId, empresaId, authChecked } = useUserRole();
   
   // Efecto para verificar autorización basada solo en roles
   useEffect(() => {

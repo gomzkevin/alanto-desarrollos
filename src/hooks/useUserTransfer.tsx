@@ -20,21 +20,19 @@ export const useUserTransfer = () => {
         if (!isAdmin()) {
           throw new Error('No tienes permiso para transferir usuarios');
         }
-
-        // No se necesita verificar límites de suscripción
         
-        // Verificar primero si la empresa destino existe
+        // Verificar si la empresa destino existe
         const { data: empresaDestino, error: empresaError } = await supabase
           .from('empresas')
           .select('id, nombre')
           .eq('id', targetEmpresaId)
           .single();
 
-        if (empresaError || !empresaDestino) {
-          throw new Error('La empresa destino no existe');
+        if (empresaError) {
+          throw new Error('La empresa destino no existe o no se pudo verificar');
         }
 
-        // Ahora realizar la transferencia
+        // Realizar la transferencia
         const { data, error } = await supabase
           .from('usuarios')
           .update({ 
@@ -52,9 +50,9 @@ export const useUserTransfer = () => {
 
         return {
           ...data,
-          targetEmpresaNombre: empresaDestino.nombre
+          targetEmpresaNombre: empresaDestino?.nombre || 'la nueva empresa'
         };
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error transferring user:', error);
         throw error;
       }
@@ -66,7 +64,7 @@ export const useUserTransfer = () => {
         description: `El usuario se ha transferido correctamente a ${data.targetEmpresaNombre || 'la nueva empresa'}`,
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: `No se pudo transferir el usuario: ${error.message}`,

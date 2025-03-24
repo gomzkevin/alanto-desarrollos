@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   ColumnDef,
@@ -7,15 +6,12 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { MoreHorizontal, ArrowUpDown } from 'lucide-react';
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,76 +20,86 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { Button } from '@/components/ui/button';
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useOrganizationUsers, OrganizationUser } from '@/hooks/useOrganizationUsers';
-import { UserRole } from '@/hooks/useUserRole';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useUserTransfer } from '@/hooks/useUserTransfer';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
-interface DataTableViewProps {
+interface DataTableProps {
+  columns: ColumnDef<OrganizationUser>[];
   data: OrganizationUser[];
 }
 
-// Componente para seleccionar el rol de un usuario
-const RoleSelect = ({ currentRole, userId, onRoleChange }: {
-  currentRole: UserRole;
-  userId: string;
-  onRoleChange: (id: string, newRole: UserRole) => void;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  
-  // Función para actualizar el rol
-  const handleRoleChange = (role: UserRole) => {
-    onRoleChange(userId, role);
-    setIsOpen(false);
-  };
-  
+const DataTable: React.FC<DataTableProps> = ({ columns, data }) => {
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full justify-start">
-          <Badge variant={
-            currentRole === 'admin' ? "default" : 
-            currentRole === 'superadmin' ? "destructive" :
-            currentRole === 'vendedor' ? "secondary" : 
-            "outline"
-          }>
-            {currentRole === 'admin' ? "Administrador" : 
-             currentRole === 'superadmin' ? "Super Admin" :
-             currentRole === 'vendedor' ? "Vendedor" : 
-             "Cliente"}
-          </Badge>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-56 p-0">
-        <Command>
-          <CommandList>
-            <CommandEmpty>No hay roles disponibles</CommandEmpty>
-            <CommandGroup>
-              <CommandItem 
-                onSelect={() => handleRoleChange('admin')}
-                className="flex items-center gap-2"
-              >
-                <Badge variant="default">Administrador</Badge>
-              </CommandItem>
-              <CommandItem 
-                onSelect={() => handleRoleChange('vendedor')}
-                className="flex items-center gap-2"
-              >
-                <Badge variant="secondary">Vendedor</Badge>
-              </CommandItem>
-              <CommandItem 
-                onSelect={() => handleRoleChange('cliente')}
-                className="flex items-center gap-2"
-              >
-                <Badge variant="outline">Cliente</Badge>
-              </CommandItem>
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <div className="rounded-md border">
+      <div className="relative w-full overflow-auto">
+        <table className="w-full table-auto text-sm">
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <th key={header.id} className="px-4 py-2 text-left [&:not([:first-child])]:pl-6">
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </th>
+                  );
+                })}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id} className="border-b transition-colors hover:bg-muted data-[state=selected]:bg-muted">
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} className="px-4 py-2 [&:not([:first-child])]:pl-6">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+            {data.length === 0 && (
+              <tr>
+                <td colSpan={columns.length} className="p-4 text-center">
+                  No se encontraron usuarios.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 };
 
@@ -102,30 +108,28 @@ export function UserManagementTable() {
     users,
     isLoading,
     error,
-    refetch,
+    deleteUser,
+    reactivateUser,
+    canManageUsers,
     toggleUserStatus,
     updateUserRole
   } = useOrganizationUsers();
-
-  // Fix the type error with the mutation function
-  const handleRoleChange = (id: string, newRole: UserRole) => {
-    updateUserRole.mutate({ id, newRole });
-  };
+  const { transferUser } = useUserTransfer();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const columns: ColumnDef<OrganizationUser>[] = [
     {
       accessorKey: 'nombre',
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Nombre
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: 'Nombre',
+      cell: ({ row }) => (
+        <div className="flex items-center">
+          <Avatar className="mr-2.5 h-8 w-8">
+            <AvatarImage src={`https://avatar.vercel.sh/${row.original.email}.png`} />
+            <AvatarFallback>{row.getValue('nombre')?.toString().substring(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          {row.getValue('nombre')}
+        </div>
+      ),
     },
     {
       accessorKey: 'email',
@@ -134,30 +138,54 @@ export function UserManagementTable() {
     {
       accessorKey: 'rol',
       header: 'Rol',
-      cell: ({ row }) => (
-        <RoleSelect 
-          currentRole={row.original.rol}
-          userId={row.original.id}
-          onRoleChange={handleRoleChange}
-        />
-      ),
+      cell: ({ row }) => {
+        const user = row.original;
+
+        return (
+          <Select 
+            value={user.rol} 
+            onValueChange={(newRole) => {
+              if (newRole === 'admin' || newRole === 'vendedor') {
+                updateUserRole(user.id, newRole);
+              }
+            }}
+            disabled={!canManageUsers || isUpdating}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Seleccionar rol" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="admin">Administrador</SelectItem>
+              <SelectItem value="vendedor">Vendedor</SelectItem>
+            </SelectContent>
+          </Select>
+        );
+      }
     },
     {
       accessorKey: 'activo',
       header: 'Estado',
       cell: ({ row }) => {
-        const isActive = row.original.activo;
+        const user = row.original;
         return (
-          <Badge variant={isActive ? 'success' : 'destructive'}>
-            {isActive ? 'Activo' : 'Inactivo'}
-          </Badge>
+          <Checkbox
+            checked={user.activo}
+            onCheckedChange={(checked) => {
+              setIsUpdating(true);
+              toggleUserStatus(user.id, checked)
+                .finally(() => setIsUpdating(false));
+            }}
+            disabled={!canManageUsers || isUpdating}
+          />
         );
       },
     },
     {
       id: 'actions',
+      header: '',
       cell: ({ row }) => {
         const user = row.original;
+        const [open, setOpen] = React.useState(false)
 
         return (
           <DropdownMenu>
@@ -169,18 +197,53 @@ export function UserManagementTable() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() =>
-                  toggleUserStatus.mutate({
-                    id: user.id,
-                    currentStatus: user.activo,
-                  })
-                }
-              >
-                {user.activo ? 'Desactivar' : 'Activar'}
+              <DropdownMenuItem disabled={!canManageUsers}>
+                <Pencil className="mr-2 h-4 w-4" /> Editar
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Ver detalles</DropdownMenuItem>
+              {user.activo ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem className="text-red-500" disabled={!canManageUsers}>
+                      <Trash2 className="mr-2 h-4 w-4" /> Desactivar
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta acción desactivará al usuario.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          setIsUpdating(true);
+                          deleteUser.mutate(user.id, {
+                            onSettled: () => setIsUpdating(false),
+                          });
+                        }}
+                        disabled={isUpdating}
+                      >
+                        Desactivar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <DropdownMenuItem
+                  onClick={() => {
+                    setIsUpdating(true);
+                    reactivateUser.mutate(user.id, {
+                      onSettled: () => setIsUpdating(false),
+                    });
+                  }}
+                  disabled={!canManageUsers || isUpdating}
+                >
+                  Reactivar
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -188,73 +251,21 @@ export function UserManagementTable() {
     },
   ];
 
-  const table = useReactTable({
-    data: users || [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
   return (
-    <div className="container mx-auto py-10">
-      {isLoading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-[250px]" />
-          <Skeleton className="h-4 w-[200px]" />
-          <Skeleton className="h-4 w-[150px]" />
-        </div>
-      ) : error ? (
-        <p className="text-red-500">Error: {error.message}</p>
-      ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && 'selected'}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    Sin resultados.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Usuarios</CardTitle>
+        <CardDescription>Gestiona los usuarios de tu organización.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div>Cargando usuarios...</div>
+        ) : error ? (
+          <div>Error: {error.message}</div>
+        ) : (
+          <DataTable columns={columns} data={users} />
+        )}
+      </CardContent>
+    </Card>
   );
 }
-
-export default UserManagementTable;
