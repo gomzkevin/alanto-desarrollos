@@ -56,14 +56,18 @@ export const useUserRole = () => {
         
         if (userData) {
           console.log('User data loaded:', userData);
-          // Ensure the role is one of the allowed types
-          const roleToUse = userData.rol as UserRole;
+          
+          // Validar que el rol sea uno de los permitidos
+          const allowedRoles: UserRole[] = ['superadmin', 'admin', 'vendedor', 'cliente'];
+          const roleToUse = allowedRoles.includes(userData.rol as UserRole) 
+            ? userData.rol as UserRole 
+            : 'cliente';
           
           setUserRole(roleToUse);
           setUserName(userData.nombre);
-          
-          // Establecer empresaId para acceso basado en organización
           setEmpresaId(userData.empresa_id);
+          
+          console.log('Role set:', roleToUse);
           console.log('Empresa ID set:', userData.empresa_id);
         } else {
           console.log('No user data found in usuarios table');
@@ -89,6 +93,8 @@ export const useUserRole = () => {
       console.log('Auth state changed:', event, session?.user?.id);
       
       if (event === 'SIGNED_IN' && session?.user) {
+        setIsLoading(true);
+        
         // Usuario inició sesión, obtener sus datos
         setUserId(session.user.id);
         setUserEmail(session.user.email);
@@ -102,16 +108,20 @@ export const useUserRole = () => {
         if (!error && data) {
           console.log('User data from auth change:', data);
           
-          // Ensure the role is one of the allowed types
-          const roleToUse = data.rol as UserRole;
+          // Validar que el rol sea uno de los permitidos
+          const allowedRoles: UserRole[] = ['superadmin', 'admin', 'vendedor', 'cliente'];
+          const roleToUse = allowedRoles.includes(data.rol as UserRole) 
+            ? data.rol as UserRole 
+            : 'cliente';
           
           setUserRole(roleToUse);
           setUserName(data.nombre);
-          
-          // Establecer empresaId para acceso basado en organización
           setEmpresaId(data.empresa_id);
+          
+          console.log('Role after auth change:', roleToUse);
           console.log('Empresa ID after auth change:', data.empresa_id);
         }
+        setIsLoading(false);
       } else if (event === 'SIGNED_OUT') {
         // User signed out, clear their data
         setUserId(null);
