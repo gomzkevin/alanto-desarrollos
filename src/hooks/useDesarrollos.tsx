@@ -6,7 +6,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Tables } from '@/integrations/supabase/types';
 
 // Define the interface with all required fields to match the database structure
-export interface Desarrollo extends Tables<"desarrollos"> {
+export interface Desarrollo {
   id: string;
   nombre: string;
   descripcion: string;
@@ -92,7 +92,7 @@ export const useDesarrollos = (options: UseDesarrollosOptions = DEFAULT_OPTIONS)
           ubicacion: desarrollo.ubicacion,
           latitud: desarrollo.latitud !== undefined ? desarrollo.latitud : null,
           longitud: desarrollo.longitud !== undefined ? desarrollo.longitud : null,
-          estado: desarrollo.estado || '',
+          estado: desarrollo.estado || null,
           fecha_inicio: desarrollo.fecha_inicio || null,
           fecha_finalizacion_estimada: desarrollo.fecha_finalizacion_estimada || null,
           empresa_id: desarrollo.empresa_id,
@@ -134,7 +134,8 @@ export const useDesarrollos = (options: UseDesarrollosOptions = DEFAULT_OPTIONS)
           empresa_id: empresaId,
         };
         
-        // Fix type mismatch by being explicit about the fields we're passing
+        // We need to be explicit about what we're inserting
+        // to ensure it matches the expected database structure
         const { data, error } = await supabase
           .from('desarrollos')
           .insert([desarrolloWithEmpresa])

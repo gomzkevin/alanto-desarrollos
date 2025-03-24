@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,11 @@ interface ClientSearchProps {
 
 const ClientSearch: React.FC<ClientSearchProps> = ({ onSelectClient }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const { leads, isLoading } = useLeads({ search: searchTerm });
+  // Use the search option and a limit of 10 results
+  const { leads, isLoading } = useLeads({ 
+    search: searchTerm,
+    limit: 10
+  });
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);

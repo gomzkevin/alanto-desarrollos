@@ -1,4 +1,3 @@
-
 import useCompanySubscription from '@/hooks/useCompanySubscription';
 import { toast } from '@/components/ui/use-toast';
 import { ResourceType } from './types';
@@ -27,12 +26,7 @@ export const useResourceActions = (resourceType: ResourceType) => {
   const { userId, empresaId, isAdmin } = useUserRole();
   const { subscriptionInfo } = useCompanySubscription();
   
-  const { desarrollos } = useDesarrollos({
-    onSuccess: () => {},
-    onError: (error) => {
-      console.error("Error fetching desarrollos:", error);
-    }
-  });
+  const { desarrollos } = useDesarrollos({});
   
   const { users: vendedores } = useOrganizationUsers();
   
