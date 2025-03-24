@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -215,7 +216,7 @@ export function UserManagementTable() {
         newUser.email, 
         newUser.password, 
         empresaId || undefined, 
-        effectiveRole as 'admin' | 'vendedor' | 'cliente'
+        effectiveRole === 'superadmin' ? 'admin' : effectiveRole as 'admin' | 'vendedor' | 'cliente'
       );
 
       if (!authResult.success) {
