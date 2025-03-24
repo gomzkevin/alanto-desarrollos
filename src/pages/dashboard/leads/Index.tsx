@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { format } from 'date-fns';
-import useLeads from '@/hooks/useLeads';
+import useLeads, { LEAD_STATUS_OPTIONS } from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 import { useUserRole } from '@/hooks';
@@ -53,15 +53,15 @@ const LeadsPage = () => {
     leads, 
     isLoading, 
     refetch, 
-    statusOptions, 
     getStatusLabel,
     getSubstatusLabel,
     getOriginLabel
   } = useLeads({
     estado: selectedEstado || undefined,
-    search: searchTerm.length > 2 ? searchTerm : undefined,
-    empresa_id: empresaId
+    search: searchTerm.length > 2 ? searchTerm : undefined
   });
+
+  const statusOptions = LEAD_STATUS_OPTIONS;
   
   const { desarrollos } = useDesarrollos({
     onSuccess: () => {},

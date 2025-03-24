@@ -55,6 +55,7 @@ export interface UseDesarrollosOptions {
   onSuccess?: (data: Desarrollo[]) => void;
   onMutationSuccess?: () => void;
   onError?: (error: Error) => void;
+  desarrolloId?: string;
 }
 
 export const useDesarrollos = (options: UseDesarrollosOptions = DEFAULT_OPTIONS) => {
@@ -64,7 +65,7 @@ export const useDesarrollos = (options: UseDesarrollosOptions = DEFAULT_OPTIONS)
   const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
 
   const { data: desarrollos = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['desarrollos', empresaId],
+    queryKey: ['desarrollos', empresaId, options?.desarrolloId],
     queryFn: async () => {
       try {
         console.log('Fetching desarrollos for empresa_id:', empresaId);
@@ -76,6 +77,10 @@ export const useDesarrollos = (options: UseDesarrollosOptions = DEFAULT_OPTIONS)
           
         if (empresaId) {
           query = query.eq('empresa_id', empresaId);
+        }
+
+        if (options?.desarrolloId) {
+          query = query.eq('id', options.desarrolloId);
         }
         
         const { data, error } = await query;

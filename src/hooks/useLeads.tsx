@@ -1,7 +1,54 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from '@/components/ui/use-toast';
+
+// Define the lead status options
+export const LEAD_STATUS_OPTIONS = [
+  { value: 'nuevo', label: 'Nuevo' },
+  { value: 'seguimiento', label: 'En seguimiento' },
+  { value: 'convertido', label: 'Convertido' },
+  { value: 'perdido', label: 'Perdido' }
+];
+
+// Define substatus options for each status
+export const LEAD_SUBSTATUS_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  nuevo: [
+    { value: 'contacto_inicial', label: 'Contacto inicial' },
+    { value: 'recibido', label: 'Recibido' },
+    { value: 'por_contactar', label: 'Por contactar' }
+  ],
+  seguimiento: [
+    { value: 'interesado', label: 'Interesado' },
+    { value: 'en_negociacion', label: 'En negociación' },
+    { value: 'visitando_propiedades', label: 'Visitando propiedades' },
+    { value: 'analizando_propuestas', label: 'Analizando propuestas' }
+  ],
+  convertido: [
+    { value: 'reserva_pagada', label: 'Reserva pagada' },
+    { value: 'contrato_firmado', label: 'Contrato firmado' },
+    { value: 'venta_finalizada', label: 'Venta finalizada' }
+  ],
+  perdido: [
+    { value: 'no_interesado', label: 'No interesado' },
+    { value: 'no_califica', label: 'No califica' },
+    { value: 'eligio_competencia', label: 'Eligió competencia' },
+    { value: 'contacto_perdido', label: 'Contacto perdido' }
+  ]
+};
+
+// Define lead origin options
+export const LEAD_ORIGIN_OPTIONS = [
+  { value: 'sitio_web', label: 'Sitio web' },
+  { value: 'referencia', label: 'Referencia' },
+  { value: 'redes_sociales', label: 'Redes sociales' },
+  { value: 'inmobiliaria', label: 'Inmobiliaria' },
+  { value: 'ferias', label: 'Ferias y exposiciones' },
+  { value: 'visita_fisica', label: 'Visita física' },
+  { value: 'publicidad', label: 'Publicidad' },
+  { value: 'otro', label: 'Otro' }
+];
 
 export interface Lead {
   id: string;
@@ -24,6 +71,7 @@ interface UseLeadsOptions {
   estado?: string;
   origen?: string;
   limit?: number;
+  empresa_id?: number;
   onSuccess?: (data: Lead[]) => void;
   onError?: (error: Error) => void;
 }
@@ -185,6 +233,25 @@ export const useLeads = (options: UseLeadsOptions = DEFAULT_OPTIONS) => {
     },
   });
   
+  // Helper functions for label mapping
+  const getStatusLabel = (statusValue: string | null) => {
+    if (!statusValue) return 'No definido';
+    const status = LEAD_STATUS_OPTIONS.find(option => option.value === statusValue);
+    return status ? status.label : statusValue;
+  };
+
+  const getSubstatusLabel = (statusValue: string | null, substatusValue: string | null) => {
+    if (!statusValue || !substatusValue) return 'No definido';
+    const substatus = LEAD_SUBSTATUS_OPTIONS[statusValue]?.find(option => option.value === substatusValue);
+    return substatus ? substatus.label : substatusValue;
+  };
+
+  const getOriginLabel = (originValue: string | null) => {
+    if (!originValue) return 'No definido';
+    const origin = LEAD_ORIGIN_OPTIONS.find(option => option.value === originValue);
+    return origin ? origin.label : originValue;
+  };
+  
   return {
     leads,
     isLoading,
@@ -192,9 +259,12 @@ export const useLeads = (options: UseLeadsOptions = DEFAULT_OPTIONS) => {
     refetch,
     createLead,
     updateLead,
-    deleteLead
+    deleteLead,
+    statusOptions: LEAD_STATUS_OPTIONS,
+    getStatusLabel,
+    getSubstatusLabel,
+    getOriginLabel
   };
 };
 
 export default useLeads;
-export type { Lead };
