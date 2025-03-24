@@ -11,7 +11,7 @@ export interface SubscriptionAccessOptions {
   redirectPath?: string;
 }
 
-interface SubscriptionStatus {
+export interface SubscriptionStatus {
   isActive: boolean;
   currentPlan: {
     id: string;
@@ -73,7 +73,10 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
         }
         
         console.log('Estado de suscripción recibido:', data);
-        setSubscription(data as SubscriptionStatus);
+        
+        // Convertir explícitamente el resultado a SubscriptionStatus
+        const subscriptionData = data as SubscriptionStatus;
+        setSubscription(subscriptionData);
         
         // Si el módulo no requiere suscripción, autorizar automáticamente
         if (!requiresSubscription) {
@@ -82,7 +85,7 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
         }
         
         // Si tiene suscripción activa, está autorizado
-        if (data.isActive) {
+        if (subscriptionData && subscriptionData.isActive) {
           console.log('Suscripción activa encontrada - acceso autorizado');
           setIsAuthorized(true);
           return;
