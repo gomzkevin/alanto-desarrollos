@@ -101,8 +101,18 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
           console.log('No active company subscription found');
         }
 
-        // If no company subscription and user is admin, check user's personal subscription
-        if (userId && (isAdmin() || isSuperAdmin())) {
+        // If no company subscription and user is superadmin, they always have global access
+        if (isSuperAdmin()) {
+          console.log('User is superadmin with global access privileges');
+          // For superadmins, return a special "always active" subscription
+          return {
+            ...getDefaultSubscriptionInfo(),
+            isActive: true, // Superadmins always have an "active" subscription for access control
+          };
+        }
+
+        // If user is a regular admin, check personal subscription
+        if (userId && isAdmin()) {
           const { data: userSubscription, error: userSubError } = await supabase
             .from('subscriptions')
             .select('*, subscription_plans(*)')
@@ -115,6 +125,8 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
           } else if (userSubscription) {
             console.log('Found active subscription for admin user:', userSubscription);
             return await processSubscription(userSubscription, empresaId);
+          } else {
+            console.log('Admin user without personal subscription');
           }
         }
 
@@ -275,21 +287,57 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
         userRole
       });
 
-      // SuperAdmins and admins always have access - THIS IS THE KEY FIX
-      if (isSuperAdmin() || isAdmin()) {
-        console.log('User is admin or superadmin, access authorized regardless of subscription');
+      // Superadmins always have full access to everything
+      if (isSuperAdmin()) {
+        console.log('User is superadmin with global system access');
         setIsAuthorized(true);
         return;
       }
 
-      // Vendedores also have access to all modules
+      // Regular admins need a valid subscription (company or personal)
+      if (isAdmin()) {
+        if (subscriptionInfo?.isActive) {
+          console.log('Admin with active subscription, access authorized');
+          setIsAuthorized(true);
+        } else {
+          console.log('Admin without active subscription, showing subscription required');
+          toast({
+            title: "Suscripción requerida",
+            description: "Tu empresa no tiene una suscripción activa. Por favor, activa una suscripción para acceder a este módulo.",
+            variant: "destructive"
+          });
+          navigate('/dashboard/configuracion');
+          setIsAuthorized(false);
+        }
+        return;
+      }
+
+      // Vendedores get access if their company has an active subscription
       if (userRole === 'vendedor') {
-        console.log('User is vendedor, access authorized');
+        if (subscriptionInfo?.isActive) {
+          console.log('Vendedor with company subscription, access authorized');
+          setIsAuthorized(true);
+        } else {
+          console.log('Vendedor without company subscription, access denied');
+          toast({
+            title: "Sin acceso",
+            description: "Tu empresa no tiene una suscripción activa. Contacta al administrador.",
+            variant: "destructive"
+          });
+          navigate(redirectPath);
+          setIsAuthorized(false);
+        }
+        return;
+      }
+
+      // Clientes and other users also need company subscription
+      if (subscriptionInfo?.isActive) {
+        console.log('User with active company subscription, access authorized');
         setIsAuthorized(true);
         return;
       }
 
-      // Check if empresa is assigned
+      // Check for assigned company for other roles
       if (!empresaId) {
         console.log('User has no assigned company');
         toast({
@@ -302,27 +350,20 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
         return;
       }
 
-      // Check for active subscription
-      if (!subscriptionInfo?.isActive) {
-        console.log('No active subscription for module:', requiredModule);
-        
-        const moduleText = requiredModule ? ` al módulo ${requiredModule}` : '';
-        const message = "Tu empresa no tiene una suscripción activa. Por favor, contacta al administrador.";
-        
-        toast({
-          title: "Suscripción requerida",
-          description: `No tienes acceso${moduleText}. ${message}`,
-          variant: "destructive"
-        });
-        
-        navigate(redirectPath);
-        setIsAuthorized(false);
-        return;
-      }
-
-      // If we got here, the user is authorized
-      console.log('User authorized to access module:', requiredModule);
-      setIsAuthorized(true);
+      // Any other case: not authorized
+      console.log('No active subscription for module:', requiredModule);
+      
+      const moduleText = requiredModule ? ` al módulo ${requiredModule}` : '';
+      const message = "Tu empresa no tiene una suscripción activa. Por favor, contacta al administrador.";
+      
+      toast({
+        title: "Suscripción requerida",
+        description: `No tienes acceso${moduleText}. ${message}`,
+        variant: "destructive"
+      });
+      
+      navigate(redirectPath);
+      setIsAuthorized(false);
     } else if (!requiresSubscription) {
       // If the module doesn't require subscription, automatically authorize
       setIsAuthorized(true);

@@ -1,6 +1,5 @@
 
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -26,8 +25,6 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   loadingFallback,
   unauthorizedFallback
 }) => {
-  const navigate = useNavigate();
-  
   // Usar el hook central de suscripciones
   const { isAuthorized, isLoading } = useSubscription({
     requiresSubscription: true,
