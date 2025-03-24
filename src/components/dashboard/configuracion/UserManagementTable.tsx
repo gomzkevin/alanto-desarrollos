@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -69,6 +68,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Define a helper type for the roles that can be passed to signUpWithEmailPassword
 type AuthServiceRole = 'admin' | 'vendedor' | 'cliente';
+
+// Define a type that includes all roles, and subtypes for specific contexts:
+type AllUserRoles = 'superadmin' | 'admin' | 'vendedor' | 'cliente';
+type InvitationRoles = 'admin' | 'vendedor' | 'cliente'; // Roles that can be invited
 
 export function UserManagementTable() {
   const [activeTab, setActiveTab] = useState<string>("usuarios");
@@ -258,7 +261,7 @@ export function UserManagementTable() {
     }
 
     // Ensure we're only passing valid invitation roles to createInvitacion
-    const invitationRole: InvitationRole = 
+    const invitationRole: InvitationRoles = 
       (newInvite.rol === 'admin' || newInvite.rol === 'vendedor' || newInvite.rol === 'cliente' || newInvite.rol === 'superadmin') 
         ? newInvite.rol 
         : 'admin';

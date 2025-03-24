@@ -21,10 +21,15 @@ export const useUserRole = () => {
   const [empresaId, setEmpresaId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
 
   useEffect(() => {
+    // Only run the auth check if we're not already processing it
+    if (isProcessingAuth) return;
+
     const fetchUserData = async () => {
       try {
+        setIsProcessingAuth(true);
         setIsLoading(true);
         
         // Get the current user
@@ -34,6 +39,7 @@ export const useUserRole = () => {
           console.error('Error fetching auth user:', authError);
           setAuthChecked(true);
           setIsLoading(false);
+          setTimeout(() => setIsProcessingAuth(false), 1000);
           return;
         }
         
@@ -41,6 +47,7 @@ export const useUserRole = () => {
           console.log('No authenticated user found');
           setAuthChecked(true);
           setIsLoading(false);
+          setTimeout(() => setIsProcessingAuth(false), 1000);
           return;
         }
         
@@ -59,6 +66,7 @@ export const useUserRole = () => {
           console.error('Error fetching user data:', userError);
           setAuthChecked(true);
           setIsLoading(false);
+          setTimeout(() => setIsProcessingAuth(false), 1000);
           return;
         }
         
@@ -87,52 +95,66 @@ export const useUserRole = () => {
         });
       } finally {
         setIsLoading(false);
+        // Add a delay before allowing another auth check
+        setTimeout(() => setIsProcessingAuth(false), 1000);
       }
     };
     
     fetchUserData();
     
-    // Set up auth state change listener
+    // Set up auth state change listener - with debounce
+    let authChangeTimeout: NodeJS.Timeout;
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
       
-      if (event === 'SIGNED_IN' && session?.user) {
-        // User signed in, fetch their data
-        setUserId(session.user.id);
-        setUserEmail(session.user.email);
-        
-        const { data, error } = await supabase
-          .from('usuarios')
-          .select('*')
-          .eq('auth_id', session.user.id)
-          .maybeSingle();
-        
-        if (!error && data) {
-          console.log('User data from auth change:', data);
-          // Explicit cast string role to UserRole type
-          const roleToUse: UserRole = data.rol as UserRole;
-          
-          setUserRole(roleToUse);
-          setUserName(data.nombre);
-          
-          // Establecer empresaId para acceso basado en organización
-          setEmpresaId(data.empresa_id);
-          console.log('Empresa ID after auth change:', data.empresa_id);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        // User signed out, clear their data
-        setUserId(null);
-        setUserEmail(null);
-        setUserRole(null);
-        setUserName(null);
-        setEmpresaId(null);
+      // Clear any pending timeout
+      if (authChangeTimeout) {
+        clearTimeout(authChangeTimeout);
       }
+      
+      // Debounce auth state changes
+      authChangeTimeout = setTimeout(async () => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          // User signed in, fetch their data
+          setUserId(session.user.id);
+          setUserEmail(session.user.email);
+          
+          const { data, error } = await supabase
+            .from('usuarios')
+            .select('*')
+            .eq('auth_id', session.user.id)
+            .maybeSingle();
+          
+          if (!error && data) {
+            console.log('User data from auth change:', data);
+            // Explicit cast string role to UserRole type
+            const roleToUse: UserRole = data.rol as UserRole;
+            
+            setUserRole(roleToUse);
+            setUserName(data.nombre);
+            
+            // Establecer empresaId para acceso basado en organización
+            setEmpresaId(data.empresa_id);
+            console.log('Empresa ID after auth change:', data.empresa_id);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          // User signed out, clear their data
+          setUserId(null);
+          setUserEmail(null);
+          setUserRole(null);
+          setUserName(null);
+          setEmpresaId(null);
+        }
+      }, 300); // Debounce for 300ms
     });
     
     return () => {
+      if (authChangeTimeout) {
+        clearTimeout(authChangeTimeout);
+      }
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [isProcessingAuth]);
 
   // Helper methods
   const isUserAdmin = () => {

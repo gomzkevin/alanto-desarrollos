@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate, useLocation, Routes, Route } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { SignupForm } from "@/components/auth/SignupForm";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,15 +23,17 @@ export function AuthPage() {
   const { userId, isLoading } = useAuth({});
   const navigate = useNavigate();
   const location = useLocation();
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
 
   useEffect(() => {
     // Si el usuario está autenticado, redirige a la página principal
-    if (userId && !isLoading) {
+    if (userId && !isLoading && !redirectAttempted) {
+      setRedirectAttempted(true);
       // Obtener ruta de redirección de location.state o usar default
       const from = location.state?.from?.pathname || "/dashboard";
       navigate(from, { replace: true });
     }
-  }, [userId, isLoading, navigate, location.state]);
+  }, [userId, isLoading, navigate, location.state, redirectAttempted]);
 
   // Si está cargando, mostrar spinner
   if (isLoading) {

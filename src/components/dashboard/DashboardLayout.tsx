@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Building2, Users, BarChart3, Calculator, Briefcase, 
@@ -30,6 +30,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // Always call hooks at the top level, regardless of any conditions
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [attemptedAuth, setAttemptedAuth] = useState(false);
+  const authCheckRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { isLoading, userId, userEmail, userName, authChecked, isAdmin: isUserAdmin } = useUserRole();
@@ -57,9 +58,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   
   useEffect(() => {
     const checkAuth = async () => {
-      if (attemptedAuth) return;
+      // Use ref to prevent multiple auth checks
+      if (attemptedAuth || authCheckRef.current) return;
       
       try {
+        authCheckRef.current = true;
         setAttemptedAuth(true);
         const { data } = await supabase.auth.getSession();
         
@@ -80,6 +83,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           description: "Hubo un problema al verificar tu sesión",
           variant: "destructive"
         });
+      } finally {
+        // Release the ref after a delay to prevent rapid rechecks
+        setTimeout(() => {
+          authCheckRef.current = false;
+        }, 5000);
       }
     };
     
@@ -103,7 +111,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   
   if (!userId && authChecked) {
     console.log("No userId but authChecked, redirecting to auth");
-    navigate('/auth');
+    // Instead of directly navigating here, let the RequireAuth component handle this
+    // to prevent excessive redirects
     return null;
   }
 

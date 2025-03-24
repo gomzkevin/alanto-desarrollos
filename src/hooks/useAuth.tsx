@@ -1,166 +1,142 @@
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from '@/components/ui/use-toast';
-import { useUserRole } from './useUserRole';
-import { useSubscription } from './useSubscription';
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
-export interface AuthOptions {
-  requiresSubscription?: boolean;
-  requiredModule?: string;
-  redirectPath?: string;
+interface UseAuthProps {
+  redirectTo?: string;
 }
 
-/**
- * Hook centralizado que combina la verificación de roles y suscripciones
- * para proporcionar un sistema unificado de autorización
- */
-export const useAuth = (options: AuthOptions = {}) => {
-  const { 
-    requiresSubscription = false,
-    requiredModule,
-    redirectPath = '/dashboard' 
-  } = options;
+export const useAuth = ({ redirectTo }: UseAuthProps) => {
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
+  const { toast } = useToast();
 
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const navigate = useNavigate();
-  
-  // Combinar información de rol y suscripción
-  const { 
-    userId, 
-    userEmail, 
-    userRole, 
-    userName, 
-    empresaId, 
-    isAdmin, 
-    isSuperAdmin, 
-    canCreateResource,
-    isLoading: isLoadingUser, 
-    authChecked 
-  } = useUserRole();
-  
-  // Usar el hook de suscripción solo si se requiere verificación de suscripción
-  const { 
-    subscription, 
-    isLoading: isLoadingSubscription 
-  } = useSubscription({
-    requiresSubscription,
-    requiredModule,
-    redirectPath
-  });
-
-  // Verificar capacidades específicas basadas en el módulo y rol
-  const hasCapability = (capability: string): boolean => {
-    // Superadmin siempre tiene todas las capacidades
-    if (isSuperAdmin()) return true;
-    
-    // Verificaciones específicas por capacidad
-    switch (capability) {
-      case 'manage_users':
-        return isAdmin();
-      case 'create_development':
-        return isAdmin() || userRole === 'vendedor';
-      case 'view_sales':
-        return isAdmin() || userRole === 'vendedor';
-      // Puedes agregar más capacidades específicas aquí
-      default:
-        return false;
-    }
-  };
-
-  // Efecto para verificar autorización cuando cambian los datos relevantes
   useEffect(() => {
-    // Solo verificar cuando tengamos los datos necesarios
-    if (!isLoadingUser && authChecked) {
-      console.log('Verificando autorización:', {
-        userId,
-        empresaId,
-        userRole,
-        requiresSubscription,
-        moduleName: requiredModule
+    // Only run the auth check if we're not already processing it
+    if (isProcessingAuth) return;
+
+    const checkAuth = async () => {
+      try {
+        setIsProcessingAuth(true);
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error checking auth session:", error);
+          setUserId(null);
+          setUserEmail(null);
+        } else {
+          setUserId(data.session?.user?.id || null);
+          setUserEmail(data.session?.user?.email || null);
+        }
+      } catch (err) {
+        console.error("Error in useAuth:", err);
+      } finally {
+        setIsLoading(false);
+        // Add a small delay before allowing another auth check
+        setTimeout(() => {
+          setIsProcessingAuth(false);
+        }, 1000);
+      }
+    };
+    
+    checkAuth();
+    
+    // Set up auth state change listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state changed:", event);
+        setUserId(session?.user?.id || null);
+        setUserEmail(session?.user?.email || null);
+      }
+    );
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [isProcessingAuth]);
+
+  // Handle login
+  const login = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      // Superadmins y admins siempre tienen acceso básico
-      if (isSuperAdmin() || isAdmin()) {
-        console.log('Usuario admin, autorizado');
-        setIsAuthorized(true);
-        return;
-      }
-
-      // Vendedores tienen acceso a la mayoría de módulos
-      if (userRole === 'vendedor') {
-        console.log('Usuario vendedor, autorizado');
-        setIsAuthorized(true);
-        return;
-      }
-
-      // Verificar si el usuario tiene empresa asignada
-      if (!empresaId) {
-        console.log('Usuario sin empresa asignada');
+      if (error) {
         toast({
-          title: "Sin acceso",
-          description: "No tienes una empresa asignada. Contacta al administrador.",
-          variant: "destructive"
+          title: "Error de inicio de sesión",
+          description: error.message,
+          variant: "destructive",
         });
-        navigate(redirectPath);
-        setIsAuthorized(false);
-        return;
+        return { user: null, error };
       }
 
-      // Si requiere suscripción, verificar estado
-      if (requiresSubscription && !subscription.isActive) {
-        console.log('Suscripción inactiva para módulo:', requiredModule);
-        
-        const moduleText = requiredModule ? ` al módulo ${requiredModule}` : '';
-        const message = isAdmin() 
-          ? "Tu empresa no tiene una suscripción activa. Por favor, activa la suscripción en configuración."
-          : "Tu empresa no tiene una suscripción activa. Por favor, contacta al administrador.";
-        
-        toast({
-          title: "Suscripción requerida",
-          description: `No tienes acceso${moduleText}. ${message}`,
-          variant: "destructive"
-        });
-        
-        navigate(redirectPath);
-        setIsAuthorized(false);
-        return;
-      }
-
-      // Si llegamos aquí, el usuario está autorizado
-      console.log('Usuario autorizado');
-      setIsAuthorized(true);
-    } else if (!requiresSubscription) {
-      // Si no requiere suscripción, autorizar sin verificar suscripción
-      setIsAuthorized(true);
+      return { user: data.user, error: null };
+    } catch (error) {
+      console.error("Error in login:", error);
+      return { user: null, error };
+    } finally {
+      setIsLoading(false);
     }
-  }, [
-    userId, 
-    empresaId, 
-    userRole, 
-    isLoadingUser, 
-    authChecked, 
-    requiresSubscription, 
-    subscription?.isActive, 
-    requiredModule, 
-    redirectPath, 
-    navigate, 
-    isAdmin, 
-    isSuperAdmin
-  ]);
-
-  return {
-    isAuthorized,
-    isLoading: isLoadingUser || (requiresSubscription && isLoadingSubscription) || isAuthorized === null,
-    hasCapability,
-    userId,
-    userEmail,
-    userRole,
-    userName,
-    isAdmin,
-    isSuperAdmin,
-    subscription: subscription
   };
-};
 
-export default useAuth;
+  // Handle signup
+  const signup = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast({
+          title: "Error de registro",
+          description: error.message,
+          variant: "destructive",
+        });
+        return { user: null, error };
+      }
+
+      return { user: data.user, error: null };
+    } catch (error) {
+      console.error("Error in signup:", error);
+      return { user: null, error };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle logout
+  const logout = async () => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        toast({
+          title: "Error al cerrar sesión",
+          description: error.message,
+          variant: "destructive",
+        });
+        return { error };
+      }
+
+      setUserId(null);
+      setUserEmail(null);
+      return { error: null };
+    } catch (error) {
+      console.error("Error in logout:", error);
+      return { error };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { userId, userEmail, isLoading, login, signup, logout };
+};
