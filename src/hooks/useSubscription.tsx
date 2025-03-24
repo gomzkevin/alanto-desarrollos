@@ -93,6 +93,8 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
           .eq('status', 'active')
           .maybeSingle();
 
+        console.log('Subscription query result:', { empresaSubscription, empresaError });
+
         if (empresaError) {
           console.error('Error fetching empresa subscription:', empresaError);
           return getDefaultSubscriptionInfo();
@@ -102,6 +104,17 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
           console.log('Found active subscription for empresa:', empresaSubscription);
           return await processSubscription(empresaSubscription, empresaId);
         } 
+        
+        // Si no hay suscripción activa, verificar específicamente why la empresa 1 no tiene suscripción
+        if (empresaId === 1) {
+          console.log('Empresa ID 1 has no active subscription. Checking all subscriptions for empresa 1:');
+          const { data: allSubs, error: allSubsError } = await supabase
+            .from('subscriptions')
+            .select('*, subscription_plans(*)')
+            .eq('empresa_id', empresaId);
+            
+          console.log('All subscriptions for empresa 1:', allSubs, 'Error:', allSubsError);
+        }
         
         // Si no hay suscripción de empresa y es superadmin, tiene acceso global
         if (isSuperAdmin()) {
@@ -268,9 +281,9 @@ export const useSubscription = (options: SubscriptionAuthOptions = {}) => {
         userRole
       });
 
-      // Los superadmins o vendedores siempre tienen acceso completo a todo
-      if (isSuperAdmin() || isAdmin() || userRole === 'vendedor') {
-        console.log('User is superadmin/admin/vendedor with global system access');
+      // Solo los superadmins tienen acceso completo global
+      if (isSuperAdmin()) {
+        console.log('User is superadmin with global system access');
         setIsAuthorized(true);
         return;
       }

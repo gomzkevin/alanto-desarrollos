@@ -50,9 +50,6 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   console.log(`RequireSubscription (${moduleName}) - isAuthorized:`, isAuthorized);
   console.log(`RequireSubscription (${moduleName}) - isLoading:`, isLoading);
 
-  // Autorizar automáticamente a vendedores y administradores
-  const hasAccess = isAuthorized || isAdmin() || isSuperAdmin() || userRole === 'vendedor';
-
   // Mostrar estado de carga
   if (isLoading) {
     if (loadingFallback) return <>{loadingFallback}</>;
@@ -71,7 +68,7 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   }
 
   // Manejar acceso no autorizado
-  if (!hasAccess) {
+  if (!isAuthorized) {
     if (unauthorizedFallback) return <>{unauthorizedFallback}</>;
     
     return (
