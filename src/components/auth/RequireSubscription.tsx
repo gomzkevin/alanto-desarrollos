@@ -1,11 +1,11 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface RequireSubscriptionProps {
   children: React.ReactNode;
@@ -17,7 +17,7 @@ interface RequireSubscriptionProps {
 
 /**
  * Componente que asegura que el usuario tiene una suscripción activa
- * para acceder al contenido, utilizando el hook centralizado useAuth
+ * para acceder al contenido, utilizando el hook centralizado useSubscription
  */
 export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   children,
@@ -27,39 +27,24 @@ export const RequireSubscription: React.FC<RequireSubscriptionProps> = ({
   unauthorizedFallback
 }) => {
   const navigate = useNavigate();
-  const { isAuthorized, isLoading } = useAuth({
+  
+  // Usar el hook central de suscripciones
+  const { isAuthorized, isLoading } = useSubscription({
     requiresSubscription: true,
     requiredModule: moduleName,
     redirectPath: redirectTo
   });
   
-  const [redirectInProgress, setRedirectInProgress] = useState(false);
-  const redirectAttemptedRef = useRef(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Console logs para depuración
+  console.log(`RequireSubscription (${moduleName}) - isAuthorized:`, isAuthorized);
+  console.log(`RequireSubscription (${moduleName}) - isLoading:`, isLoading);
 
-  // Effect to handle unauthorized access with debounce
+  // Redirigir si no está autorizado y ha terminado de cargar
   useEffect(() => {
-    if (!isLoading && !isAuthorized && !redirectAttemptedRef.current) {
-      redirectAttemptedRef.current = true;
-      
-      // Prevent multiple redirects
-      if (!redirectInProgress) {
-        setRedirectInProgress(true);
-        
-        // Use timeout with increased delay to prevent rapid navigation
-        timeoutRef.current = setTimeout(() => {
-          navigate(redirectTo);
-        }, 500);
-      }
-      
-      return () => {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
-      };
+    if (!isLoading && !isAuthorized) {
+      navigate(redirectTo);
     }
-  }, [isAuthorized, isLoading, navigate, redirectTo, redirectInProgress]);
+  }, [isAuthorized, isLoading, navigate, redirectTo]);
 
   // Mostrar estado de carga
   if (isLoading) {

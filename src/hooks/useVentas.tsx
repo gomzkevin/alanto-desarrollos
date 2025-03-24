@@ -37,11 +37,16 @@ export const useVentas = (filters: VentasFilter = {}) => {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
-  const { empresaId } = useUserRole();
+  const { empresaId, userRole } = useUserRole();
+
+  console.log('useVentas - empresaId:', empresaId);
+  console.log('useVentas - userRole:', userRole);
 
   // Consulta para obtener las ventas
   const fetchVentas = async (): Promise<Venta[]> => {
     try {
+      console.log('Fetching ventas with empresaId:', empresaId);
+      
       let query = supabase
         .from('ventas')
         .select(`
@@ -68,15 +73,23 @@ export const useVentas = (filters: VentasFilter = {}) => {
       }
 
       const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error al obtener ventas:', error);
+        throw error;
+      }
 
-      if (error) throw error;
+      console.log('Ventas raw data:', data);
 
       // Filtrar las ventas por empresa_id si está disponible
       const filteredData = empresaId
-        ? (data || []).filter(venta => 
-            venta.unidad?.prototipo?.desarrollo?.empresa_id === empresaId
-          )
+        ? (data || []).filter(venta => {
+            console.log('Filtering venta:', venta.id, 'empresa_id:', venta.unidad?.prototipo?.desarrollo?.empresa_id);
+            return venta.unidad?.prototipo?.desarrollo?.empresa_id === empresaId;
+          })
         : (data || []);
+      
+      console.log('Filtered ventas:', filteredData.length);
 
       // Calcular el progreso para cada venta (esto sería un cálculo real en la implementación final)
       return filteredData.map(venta => ({
@@ -92,6 +105,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
   const { data = [], isLoading, error, refetch } = useQuery({
     queryKey: ['ventas', filters, empresaId],
     queryFn: fetchVentas,
+    enabled: !!empresaId // Sólo ejecutar la consulta si hay un empresaId
   });
 
   // Función para crear una venta

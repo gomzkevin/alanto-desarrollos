@@ -5,18 +5,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VentasTable } from './components/VentasTable';
 import VentasStatistics from './components/VentasStatistics';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useSubscriptionAuth } from '@/hooks/useSubscriptionAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const VentasPage = () => {
-  // Always call hooks at the top level, regardless of conditions
-  const { isAuthorized, isLoading } = useSubscriptionAuth('Ventas');
+  // Usar el hook central de suscripciones para manejar la autorización
+  const { isAuthorized, isLoading } = useSubscription({
+    requiresSubscription: true,
+    requiredModule: 'Ventas'
+  });
+  
   const [refreshTrigger, setRefreshTrigger] = React.useState(0);
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
   };
+
+  // Añadir console.logs para depurar
+  console.log('VentasPage - isAuthorized:', isAuthorized);
+  console.log('VentasPage - isLoading:', isLoading);
 
   // Render loading state
   if (isLoading) {
