@@ -25,7 +25,7 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
   
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  const { userId, empresaId, isAdmin, isSuperAdmin, authChecked, isLoading: isUserLoading } = useUserRole();
+  const { userId, empresaId, userRole, isAdmin, isSuperAdmin, authChecked, isLoading: isUserLoading } = useUserRole();
   
   // Usar el nuevo hook dedicado para obtener la información de suscripción de la empresa
   const { subscriptionInfo, isLoading: isSubscriptionLoading } = useCompanySubscription(empresaId);
@@ -42,7 +42,8 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
         isSubscriptionActive: subscriptionInfo?.isActive,
         moduleName: requiredModule,
         isAdmin: isAdmin(),
-        isSuperAdmin: isSuperAdmin()
+        isSuperAdmin: isSuperAdmin(),
+        userRole
       });
 
       // REGLA 1: Los superadmins siempre tienen acceso completo global
@@ -109,7 +110,8 @@ export const useSubscriptionAccess = (options: SubscriptionAccessOptions = {}) =
     isSuperAdmin,
     userId,
     empresaId,
-    requiresSubscription
+    requiresSubscription,
+    userRole
   ]);
 
   return {

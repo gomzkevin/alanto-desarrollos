@@ -139,7 +139,7 @@ export const useUserRole = () => {
     };
   }, []);
 
-  // Helper methods
+  // Helper methods - Simplified to focus on the role field
   const isUserAdmin = () => {
     return userRole === 'admin' || userRole === 'superadmin';
   };

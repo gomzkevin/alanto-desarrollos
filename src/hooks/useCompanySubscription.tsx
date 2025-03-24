@@ -1,6 +1,5 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
 
@@ -49,8 +48,8 @@ const getDefaultSubscriptionInfo = (): SubscriptionInfo => ({
 });
 
 /**
- * Hook para verificar y obtener la información de suscripción de una empresa
- * Este hook solo obtiene los datos, no controla el acceso
+ * Hook para obtener la información de suscripción de una empresa
+ * @param empresaId ID de la empresa para la que se quiere consultar la suscripción
  */
 export const useCompanySubscription = (empresaId: number | null) => {
   // Consultar información de suscripción de la empresa
@@ -66,12 +65,13 @@ export const useCompanySubscription = (empresaId: number | null) => {
       console.log('Fetching subscription info for empresaId:', empresaId);
 
       try {
-        // Consulta directa para verificar suscripciones activas de la empresa
+        // SIMPLIFICACIÓN: Consulta directa para verificar suscripciones activas de la empresa
         const { data: subscriptions, error: subError } = await supabase
           .from('subscriptions')
           .select('*, subscription_plans(*)')
           .eq('empresa_id', empresaId)
-          .eq('status', 'active');
+          .eq('status', 'active')
+          .order('created_at', { ascending: false });
           
         console.log(`Found ${subscriptions?.length || 0} active subscriptions for empresa ${empresaId}`);
         
