@@ -14,9 +14,9 @@ export function InvitationAccept() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
   const navigate = useNavigate();
-  const { verificarInvitacion, aceptarInvitacion, loading } = useInvitaciones();
+  const { verificarInvitacion, aceptarInvitacion, isLoading } = useInvitaciones();
   
-  const [isLoading, setIsLoading] = useState(true);
+  const [isVerifying, setIsVerifying] = useState(true);
   const [isValid, setIsValid] = useState(false);
   const [invitationData, setInvitationData] = useState<InvitationVerificationResult | null>(null);
   const [formData, setFormData] = useState({
@@ -46,7 +46,7 @@ export function InvitationAccept() {
         console.error("Error verificando invitación:", error);
         setIsValid(false);
       } finally {
-        setIsLoading(false);
+        setIsVerifying(false);
       }
     };
 
@@ -103,18 +103,24 @@ export function InvitationAccept() {
       return;
     }
     
-    const result = await aceptarInvitacion(token, formData.nombre, formData.password);
-    
-    if (result.success) {
+    try {
+      const result = await aceptarInvitacion(token, formData.nombre);
+      
       toast({
         title: "Bienvenido",
         description: "Te has unido a la empresa con éxito. Ahora puedes iniciar sesión.",
       });
       navigate("/auth");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo procesar la invitación. Intente de nuevo más tarde.",
+        variant: "destructive",
+      });
     }
   };
 
-  if (isLoading) {
+  if (isVerifying) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center">
         <Card className="w-full max-w-md">
@@ -235,9 +241,9 @@ export function InvitationAccept() {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={loading}
+              disabled={isLoading}
             >
-              {loading ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Procesando...

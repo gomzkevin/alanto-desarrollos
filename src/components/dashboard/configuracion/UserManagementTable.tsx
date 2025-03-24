@@ -1,17 +1,35 @@
-import React, { useState } from 'react';
+
+import { useState } from "react";
 import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { UseFormReturn } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,253 +37,439 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { useOrganizationUsers, OrganizationUser } from '@/hooks/useOrganizationUsers';
-import { useUserTransfer } from '@/hooks/useUserTransfer';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/dropdown-menu";
+import { Loader2, MoreHorizontal, UserPlus, UserCog } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
+import useOrganizationUsers from "@/hooks/useOrganizationUsers";
+import useInvitaciones from "@/hooks/useInvitaciones";
+import { format, formatDistance } from "date-fns";
+import { es } from "date-fns/locale";
 
-interface DataTableProps {
-  columns: ColumnDef<OrganizationUser>[];
-  data: OrganizationUser[];
+function isBoolean(value: any): value is boolean {
+  return typeof value === 'boolean';
 }
-
-const DataTable: React.FC<DataTableProps> = ({ columns, data }) => {
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
-  return (
-    <div className="rounded-md border">
-      <div className="relative w-full overflow-auto">
-        <table className="w-full table-auto text-sm">
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <th key={header.id} className="px-4 py-2 text-left [&:not([:first-child])]:pl-6">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </th>
-                  );
-                })}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="border-b transition-colors hover:bg-muted data-[state=selected]:bg-muted">
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-2 [&:not([:first-child])]:pl-6">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-            {data.length === 0 && (
-              <tr>
-                <td colSpan={columns.length} className="p-4 text-center">
-                  No se encontraron usuarios.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
 
 export function UserManagementTable() {
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [inviteForm, setInviteForm] = useState({
+    email: "",
+    rol: "vendedor",
+  });
+  const [inviteErrors, setInviteErrors] = useState<{
+    email?: string;
+    rol?: string;
+  }>({});
+
+  const { isAdmin } = useUserRole();
+
   const {
     users,
-    isLoading,
-    error,
-    deleteUser,
-    reactivateUser,
-    canManageUsers,
-    toggleUserStatus,
-    updateUserRole
-  } = useOrganizationUsers();
-  const { transferUser } = useUserTransfer();
-  const [isUpdating, setIsUpdating] = useState(false);
+    isLoading: isUsersLoading,
+    error: usersError,
+    updateUser,
+  } = useOrganizationUsers({});
 
-  const columns: ColumnDef<OrganizationUser>[] = [
-    {
-      accessorKey: 'nombre',
-      header: 'Nombre',
-      cell: ({ row }) => (
-        <div className="flex items-center">
-          <Avatar className="mr-2.5 h-8 w-8">
-            <AvatarImage src={`https://avatar.vercel.sh/${row.original.email}.png`} />
-            <AvatarFallback>{row.getValue('nombre')?.toString().substring(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          {row.getValue('nombre')}
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'email',
-      header: 'Email',
-    },
-    {
-      accessorKey: 'rol',
-      header: 'Rol',
-      cell: ({ row }) => {
-        const user = row.original;
+  const {
+    invitaciones,
+    isLoading: isInvitacionesLoading,
+    createInvitacion,
+    deleteInvitacion,
+    resendInvitacion,
+  } = useInvitaciones();
 
-        return (
-          <Select 
-            value={user.rol} 
-            onValueChange={(newRole) => {
-              if (newRole === 'admin' || newRole === 'vendedor') {
-                updateUserRole(user.id, newRole);
-              }
-            }}
-            disabled={!canManageUsers || isUpdating}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Seleccionar rol" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="admin">Administrador</SelectItem>
-              <SelectItem value="vendedor">Vendedor</SelectItem>
-            </SelectContent>
-          </Select>
-        );
+  const validateInviteForm = () => {
+    const errors: { email?: string; rol?: string } = {};
+    let isValid = true;
+
+    if (!inviteForm.email) {
+      errors.email = "El email es obligatorio";
+      isValid = false;
+    } else if (
+      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(inviteForm.email)
+    ) {
+      errors.email = "Email inválido";
+      isValid = false;
+    }
+
+    if (!inviteForm.rol) {
+      errors.rol = "El rol es obligatorio";
+      isValid = false;
+    }
+
+    setInviteErrors(errors);
+    return isValid;
+  };
+
+  const handleInvite = () => {
+    if (!validateInviteForm()) return;
+
+    createInvitacion.mutate(
+      {
+        email: inviteForm.email,
+        rol: inviteForm.rol,
+      },
+      {
+        onSuccess: () => {
+          setIsInviteOpen(false);
+          setInviteForm({
+            email: "",
+            rol: "vendedor",
+          });
+        },
       }
-    },
-    {
-      accessorKey: 'activo',
-      header: 'Estado',
-      cell: ({ row }) => {
-        const user = row.original;
-        return (
-          <Checkbox
-            checked={user.activo}
-            onCheckedChange={(checked) => {
-              setIsUpdating(true);
-              toggleUserStatus(user.id, checked)
-                .finally(() => setIsUpdating(false));
-            }}
-            disabled={!canManageUsers || isUpdating}
-          />
-        );
-      },
-    },
-    {
-      id: 'actions',
-      header: '',
-      cell: ({ row }) => {
-        const user = row.original;
-        const [open, setOpen] = React.useState(false)
+    );
+  };
 
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-              <DropdownMenuItem disabled={!canManageUsers}>
-                <Pencil className="mr-2 h-4 w-4" /> Editar
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {user.activo ? (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem className="text-red-500" disabled={!canManageUsers}>
-                      <Trash2 className="mr-2 h-4 w-4" /> Desactivar
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta acción desactivará al usuario.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          setIsUpdating(true);
-                          deleteUser.mutate(user.id, {
-                            onSettled: () => setIsUpdating(false),
-                          });
-                        }}
-                        disabled={isUpdating}
-                      >
-                        Desactivar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              ) : (
-                <DropdownMenuItem
-                  onClick={() => {
-                    setIsUpdating(true);
-                    reactivateUser.mutate(user.id, {
-                      onSettled: () => setIsUpdating(false),
-                    });
-                  }}
-                  disabled={!canManageUsers || isUpdating}
-                >
-                  Reactivar
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
+  const handleResendInvite = (invitacionId: string) => {
+    resendInvitacion.mutate(invitacionId, {
+      onSuccess: () => {
+        toast({
+          title: "Invitación reenviada",
+          description: "Se ha reenviado la invitación con éxito.",
+        });
       },
-    },
-  ];
+    });
+  };
+
+  const handleCancelInvite = (invitacionId: string) => {
+    deleteInvitacion.mutate(invitacionId, {
+      onSuccess: () => {
+        toast({
+          title: "Invitación cancelada",
+          description: "La invitación ha sido cancelada.",
+        });
+      },
+    });
+  };
+
+  const isLoading = isUsersLoading || isInvitacionesLoading;
+  const hasInvitations = invitaciones && invitaciones.length > 0;
+  const hasUsers = users && users.length > 0;
+
+  const handleChangeRole = (userId: string, newRole: string) => {
+    updateUser.mutate(
+      { userId, data: { rol: newRole } },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Rol actualizado",
+            description: "El rol del usuario ha sido actualizado con éxito.",
+          });
+        },
+        onError: (error) => {
+          toast({
+            title: "Error",
+            description: `No se pudo actualizar el rol: ${error.message}`,
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Usuarios</CardTitle>
-        <CardDescription>Gestiona los usuarios de tu organización.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div>Cargando usuarios...</div>
-        ) : error ? (
-          <div>Error: {error.message}</div>
-        ) : (
-          <DataTable columns={columns} data={users} />
-        )}
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      {isAdmin() && (
+        <div className="flex justify-end">
+          <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                Invitar usuario
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Invitar nuevo usuario</DialogTitle>
+                <DialogDescription>
+                  Envía una invitación por correo electrónico al nuevo usuario.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    value={inviteForm.email}
+                    onChange={(e) =>
+                      setInviteForm({ ...inviteForm, email: e.target.value })
+                    }
+                    placeholder="usuario@ejemplo.com"
+                    className={inviteErrors.email ? "border-red-500" : ""}
+                  />
+                  {inviteErrors.email && (
+                    <p className="text-sm text-red-500">{inviteErrors.email}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="role">Rol</Label>
+                  <Select
+                    value={inviteForm.rol}
+                    onValueChange={(value) =>
+                      setInviteForm({ ...inviteForm, rol: value })
+                    }
+                  >
+                    <SelectTrigger
+                      className={inviteErrors.rol ? "border-red-500" : ""}
+                    >
+                      <SelectValue placeholder="Seleccionar rol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="vendedor">Vendedor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {inviteErrors.rol && (
+                    <p className="text-sm text-red-500">{inviteErrors.rol}</p>
+                  )}
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  type="submit"
+                  onClick={handleInvite}
+                  disabled={createInvitacion.isPending}
+                >
+                  {createInvitacion.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    "Enviar invitación"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <>
+          <Table>
+            <TableCaption>Miembros del equipo</TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Usuario</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Rol</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {hasUsers &&
+                users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.nombre}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      {isAdmin() ? (
+                        <Select
+                          value={user.rol}
+                          onValueChange={(newRole) =>
+                            handleChangeRole(user.id, newRole)
+                          }
+                          disabled={updateUser.isPending || !isBoolean(user.activo) || !user.activo}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Administrador</SelectItem>
+                            <SelectItem value="vendedor">Vendedor</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge
+                          variant={
+                            user.rol === "admin" ? "default" : "secondary"
+                          }
+                        >
+                          {user.rol === "admin"
+                            ? "Administrador"
+                            : user.rol === "vendedor"
+                            ? "Vendedor"
+                            : user.rol}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          user.activo ? "outline" : "destructive"
+                        }
+                      >
+                        {user.activo ? "Activo" : "Inactivo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {isAdmin() && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Abrir menú</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() =>
+                                toast({
+                                  title: "Info",
+                                  description:
+                                    "Esta función estará disponible pronto.",
+                                })
+                              }
+                            >
+                              Gestionar permisos
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                updateUser.mutate({
+                                  userId: user.id,
+                                  data: { activo: !user.activo },
+                                })
+                              }
+                            >
+                              {user.activo
+                                ? "Desactivar usuario"
+                                : "Activar usuario"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+
+          {hasInvitations && (
+            <>
+              <h3 className="text-lg font-medium mt-8 mb-4">
+                Invitaciones pendientes
+              </h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Rol</TableHead>
+                    <TableHead>Fecha de expiración</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invitaciones
+                    .filter((inv) => inv.estado === "pendiente")
+                    .map((invitation) => (
+                      <TableRow key={invitation.id}>
+                        <TableCell className="font-medium">
+                          {invitation.email}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              invitation.rol === "admin"
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {invitation.rol === "admin"
+                              ? "Administrador"
+                              : invitation.rol === "vendedor"
+                              ? "Vendedor"
+                              : invitation.rol}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {invitation.fecha_expiracion
+                            ? format(
+                                new Date(invitation.fecha_expiracion),
+                                "PPP",
+                                { locale: es }
+                              )
+                            : "N/A"}
+                          <p className="text-xs text-gray-500">
+                            {invitation.fecha_expiracion &&
+                              formatDistance(
+                                new Date(invitation.fecha_expiracion),
+                                new Date(),
+                                {
+                                  addSuffix: true,
+                                  locale: es,
+                                }
+                              )}
+                          </p>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                handleResendInvite(invitation.id)
+                              }
+                              disabled={resendInvitacion.isPending}
+                            >
+                              Reenviar
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() =>
+                                handleCancelInvite(invitation.id)
+                              }
+                              disabled={deleteInvitacion.isPending}
+                            >
+                              Cancelar
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </>
+          )}
+
+          {!hasUsers && !hasInvitations && (
+            <div className="text-center py-8">
+              <UserCog className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                No hay usuarios
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Comienza invitando a miembros a tu organización.
+              </p>
+              {isAdmin() && (
+                <div className="mt-6">
+                  <Button
+                    onClick={() => setIsInviteOpen(true)}
+                    className="flex items-center gap-2 mx-auto"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Invitar usuario
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
+
+export default UserManagementTable;

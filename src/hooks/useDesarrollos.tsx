@@ -20,9 +20,28 @@ export interface Desarrollo {
   cover_image?: string;
   logo?: string;
   amenidades?: string[];
+  // Additional fields from the database
+  user_id?: string;
+  total_unidades?: number | null;
+  unidades_disponibles?: number | null;
+  avance_porcentaje?: number | null;
+  comision_operador?: number | null;
+  moneda?: string | null;
+  fecha_entrega?: string | null;
+  adr_base?: number | null;
+  ocupacion_anual?: number | null;
+  es_impuestos_porcentaje?: boolean | null;
+  impuestos?: number | null;
+  es_gastos_variables_porcentaje?: boolean | null;
+  gastos_variables?: number | null;
+  gastos_fijos?: number | null;
+  es_gastos_fijos_porcentaje?: boolean | null;
+  es_mantenimiento_porcentaje?: boolean | null;
+  mantenimiento_valor?: number | null;
+  imagen_url?: string | null;
 }
 
-interface UseDesarrollosOptions {
+export interface UseDesarrollosOptions {
   onSuccess?: (data: Desarrollo[]) => void;
   onMutationSuccess?: () => void;
   onError?: (error: Error) => void;
@@ -32,7 +51,7 @@ export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
   const { userId, empresaId } = useUserRole();
   const queryClient = useQueryClient();
 
-  const { data: desarrollos, isLoading, error, refetch } = useQuery({
+  const { data: desarrollos = [], isLoading, error, refetch } = useQuery({
     queryKey: ['desarrollos', empresaId],
     queryFn: async () => {
       try {
@@ -53,22 +72,22 @@ export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
           throw new Error(error.message);
         }
         
-        return data as Desarrollo[];
+        return data as unknown as Desarrollo[];
       } catch (error) {
         console.error('Error fetching desarrollos:', error);
         throw error;
       }
     },
     enabled: !!empresaId,
-    onSuccess: options.onSuccess,
-    onError: options.onError
+    meta: {
+      onSuccess: options.onSuccess,
+      onError: options.onError
+    }
   });
 
   const createDesarrollo = useMutation({
     mutationFn: async (newDesarrollo: Partial<Desarrollo>) => {
       try {
-        // Siempre podemos crear desarrollos (sin verificación de límites)
-        
         // Asegurarse de asignar la empresa del usuario autenticado
         const desarrolloWithEmpresa = {
           ...newDesarrollo,
@@ -85,7 +104,7 @@ export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
           throw new Error(error.message);
         }
         
-        return data as Desarrollo;
+        return data as unknown as Desarrollo;
       } catch (error) {
         console.error('Error creating desarrollo:', error);
         throw error;
@@ -124,7 +143,7 @@ export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
           throw new Error(error.message);
         }
         
-        return data as Desarrollo;
+        return data as unknown as Desarrollo;
       } catch (error) {
         console.error('Error updating desarrollo:', error);
         throw error;
@@ -187,7 +206,7 @@ export const useDesarrollos = (options: UseDesarrollosOptions = {}) => {
   });
 
   return {
-    desarrollos: desarrollos || [],
+    desarrollos,
     isLoading,
     error,
     refetch,

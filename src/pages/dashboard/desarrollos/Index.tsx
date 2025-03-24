@@ -3,15 +3,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import useDesarrollos from '@/hooks/useDesarrollos';
+import useDesarrollos, { Desarrollo } from '@/hooks/useDesarrollos';
 import DesarrolloCard from '@/components/dashboard/DesarrolloCard';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Tables } from '@/integrations/supabase/types';
 import useUnidades from '@/hooks/useUnidades';
-import { toast } from '@/hooks/use-toast';
-
-type Desarrollo = Tables<"desarrollos">;
+import { toast } from '@/components/ui/use-toast';
 
 const DesarrollosPage = () => {
   const navigate = useNavigate();
@@ -32,12 +29,8 @@ const DesarrollosPage = () => {
     desarrollos = [], 
     isLoading, 
     error,
-    refetch,
-    isFetched
-  } = useDesarrollos({ 
-    withPrototipos: true,
-    empresaId // Use empresaId instead of userId
-  });
+    refetch
+  } = useDesarrollos();
   
   const { countDesarrolloUnidadesByStatus } = useUnidades();
 
@@ -91,8 +84,8 @@ const DesarrollosPage = () => {
     updateRealUnitCounts();
   }, [desarrollos, isLoading]);
 
-  const normalizeDesarrollos = (desarrollos: Desarrollo[]): Desarrollo[] => {
-    return desarrollos.map(desarrollo => {
+  const normalizeDesarrollos = (desarrollosData: Desarrollo[]): Desarrollo[] => {
+    return desarrollosData.map(desarrollo => {
       const normalizedDesarrollo = {
         ...desarrollo,
         unidades_disponibles: Math.min(
@@ -114,10 +107,10 @@ const DesarrollosPage = () => {
 
   const displayDesarrollos = desarrollosWithRealCounts.length > 0 
     ? normalizeDesarrollos(desarrollosWithRealCounts)
-    : normalizeDesarrollos(desarrollos as Desarrollo[]);
+    : normalizeDesarrollos(desarrollos);
 
   // Unified loading state
-  const isActuallyLoading = isUserLoading || (isLoading && !isFetched);
+  const isActuallyLoading = isUserLoading || isLoading;
   
   // Add debug logs to help troubleshoot
   console.log('Desarrollo page render:', { 
@@ -125,7 +118,6 @@ const DesarrollosPage = () => {
     empresaId,
     isUserLoading,
     isLoading,
-    isFetched,
     hasTriedInitialLoad,
     desarrollosCount: desarrollos.length,
     displayDesarrollosCount: displayDesarrollos.length
