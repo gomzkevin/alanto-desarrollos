@@ -11,11 +11,11 @@ export interface Desarrollo extends Tables<"desarrollos"> {
   nombre: string;
   descripcion: string;
   ubicacion: string;
-  latitud: number | null;
-  longitud: number | null;
-  estado: string;
-  fecha_inicio: string | null;
-  fecha_finalizacion_estimada: string | null;
+  latitud?: number | null;
+  longitud?: number | null;
+  estado?: string | null;
+  fecha_inicio?: string | null;
+  fecha_finalizacion_estimada?: string | null;
   empresa_id: number;
   user_id: string;
   total_unidades: number;

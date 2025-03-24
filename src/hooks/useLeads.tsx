@@ -87,10 +87,14 @@ export interface LeadType {
   ultimo_contacto: string;
 }
 
+// Export LeadType as Lead for backward compatibility
+export type Lead = LeadType;
+
 interface UseLeadsOptions {
   estado?: string;
   search?: string;
   empresa_id?: number;
+  limit?: number;
 }
 
 const useLeads = (options: UseLeadsOptions = {}) => {
@@ -102,7 +106,7 @@ const useLeads = (options: UseLeadsOptions = {}) => {
 
   // Fetch leads
   const { data: leads = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['leads', empresa_id, options.estado, options.search],
+    queryKey: ['leads', empresa_id, options.estado, options.search, options.limit],
     queryFn: async () => {
       let query = supabase
         .from('leads')
@@ -116,6 +120,10 @@ const useLeads = (options: UseLeadsOptions = {}) => {
 
       if (options.search && options.search.length > 2) {
         query = query.or(`nombre.ilike.%${options.search}%,email.ilike.%${options.search}%,telefono.ilike.%${options.search}%`);
+      }
+
+      if (options.limit) {
+        query = query.limit(options.limit);
       }
 
       const { data, error } = await query;
