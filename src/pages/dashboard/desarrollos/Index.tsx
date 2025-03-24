@@ -83,7 +83,7 @@ const DesarrollosPage = () => {
 
   const normalizeDesarrollos = (desarrollosData: Desarrollo[]): Desarrollo[] => {
     return desarrollosData.map(desarrollo => {
-      // Use type assertion to fix the type mismatch error
+      // Use explicit type assertion with 'as Desarrollo' to resolve the type mismatch
       const normalizedDesarrollo = {
         ...desarrollo,
         unidades_disponibles: Math.min(

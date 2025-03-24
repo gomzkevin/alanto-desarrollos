@@ -27,7 +27,7 @@ export const useResourceActions = (resourceType: ResourceType) => {
   const { userId, empresaId, isAdmin } = useUserRole();
   const { subscriptionInfo } = useCompanySubscription();
   
-  // Pass an empty options object to fix the TypeScript error
+  // Fix: Add an empty options object as required by the useDesarrollos hook
   const { desarrollos } = useDesarrollos({ onSuccess: () => {} });
   
   // Obtener información de vendedores
