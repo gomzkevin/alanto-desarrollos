@@ -259,7 +259,7 @@ export function UserManagementTable() {
 
     // Ensure we're only passing valid invitation roles to createInvitacion
     const invitationRole: InvitationRole = 
-      (newInvite.rol === 'admin' || newInvite.rol === 'vendedor' || newInvite.rol === 'cliente') 
+      (newInvite.rol === 'admin' || newInvite.rol === 'vendedor' || newInvite.rol === 'cliente' || newInvite.rol === 'superadmin') 
         ? newInvite.rol 
         : 'admin';
     
