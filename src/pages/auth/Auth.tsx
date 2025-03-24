@@ -6,18 +6,16 @@ import { SignupForm } from "@/components/auth/SignupForm";
 import { useAuth } from "@/hooks/useAuth";
 import { InvitationAccept } from "@/components/auth/InvitationAccept";
 
-// Create a type for the view toggle props
-interface ViewToggleProps {
-  onViewChange: () => void;
-}
-
-// Define props for the form components
+// Update the LoginForm component type to match the props it can accept
 interface LoginFormProps {
   onViewChange?: () => void;
+  onSuccess?: () => void;
 }
 
+// Update the SignupForm component type to match the props it can accept
 interface SignupFormProps {
   onViewChange?: () => void;
+  onSuccess?: () => void;
 }
 
 export function AuthPage() {

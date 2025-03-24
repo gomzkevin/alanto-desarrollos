@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -188,7 +189,7 @@ export function UserManagementTable() {
     if (formType === 'user') {
       setNewUser((prev) => ({ ...prev, rol: value as UserRole }));
     } else if (formType === 'invite') {
-      setNewInvite((prev) => ({ ...prev, rol: value as UserRole }));
+      setNewInvite((prev) => ({ ...prev, rol: value as InvitationRole }));
     } else if (formType === 'transfer') {
       setTransferData((prev) => ({ ...prev, newRole: value as UserRole }));
     }
@@ -209,11 +210,14 @@ export function UserManagementTable() {
     }
 
     try {
+      // Convert superadmin to admin when sending to the backend
+      const effectiveRole = newUser.rol === 'superadmin' ? 'admin' as const : newUser.rol;
+      
       const authResult = await signUpWithEmailPassword(
         newUser.email, 
         newUser.password, 
         empresaId || undefined, 
-        newUser.rol === 'superadmin' ? 'admin' : newUser.rol as 'admin' | 'vendedor' | 'cliente'
+        effectiveRole as 'admin' | 'vendedor' | 'cliente'
       );
 
       if (!authResult.success) {
@@ -247,7 +251,11 @@ export function UserManagementTable() {
       return;
     }
 
-    const invitationRole = newInvite.rol === 'superadmin' ? 'admin' as InvitationRole : newInvite.rol;
+    // Don't compare with superadmin directly, instead check if we need to convert it
+    const invitationRole = 
+      newInvite.rol === 'admin' || newInvite.rol === 'vendedor' || newInvite.rol === 'cliente' 
+        ? newInvite.rol 
+        : 'admin' as InvitationRole;
     
     const result = await createInvitacion(
       newInvite.email, 

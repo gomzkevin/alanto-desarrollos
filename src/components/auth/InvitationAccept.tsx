@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,7 +40,8 @@ export function InvitationAccept() {
       try {
         const invitation = await verificarInvitacion(token);
         setInvitationData(invitation);
-        setIsValid(invitation && invitation.es_valida);
+        // Ensure we check the property exists to avoid TypeScript errors
+        setIsValid(invitation !== null && invitation.es_valida === true);
       } catch (error) {
         console.error("Error verificando invitación:", error);
         setIsValid(false);

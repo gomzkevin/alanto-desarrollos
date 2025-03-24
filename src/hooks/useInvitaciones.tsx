@@ -7,7 +7,7 @@ import { useUserRole } from './useUserRole';
 import { useResourceCounts } from './useResourceCounts';
 import { UserRole } from './useUserRole';
 
-export type InvitationRole = 'admin' | 'vendedor' | 'cliente';
+export type InvitationRole = 'admin' | 'vendedor' | 'cliente' | 'superadmin';
 export type InvitationStatus = 'pendiente' | 'aceptada' | 'rechazada' | 'expirada';
 
 export interface Invitacion {
@@ -206,7 +206,7 @@ export function useInvitaciones() {
       }
 
       // Ensure data is returned as a single object, not an array
-      return data && data.length ? data[0] : null;
+      return data && data.length > 0 ? data[0] : null;
     } catch (error) {
       console.error('Error en verificarInvitacion:', error);
       return null;
