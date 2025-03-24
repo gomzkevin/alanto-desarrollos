@@ -4,53 +4,14 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VentasTable } from './components/VentasTable';
 import VentasStatistics from './components/VentasStatistics';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useSubscriptionAuth } from '@/hooks/useSubscriptionAuth';
-import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const VentasPage = () => {
-  // Always call hooks at the top level, regardless of conditions
-  const { isAuthorized, isLoading } = useSubscriptionAuth('Ventas');
   const [refreshTrigger, setRefreshTrigger] = React.useState(0);
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  // Render loading state
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="space-y-4 p-6">
-          <Skeleton className="h-10 w-1/3" />
-          <Skeleton className="h-8 w-full" />
-          <div className="grid gap-4">
-            <Skeleton className="h-64 w-full" />
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  // Render unauthorized state
-  if (!isAuthorized) {
-    return (
-      <DashboardLayout>
-        <div className="p-6">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Acceso restringido</AlertTitle>
-            <AlertDescription>
-              No tienes acceso al módulo de Ventas. Por favor, contacta al administrador o verifica que tu empresa tenga una suscripción activa.
-            </AlertDescription>
-          </Alert>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  // Render authorized state
   return (
     <DashboardLayout>
       <div className="p-6">

@@ -15,7 +15,7 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
   const navigate = useNavigate();
   
   // Always call hooks at the top level, regardless of any conditions
-  const { userId, empresaId, isAdmin, authChecked } = useUserRole();
+  const { userId, empresaId, isAdmin, userRole, authChecked } = useUserRole();
   const { subscriptionInfo, isLoading: isLoadingSubscription } = useSubscriptionInfo();
 
   useEffect(() => {
@@ -24,6 +24,7 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
       console.log('Verificando autorización de suscripción:', {
         userId,
         empresaId,
+        userRole,
         isSubscriptionActive: subscriptionInfo.isActive,
         moduleName: requiredModule
       });
@@ -55,11 +56,14 @@ export const useSubscriptionAuth = (requiredModule?: string, redirectPath: strin
         return;
       }
 
-      // Si llegamos aquí, el usuario está autorizado
-      console.log('Usuario autorizado para acceder al módulo:', requiredModule);
+      // Si llegamos aquí, el usuario está autorizado porque:
+      // 1. Tiene una empresa asignada
+      // 2. La empresa tiene una suscripción activa
+      // 3. El usuario tiene un rol (admin o vendedor) en esa empresa
+      console.log('Usuario autorizado para acceder al módulo:', requiredModule, 'con rol:', userRole);
       setIsAuthorized(true);
     }
-  }, [userId, empresaId, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule]);
+  }, [userId, empresaId, userRole, subscriptionInfo, isLoadingSubscription, authChecked, navigate, redirectPath, requiredModule]);
 
   // Devolver estado de autorización y carga
   return {
