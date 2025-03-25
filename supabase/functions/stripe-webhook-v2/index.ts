@@ -1,7 +1,10 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import Stripe from 'https://esm.sh/stripe@14.0.0';
 
+// Configuración de CORS para permitir solicitudes desde cualquier origen
+// Importante: incluimos stripe-signature en los encabezados permitidos
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -9,6 +12,7 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400",
 };
 
+// Este archivo debe configurarse en Supabase para NO requerir autenticación JWT
 serve(async (req) => {
   console.log("Webhook v2: Solicitud recibida:", req.method, new URL(req.url).pathname);
   
