@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from './useUserRole';
 
 // Tipos básicos
 export interface Venta {
@@ -19,6 +20,7 @@ export interface Venta {
       nombre: string;
       desarrollo?: {
         nombre: string;
+        empresa_id?: number;
       };
     };
   };
@@ -35,10 +37,15 @@ export const useVentas = (filters: VentasFilter = {}) => {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
+  const { empresaId } = useUserRole();
+
+  console.log('useVentas initialized with empresaId:', empresaId);
 
   // Consulta para obtener las ventas
   const fetchVentas = async (): Promise<Venta[]> => {
     try {
+      console.log('Fetching ventas with filters:', filters, 'empresaId:', empresaId);
+      
       let query = supabase
         .from('ventas')
         .select(`
@@ -48,11 +55,17 @@ export const useVentas = (filters: VentasFilter = {}) => {
             prototipo:prototipos(
               nombre,
               desarrollo:desarrollos(
-                nombre
+                nombre,
+                empresa_id
               )
             )
           )
         `);
+
+      // Aplicar filtro por empresa_id si está disponible
+      if (empresaId) {
+        query = query.eq('unidad.prototipo.desarrollo.empresa_id', empresaId);
+      }
 
       // Aplicar filtros si existen
       if (filters.desarrollo_id) {
@@ -67,6 +80,8 @@ export const useVentas = (filters: VentasFilter = {}) => {
 
       if (error) throw error;
 
+      console.log('Ventas fetched:', data);
+
       // Calcular el progreso para cada venta (esto sería un cálculo real en la implementación final)
       return (data || []).map(venta => ({
         ...venta,
@@ -79,7 +94,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
   };
 
   const { data = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['ventas', filters],
+    queryKey: ['ventas', filters, empresaId],
     queryFn: fetchVentas,
   });
 

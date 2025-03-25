@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { VentaProgress } from './VentaProgress';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface VentasTableProps {
   refreshTrigger?: number;
@@ -22,7 +23,10 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
   const { ventas, isLoading, refetch } = useVentas();
   const [ventasPayments, setVentasPayments] = useState<Record<string, VentaWithPayments>>({});
   const [loadingPayments, setLoadingPayments] = useState(false);
+  const { empresaId } = useUserRole();
   const navigate = useNavigate();
+  
+  console.log('VentasTable rendered with empresaId:', empresaId, 'ventas:', ventas.length);
   
   useEffect(() => {
     if (refreshTrigger > 0) {
