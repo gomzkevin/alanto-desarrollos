@@ -1,248 +1,147 @@
 
-import { useQuery } from '@tanstack/react-query';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Json } from '@/integrations/supabase/types';
-
-export interface SubscriptionPlan {
-  id: string;
-  name: string;
-  price: number;
-  interval: 'month' | 'year';
-  features: {
-    max_desarrollos?: number;
-    max_prototipos?: number;
-    max_vendedores?: number;
-  };
-}
+import { useUserRole } from './useUserRole';
+import { toast } from '@/components/ui/use-toast';
 
 export interface SubscriptionInfo {
-  currentPlan: SubscriptionPlan | null;
   isActive: boolean;
-  renewalDate: Date | null;
-  desarrolloCount: number;
-  desarrolloLimit: number | null;
-  prototipoCount: number;
-  prototipoLimit: number | null;
-  totalResourceCount: number;
-  totalResourceLimit: number | null;
+  currentPlan?: {
+    id: string;
+    name: string;
+    price: number;
+    interval: string;
+    features: any;
+  };
+  renewalDate?: string;
+  resourceType?: string;
+  resourceLimit?: number;
+  resourceCount?: number;
+  vendorLimit?: number;
+  vendorCount?: number;
   isOverLimit: boolean;
-  percentUsed: number;
-  vendorCount: number;
-  vendorLimit: number | null;
   isOverVendorLimit: boolean;
 }
 
-// Default empty subscription info
-const getDefaultSubscriptionInfo = (): SubscriptionInfo => ({
-  currentPlan: null,
-  isActive: false,
-  renewalDate: null,
-  desarrolloCount: 0,
-  desarrolloLimit: null,
-  prototipoCount: 0,
-  prototipoLimit: null,
-  totalResourceCount: 0,
-  totalResourceLimit: null,
-  isOverLimit: false,
-  percentUsed: 0,
-  vendorCount: 0,
-  vendorLimit: null,
-  isOverVendorLimit: false
-});
-
 export const useSubscriptionInfo = () => {
   const { userId, empresaId } = useUserRole();
-  
-  // Query to fetch the active subscription and plan details
-  const { data: subscriptionInfo, isLoading, error } = useQuery({
-    queryKey: ['subscriptionInfo', userId, empresaId],
-    queryFn: async (): Promise<SubscriptionInfo> => {
-      if (!userId) {
-        return getDefaultSubscriptionInfo();
-      }
-
-      console.log('Fetching subscription info for userId:', userId, 'empresaId:', empresaId);
-
-      // Get the active subscription
-      const { data: subscription, error: subError } = await supabase
-        .from('subscriptions')
-        .select('*, subscription_plans(*)')
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .maybeSingle();
-
-      if (subError) {
-        console.error('Error fetching subscription:', subError);
-        throw subError;
-      }
-
-      if (!subscription) {
-        console.log('No active subscription found');
-        return getDefaultSubscriptionInfo();
-      }
-
-      console.log('Subscription data:', subscription);
-
-      // Extract plan features safely
-      const planFeatures = subscription.subscription_plans.features || {};
-      let features = {
-        max_desarrollos: undefined as number | undefined,
-        max_prototipos: undefined as number | undefined,
-        max_vendedores: undefined as number | undefined
-      };
-      
-      // Check if features is an object (not array) and assign properties safely
-      if (planFeatures && typeof planFeatures === 'object' && !Array.isArray(planFeatures)) {
-        const featuresObj = planFeatures as { [key: string]: Json };
-        
-        features = {
-          max_desarrollos: typeof featuresObj.max_desarrollos === 'number' ? featuresObj.max_desarrollos : undefined,
-          max_prototipos: typeof featuresObj.max_prototipos === 'number' ? featuresObj.max_prototipos : undefined,
-          max_vendedores: typeof featuresObj.max_vendedores === 'number' ? featuresObj.max_vendedores : undefined
-        };
-      }
-      
-      // Extract plan details
-      const plan: SubscriptionPlan = {
-        id: subscription.subscription_plans.id,
-        name: subscription.subscription_plans.name,
-        price: subscription.subscription_plans.price,
-        interval: subscription.subscription_plans.interval as 'month' | 'year',
-        features: features
-      };
-
-      console.log('Extracted plan:', plan);
-      
-      // Get desarrollos count
-      let desarrolloCount = 0;
-      let prototipoCount = 0;
-      
-      try {
-        if (empresaId) {
-          // Count desarrollos
-          const { count: desarrollos, error: desarrolloError } = await supabase
-            .from('desarrollos')
-            .select('*', { count: 'exact', head: true })
-            .eq('empresa_id', empresaId);
-              
-          if (desarrolloError) {
-            console.error('Error counting desarrollos:', desarrolloError);
-          } else if (desarrollos !== null) {
-            desarrolloCount = desarrollos;
-            console.log(`Found ${desarrollos} desarrollos for empresa_id ${empresaId}`);
-          }
-          
-          // Count prototipos
-          const { data: desarrolloIds, error: idsError } = await supabase
-            .from('desarrollos')
-            .select('id')
-            .eq('empresa_id', empresaId);
-          
-          if (idsError) {
-            console.error('Error getting desarrollo IDs:', idsError);
-          } else if (desarrolloIds && desarrolloIds.length > 0) {
-            const ids = desarrolloIds.map(d => d.id);
-            
-            const { count: prototipos, error: prototipError } = await supabase
-              .from('prototipos')
-              .select('*', { count: 'exact', head: true })
-              .in('desarrollo_id', ids);
-              
-            if (prototipError) {
-              console.error('Error counting prototipos:', prototipError);
-            } else if (prototipos !== null) {
-              prototipoCount = prototipos;
-              console.log(`Found ${prototipos} prototipos for all desarrollos`);
-            }
-          }
-        }
-      } catch (countError) {
-        console.error('Error in resource counting:', countError);
-      }
-      
-      // Get vendor count for the company with improved error handling
-      let vendorCount = 0;
-      try {
-        if (empresaId) {
-          const { count: vendors, error: vendorError } = await supabase
-            .from('usuarios')
-            .select('*', { count: 'exact', head: true })
-            .eq('empresa_id', empresaId)
-            .eq('rol', 'vendedor');
-            
-          if (vendorError) {
-            console.error('Error counting vendors:', vendorError);
-          } else if (vendors !== null) {
-            vendorCount = vendors;
-            console.log(`Found ${vendors} vendors for empresa_id ${empresaId}`);
-          }
-        }
-      } catch (vendorCountError) {
-        console.error('Error in vendor counting:', vendorCountError);
-      }
-      
-      // Extract resource limits from plan features
-      const desarrolloLimit = plan.features.max_desarrollos || null;
-      const prototipoLimit = plan.features.max_prototipos || null;
-      const vendorLimit = plan.features.max_vendedores || null;
-      
-      // Total resource count and limit
-      const totalResourceCount = desarrolloCount + prototipoCount;
-      const totalResourceLimit = desarrolloLimit && prototipoLimit 
-        ? desarrolloLimit + prototipoLimit 
-        : null;
-      
-      // Get renewal date
-      const renewalDate = subscription.current_period_end 
-        ? new Date(subscription.current_period_end)
-        : null;
-      
-      // Calculate limits percentages
-      const isOverLimit = 
-        (desarrolloLimit !== null && desarrolloCount > desarrolloLimit) ||
-        (prototipoLimit !== null && prototipoCount > prototipoLimit);
-      
-      const percentUsed = totalResourceLimit 
-        ? Math.min(100, (totalResourceCount / totalResourceLimit) * 100) 
-        : 0;
-        
-      const isOverVendorLimit = vendorLimit !== null && vendorCount > vendorLimit;
-      
-      console.log('Final subscription info:', {
-        desarrolloCount,
-        desarrolloLimit,
-        prototipoCount,
-        prototipoLimit,
-        vendorCount,
-        vendorLimit
-      });
-
-      return {
-        currentPlan: plan,
-        isActive: subscription.status === 'active',
-        renewalDate,
-        desarrolloCount,
-        desarrolloLimit,
-        prototipoCount,
-        prototipoLimit,
-        totalResourceCount,
-        totalResourceLimit,
-        isOverLimit,
-        percentUsed,
-        vendorCount,
-        vendorLimit,
-        isOverVendorLimit
-      };
-    },
-    enabled: !!userId,
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo>({
+    isActive: false,
+    isOverLimit: false,
+    isOverVendorLimit: false
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  return {
-    subscriptionInfo: subscriptionInfo || getDefaultSubscriptionInfo(),
-    isLoading,
-    error
-  };
+  useEffect(() => {
+    const fetchSubscriptionInfo = async () => {
+      if (!userId) {
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        console.info(`Fetching subscription info for userId: ${userId} empresaId: ${empresaId}`);
+        setIsLoading(true);
+        setError(null);
+        
+        // Si tenemos un ID de empresa, intentar obtener información de suscripción a nivel de empresa
+        if (empresaId) {
+          const { data, error: statusError } = await supabase
+            .rpc('get_subscription_status', { company_id: empresaId });
+            
+          if (statusError) {
+            console.error('Error fetching subscription status:', statusError);
+            setError(statusError.message);
+            setIsLoading(false);
+            return;
+          }
+          
+          if (data) {
+            console.log('Subscription status data:', data);
+            
+            // Actualizar state con info de suscripción
+            setSubscriptionInfo({
+              isActive: data.isActive || false,
+              currentPlan: data.currentPlan,
+              renewalDate: data.renewalDate,
+              resourceType: data.resourceType,
+              resourceLimit: data.resourceLimit,
+              resourceCount: data.resourceCount || 0,
+              vendorLimit: data.vendorLimit,
+              vendorCount: data.vendorCount || 0,
+              isOverLimit: data.resourceLimit ? data.resourceCount >= data.resourceLimit : false,
+              isOverVendorLimit: data.vendorLimit ? data.vendorCount >= data.vendorLimit : false
+            });
+            
+            setIsLoading(false);
+            return;
+          }
+        }
+        
+        // Si no hay información de empresa disponible, verificar si el usuario tiene una suscripción personal
+        const { data: userSubscriptions, error: subscriptionError } = await supabase
+          .from('subscriptions')
+          .select('*, subscription_plans(*)')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1);
+          
+        if (subscriptionError) {
+          console.error('Error fetching user subscriptions:', subscriptionError);
+          setError(subscriptionError.message);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (userSubscriptions && userSubscriptions.length > 0) {
+          const subscription = userSubscriptions[0];
+          const plan = subscription.subscription_plans;
+          
+          setSubscriptionInfo({
+            isActive: subscription.status === 'active',
+            currentPlan: {
+              id: plan.id,
+              name: plan.name,
+              price: plan.price,
+              interval: plan.interval,
+              features: plan.features
+            },
+            renewalDate: subscription.current_period_end,
+            resourceLimit: plan.features?.max_recursos,
+            resourceCount: 0, // No contamos recursos para suscripciones personales por ahora
+            vendorLimit: plan.features?.max_vendedores,
+            vendorCount: 0, // No contamos vendedores para suscripciones personales por ahora
+            isOverLimit: false,
+            isOverVendorLimit: false
+          });
+        } else {
+          console.info('No active subscription found');
+          // No hay suscripción activa
+          setSubscriptionInfo({
+            isActive: false,
+            isOverLimit: false,
+            isOverVendorLimit: false
+          });
+        }
+      } catch (err) {
+        console.error('Error in useSubscriptionInfo:', err);
+        setError('Error al obtener información de suscripción');
+        toast({
+          title: 'Error',
+          description: 'No se pudo obtener la información de la suscripción',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchSubscriptionInfo();
+  }, [userId, empresaId]);
+  
+  return { subscriptionInfo, isLoading, error };
 };
 
 export default useSubscriptionInfo;
