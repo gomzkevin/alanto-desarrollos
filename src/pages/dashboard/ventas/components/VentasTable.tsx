@@ -8,6 +8,8 @@ import { formatCurrency } from '@/lib/utils';
 import { VentaProgress } from './VentaProgress';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
+import { PlusCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface VentasTableProps {
   refreshTrigger?: number;
@@ -77,12 +79,12 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
           let montoPagado = 0;
           
           if (compradorIds.length > 0) {
-            // Get pagos for each comprador - now using 'registrado' instead of 'verificado'
+            // Get pagos for each comprador - using 'registrado' state
             const { data: pagos, error: errorPagos } = await supabase
               .from('pagos')
               .select('monto, estado')
               .in('comprador_venta_id', compradorIds)
-              .eq('estado', 'registrado'); // Cambiado de 'verificado' a 'registrado'
+              .eq('estado', 'registrado');
             
             if (!errorPagos && pagos) {
               montoPagado = pagos.reduce((sum, pago) => sum + pago.monto, 0);
@@ -140,12 +142,16 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
 
   if (ventas.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-center">
+      <Card className="flex flex-col items-center justify-center h-64 text-center p-8">
+        <PlusCircle className="h-12 w-12 text-muted-foreground mb-4" />
         <h3 className="text-xl font-semibold mb-2">No hay ventas registradas para tu organización</h3>
-        <p className="text-muted-foreground mb-4">
-          Actualiza el estado de tus unidades para comenzar a dar seguimiento a tus ventas
+        <p className="text-muted-foreground mb-6 max-w-lg">
+          Actualiza el estado de tus unidades a "en proceso" para comenzar a dar seguimiento a tus ventas
         </p>
-      </div>
+        <Button variant="outline" onClick={() => navigate('/dashboard/prototipos')}>
+          Ver unidades
+        </Button>
+      </Card>
     );
   }
 

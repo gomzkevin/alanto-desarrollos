@@ -46,8 +46,70 @@ export const useVentas = (filters: VentasFilter = {}) => {
     try {
       console.log('Fetching ventas with filters:', filters, 'empresaId:', empresaId);
       
-      // Modificamos la query para incluir un inner join explícito con desarrollos
-      // Esto asegura que la relación se establezca correctamente para el filtrado
+      if (!empresaId) {
+        console.log('No empresaId available, returning empty array');
+        return [];
+      }
+      
+      // First, get desarrollos for the empresa
+      const { data: desarrollos, error: desarrollosError } = await supabase
+        .from('desarrollos')
+        .select('id')
+        .eq('empresa_id', empresaId);
+      
+      if (desarrollosError) {
+        console.error('Error fetching desarrollos:', desarrollosError);
+        return [];
+      }
+      
+      if (!desarrollos || desarrollos.length === 0) {
+        console.log('No desarrollos found for empresa_id:', empresaId);
+        return [];
+      }
+      
+      // Get the desarrollo IDs
+      const desarrolloIds = desarrollos.map(d => d.id);
+      console.log('Filtering ventas by desarrollos:', desarrolloIds);
+      
+      // Now fetch prototipos associated with these desarrollos
+      const { data: prototipos, error: prototipesError } = await supabase
+        .from('prototipos')
+        .select('id, desarrollo_id')
+        .in('desarrollo_id', desarrolloIds);
+      
+      if (prototipesError) {
+        console.error('Error fetching prototipos:', prototipesError);
+        return [];
+      }
+      
+      if (!prototipos || prototipos.length === 0) {
+        console.log('No prototipos found for the desarrollos');
+        return [];
+      }
+      
+      // Get the prototipo IDs
+      const prototipoIds = prototipos.map(p => p.id);
+      
+      // Get unidades for these prototipos
+      const { data: unidades, error: unidadesError } = await supabase
+        .from('unidades')
+        .select('id, prototipo_id')
+        .in('prototipo_id', prototipoIds);
+      
+      if (unidadesError) {
+        console.error('Error fetching unidades:', unidadesError);
+        return [];
+      }
+      
+      if (!unidades || unidades.length === 0) {
+        console.log('No unidades found for the prototipos');
+        return [];
+      }
+      
+      // Get the unidad IDs
+      const unidadIds = unidades.map(u => u.id);
+      
+      // Now fetch ventas filtered by these unidades
       let query = supabase
         .from('ventas')
         .select(`
@@ -64,17 +126,13 @@ export const useVentas = (filters: VentasFilter = {}) => {
               )
             )
           )
-        `);
-
-      // Aplicar filtro por empresa_id si está disponible
-      if (empresaId) {
-        // En lugar de usar una condición eq anidada, aplicamos un filtro adicional después
-        query = query.eq('unidades.prototipos.desarrollos.empresa_id', empresaId);
-      }
-
+        `)
+        .in('unidad_id', unidadIds);
+      
       // Aplicar filtros si existen
       if (filters.desarrollo_id) {
-        query = query.eq('unidad.prototipo.desarrollo.id', filters.desarrollo_id);
+        // We'll filter client-side since we need to check desarrollo_id through the chain
+        console.log('Will filter by desarrollo_id:', filters.desarrollo_id);
       }
 
       if (filters.estado && filters.estado !== 'todos') {
@@ -89,16 +147,18 @@ export const useVentas = (filters: VentasFilter = {}) => {
       }
 
       console.log('Ventas fetched:', data?.length || 0, 'results');
-
-      // Filtrar manualmente para asegurar que solo se muestren ventas con la empresa_id correcta
-      const filteredData = data?.filter(venta => {
-        return venta?.unidad?.prototipo?.desarrollo?.empresa_id === empresaId;
-      }) || [];
-
-      console.log('Ventas filtered by empresa_id:', filteredData.length, 'results');
+      
+      // Additional client-side filtering if needed
+      let filteredData = data || [];
+      
+      if (filters.desarrollo_id) {
+        filteredData = filteredData.filter(venta => 
+          venta?.unidad?.prototipo?.desarrollo_id === filters.desarrollo_id
+        );
+      }
 
       // Calcular el progreso para cada venta
-      return (filteredData).map(venta => ({
+      return filteredData.map(venta => ({
         ...venta,
         progreso: 30, // Este sería un valor calculado en base a los pagos
       }));

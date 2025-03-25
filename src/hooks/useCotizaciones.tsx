@@ -31,20 +31,41 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
   const fetchCotizaciones = async (): Promise<ExtendedCotizacion[]> => {
     console.log('Fetching cotizaciones with options:', options, 'empresaId:', empresaId);
     
+    if (!empresaId) {
+      console.log('No empresaId available, returning empty array');
+      return [];
+    }
+    
     try {
-      // Build the basic query
+      // First, get desarrollos for the empresa to ensure correct filtering
+      const { data: desarrollos, error: desarrollosError } = await supabase
+        .from('desarrollos')
+        .select('id')
+        .eq('empresa_id', empresaId);
+      
+      if (desarrollosError) {
+        console.error('Error fetching desarrollos:', desarrollosError);
+        return [];
+      }
+      
+      if (!desarrollos || desarrollos.length === 0) {
+        console.log('No desarrollos found for empresa_id:', empresaId);
+        return [];
+      }
+      
+      // Get the desarrollo IDs
+      const desarrolloIds = desarrollos.map(d => d.id);
+      console.log('Filtering cotizaciones by desarrollo_ids:', desarrolloIds);
+      
+      // Now fetch cotizaciones filtered by those desarrollo_ids
       let query = supabase
         .from('cotizaciones')
         .select(`
           *,
-          desarrollo:desarrollos(*)
-        `);
-      
-      // Filter by empresa_id of the user if available
-      if (empresaId) {
-        // Join with desarrollos to filter by empresa_id
-        query = query.eq('desarrollo.empresa_id', empresaId);
-      }
+          desarrollo:desarrollos(*),
+          prototipo:prototipos(*)
+        `)
+        .in('desarrollo_id', desarrolloIds);
       
       // Apply limit if provided
       if (limit) {
@@ -62,23 +83,22 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       if (withRelations && cotizaciones && cotizaciones.length > 0) {
         // Get all unique IDs for related entities
         const leadIds = [...new Set(cotizaciones.map(c => c.lead_id).filter(Boolean))];
-        const prototipoIds = [...new Set(cotizaciones.map(c => c.prototipo_id).filter(Boolean))];
         
         // Fetch all related entities in batch queries
-        const [leadsResponse, prototipesResponse] = await Promise.all([
-          leadIds.length > 0 ? supabase.from('leads').select('*').in('id', leadIds) : { data: [], error: null },
-          prototipoIds.length > 0 ? supabase.from('prototipos').select('*').in('id', prototipoIds) : { data: [], error: null }
-        ]);
+        const { data: leads, error: leadsError } = await supabase
+          .from('leads')
+          .select('*')
+          .in('id', leadIds);
         
-        const leads = leadsResponse.error ? [] : leadsResponse.data;
-        const prototipos = prototipesResponse.error ? [] : prototipesResponse.data;
+        if (leadsError) {
+          console.error('Error fetching leads:', leadsError);
+        }
         
         // Map related entities to cotizaciones
         const extendedCotizaciones: ExtendedCotizacion[] = cotizaciones.map(cotizacion => {
           return {
             ...cotizacion,
-            lead: leads.find(l => l.id === cotizacion.lead_id) || null,
-            prototipo: prototipos.find(p => p.id === cotizacion.prototipo_id) || null
+            lead: leads?.find(l => l.id === cotizacion.lead_id) || null
           };
         });
         
