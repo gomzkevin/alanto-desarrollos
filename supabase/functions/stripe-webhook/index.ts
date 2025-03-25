@@ -45,7 +45,10 @@ serve(async (req) => {
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     
     if (!stripeSecretKey || !webhookSecret) {
-      console.error("Missing Stripe configuration");
+      console.error("Missing Stripe configuration", { 
+        hasStripeKey: !!stripeSecretKey, 
+        hasWebhookSecret: !!webhookSecret 
+      });
       return new Response(
         JSON.stringify({ error: "Stripe is not configured correctly" }),
         {
