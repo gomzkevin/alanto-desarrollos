@@ -169,53 +169,44 @@ serve(async (req) => {
     });
 
     try {
-      // Obtener los datos de precio desde Stripe
-      let isMetered = false;
-      
       // Verificamos que el priceId existe en Stripe antes de continuar
-      try {
-        console.log("Retrieving price data for:", priceId);
-        const priceData = await stripe.prices.retrieve(priceId);
-        
-        if (!priceData) {
-          console.error("Price not found in Stripe:", priceId);
-          return new Response(
-            JSON.stringify({ error: `El plan con ID ${priceId} no existe en Stripe.` }),
-            {
-              headers: {
-                ...corsHeaders,
-                "Content-Type": "application/json",
-              },
-              status: 404,
-            }
-          );
-        }
-        
-        console.log("Retrieved price data:", JSON.stringify(priceData, null, 2));
-        
-        // Comprobar si es un precio con facturación por uso (metered)
-        if (priceData.recurring) {
-          isMetered = priceData.recurring.usage_type === 'metered';
-          console.log("Is metered pricing:", isMetered);
-        } else {
-          console.log("Price data missing recurring info or is not a subscription price");
-        }
-      } catch (priceError) {
-        console.error("Error retrieving price data from Stripe:", priceError);
+      console.log("Retrieving price data for:", priceId);
+      const priceData = await stripe.prices.retrieve(priceId);
+      
+      if (!priceData) {
+        console.error("Price not found in Stripe:", priceId);
         return new Response(
-          JSON.stringify({ 
-            error: "Error al obtener información del precio en Stripe", 
-            details: priceError.message 
-          }),
+          JSON.stringify({ error: `El plan con ID ${priceId} no existe en Stripe.` }),
           {
             headers: {
               ...corsHeaders,
               "Content-Type": "application/json",
             },
-            status: 500,
+            status: 404,
           }
         );
       }
+      
+      console.log("Retrieved price data:", JSON.stringify(priceData, null, 2));
+      
+      // Verify that this is indeed a subscription price
+      if (!priceData.recurring) {
+        console.error("The provided price ID is not for a subscription:", priceId);
+        return new Response(
+          JSON.stringify({ error: "El precio proporcionado no es para una suscripción." }),
+          {
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+            status: 400,
+          }
+        );
+      }
+      
+      // Comprobar si es un precio con facturación por uso (metered)
+      const isMetered = priceData.recurring.usage_type === 'metered';
+      console.log("Is metered pricing:", isMetered);
       
       // Configurar los items para la compra según el tipo de precio
       const lineItems = isMetered 
@@ -224,10 +215,10 @@ serve(async (req) => {
       
       console.log("Line items for checkout:", JSON.stringify(lineItems, null, 2));
 
-      // Crear la sesión de checkout con Stripe
+      // Crear la sesión de checkout con Stripe - asegurando que mode sea 'subscription'
       const sessionParams = {
         line_items: lineItems,
-        mode: "subscription",
+        mode: "subscription", // Importante: debe ser 'subscription' para suscripciones
         success_url: successUrl,
         cancel_url: cancelUrl,
         customer_email: userData.email, // Use email from the user data

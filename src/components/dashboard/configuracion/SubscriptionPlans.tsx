@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Check, Building, Home, AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,7 +53,6 @@ export function SubscriptionPlans() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // Cambiamos el estado isProcessing a un objeto mapeado por plan_id para un seguimiento por plan
   const [processingPlans, setProcessingPlans] = useState<Record<string, boolean>>({});
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
@@ -67,7 +65,7 @@ export function SubscriptionPlans() {
   const normalizeFeatures = (features: any): SubscriptionPlan['features'] => {
     if (!features) return {};
     if (typeof features === 'object' && !Array.isArray(features)) return features;
-    return {}; // Default empty object if features is not in expected format
+    return {};
   };
 
   useEffect(() => {
@@ -171,7 +169,6 @@ export function SubscriptionPlans() {
         return;
       }
 
-      // Cambiamos para marcar como procesando solo el plan específico
       setProcessingPlans(prev => ({ ...prev, [plan.id]: true }));
       setProcessingError(null);
       
@@ -200,7 +197,6 @@ export function SubscriptionPlans() {
       if (data?.url) {
         console.log("Redirecting to Stripe checkout:", data.url);
         setCheckoutUrl(data.url);
-        // Redirigir directamente en lugar de usar setTimeout
         window.location.href = data.url;
       } else {
         throw new Error("No se recibió la URL de Stripe Checkout");
@@ -211,7 +207,6 @@ export function SubscriptionPlans() {
       setProcessingError(error.message || "Ocurrió un error al procesar la suscripción.");
       setShowErrorDialog(true);
     } finally {
-      // Limpiamos solo el estado del plan específico
       setProcessingPlans(prev => ({ ...prev, [plan.id]: false }));
     }
   };
@@ -232,7 +227,6 @@ export function SubscriptionPlans() {
 
   return (
     <div className="space-y-6">
-      {/* Error Dialog */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
         <DialogContent>
           <DialogHeader>
@@ -250,7 +244,6 @@ export function SubscriptionPlans() {
         </DialogContent>
       </Dialog>
 
-      {/* Resumen de facturación */}
       {subscriptionInfo.isActive && subscriptionInfo.currentPlan && (
         <Card>
           <CardHeader>
@@ -396,7 +389,6 @@ export function SubscriptionPlans() {
             {plans.map((plan) => {
               const isCurrentPlan = currentSubscription?.plan_id === plan.id;
               const planIcon = plan.features?.tipo === 'desarrollo' ? Building : Home;
-              // Verificamos si este plan específico está procesando
               const isPlanProcessing = processingPlans[plan.id] || false;
               
               return (
