@@ -169,31 +169,25 @@ serve(async (req) => {
     });
 
     try {
-      // Obtener los datos de precio desde Stripe
-      let isMetered = false;
+      // Check if the price is for a metered subscription
+      const { data: priceData } = await stripe.prices.retrieve(priceId);
+      console.log("Retrieved price data:", JSON.stringify(priceData, null, 2));
       
-      try {
-        console.log("Retrieving price data for:", priceId);
-        const price = await stripe.prices.retrieve(priceId);
-        console.log("Retrieved price data:", JSON.stringify(price, null, 2));
-        
-        // Comprobar si es un precio con facturación por uso (metered)
-        isMetered = price?.recurring?.usage_type === 'metered';
-        console.log("Is metered pricing:", isMetered);
-      } catch (priceError) {
-        console.error("Error retrieving price data from Stripe:", priceError);
-        // Continuamos con el valor predeterminado de isMetered = false
+      // Prepare line items based on whether the price is metered or not
+      let lineItems;
+      
+      if (priceData.recurring?.usage_type === 'metered') {
+        console.log("Creating metered subscription checkout - removing quantity parameter");
+        // For metered billing, don't include quantity
+        lineItems = [{ price: priceId }];
+      } else {
+        console.log("Creating standard subscription checkout with quantity: 1");
+        // For standard subscriptions, include quantity
+        lineItems = [{ price: priceId, quantity: 1 }];
       }
-      
-      // Configurar los items para la compra según el tipo de precio
-      const lineItems = isMetered 
-        ? [{ price: priceId }]  // Para facturación por uso, no incluimos cantidad
-        : [{ price: priceId, quantity: 1 }];  // Para facturación normal, incluimos cantidad
-      
-      console.log("Line items for checkout:", JSON.stringify(lineItems, null, 2));
 
-      // Crear la sesión de checkout con Stripe
-      const sessionParams = {
+      // Create a checkout session with Stripe using the appropriate line items
+      const session = await stripe.checkout.sessions.create({
         line_items: lineItems,
         mode: "subscription",
         success_url: successUrl,
@@ -213,13 +207,9 @@ serve(async (req) => {
             empresa_id: userData.empresa_id,
           },
         },
-      };
-      
-      console.log("Creating session with params:", JSON.stringify(sessionParams, null, 2));
-      
-      const session = await stripe.checkout.sessions.create(sessionParams);
+      });
+
       console.log("Stripe checkout session created successfully:", session.id);
-      console.log("Session URL:", session.url);
 
       // Return the session URL for redirection
       return new Response(

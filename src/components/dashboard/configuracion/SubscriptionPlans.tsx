@@ -18,14 +18,6 @@ import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 interface SubscriptionPlan {
   id: string;
@@ -55,9 +47,6 @@ export function SubscriptionPlans() {
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
-  const [processingError, setProcessingError] = useState<string | null>(null);
-  const [showErrorDialog, setShowErrorDialog] = useState(false);
   const { userId } = useUserRole();
   const { subscriptionInfo } = useSubscriptionInfo();
   const navigate = useNavigate();
@@ -171,7 +160,6 @@ export function SubscriptionPlans() {
       }
 
       setIsProcessing(true);
-      setProcessingError(null);
       
       if (!plan.stripe_price_id) {
         throw new Error("Este plan no tiene un ID de precio configurado");
@@ -190,27 +178,23 @@ export function SubscriptionPlans() {
       
       if (error) {
         console.error("Edge function error:", error);
-        setProcessingError(error.message || "Error al procesar la solicitud");
-        setShowErrorDialog(true);
-        return;
+        throw new Error(error.message || "Error al procesar la solicitud");
       }
       
       if (data?.url) {
         console.log("Redirecting to Stripe checkout:", data.url);
-        setCheckoutUrl(data.url);
-        // Pequeño retraso para asegurar que la UI se actualice antes de la redirección
-        setTimeout(() => {
-          window.location.href = data.url;
-        }, 100);
+        window.location.href = data.url;
       } else {
         throw new Error("No se recibió la URL de Stripe Checkout");
       }
       
     } catch (error) {
       console.error("Error initiating subscription:", error);
-      setProcessingError(error.message || "Ocurrió un error al procesar la suscripción.");
-      setShowErrorDialog(true);
-    } finally {
+      toast({
+        title: "Error",
+        description: error.message || "Ocurrió un error al procesar la suscripción.",
+        variant: "destructive",
+      });
       setIsProcessing(false);
     }
   };
@@ -231,24 +215,6 @@ export function SubscriptionPlans() {
 
   return (
     <div className="space-y-6">
-      {/* Error Dialog */}
-      <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Error al procesar la suscripción</DialogTitle>
-            <DialogDescription>
-              Se produjo un error al intentar crear la sesión de pago:
-            </DialogDescription>
-          </DialogHeader>
-          <div className="bg-red-50 p-4 rounded-md border border-red-200 text-red-700 text-sm">
-            {processingError}
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setShowErrorDialog(false)}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {subscriptionInfo.isActive && subscriptionInfo.currentPlan && (
         <Card>
           <CardHeader>
