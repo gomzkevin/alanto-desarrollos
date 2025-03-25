@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Check, Building, Home, AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -164,6 +165,8 @@ export function SubscriptionPlans() {
         throw new Error("Este plan no tiene un ID de precio configurado");
       }
       
+      console.log("Initiating subscription for plan:", plan.name, "price ID:", plan.stripe_price_id);
+      
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           priceId: plan.stripe_price_id,
@@ -174,10 +177,12 @@ export function SubscriptionPlans() {
       });
       
       if (error) {
-        throw new Error(error.message);
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Error al procesar la solicitud");
       }
       
       if (data?.url) {
+        console.log("Redirecting to Stripe checkout:", data.url);
         window.location.href = data.url;
       } else {
         throw new Error("No se recibió la URL de Stripe Checkout");
