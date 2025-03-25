@@ -106,7 +106,7 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
               <div className="px-10 py-6">
                 <div className="space-y-10">
                   <div className="gap-y-8">
-                    <div className="bg-gray-50 rounded-xl p-8 shadow-sm border border-gray-100">
+                    <div className="bg-gray-50 rounded-xl p-8 shadow-sm border border-gray-100 mx-2">
                       <GenericForm
                         resourceType="cotizaciones"
                         fields={fields}
@@ -153,3 +153,4 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
     </DialogContent>
   );
 };
+

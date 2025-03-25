@@ -18,13 +18,13 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
   className
 }) => {
   return (
-    <ShadcnDialogFooter className={`p-4 border-t bg-gray-50 ${className || ''}`}>
-      <div className="flex gap-2 w-full justify-end">
+    <ShadcnDialogFooter className={`p-6 border-t bg-gray-50 ${className || ''}`}>
+      <div className="flex gap-3 w-full justify-end">
         <Button
           type="button"
           variant="outline"
           onClick={onClose}
-          className="px-4 border-gray-300"
+          className="px-5 border-gray-300"
         >
           Cancelar
         </Button>
@@ -32,7 +32,7 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
           type="button"
           onClick={onSave}
           disabled={isSubmitting}
-          className="px-4 bg-indigo-600 hover:bg-indigo-700 text-white"
+          className="px-5 bg-indigo-600 hover:bg-indigo-700 text-white"
         >
           {isSubmitting ? (
             <>
@@ -47,3 +47,4 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
     </ShadcnDialogFooter>
   );
 };
+
