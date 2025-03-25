@@ -171,23 +171,50 @@ serve(async (req) => {
     try {
       // Obtener los datos de precio desde Stripe
       let isMetered = false;
-      let priceData;
       
+      // Verificamos que el priceId existe en Stripe antes de continuar
       try {
         console.log("Retrieving price data for:", priceId);
-        priceData = await stripe.prices.retrieve(priceId);
+        const priceData = await stripe.prices.retrieve(priceId);
+        
+        if (!priceData) {
+          console.error("Price not found in Stripe:", priceId);
+          return new Response(
+            JSON.stringify({ error: `El plan con ID ${priceId} no existe en Stripe.` }),
+            {
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+              },
+              status: 404,
+            }
+          );
+        }
+        
         console.log("Retrieved price data:", JSON.stringify(priceData, null, 2));
         
         // Comprobar si es un precio con facturación por uso (metered)
-        if (priceData && priceData.recurring) {
+        if (priceData.recurring) {
           isMetered = priceData.recurring.usage_type === 'metered';
           console.log("Is metered pricing:", isMetered);
         } else {
-          console.log("Price data missing recurring info:", priceData);
+          console.log("Price data missing recurring info or is not a subscription price");
         }
       } catch (priceError) {
         console.error("Error retrieving price data from Stripe:", priceError);
-        // Continuamos con el valor predeterminado de isMetered = false
+        return new Response(
+          JSON.stringify({ 
+            error: "Error al obtener información del precio en Stripe", 
+            details: priceError.message 
+          }),
+          {
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+            status: 500,
+          }
+        );
       }
       
       // Configurar los items para la compra según el tipo de precio

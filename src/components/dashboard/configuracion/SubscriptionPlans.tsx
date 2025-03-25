@@ -54,7 +54,8 @@ export function SubscriptionPlans() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
+  // Cambiamos el estado isProcessing a un objeto mapeado por plan_id para un seguimiento por plan
+  const [processingPlans, setProcessingPlans] = useState<Record<string, boolean>>({});
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
@@ -170,7 +171,8 @@ export function SubscriptionPlans() {
         return;
       }
 
-      setIsProcessing(true);
+      // Cambiamos para marcar como procesando solo el plan específico
+      setProcessingPlans(prev => ({ ...prev, [plan.id]: true }));
       setProcessingError(null);
       
       if (!plan.stripe_price_id) {
@@ -198,10 +200,8 @@ export function SubscriptionPlans() {
       if (data?.url) {
         console.log("Redirecting to Stripe checkout:", data.url);
         setCheckoutUrl(data.url);
-        // Pequeño retraso para asegurar que la UI se actualice antes de la redirección
-        setTimeout(() => {
-          window.location.href = data.url;
-        }, 100);
+        // Redirigir directamente en lugar de usar setTimeout
+        window.location.href = data.url;
       } else {
         throw new Error("No se recibió la URL de Stripe Checkout");
       }
@@ -211,7 +211,8 @@ export function SubscriptionPlans() {
       setProcessingError(error.message || "Ocurrió un error al procesar la suscripción.");
       setShowErrorDialog(true);
     } finally {
-      setIsProcessing(false);
+      // Limpiamos solo el estado del plan específico
+      setProcessingPlans(prev => ({ ...prev, [plan.id]: false }));
     }
   };
 
@@ -249,6 +250,7 @@ export function SubscriptionPlans() {
         </DialogContent>
       </Dialog>
 
+      {/* Resumen de facturación */}
       {subscriptionInfo.isActive && subscriptionInfo.currentPlan && (
         <Card>
           <CardHeader>
@@ -394,6 +396,8 @@ export function SubscriptionPlans() {
             {plans.map((plan) => {
               const isCurrentPlan = currentSubscription?.plan_id === plan.id;
               const planIcon = plan.features?.tipo === 'desarrollo' ? Building : Home;
+              // Verificamos si este plan específico está procesando
+              const isPlanProcessing = processingPlans[plan.id] || false;
               
               return (
                 <Card key={plan.id} className={isCurrentPlan ? "border-2 border-indigo-500" : ""}>
@@ -444,10 +448,10 @@ export function SubscriptionPlans() {
                   <CardFooter>
                     <Button 
                       className="w-full" 
-                      disabled={isCurrentPlan || isProcessing}
+                      disabled={isCurrentPlan || isPlanProcessing}
                       onClick={() => handleSubscribe(plan)}
                     >
-                      {isProcessing ? (
+                      {isPlanProcessing ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Procesando...
