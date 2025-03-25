@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import Stripe from 'https://esm.sh/stripe@14.0.0';
@@ -55,7 +56,8 @@ serve(async (req) => {
     console.log("Webhook v2: Longitud del cuerpo recibido:", rawBody.length);
     
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const webhookSecret = "whsec_Nc7JtPRL5RN953irfYvCDmzfBassGNqF";
+    // Usar el secreto del webhook desde variables de entorno, con respaldo al valor conocido
+    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "whsec_Nc7JtPRL5RN953irfYvCDmzfBassGNqF";
     
     if (!stripeSecretKey) {
       console.error("Webhook v2: Configuración de Stripe incompleta - falta STRIPE_SECRET_KEY");
