@@ -169,14 +169,26 @@ serve(async (req) => {
     });
 
     try {
-      // Create a checkout session with Stripe
+      // Check if the price is for a metered subscription
+      const { data: priceData } = await stripe.prices.retrieve(priceId);
+      console.log("Retrieved price data:", JSON.stringify(priceData, null, 2));
+      
+      // Prepare line items based on whether the price is metered or not
+      let lineItems;
+      
+      if (priceData.recurring?.usage_type === 'metered') {
+        console.log("Creating metered subscription checkout - removing quantity parameter");
+        // For metered billing, don't include quantity
+        lineItems = [{ price: priceId }];
+      } else {
+        console.log("Creating standard subscription checkout with quantity: 1");
+        // For standard subscriptions, include quantity
+        lineItems = [{ price: priceId, quantity: 1 }];
+      }
+
+      // Create a checkout session with Stripe using the appropriate line items
       const session = await stripe.checkout.sessions.create({
-        line_items: [
-          {
-            price: priceId, // Stripe price ID
-            quantity: 1,
-          },
-        ],
+        line_items: lineItems,
         mode: "subscription",
         success_url: successUrl,
         cancel_url: cancelUrl,
