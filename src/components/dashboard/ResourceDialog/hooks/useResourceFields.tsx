@@ -23,13 +23,12 @@ const TIPOS_PROPIEDADES = [
   { value: 'otro', label: 'Otro' },
 ];
 
-export const useResourceFields = (resourceType: ResourceType, selectedStatus?: string | null) => {
+export const useResourceFields = (resourceType: ResourceType, status?: string | null): FieldDefinition[] => {
   const [fields, setFields] = useState<FieldDefinition[]>([]);
   const { leads } = useLeads();
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos();
   
-  // Obtener la lista de vendedores desde la tabla de usuarios
   const { data: vendedores = [] } = useQuery({
     queryKey: ['vendedores'],
     queryFn: async () => {
@@ -156,8 +155,8 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
             { name: 'imagen_url', label: 'Imagen', type: 'image-upload', bucket: 'prototipo-images', folder: 'prototipos' },
           ];
         case 'leads':
-          const substatusOptions = selectedStatus && LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
-            ? LEAD_SUBSTATUS_OPTIONS[selectedStatus as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
+          const substatusOptions = status && LEAD_SUBSTATUS_OPTIONS[status as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
+            ? LEAD_SUBSTATUS_OPTIONS[status as keyof typeof LEAD_SUBSTATUS_OPTIONS] 
             : [];
           
           return [
@@ -195,7 +194,7 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
             { name: 'notas', label: 'Notas', type: 'textarea', placeholder: 'Escriba notas adicionales sobre el prospecto...' },
           ];
         case 'cotizaciones':
-          return [
+          const cotizacionFields: FieldDefinition[] = [
             { 
               name: 'lead_id', 
               label: 'Lead', 
@@ -221,18 +220,30 @@ export const useResourceFields = (resourceType: ResourceType, selectedStatus?: s
               placeholder: 'Seleccionar prototipo...'
             },
             { name: 'usar_finiquito', label: 'Liquidar con finiquito', type: 'switch' },
-            { name: 'monto_anticipo', label: 'Monto Anticipo', type: 'number', placeholder: '0.00' },
+            { name: 'monto_anticipo', 
+              label: 'Monto de anticipo', 
+              type: 'number',
+              tab: 'financiamiento',
+              formatCurrency: true 
+            },
             { name: 'numero_pagos', label: 'Número de Pagos', type: 'number', placeholder: '0' },
-            { name: 'monto_finiquito', label: 'Monto Finiquito', type: 'number', placeholder: '0.00' },
+            { name: 'monto_finiquito', 
+              label: 'Monto de finiquito', 
+              type: 'number', 
+              tab: 'financiamiento',
+              formatCurrency: true 
+            },
             { name: 'notas', label: 'Notas', type: 'textarea', placeholder: 'Notas adicionales sobre la cotización...' },
           ];
+          
+          return cotizacionFields;
         default:
           return [];
       }
     };
 
     setFields(getFieldDefinitions());
-  }, [resourceType, leads, vendedores, selectedStatus, desarrollos, prototipos]);
+  }, [resourceType, leads, vendedores, status, desarrollos, prototipos]);
 
   return fields;
 };

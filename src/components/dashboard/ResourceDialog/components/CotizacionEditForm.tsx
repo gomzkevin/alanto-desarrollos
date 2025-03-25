@@ -335,6 +335,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                         <FormLabel>Monto de anticipo</FormLabel>
                         <FormControl>
                           <Input 
+                            type="number"
                             formatCurrency 
                             value={field.value}
                             onChange={(e) => {
@@ -342,6 +343,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                               field.onChange(parseFloat(numericValue) || 0);
                             }}
                             className="border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                            placeholder="$0"
                           />
                         </FormControl>
                       </FormItem>
@@ -424,6 +426,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                           <FormLabel>Monto de finiquito</FormLabel>
                           <FormControl>
                             <Input 
+                              type="number"
                               formatCurrency 
                               value={field.value}
                               onChange={(e) => {
@@ -431,6 +434,7 @@ export function CotizacionEditForm({ cotizacion, onSave, onCancel, isLoading }: 
                                 field.onChange(parseFloat(numericValue) || 0);
                               }}
                               className="border border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                              placeholder="$0"
                             />
                           </FormControl>
                         </FormItem>

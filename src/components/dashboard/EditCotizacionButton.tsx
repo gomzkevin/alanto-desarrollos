@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { useState } from "react";
@@ -78,14 +79,23 @@ export const EditCotizacionButton = ({
   
   const handleUpdateCotizacion = async (values: any) => {
     try {
+      // Ensure we're working with numeric values for currency fields
+      const monto_anticipo = typeof values.monto_anticipo === 'string' 
+        ? parseFloat(values.monto_anticipo.replace(/[^0-9.-]+/g, '')) 
+        : values.monto_anticipo;
+        
+      const monto_finiquito = typeof values.monto_finiquito === 'string' 
+        ? parseFloat(values.monto_finiquito.replace(/[^0-9.-]+/g, '')) 
+        : values.monto_finiquito;
+      
       const updateData = {
         lead_id: values.leadId || values.lead_id,
         desarrollo_id: values.desarrollo_id,
         prototipo_id: values.prototipo_id,
-        monto_anticipo: values.monto_anticipo,
+        monto_anticipo: monto_anticipo,
         numero_pagos: values.numero_pagos,
         usar_finiquito: values.usar_finiquito,
-        monto_finiquito: values.monto_finiquito,
+        monto_finiquito: monto_finiquito,
         notas: values.notas,
         fecha_inicio_pagos: values.fecha_inicio_pagos,
         fecha_finiquito: values.fecha_finiquito

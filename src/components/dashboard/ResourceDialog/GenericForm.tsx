@@ -191,7 +191,7 @@ const GenericForm = ({
                         onFormChange(field.name, value);
                       }
                     }}
-                    placeholder={field.placeholder || (field.formatCurrency ? '$0.00' : '0')}
+                    placeholder={field.placeholder || (field.formatCurrency ? '$0' : '0')}
                   />
                 ) : field.type === 'textarea' ? (
                   <Textarea

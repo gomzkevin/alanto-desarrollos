@@ -35,7 +35,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (formatCurrency && type === 'number') {
         const inputValue = e.target.value;
-        // Remove non-numeric characters
+        // Remove non-numeric characters for processing
         const numericValue = inputValue.replace(/[^0-9.]/g, '');
         
         // Update the raw value state
