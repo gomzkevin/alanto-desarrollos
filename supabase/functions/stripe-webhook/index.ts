@@ -62,7 +62,7 @@ serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2023-10-16",
+      apiVersion: "2025-02-24.acacia", // Updated API version to match Stripe's current version
     });
 
     // Verify webhook signature and construct event
