@@ -159,7 +159,13 @@ serve(async (req) => {
       domain,
       successUrl, 
       cancelUrl,
-      customerEmail: userData.email
+      customerEmail: userData.email,
+      metadata: {
+        user_id: userId,
+        plan_id: planId,
+        empresa_id: userData.empresa_id,
+        user_email: userData.email
+      }
     });
 
     try {
@@ -181,12 +187,14 @@ serve(async (req) => {
           user_id: userId,
           plan_id: planId,
           empresa_id: userData.empresa_id,
+          user_email: userData.email
         },
         subscription_data: {
           metadata: {
             user_id: userId,
             plan_id: planId,
             empresa_id: userData.empresa_id,
+            user_email: userData.email
           },
         },
       };

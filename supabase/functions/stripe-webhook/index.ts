@@ -100,6 +100,7 @@ serve(async (req) => {
 
     // Handle the event
     console.log(`Processing event: ${event.type}`);
+    console.log(`Event data:`, JSON.stringify(event.data.object, null, 2));
     
     switch (event.type) {
       case 'checkout.session.completed':
@@ -107,7 +108,7 @@ serve(async (req) => {
         break;
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object, supabase);
+        await handleSubscriptionUpdated(event.data.object, supabase, stripe);
         break;
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data.object, supabase);
@@ -146,7 +147,7 @@ serve(async (req) => {
 
 // Handler for checkout.session.completed event
 async function handleCheckoutSessionCompleted(session, supabase) {
-  console.log('Processing checkout.session.completed event:', session);
+  console.log('Processing checkout.session.completed event:', JSON.stringify(session, null, 2));
   
   try {
     // Extract metadata from the session
@@ -170,7 +171,7 @@ async function handleCheckoutSessionCompleted(session, supabase) {
     }
     
     if (existingSubscription) {
-      console.log("Subscription already exists, skipping creation");
+      console.log("Subscription already exists, skipping creation:", existingSubscription.id);
       return;
     }
     
@@ -204,10 +205,45 @@ async function handleCheckoutSessionCompleted(session, supabase) {
 }
 
 // Handler for customer.subscription.created or customer.subscription.updated events
-async function handleSubscriptionUpdated(subscription, supabase) {
-  console.log('Processing subscription update event:', subscription.id);
+async function handleSubscriptionUpdated(subscription, supabase, stripe) {
+  console.log('Processing subscription update event for subscription ID:', subscription.id);
   
   try {
+    // If subscription was just created, let's make sure we have the plan data
+    if (!subscription.metadata?.plan_id) {
+      console.log("Subscription lacks plan_id metadata, attempting to retrieve from subscription items");
+      
+      // Get the subscription items to identify the price/plan
+      const subscriptionItems = await stripe.subscriptionItems.list({
+        subscription: subscription.id,
+      });
+      
+      if (subscriptionItems.data.length > 0) {
+        const priceId = subscriptionItems.data[0].price.id;
+        
+        // Look up the plan with this price ID
+        const { data: plans, error: planError } = await supabase
+          .from('subscription_plans')
+          .select('*')
+          .eq('stripe_price_id', priceId)
+          .maybeSingle();
+          
+        if (planError) {
+          console.error("Error finding plan by price ID:", planError);
+        } else if (plans) {
+          console.log("Found matching plan for price ID:", plans.id);
+          
+          // Update the subscription metadata on Stripe
+          await stripe.subscriptions.update(subscription.id, {
+            metadata: {
+              plan_id: plans.id,
+              ...subscription.metadata
+            }
+          });
+        }
+      }
+    }
+    
     // Find the subscription in our database
     const { data: subscriptionData, error: findError } = await supabase
       .from('subscriptions')
@@ -221,7 +257,75 @@ async function handleSubscriptionUpdated(subscription, supabase) {
     }
     
     if (!subscriptionData) {
-      console.log("Subscription not found in database, it might be created by checkout.session.completed");
+      console.log("Subscription not found in database, creating new record");
+      
+      // Find the customer who this subscription belongs to
+      const { data: userData, error: userError } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('email', subscription.customer_email)
+        .maybeSingle();
+        
+      if (userError) {
+        console.error("Error finding user by email:", userError);
+        throw userError;
+      }
+      
+      if (!userData) {
+        console.error("User not found for email:", subscription.customer_email);
+        return;
+      }
+      
+      // Determine plan ID from metadata or subscription items
+      let planId = subscription.metadata?.plan_id;
+      
+      if (!planId) {
+        // Try to find the plan by the price ID
+        const subscriptionItems = await stripe.subscriptionItems.list({
+          subscription: subscription.id,
+        });
+        
+        if (subscriptionItems.data.length > 0) {
+          const priceId = subscriptionItems.data[0].price.id;
+          
+          const { data: plans, error: planError } = await supabase
+            .from('subscription_plans')
+            .select('*')
+            .eq('stripe_price_id', priceId)
+            .maybeSingle();
+            
+          if (!planError && plans) {
+            planId = plans.id;
+          }
+        }
+      }
+      
+      if (!planId) {
+        console.error("Could not determine plan ID for subscription", subscription.id);
+        return;
+      }
+      
+      // Create new subscription record
+      const { error: insertError } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: userData.auth_id,
+          plan_id: planId,
+          empresa_id: userData.empresa_id,
+          stripe_customer_id: subscription.customer,
+          stripe_subscription_id: subscription.id,
+          status: subscription.status,
+          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          cancel_at_period_end: subscription.cancel_at_period_end
+        });
+        
+      if (insertError) {
+        console.error("Error creating new subscription:", insertError);
+        throw insertError;
+      }
+      
+      console.log("New subscription record created successfully");
       return;
     }
     
