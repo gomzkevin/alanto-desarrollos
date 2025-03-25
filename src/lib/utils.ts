@@ -7,18 +7,30 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Formatea un valor numérico como moneda (MXN)
+ * @param value - Valor numérico a formatear
+ * @param minimumFractions - Número mínimo de decimales (default: 0)
+ * @param maximumFractions - Número máximo de decimales (default: 0)
  */
-export function formatCurrency(value: number | string | null | undefined): string {
-  if (value === null || value === undefined) return '$0';
+export function formatCurrency(
+  value: number | string | null | undefined, 
+  minimumFractions: number = 0, 
+  maximumFractions: number = 0
+): string {
+  if (value === null || value === undefined) return minimumFractions > 0 ? '$0.00' : '$0';
   
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
   
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: 'MXN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: minimumFractions,
+    maximumFractionDigits: maximumFractions,
   }).format(numValue);
+}
+
+// Función auxiliar para formatear con 2 decimales
+export function formatCurrencyWithDecimals(value: number | string | null | undefined): string {
+  return formatCurrency(value, 2, 2);
 }
 
 /**
@@ -147,18 +159,4 @@ export function objectToQueryString(obj: Record<string, any>): string {
     .filter(key => obj[key] !== undefined && obj[key] !== null && obj[key] !== '')
     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(obj[key])}`)
     .join('&');
-}
-
-/**
- * Format a number as currency
- */
-export function formatCurrency(amount: number | null | undefined): string {
-  if (amount === null || amount === undefined) return '$0.00';
-  
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(amount);
 }
