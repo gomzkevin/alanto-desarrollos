@@ -169,14 +169,23 @@ serve(async (req) => {
     });
 
     try {
-      // Check if the price is for a metered subscription
-      const { data: priceData } = await stripe.prices.retrieve(priceId);
-      console.log("Retrieved price data:", JSON.stringify(priceData, null, 2));
+      // Cuando obtenemos los datos del precio de Stripe, necesitamos manejar la respuesta correctamente
+      let priceData;
+      try {
+        const priceResponse = await stripe.prices.retrieve(priceId);
+        priceData = priceResponse || {};
+        console.log("Retrieved price data:", JSON.stringify(priceData, null, 2));
+      } catch (priceError) {
+        console.error("Error retrieving price data:", priceError);
+        // Si no podemos obtener los datos del precio, usaremos un enfoque predeterminado
+        priceData = {};
+      }
       
       // Prepare line items based on whether the price is metered or not
       let lineItems;
       
-      if (priceData.recurring?.usage_type === 'metered') {
+      // Verificamos si el precio tiene un tipo de uso medido de forma segura
+      if (priceData && priceData.recurring && priceData.recurring.usage_type === 'metered') {
         console.log("Creating metered subscription checkout - removing quantity parameter");
         // For metered billing, don't include quantity
         lineItems = [{ price: priceId }];
