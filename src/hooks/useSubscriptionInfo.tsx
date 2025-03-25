@@ -10,10 +10,9 @@ export interface SubscriptionPlan {
   price: number;
   interval: 'month' | 'year';
   features: {
-    tipo?: 'desarrollo' | 'prototipo';
-    precio_por_unidad?: number;
+    max_desarrollos?: number;
+    max_prototipos?: number;
     max_vendedores?: number;
-    max_recursos?: number;
   };
 }
 
@@ -21,10 +20,12 @@ export interface SubscriptionInfo {
   currentPlan: SubscriptionPlan | null;
   isActive: boolean;
   renewalDate: Date | null;
-  resourceCount: number;
-  resourceLimit: number | null;
-  resourceType: 'desarrollo' | 'prototipo' | null;
-  currentBilling: number;
+  desarrolloCount: number;
+  desarrolloLimit: number | null;
+  prototipoCount: number | null;
+  prototipoLimit: number | null;
+  totalResourceCount: number;
+  totalResourceLimit: number | null;
   isOverLimit: boolean;
   percentUsed: number;
   vendorCount: number;
@@ -37,10 +38,12 @@ const getDefaultSubscriptionInfo = (): SubscriptionInfo => ({
   currentPlan: null,
   isActive: false,
   renewalDate: null,
-  resourceCount: 0,
-  resourceLimit: null,
-  resourceType: null,
-  currentBilling: 0,
+  desarrolloCount: 0,
+  desarrolloLimit: null,
+  prototipoCount: 0,
+  prototipoLimit: null,
+  totalResourceCount: 0,
+  totalResourceLimit: null,
   isOverLimit: false,
   percentUsed: 0,
   vendorCount: 0,
@@ -84,10 +87,9 @@ export const useSubscriptionInfo = () => {
       // Extract plan features safely
       const planFeatures = subscription.subscription_plans.features || {};
       let features = {
-        tipo: undefined as 'desarrollo' | 'prototipo' | undefined,
-        precio_por_unidad: undefined as number | undefined,
-        max_vendedores: undefined as number | undefined,
-        max_recursos: undefined as number | undefined
+        max_desarrollos: undefined as number | undefined,
+        max_prototipos: undefined as number | undefined,
+        max_vendedores: undefined as number | undefined
       };
       
       // Check if features is an object (not array) and assign properties safely
@@ -95,10 +97,9 @@ export const useSubscriptionInfo = () => {
         const featuresObj = planFeatures as { [key: string]: Json };
         
         features = {
-          tipo: featuresObj.tipo as 'desarrollo' | 'prototipo' | undefined,
-          precio_por_unidad: typeof featuresObj.precio_por_unidad === 'number' ? featuresObj.precio_por_unidad : undefined,
-          max_vendedores: typeof featuresObj.max_vendedores === 'number' ? featuresObj.max_vendedores : undefined,
-          max_recursos: typeof featuresObj.max_recursos === 'number' ? featuresObj.max_recursos : undefined
+          max_desarrollos: typeof featuresObj.max_desarrollos === 'number' ? featuresObj.max_desarrollos : undefined,
+          max_prototipos: typeof featuresObj.max_prototipos === 'number' ? featuresObj.max_prototipos : undefined,
+          max_vendedores: typeof featuresObj.max_vendedores === 'number' ? featuresObj.max_vendedores : undefined
         };
       }
       
@@ -112,58 +113,47 @@ export const useSubscriptionInfo = () => {
       };
 
       console.log('Extracted plan:', plan);
-
-      // Get resource type and count from the plan
-      const resourceType = plan.features.tipo || null;
-      console.log('Resource type:', resourceType);
       
-      // Get resource counts based on the plan type
-      let resourceCount = 0;
+      // Get desarrollos count
+      let desarrolloCount = 0;
+      let prototipoCount = 0;
       
       try {
         if (empresaId) {
-          if (resourceType === 'desarrollo') {
-            // Para planes tipo 'desarrollo', contamos directamente los desarrollos
-            const { count, error: countError } = await supabase
-              .from('desarrollos')
+          // Count desarrollos
+          const { count: desarrollos, error: desarrolloError } = await supabase
+            .from('desarrollos')
+            .select('*', { count: 'exact', head: true })
+            .eq('empresa_id', empresaId);
+              
+          if (desarrolloError) {
+            console.error('Error counting desarrollos:', desarrolloError);
+          } else if (desarrollos !== null) {
+            desarrolloCount = desarrollos;
+            console.log(`Found ${desarrollos} desarrollos for empresa_id ${empresaId}`);
+          }
+          
+          // Count prototipos
+          const { data: desarrolloIds, error: idsError } = await supabase
+            .from('desarrollos')
+            .select('id')
+            .eq('empresa_id', empresaId);
+          
+          if (idsError) {
+            console.error('Error getting desarrollo IDs:', idsError);
+          } else if (desarrolloIds && desarrolloIds.length > 0) {
+            const ids = desarrolloIds.map(d => d.id);
+            
+            const { count: prototipos, error: prototipError } = await supabase
+              .from('prototipos')
               .select('*', { count: 'exact', head: true })
-              .eq('empresa_id', empresaId);
+              .in('desarrollo_id', ids);
               
-            if (countError) {
-              console.error('Error counting desarrollos:', countError);
-            } else if (count !== null) {
-              resourceCount = count;
-              console.log(`Found ${count} desarrollos for empresa_id ${empresaId}`);
-            }
-          } else if (resourceType === 'prototipo') {
-            // Para planes tipo 'prototipo', contamos todos los prototipos asociados a todos los desarrollos de la empresa
-            // Primero obtenemos todos los IDs de desarrollos para esta empresa
-            const { data: desarrollos, error: desarError } = await supabase
-              .from('desarrollos')
-              .select('id')
-              .eq('empresa_id', empresaId);
-              
-            if (desarError) {
-              console.error('Error getting empresa desarrollos:', desarError);
-            } else if (desarrollos && desarrollos.length > 0) {
-              // Obtenemos todos los IDs de desarrollos
-              const desarrolloIds = desarrollos.map(d => d.id);
-              console.log('Desarrollo IDs for this empresa:', desarrolloIds);
-              
-              // Contamos prototipos asociados con estos desarrollos
-              const { count: protoCount, error: protoError } = await supabase
-                .from('prototipos')
-                .select('*', { count: 'exact', head: true })
-                .in('desarrollo_id', desarrolloIds);
-                
-              if (protoError) {
-                console.error('Error counting prototipos:', protoError);
-              } else if (protoCount !== null) {
-                resourceCount = protoCount;
-                console.log(`Found ${protoCount} prototipos for the empresa's desarrollos`);
-              }
-            } else {
-              console.log('No desarrollos found for this empresa, so 0 prototipos');
+            if (prototipError) {
+              console.error('Error counting prototipos:', prototipError);
+            } else if (prototipos !== null) {
+              prototipoCount = prototipos;
+              console.log(`Found ${prototipos} prototipos for all desarrollos`);
             }
           }
         }
@@ -192,13 +182,16 @@ export const useSubscriptionInfo = () => {
         console.error('Error in vendor counting:', vendorCountError);
       }
       
-      // Resource limit from plan features
-      const resourceLimit = plan.features.max_recursos || null;
+      // Extract resource limits from plan features
+      const desarrolloLimit = plan.features.max_desarrollos || null;
+      const prototipoLimit = plan.features.max_prototipos || null;
       const vendorLimit = plan.features.max_vendedores || null;
       
-      // Calculate billing amount
-      const precioUnidad = plan.features.precio_por_unidad || 0;
-      const currentBilling = resourceCount * precioUnidad;
+      // Total resource count and limit
+      const totalResourceCount = desarrolloCount + prototipoCount;
+      const totalResourceLimit = desarrolloLimit && prototipoLimit 
+        ? desarrolloLimit + prototipoLimit 
+        : null;
       
       // Get renewal date
       const renewalDate = subscription.current_period_end 
@@ -206,27 +199,35 @@ export const useSubscriptionInfo = () => {
         : null;
       
       // Calculate limits percentages
-      const isOverLimit = resourceLimit !== null && resourceCount > resourceLimit;
-      const percentUsed = resourceLimit ? Math.min(100, (resourceCount / resourceLimit) * 100) : 0;
+      const isOverLimit = 
+        (desarrolloLimit !== null && desarrolloCount > desarrolloLimit) ||
+        (prototipoLimit !== null && prototipoCount > prototipoLimit);
+      
+      const percentUsed = totalResourceLimit 
+        ? Math.min(100, (totalResourceCount / totalResourceLimit) * 100) 
+        : 0;
+        
       const isOverVendorLimit = vendorLimit !== null && vendorCount > vendorLimit;
       
       console.log('Final subscription info:', {
-        resourceCount,
-        resourceLimit,
-        resourceType,
+        desarrolloCount,
+        desarrolloLimit,
+        prototipoCount,
+        prototipoLimit,
         vendorCount,
-        vendorLimit,
-        currentBilling
+        vendorLimit
       });
 
       return {
         currentPlan: plan,
         isActive: subscription.status === 'active',
         renewalDate,
-        resourceCount,
-        resourceLimit,
-        resourceType,
-        currentBilling,
+        desarrolloCount,
+        desarrolloLimit,
+        prototipoCount,
+        prototipoLimit,
+        totalResourceCount,
+        totalResourceLimit,
         isOverLimit,
         percentUsed,
         vendorCount,

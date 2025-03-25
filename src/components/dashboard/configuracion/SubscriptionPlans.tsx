@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Check, Building, Home, AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
+import { Check, Building, Home, AlertTriangle, ExternalLink, Loader2, Building2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -35,8 +35,8 @@ interface SubscriptionPlan {
   interval: 'month' | 'year';
   stripe_price_id?: string;
   features: {
-    tipo?: 'desarrollo' | 'prototipo';
-    precio_por_unidad?: number;
+    max_desarrollos?: number;
+    max_prototipos?: number;
     max_vendedores?: number;
     [key: string]: any;
   };
@@ -54,7 +54,7 @@ export function SubscriptionPlans() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // Cambiamos el estado isProcessing a un objeto mapeado por plan_id para un seguimiento por plan
+  // Estado para seguimiento por plan
   const [processingPlans, setProcessingPlans] = useState<Record<string, boolean>>({});
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
@@ -171,7 +171,7 @@ export function SubscriptionPlans() {
         return;
       }
 
-      // Cambiamos para marcar como procesando solo el plan específico
+      // Marcamos como procesando solo el plan específico
       setProcessingPlans(prev => ({ ...prev, [plan.id]: true }));
       setProcessingError(null);
       
@@ -254,9 +254,9 @@ export function SubscriptionPlans() {
       {subscriptionInfo.isActive && subscriptionInfo.currentPlan && (
         <Card>
           <CardHeader>
-            <CardTitle>Resumen de Facturación</CardTitle>
+            <CardTitle>Resumen de Suscripción</CardTitle>
             <CardDescription>
-              Información de uso y facturación estimada para tu plan actual.
+              Información de uso y detalles de tu plan actual.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -265,22 +265,37 @@ export function SubscriptionPlans() {
                 <h3 className="text-sm font-medium">Uso de Recursos</h3>
                 <div className="mt-2 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>
-                      {subscriptionInfo.resourceType === 'desarrollo' ? 'Desarrollos:' : 'Prototipos:'}
-                    </span>
+                    <span>Desarrollos:</span>
                     <span className="font-medium">
-                      {subscriptionInfo.resourceCount}
-                      {subscriptionInfo.resourceLimit && (
-                        <> / {subscriptionInfo.resourceLimit}</>
+                      {subscriptionInfo.desarrolloCount}
+                      {subscriptionInfo.desarrolloLimit && (
+                        <> / {subscriptionInfo.desarrolloLimit}</>
                       )}
                     </span>
                   </div>
-                  {subscriptionInfo.resourceLimit && (
+                  {subscriptionInfo.desarrolloLimit && (
                     <Progress 
-                      value={subscriptionInfo.percentUsed} 
-                      className={subscriptionInfo.isOverLimit ? "bg-red-100" : ""}
+                      value={(subscriptionInfo.desarrolloCount / subscriptionInfo.desarrolloLimit) * 100} 
+                      className={subscriptionInfo.desarrolloCount > subscriptionInfo.desarrolloLimit ? "bg-red-100" : ""}
                     />
                   )}
+                  
+                  <div className="flex justify-between text-sm">
+                    <span>Prototipos:</span>
+                    <span className="font-medium">
+                      {subscriptionInfo.prototipoCount}
+                      {subscriptionInfo.prototipoLimit && (
+                        <> / {subscriptionInfo.prototipoLimit}</>
+                      )}
+                    </span>
+                  </div>
+                  {subscriptionInfo.prototipoLimit && (
+                    <Progress 
+                      value={(subscriptionInfo.prototipoCount / subscriptionInfo.prototipoLimit) * 100} 
+                      className={subscriptionInfo.prototipoCount > subscriptionInfo.prototipoLimit ? "bg-red-100" : ""}
+                    />
+                  )}
+                  
                   {subscriptionInfo.isOverLimit && (
                     <div className="flex items-center text-red-500 text-xs gap-1">
                       <AlertTriangle className="h-3 w-3" />
@@ -322,33 +337,15 @@ export function SubscriptionPlans() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h3 className="text-sm font-medium">Resumen de Facturación</h3>
-                <div className="space-y-1 mt-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Plan base:</span>
-                    <span>${subscriptionInfo.currentPlan.price}/{subscriptionInfo.currentPlan.interval}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>
-                      {subscriptionInfo.resourceCount} {subscriptionInfo.resourceType === 'desarrollo' ? 'desarrollos' : 'prototipos'} x 
-                      ${subscriptionInfo.currentPlan.features.precio_por_unidad}:
-                    </span>
-                    <span>${subscriptionInfo.currentBilling}</span>
-                  </div>
-                  <Separator className="my-2" />
-                  <div className="flex justify-between font-medium">
-                    <span>Total estimado:</span>
-                    <span>${subscriptionInfo.currentPlan.price + subscriptionInfo.currentBilling}/{subscriptionInfo.currentPlan.interval}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
                 <h3 className="text-sm font-medium">Detalles de la Suscripción</h3>
                 <div className="space-y-1 mt-2">
                   <div className="flex justify-between text-sm">
                     <span>Plan actual:</span>
                     <span>{subscriptionInfo.currentPlan.name}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Precio:</span>
+                    <span>${subscriptionInfo.currentPlan.price}/{subscriptionInfo.currentPlan.interval}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Estado:</span>
@@ -392,11 +389,9 @@ export function SubscriptionPlans() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {plans.map((plan) => {
               const isCurrentPlan = currentSubscription?.plan_id === plan.id;
-              const planIcon = plan.features?.tipo === 'desarrollo' ? Building : Home;
-              // Verificamos si este plan específico está procesando
               const isPlanProcessing = processingPlans[plan.id] || false;
               
               return (
@@ -404,7 +399,6 @@ export function SubscriptionPlans() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
-                        {React.createElement(planIcon, { className: "h-5 w-5" })}
                         {plan.name}
                       </CardTitle>
                       {isCurrentPlan && (
@@ -423,25 +417,31 @@ export function SubscriptionPlans() {
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2 text-sm">
-                      <li className="flex items-center">
-                        <Check className="h-4 w-4 mr-2 text-green-500" />
-                        ${plan.features?.precio_por_unidad} por cada {plan.features?.tipo === 'desarrollo' ? 'desarrollo' : 'prototipo'}
-                      </li>
+                      {plan.features?.max_desarrollos && (
+                        <li className="flex items-center">
+                          <Building2 className="h-4 w-4 mr-2 text-green-500" />
+                          Hasta {plan.features.max_desarrollos} {plan.features.max_desarrollos === 1 ? 'desarrollo' : 'desarrollos'}
+                        </li>
+                      )}
+                      {plan.features?.max_prototipos && (
+                        <li className="flex items-center">
+                          <Home className="h-4 w-4 mr-2 text-green-500" />
+                          Hasta {plan.features.max_prototipos} {plan.features.max_prototipos === 1 ? 'prototipo' : 'prototipos'}
+                        </li>
+                      )}
                       {plan.features?.max_vendedores && (
                         <li className="flex items-center">
-                          <Check className="h-4 w-4 mr-2 text-green-500" />
-                          Hasta {plan.features.max_vendedores} vendedores
+                          <Users className="h-4 w-4 mr-2 text-green-500" />
+                          Hasta {plan.features.max_vendedores} {plan.features.max_vendedores === 1 ? 'vendedor' : 'vendedores'}
                         </li>
                       )}
                       <li className="flex items-center">
                         <Check className="h-4 w-4 mr-2 text-green-500" />
-                        Soporte por email
+                        Acceso a todas las características
                       </li>
                       <li className="flex items-center">
                         <Check className="h-4 w-4 mr-2 text-green-500" />
-                        {plan.features?.tipo === 'desarrollo' 
-                          ? 'Ideal para empresas con pocos desarrollos grandes' 
-                          : 'Perfecto para empresas con múltiples prototipos pequeños'}
+                        Soporte por email
                       </li>
                     </ul>
                   </CardContent>
