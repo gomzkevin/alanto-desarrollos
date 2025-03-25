@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Check, Building, Home, AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,14 +51,12 @@ export function SubscriptionPlans() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Helper function to ensure features is always an object
   const normalizeFeatures = (features: any): SubscriptionPlan['features'] => {
     if (!features) return {};
     if (typeof features === 'object' && !Array.isArray(features)) return features;
     return {}; // Default empty object if features is not in expected format
   };
 
-  // Handle success/cancel URL parameters
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const success = params.get('success');
@@ -70,22 +67,19 @@ export function SubscriptionPlans() {
       toast({
         title: "¡Suscripción exitosa!",
         description: "Tu suscripción ha sido activada correctamente.",
-        variant: "default", // Changed from "success" to "default"
+        variant: "default",
       });
       
-      // Clean up URL parameters
       navigate('/dashboard/configuracion', { replace: true });
       
-      // Refresh subscription data
       fetchPlansAndSubscription();
     } else if (canceled === 'true') {
       toast({
         title: "Suscripción cancelada",
         description: "Has cancelado el proceso de suscripción.",
-        variant: "destructive", // This is a valid variant
+        variant: "destructive",
       });
       
-      // Clean up URL parameters
       navigate('/dashboard/configuracion', { replace: true });
     }
   }, [location, navigate]);
@@ -96,7 +90,6 @@ export function SubscriptionPlans() {
     try {
       setIsLoading(true);
       
-      // Fetch plans
       const { data: plansData, error: plansError } = await supabase
         .from('subscription_plans')
         .select('*')
@@ -106,7 +99,6 @@ export function SubscriptionPlans() {
         throw plansError;
       }
 
-      // Convert and ensure proper typing
       const typedPlans: SubscriptionPlan[] = plansData?.map(plan => ({
         ...plan,
         interval: plan.interval === 'year' ? 'year' : 'month' as 'month' | 'year',
@@ -115,7 +107,6 @@ export function SubscriptionPlans() {
 
       setPlans(typedPlans);
 
-      // Fetch current subscription
       const { data: subData, error: subError } = await supabase
         .from('subscriptions')
         .select('*, subscription_plans(*)')
@@ -127,7 +118,6 @@ export function SubscriptionPlans() {
         throw subError;
       }
 
-      // If we have subscription data, properly type it
       if (subData) {
         const typedSubscription: CurrentSubscription = {
           ...subData,
@@ -160,7 +150,6 @@ export function SubscriptionPlans() {
 
   const handleSubscribe = async (plan: SubscriptionPlan) => {
     try {
-      // Check if user already has a subscription
       if (currentSubscription) {
         toast({
           title: "Ya tienes una suscripción activa",
@@ -171,12 +160,10 @@ export function SubscriptionPlans() {
 
       setIsProcessing(true);
       
-      // Check if the plan has a Stripe price ID
       if (!plan.stripe_price_id) {
         throw new Error("Este plan no tiene un ID de precio configurado");
       }
       
-      // Call Edge Function to create Stripe checkout session
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           priceId: plan.stripe_price_id,
@@ -190,7 +177,6 @@ export function SubscriptionPlans() {
         throw new Error(error.message);
       }
       
-      // Redirect to Stripe Checkout
       if (data?.url) {
         window.location.href = data.url;
       } else {
@@ -224,7 +210,6 @@ export function SubscriptionPlans() {
 
   return (
     <div className="space-y-6">
-      {/* Resumen de facturación */}
       {subscriptionInfo.isActive && subscriptionInfo.currentPlan && (
         <Card>
           <CardHeader>
@@ -348,7 +333,6 @@ export function SubscriptionPlans() {
         </Card>
       )}
 
-      {/* Planes disponibles */}
       <Card>
         <CardHeader>
           <CardTitle>Planes de Suscripción</CardTitle>
