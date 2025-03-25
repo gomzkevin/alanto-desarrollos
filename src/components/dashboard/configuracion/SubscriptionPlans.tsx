@@ -18,6 +18,14 @@ import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate, useLocation } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface SubscriptionPlan {
   id: string;
@@ -46,7 +54,11 @@ export function SubscriptionPlans() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
+  // Cambiamos el estado isProcessing a un objeto mapeado por plan_id para un seguimiento por plan
+  const [processingPlans, setProcessingPlans] = useState<Record<string, boolean>>({});
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [processingError, setProcessingError] = useState<string | null>(null);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
   const { userId } = useUserRole();
   const { subscriptionInfo } = useSubscriptionInfo();
   const navigate = useNavigate();
@@ -159,7 +171,9 @@ export function SubscriptionPlans() {
         return;
       }
 
-      setIsProcessing(true);
+      // Cambiamos para marcar como procesando solo el plan específico
+      setProcessingPlans(prev => ({ ...prev, [plan.id]: true }));
+      setProcessingError(null);
       
       if (!plan.stripe_price_id) {
         throw new Error("Este plan no tiene un ID de precio configurado");
@@ -178,11 +192,15 @@ export function SubscriptionPlans() {
       
       if (error) {
         console.error("Edge function error:", error);
-        throw new Error(error.message || "Error al procesar la solicitud");
+        setProcessingError(error.message || "Error al procesar la solicitud");
+        setShowErrorDialog(true);
+        return;
       }
       
       if (data?.url) {
         console.log("Redirecting to Stripe checkout:", data.url);
+        setCheckoutUrl(data.url);
+        // Redirigir directamente en lugar de usar setTimeout
         window.location.href = data.url;
       } else {
         throw new Error("No se recibió la URL de Stripe Checkout");
@@ -190,12 +208,11 @@ export function SubscriptionPlans() {
       
     } catch (error) {
       console.error("Error initiating subscription:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Ocurrió un error al procesar la suscripción.",
-        variant: "destructive",
-      });
-      setIsProcessing(false);
+      setProcessingError(error.message || "Ocurrió un error al procesar la suscripción.");
+      setShowErrorDialog(true);
+    } finally {
+      // Limpiamos solo el estado del plan específico
+      setProcessingPlans(prev => ({ ...prev, [plan.id]: false }));
     }
   };
 
@@ -215,6 +232,25 @@ export function SubscriptionPlans() {
 
   return (
     <div className="space-y-6">
+      {/* Error Dialog */}
+      <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Error al procesar la suscripción</DialogTitle>
+            <DialogDescription>
+              Se produjo un error al intentar crear la sesión de pago:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-red-50 p-4 rounded-md border border-red-200 text-red-700 text-sm">
+            {processingError}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowErrorDialog(false)}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Resumen de facturación */}
       {subscriptionInfo.isActive && subscriptionInfo.currentPlan && (
         <Card>
           <CardHeader>
@@ -360,6 +396,8 @@ export function SubscriptionPlans() {
             {plans.map((plan) => {
               const isCurrentPlan = currentSubscription?.plan_id === plan.id;
               const planIcon = plan.features?.tipo === 'desarrollo' ? Building : Home;
+              // Verificamos si este plan específico está procesando
+              const isPlanProcessing = processingPlans[plan.id] || false;
               
               return (
                 <Card key={plan.id} className={isCurrentPlan ? "border-2 border-indigo-500" : ""}>
@@ -410,10 +448,10 @@ export function SubscriptionPlans() {
                   <CardFooter>
                     <Button 
                       className="w-full" 
-                      disabled={isCurrentPlan || isProcessing}
+                      disabled={isCurrentPlan || isPlanProcessing}
                       onClick={() => handleSubscribe(plan)}
                     >
-                      {isProcessing ? (
+                      {isPlanProcessing ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Procesando...
