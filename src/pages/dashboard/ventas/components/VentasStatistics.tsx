@@ -6,7 +6,7 @@ import { useVentas } from "@/hooks/useVentas";
 import { useVentaDetail } from "@/hooks/useVentaDetail";
 import { formatCurrency } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isAfter, isBefore } from "date-fns";
 import { es } from "date-fns/locale";
 
 const VentasStatistics = () => {
@@ -76,8 +76,6 @@ const VentasStatistics = () => {
       
       for (const venta of ventas) {
         try {
-          // This is a simplified approach - in a real app, you'd want to 
-          // batch these requests or handle them differently
           const { pagos } = await useVentaDetail(venta.id);
           
           if (pagos && pagos.length) {
@@ -87,7 +85,8 @@ const VentasStatistics = () => {
               if (!pago.fecha) return;
               
               const pagoDate = parseISO(pago.fecha);
-              const isOverdue = pagoDate < today && pago.estado !== 'registrado';
+              const isOverdue = isBefore(pagoDate, today) && pago.estado !== 'registrado';
+              const isUpcoming = isAfter(pagoDate, today) && pago.estado !== 'registrado';
               
               const pagoItem = {
                 id: pago.id,
@@ -99,7 +98,7 @@ const VentasStatistics = () => {
               
               if (isOverdue) {
                 retrasados.push(pagoItem);
-              } else if (pago.estado !== 'registrado') {
+              } else if (isUpcoming) {
                 proximos.push(pagoItem);
               }
             });
@@ -110,8 +109,8 @@ const VentasStatistics = () => {
       }
       
       // Sort by date
-      proximos.sort((a, b) => parseISO(a.fecha) - parseISO(b.fecha));
-      retrasados.sort((a, b) => parseISO(b.fecha) - parseISO(a.fecha)); // Most overdue first
+      proximos.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+      retrasados.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()); // Most overdue first
       
       setProximosPagos(proximos.slice(0, 5)); // Just take the first 5
       setPagosRetrasados(retrasados.slice(0, 5)); // Just take the first 5
@@ -137,55 +136,6 @@ const VentasStatistics = () => {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <Card className="col-span-2">
-        <CardHeader>
-          <CardTitle>Ingresos Mensuales</CardTitle>
-        </CardHeader>
-        <CardContent className="pl-2">
-          {chartData.length > 0 ? (
-            <div className="h-[300px]">
-              <BarChart
-                data={chartData}
-                index="name"
-                categories={["Ingresos"]}
-                colors={["indigo"]}
-                valueFormatter={(value) => formatCurrency(value)}
-                yAxisWidth={80}
-              />
-            </div>
-          ) : (
-            <div className="h-[300px] flex items-center justify-center text-slate-500">
-              No hay datos de ingresos para mostrar
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
-      <Card className="col-span-1">
-        <CardHeader>
-          <CardTitle>Distribución de Ventas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {distributionData.length > 0 && distributionData.some(item => item.value > 0) ? (
-            <div className="h-[300px]">
-              <LineChart
-                data={distributionData}
-                index="name"
-                categories={["value"]}
-                colors={["emerald"]}
-                valueFormatter={(value) => `${value} ventas`}
-                showYAxis={false}
-                showLegend={false}
-              />
-            </div>
-          ) : (
-            <div className="h-[300px] flex items-center justify-center text-slate-500">
-              No hay datos de distribución para mostrar
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
       <Card className="col-span-3">
         <CardHeader>
           <CardTitle>Proyección de Pagos</CardTitle>
@@ -263,6 +213,55 @@ const VentasStatistics = () => {
               )}
             </TabsContent>
           </Tabs>
+        </CardContent>
+      </Card>
+      
+      <Card className="col-span-2">
+        <CardHeader>
+          <CardTitle>Ingresos Mensuales</CardTitle>
+        </CardHeader>
+        <CardContent className="pl-2">
+          {chartData.length > 0 ? (
+            <div className="h-[300px]">
+              <BarChart
+                data={chartData}
+                index="name"
+                categories={["Ingresos"]}
+                colors={["indigo"]}
+                valueFormatter={(value) => formatCurrency(value)}
+                yAxisWidth={80}
+              />
+            </div>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-slate-500">
+              No hay datos de ingresos para mostrar
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      
+      <Card className="col-span-1">
+        <CardHeader>
+          <CardTitle>Distribución de Ventas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {distributionData.length > 0 && distributionData.some(item => item.value > 0) ? (
+            <div className="h-[300px]">
+              <LineChart
+                data={distributionData}
+                index="name"
+                categories={["value"]}
+                colors={["emerald"]}
+                valueFormatter={(value) => `${value} ventas`}
+                showYAxis={false}
+                showLegend={false}
+              />
+            </div>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-slate-500">
+              No hay datos de distribución para mostrar
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
