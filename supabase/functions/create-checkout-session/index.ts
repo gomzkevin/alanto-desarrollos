@@ -55,6 +55,12 @@ serve(async (req) => {
       );
     }
     
+    // Log the Stripe secret key being used (last 4 chars)
+    if (stripeSecretKey) {
+      const lastFourChars = stripeSecretKey.slice(-4);
+      console.log(`Using Stripe key ending in: ${lastFourChars}`);
+    }
+    
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2023-10-16",
     });
@@ -84,7 +90,7 @@ serve(async (req) => {
       .from("usuarios")
       .select("*, empresas:empresa_id(*)")
       .eq("auth_id", userId)
-      .single();
+      .maybeSingle();
 
     if (userError) {
       console.error("Error fetching user data:", userError.message);
@@ -100,12 +106,26 @@ serve(async (req) => {
       );
     }
 
+    if (!userData) {
+      console.error("User not found:", userId);
+      return new Response(
+        JSON.stringify({ error: "User not found" }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 404,
+        }
+      );
+    }
+
     // Get subscription plan details for metadata
     const { data: planData, error: planError } = await supabase
       .from("subscription_plans")
       .select("*")
       .eq("id", planId)
-      .single();
+      .maybeSingle();
 
     if (planError) {
       console.error("Error fetching plan data:", planError.message);
@@ -121,54 +141,98 @@ serve(async (req) => {
       );
     }
 
+    if (!planData) {
+      console.error("Plan not found:", planId);
+      return new Response(
+        JSON.stringify({ error: "Plan not found" }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 404,
+        }
+      );
+    }
+
     // Determine the success and cancel URLs
     const domain = req.headers.get("origin") || "http://localhost:5173";
     const successUrl = `${domain}${successPath || "/dashboard/configuracion"}?success=true&plan_id=${planId}`;
     const cancelUrl = `${domain}${successPath || "/dashboard/configuracion"}?canceled=true`;
 
-    // Create a checkout session with Stripe
-    const session = await stripe.checkout.sessions.create({
-      line_items: [
-        {
-          price: priceId, // Stripe price ID
-          quantity: 1,
-        },
-      ],
-      mode: "subscription",
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      customer_email: userData.email, // Use email from the user data
-      client_reference_id: userId, // to link session to your user
-      metadata: {
-        user_id: userId,
-        plan_id: planId,
-        empresa_id: userData.empresa_id,
-        plan_name: planData.name,
-      },
-      subscription_data: {
+    console.log("Creating Stripe checkout session with: ", { 
+      priceId, 
+      domain,
+      successUrl, 
+      cancelUrl,
+      customerEmail: userData.email
+    });
+
+    try {
+      // Create a checkout session with Stripe
+      const session = await stripe.checkout.sessions.create({
+        line_items: [
+          {
+            price: priceId, // Stripe price ID
+            quantity: 1,
+          },
+        ],
+        mode: "subscription",
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        customer_email: userData.email, // Use email from the user data
+        client_reference_id: userId, // to link session to your user
         metadata: {
           user_id: userId,
           plan_id: planId,
           empresa_id: userData.empresa_id,
+          plan_name: planData.name,
         },
-      },
-    });
+        subscription_data: {
+          metadata: {
+            user_id: userId,
+            plan_id: planId,
+            empresa_id: userData.empresa_id,
+          },
+        },
+      });
 
-    // Return the session URL for redirection
-    return new Response(
-      JSON.stringify({ url: session.url }),
-      {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-        status: 200,
-      }
-    );
+      console.log("Stripe checkout session created successfully:", session.id);
+
+      // Return the session URL for redirection
+      return new Response(
+        JSON.stringify({ url: session.url }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 200,
+        }
+      );
+    } catch (stripeError) {
+      console.error("Stripe checkout creation error:", stripeError);
+      return new Response(
+        JSON.stringify({ 
+          error: stripeError.message || "Error creating Stripe checkout session",
+          details: stripeError
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 500,
+        }
+      );
+    }
   } catch (error) {
-    console.error("Error creating checkout session:", error);
+    console.error("General error creating checkout session:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || "An unexpected error occurred",
+        stack: error.stack 
+      }),
       {
         headers: {
           ...corsHeaders,
