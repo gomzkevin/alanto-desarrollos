@@ -1,9 +1,8 @@
-
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Building2, Users, BarChart3, Calculator, Briefcase, 
-  Settings, Menu, X, ChevronDown, Home, DollarSign
+  Settings, Menu, X, ChevronDown, DollarSign
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -81,7 +80,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     setIsSidebarOpen(false);
   }, [location.pathname]);
 
-  // Mejora en la lógica para mostrar estados de carga
   if (isLoading || !authChecked) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
@@ -102,7 +100,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3, current: location.pathname === '/dashboard' },
     { name: 'Desarrollos', href: '/dashboard/desarrollos', icon: Building2, current: location.pathname.includes('/dashboard/desarrollos') },
-    { name: 'Propiedades', href: '/dashboard/propiedades', icon: Home, current: location.pathname === '/dashboard/propiedades' },
     { name: 'Leads', href: '/dashboard/leads', icon: Users, current: location.pathname.includes('/dashboard/leads') },
     { name: 'Cotizaciones', href: '/dashboard/cotizaciones', icon: Calculator, current: location.pathname.includes('/dashboard/cotizaciones') },
     { name: 'Ventas', href: '/dashboard/ventas', icon: DollarSign, current: location.pathname.includes('/dashboard/ventas') },
@@ -112,7 +109,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
-      {/* Mobile sidebar overlay */}
       <div className={cn(
         "fixed inset-0 z-40 lg:hidden",
         isSidebarOpen ? "block" : "hidden"
@@ -122,7 +118,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           onClick={() => setIsSidebarOpen(false)}
         ></div>
         
-        {/* Mobile sidebar */}
         <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out">
           <div className="flex items-center justify-between h-16 px-4 border-b">
             <div className="text-lg font-semibold text-indigo-600">Alanto</div>
@@ -159,7 +154,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </div>
       
-      {/* Desktop sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
         <div className="flex flex-col w-64 border-r border-slate-200 bg-white">
           <div className="flex items-center h-16 px-4 border-b">
@@ -193,7 +187,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </div>
       
-      {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">
         <div className="bg-white border-b border-slate-200 z-10">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6">

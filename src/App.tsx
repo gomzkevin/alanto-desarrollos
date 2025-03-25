@@ -12,7 +12,7 @@ import DashboardPage from '@/pages/dashboard/Index';
 import LeadsPage from '@/pages/dashboard/leads/Index';
 import DesarrollosPage from '@/pages/dashboard/desarrollos/Index';
 import DesarrolloDetailPage from '@/pages/dashboard/desarrollos/DesarrolloDetail';
-import PropiedadesPage from '@/pages/dashboard/propiedades/Index';
+// import PropiedadesPage from '@/pages/dashboard/propiedades/Index'; // Commented out for now
 import CotizacionesPage from '@/pages/dashboard/cotizaciones/Index';
 import NuevaCotizacionPage from '@/pages/dashboard/cotizaciones/NuevaCotizacion';
 import VentasPage from '@/pages/dashboard/ventas/Index';
@@ -96,7 +96,8 @@ function App() {
           <Route path="/dashboard/leads" element={<LeadsPage />} />
           <Route path="/dashboard/desarrollos" element={<DesarrollosPage />} />
           <Route path="/dashboard/desarrollos/:id" element={<DesarrolloDetailPage />} />
-          <Route path="/dashboard/propiedades" element={<PropiedadesPage />} />
+          {/* Propiedades route commented out */}
+          {/* <Route path="/dashboard/propiedades" element={<PropiedadesPage />} /> */}
           <Route path="/dashboard/cotizaciones" element={<CotizacionesPage />} />
           <Route path="/dashboard/cotizaciones/nueva" element={<NuevaCotizacionPage />} />
           <Route path="/dashboard/ventas" element={<VentasPage />} />
