@@ -52,7 +52,7 @@ export const useSubscriptionInfo = () => {
         
         // Si tenemos un ID de empresa, intentar obtener información de suscripción a nivel de empresa
         if (empresaId) {
-          const { data, error: statusError } = await supabase
+          const { data: rawData, error: statusError } = await supabase
             .rpc('get_subscription_status', { company_id: empresaId });
             
           if (statusError) {
@@ -62,28 +62,44 @@ export const useSubscriptionInfo = () => {
             return;
           }
           
-          if (data) {
-            console.log('Subscription status data:', data);
+          if (rawData) {
+            console.log('Subscription status data:', rawData);
             
-            // Make sure data is an object before accessing properties
-            const dataObj = typeof data === 'object' ? data : {};
+            // Type assertion to prevent TypeScript errors
+            const data = rawData as {
+              isActive: boolean;
+              currentPlan?: {
+                id: string;
+                name: string;
+                price: number;
+                interval: string;
+                features: any;
+              };
+              renewalDate?: string;
+              resourceType?: string;
+              resourceLimit?: number;
+              resourceCount?: number;
+              vendorLimit?: number;
+              vendorCount?: number;
+              [key: string]: any;
+            };
             
             // Actualizar state con info de suscripción
             setSubscriptionInfo({
-              isActive: dataObj.isActive || false,
-              currentPlan: dataObj.currentPlan,
-              renewalDate: dataObj.renewalDate,
-              resourceType: dataObj.resourceType,
-              resourceLimit: dataObj.resourceLimit,
-              resourceCount: dataObj.resourceCount || 0,
-              vendorLimit: dataObj.vendorLimit,
-              vendorCount: dataObj.vendorCount || 0,
-              isOverLimit: dataObj.resourceLimit ? dataObj.resourceCount >= dataObj.resourceLimit : false,
-              isOverVendorLimit: dataObj.vendorLimit ? dataObj.vendorCount >= dataObj.vendorLimit : false,
-              desarrolloCount: dataObj.resourceType === 'desarrollo' ? dataObj.resourceCount || 0 : 0,
-              desarrolloLimit: dataObj.resourceType === 'desarrollo' ? dataObj.resourceLimit : 0,
-              prototipoCount: dataObj.resourceType === 'prototipo' ? dataObj.resourceCount || 0 : 0,
-              prototipoLimit: dataObj.resourceType === 'prototipo' ? dataObj.resourceLimit : 0
+              isActive: data.isActive || false,
+              currentPlan: data.currentPlan,
+              renewalDate: data.renewalDate,
+              resourceType: data.resourceType,
+              resourceLimit: data.resourceLimit,
+              resourceCount: data.resourceCount || 0,
+              vendorLimit: data.vendorLimit,
+              vendorCount: data.vendorCount || 0,
+              isOverLimit: data.resourceLimit ? data.resourceCount >= data.resourceLimit : false,
+              isOverVendorLimit: data.vendorLimit ? data.vendorCount >= data.vendorLimit : false,
+              desarrolloCount: data.resourceType === 'desarrollo' ? data.resourceCount || 0 : 0,
+              desarrolloLimit: data.resourceType === 'desarrollo' ? data.resourceLimit : 0,
+              prototipoCount: data.resourceType === 'prototipo' ? data.resourceCount || 0 : 0,
+              prototipoLimit: data.resourceType === 'prototipo' ? data.resourceLimit : 0
             });
             
             setIsLoading(false);
@@ -112,15 +128,19 @@ export const useSubscriptionInfo = () => {
           const plan = subscription.subscription_plans;
           
           // Safely extract features
-          const features = typeof plan.features === 'object' ? plan.features : {};
+          let features: Record<string, any> = {};
+          if (typeof plan.features === 'object' && plan.features !== null && !Array.isArray(plan.features)) {
+            features = plan.features as Record<string, any>;
+          }
           
           // Convert string dates to Date objects for proper formatting
           const renewalDate = subscription.current_period_end ? 
             new Date(subscription.current_period_end) : undefined;
           
-          // Extract resource limits
-          const maxRecursos = features.max_recursos ? parseInt(features.max_recursos, 10) : 0;
-          const maxVendedores = features.max_vendedores ? parseInt(features.max_vendedores, 10) : 0;
+          // Extract resource limits with safer type handling
+          const maxRecursos = features.max_recursos ? parseInt(features.max_recursos.toString(), 10) : 0;
+          const maxVendedores = features.max_vendedores ? parseInt(features.max_vendedores.toString(), 10) : 0;
+          const featureType = features.tipo ? features.tipo.toString() : undefined;
           
           setSubscriptionInfo({
             isActive: subscription.status === 'active',
@@ -139,9 +159,9 @@ export const useSubscriptionInfo = () => {
             isOverLimit: false,
             isOverVendorLimit: false,
             desarrolloCount: 0,
-            desarrolloLimit: features.tipo === 'desarrollo' ? maxRecursos : 0,
+            desarrolloLimit: featureType === 'desarrollo' ? maxRecursos : 0,
             prototipoCount: 0,
-            prototipoLimit: features.tipo === 'prototipo' ? maxRecursos : 0
+            prototipoLimit: featureType === 'prototipo' ? maxRecursos : 0
           });
         } else {
           console.info('No active subscription found');
