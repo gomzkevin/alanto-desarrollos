@@ -163,12 +163,15 @@ serve(async (req) => {
     });
 
     try {
-      // Corrección: Agregar quantity al line_items
+      // Crear el objeto de sesión con el formato exacto que requiere Stripe
       const sessionParams = {
-        line_items: [{ 
-          price: priceId, 
-          quantity: 1 // Añadimos el campo quantity requerido por Stripe
-        }],
+        // Formato correcto de line_items como array con objetos que contienen price y quantity
+        line_items: [
+          { 
+            price: priceId, 
+            quantity: 1
+          }
+        ],
         mode: 'subscription',
         success_url: successUrl,
         cancel_url: cancelUrl,
