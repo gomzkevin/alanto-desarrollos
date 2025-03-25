@@ -153,4 +153,3 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
     </DialogContent>
   );
 };
-
