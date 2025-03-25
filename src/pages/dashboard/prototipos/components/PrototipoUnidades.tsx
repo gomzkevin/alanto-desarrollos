@@ -153,7 +153,7 @@ export const PrototipoUnidades = React.memo(({
       </Tabs>
       
       <Dialog open={generarUnidadesModalOpen} onOpenChange={setGenerarUnidadesModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md border border-gray-200 shadow-md">
           <DialogHeader>
             <DialogTitle>Generar unidades</DialogTitle>
             <DialogDescription>
@@ -161,7 +161,7 @@ export const PrototipoUnidades = React.memo(({
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 px-6">
             <div className="space-y-2">
               <Label htmlFor="cantidad">Cantidad de unidades</Label>
               <Input 
@@ -188,7 +188,7 @@ export const PrototipoUnidades = React.memo(({
             </div>
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="px-6 pb-6">
             <Button 
               variant="outline" 
               onClick={() => setGenerarUnidadesModalOpen(false)}
