@@ -169,7 +169,7 @@ serve(async (req) => {
     });
 
     try {
-      // Simplified session creation focusing on the required parameters
+      // Create the checkout session with simplified parameters based on Stripe's example
       const session = await stripe.checkout.sessions.create({
         line_items: [
           {
