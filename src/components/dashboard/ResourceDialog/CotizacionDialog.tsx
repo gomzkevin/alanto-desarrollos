@@ -64,7 +64,10 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
   const rawFields = useResourceFields(resourceType, selectedStatus);
   const fields = rawFields.map(field => {
     if (field.name === 'monto_anticipo' || field.name === 'monto_finiquito') {
-      return { ...field, formatCurrency: true, type: 'number' };
+      return { 
+        ...field, 
+        formatCurrency: true 
+      };
     }
     return field;
   });
