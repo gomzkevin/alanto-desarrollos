@@ -75,7 +75,7 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
     if (resourceId) {
       return 'Actualizar información de la cotización';
     } else {
-      return 'Crear una nueva cotización';
+      return 'Ingresa los datos para la nueva cotización';
     }
   };
 
@@ -84,6 +84,17 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
     console.log('Form submitted, calling saveResource');
     await saveResource();
   };
+
+  // Asegurarnos que los campos monetarios tengan correctamente aplicado el formato currency
+  const enhancedFields = fields.map(field => {
+    if (field.name === 'monto_anticipo' || field.name === 'monto_finiquito') {
+      return {
+        ...field,
+        formatCurrency: true
+      };
+    }
+    return field;
+  });
 
   return (
     <DialogContent className="p-0 border-2 border-gray-300 shadow-lg rounded-lg max-h-[90vh] overflow-hidden flex flex-col max-w-4xl">
@@ -109,7 +120,7 @@ export const CotizacionDialogContent: React.FC<CotizacionDialogContentProps> = (
                     <div className="bg-gray-50 rounded-xl p-8 shadow-sm border border-gray-100 mx-2">
                       <GenericForm
                         resourceType="cotizaciones"
-                        fields={fields}
+                        fields={enhancedFields}
                         values={resource}
                         onChange={handleChange}
                         onSelectChange={handleSelectChange}

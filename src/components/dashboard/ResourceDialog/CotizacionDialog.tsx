@@ -23,7 +23,7 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
   onSuccess,
   desarrolloId,
   lead_id,
-  defaultValues
+  defaultValues = {}
 }) => {
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [isExistingClient, setIsExistingClient] = useState(true);
@@ -33,6 +33,12 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
   const [usarFiniquito, setUsarFiniquito] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  const mergedDefaultValues = {
+    monto_anticipo: 0,
+    monto_finiquito: 0,
+    ...defaultValues
+  };
 
   const resourceType = 'cotizaciones';
 
@@ -52,10 +58,16 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     selectedAmenities,
     onStatusChange: setSelectedStatus,
     onAmenitiesChange: setSelectedAmenities,
-    defaultValues
+    defaultValues: mergedDefaultValues
   });
 
-  const fields = useResourceFields(resourceType, selectedStatus);
+  const rawFields = useResourceFields(resourceType, selectedStatus);
+  const fields = rawFields.map(field => {
+    if (field.name === 'monto_anticipo' || field.name === 'monto_finiquito') {
+      return { ...field, formatCurrency: true, type: 'number' };
+    }
+    return field;
+  });
 
   const { saveResource, handleImageUpload: uploadResourceImage } = useResourceActions({
     resourceType,
