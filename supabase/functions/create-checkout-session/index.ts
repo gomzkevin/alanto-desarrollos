@@ -19,17 +19,86 @@ serve(async (req) => {
 
   try {
     // Get request body
-    const { priceId, planId, userId, successPath } = await req.json();
+    const requestData = await req.json();
+    const { priceId, planId, userId, successPath } = requestData;
+    
+    console.log("Creating checkout session for plan:", planId, "user:", userId);
+    
+    // Validación de datos de entrada
+    if (!priceId || !planId || !userId) {
+      console.error("Missing required parameters:", { priceId, planId, userId });
+      return new Response(
+        JSON.stringify({ error: "Missing required parameters. Need priceId, planId, and userId." }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 400,
+        }
+      );
+    }
 
     // Initialize Stripe with your secret key from environment variables
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeSecretKey) {
+      console.error("STRIPE_SECRET_KEY is not configured");
+      return new Response(
+        JSON.stringify({ error: "Stripe is not configured correctly" }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 500,
+        }
+      );
+    }
+    
+    const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2023-10-16",
     });
 
     // Create a Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("Supabase credentials are not configured");
+      return new Response(
+        JSON.stringify({ error: "Supabase configuration is missing" }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 500,
+        }
+      );
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get user information to associate with the subscription
+    const { data: userData, error: userError } = await supabase
+      .from("usuarios")
+      .select("*, empresas:empresa_id(*)")
+      .eq("auth_id", userId)
+      .single();
+
+    if (userError) {
+      console.error("Error fetching user data:", userError.message);
+      return new Response(
+        JSON.stringify({ error: `Error fetching user data: ${userError.message}` }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 500,
+        }
+      );
+    }
 
     // Get subscription plan details for metadata
     const { data: planData, error: planError } = await supabase
@@ -39,7 +108,17 @@ serve(async (req) => {
       .single();
 
     if (planError) {
-      throw new Error(`Error fetching plan data: ${planError.message}`);
+      console.error("Error fetching plan data:", planError.message);
+      return new Response(
+        JSON.stringify({ error: `Error fetching plan data: ${planError.message}` }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 500,
+        }
+      );
     }
 
     // Determine the success and cancel URLs
@@ -58,17 +137,19 @@ serve(async (req) => {
       mode: "subscription",
       success_url: successUrl,
       cancel_url: cancelUrl,
-      customer_email: planData.email, // optional, useful if you have it
+      customer_email: userData.email, // Use email from the user data
       client_reference_id: userId, // to link session to your user
       metadata: {
         user_id: userId,
         plan_id: planId,
+        empresa_id: userData.empresa_id,
         plan_name: planData.name,
       },
       subscription_data: {
         metadata: {
           user_id: userId,
           plan_id: planId,
+          empresa_id: userData.empresa_id,
         },
       },
     });
