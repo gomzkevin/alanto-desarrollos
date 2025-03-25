@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import Stripe from 'https://esm.sh/stripe@14.0.0';
@@ -88,12 +87,15 @@ serve(async (req) => {
       apiVersion: "2025-02-24.acacia", // Using the specified API version
     });
 
-    // Verify webhook signature and construct event
+    // Verify webhook signature and construct event - USING ASYNC VERSION
     let event;
     try {
       console.log("Verifying webhook signature with secret:", webhookSecret.substring(0, 5) + "...");
       console.log("Signature header:", signature);
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      
+      // Use the asynchronous method constructEventAsync instead of constructEvent
+      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
+      
       console.log(`Webhook signature verification successful for event: ${event.type}`);
     } catch (err) {
       console.error(`Webhook signature verification failed: ${err.message}`);

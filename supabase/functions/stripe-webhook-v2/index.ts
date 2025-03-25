@@ -84,7 +84,10 @@ serve(async (req) => {
     try {
       console.log("Webhook v2: Verificando firma con secreto:", webhookSecret.substring(0, 3) + "...");
       console.log("Webhook v2: Encabezado de firma:", signature);
-      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+      
+      // Usar constructEventAsync en lugar de constructEvent
+      event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
+      
       console.log(`Webhook v2: Verificación de firma exitosa para evento: ${event.type}`);
     } catch (err) {
       console.error(`Webhook v2: Verificación de firma fallida: ${err.message}`);
