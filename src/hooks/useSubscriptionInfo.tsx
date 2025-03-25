@@ -21,6 +21,11 @@ export interface SubscriptionInfo {
   vendorCount?: number;
   isOverLimit: boolean;
   isOverVendorLimit: boolean;
+  // Adding the missing properties for prototype and development counts
+  desarrolloCount?: number;
+  desarrolloLimit?: number;
+  prototipoCount?: number;
+  prototipoLimit?: number;
 }
 
 export const useSubscriptionInfo = () => {
@@ -60,18 +65,25 @@ export const useSubscriptionInfo = () => {
           if (data) {
             console.log('Subscription status data:', data);
             
+            // Make sure data is an object before accessing properties
+            const dataObj = typeof data === 'object' ? data : {};
+            
             // Actualizar state con info de suscripción
             setSubscriptionInfo({
-              isActive: data.isActive || false,
-              currentPlan: data.currentPlan,
-              renewalDate: data.renewalDate,
-              resourceType: data.resourceType,
-              resourceLimit: data.resourceLimit,
-              resourceCount: data.resourceCount || 0,
-              vendorLimit: data.vendorLimit,
-              vendorCount: data.vendorCount || 0,
-              isOverLimit: data.resourceLimit ? data.resourceCount >= data.resourceLimit : false,
-              isOverVendorLimit: data.vendorLimit ? data.vendorCount >= data.vendorLimit : false
+              isActive: dataObj.isActive || false,
+              currentPlan: dataObj.currentPlan,
+              renewalDate: dataObj.renewalDate,
+              resourceType: dataObj.resourceType,
+              resourceLimit: dataObj.resourceLimit,
+              resourceCount: dataObj.resourceCount || 0,
+              vendorLimit: dataObj.vendorLimit,
+              vendorCount: dataObj.vendorCount || 0,
+              isOverLimit: dataObj.resourceLimit ? dataObj.resourceCount >= dataObj.resourceLimit : false,
+              isOverVendorLimit: dataObj.vendorLimit ? dataObj.vendorCount >= dataObj.vendorLimit : false,
+              desarrolloCount: dataObj.resourceType === 'desarrollo' ? dataObj.resourceCount || 0 : 0,
+              desarrolloLimit: dataObj.resourceType === 'desarrollo' ? dataObj.resourceLimit : 0,
+              prototipoCount: dataObj.resourceType === 'prototipo' ? dataObj.resourceCount || 0 : 0,
+              prototipoLimit: dataObj.resourceType === 'prototipo' ? dataObj.resourceLimit : 0
             });
             
             setIsLoading(false);
@@ -99,6 +111,17 @@ export const useSubscriptionInfo = () => {
           const subscription = userSubscriptions[0];
           const plan = subscription.subscription_plans;
           
+          // Safely extract features
+          const features = typeof plan.features === 'object' ? plan.features : {};
+          
+          // Convert string dates to Date objects for proper formatting
+          const renewalDate = subscription.current_period_end ? 
+            new Date(subscription.current_period_end) : undefined;
+          
+          // Extract resource limits
+          const maxRecursos = features.max_recursos ? parseInt(features.max_recursos, 10) : 0;
+          const maxVendedores = features.max_vendedores ? parseInt(features.max_vendedores, 10) : 0;
+          
           setSubscriptionInfo({
             isActive: subscription.status === 'active',
             currentPlan: {
@@ -106,15 +129,19 @@ export const useSubscriptionInfo = () => {
               name: plan.name,
               price: plan.price,
               interval: plan.interval,
-              features: plan.features
+              features: features
             },
-            renewalDate: subscription.current_period_end,
-            resourceLimit: plan.features?.max_recursos,
+            renewalDate: renewalDate?.toISOString(),
+            resourceLimit: maxRecursos,
             resourceCount: 0, // No contamos recursos para suscripciones personales por ahora
-            vendorLimit: plan.features?.max_vendedores,
+            vendorLimit: maxVendedores,
             vendorCount: 0, // No contamos vendedores para suscripciones personales por ahora
             isOverLimit: false,
-            isOverVendorLimit: false
+            isOverVendorLimit: false,
+            desarrolloCount: 0,
+            desarrolloLimit: features.tipo === 'desarrollo' ? maxRecursos : 0,
+            prototipoCount: 0,
+            prototipoLimit: features.tipo === 'prototipo' ? maxRecursos : 0
           });
         } else {
           console.info('No active subscription found');

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Check, Building, Home, AlertTriangle, ExternalLink, Loader2, Building2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,7 +53,6 @@ export function SubscriptionPlans() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // Estado para seguimiento por plan
   const [processingPlans, setProcessingPlans] = useState<Record<string, boolean>>({});
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
@@ -171,7 +169,6 @@ export function SubscriptionPlans() {
         return;
       }
 
-      // Marcamos como procesando solo el plan específico
       setProcessingPlans(prev => ({ ...prev, [plan.id]: true }));
       setProcessingError(null);
       
@@ -200,7 +197,6 @@ export function SubscriptionPlans() {
       if (data?.url) {
         console.log("Redirecting to Stripe checkout:", data.url);
         setCheckoutUrl(data.url);
-        // Redirigir directamente en lugar de usar setTimeout
         window.location.href = data.url;
       } else {
         throw new Error("No se recibió la URL de Stripe Checkout");
@@ -211,7 +207,6 @@ export function SubscriptionPlans() {
       setProcessingError(error.message || "Ocurrió un error al procesar la suscripción.");
       setShowErrorDialog(true);
     } finally {
-      // Limpiamos solo el estado del plan específico
       setProcessingPlans(prev => ({ ...prev, [plan.id]: false }));
     }
   };
@@ -232,7 +227,6 @@ export function SubscriptionPlans() {
 
   return (
     <div className="space-y-6">
-      {/* Error Dialog */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
         <DialogContent>
           <DialogHeader>
@@ -250,7 +244,6 @@ export function SubscriptionPlans() {
         </DialogContent>
       </Dialog>
 
-      {/* Resumen de facturación */}
       {subscriptionInfo.isActive && subscriptionInfo.currentPlan && (
         <Card>
           <CardHeader>
@@ -267,34 +260,34 @@ export function SubscriptionPlans() {
                   <div className="flex justify-between text-sm">
                     <span>Desarrollos:</span>
                     <span className="font-medium">
-                      {subscriptionInfo.desarrolloCount}
-                      {subscriptionInfo.desarrolloLimit && (
+                      {subscriptionInfo.desarrolloCount || 0}
+                      {subscriptionInfo.desarrolloLimit ? (
                         <> / {subscriptionInfo.desarrolloLimit}</>
-                      )}
+                      ) : null}
                     </span>
                   </div>
-                  {subscriptionInfo.desarrolloLimit && (
+                  {subscriptionInfo.desarrolloLimit ? (
                     <Progress 
-                      value={(subscriptionInfo.desarrolloCount / subscriptionInfo.desarrolloLimit) * 100} 
-                      className={subscriptionInfo.desarrolloCount > subscriptionInfo.desarrolloLimit ? "bg-red-100" : ""}
+                      value={((subscriptionInfo.desarrolloCount || 0) / subscriptionInfo.desarrolloLimit) * 100} 
+                      className={(subscriptionInfo.desarrolloCount || 0) > (subscriptionInfo.desarrolloLimit || 0) ? "bg-red-100" : ""}
                     />
-                  )}
+                  ) : null}
                   
                   <div className="flex justify-between text-sm">
                     <span>Prototipos:</span>
                     <span className="font-medium">
-                      {subscriptionInfo.prototipoCount}
-                      {subscriptionInfo.prototipoLimit && (
+                      {subscriptionInfo.prototipoCount || 0}
+                      {subscriptionInfo.prototipoLimit ? (
                         <> / {subscriptionInfo.prototipoLimit}</>
-                      )}
+                      ) : null}
                     </span>
                   </div>
-                  {subscriptionInfo.prototipoLimit && (
+                  {subscriptionInfo.prototipoLimit ? (
                     <Progress 
-                      value={(subscriptionInfo.prototipoCount / subscriptionInfo.prototipoLimit) * 100} 
-                      className={subscriptionInfo.prototipoCount > subscriptionInfo.prototipoLimit ? "bg-red-100" : ""}
+                      value={((subscriptionInfo.prototipoCount || 0) / (subscriptionInfo.prototipoLimit || 1)) * 100} 
+                      className={(subscriptionInfo.prototipoCount || 0) > (subscriptionInfo.prototipoLimit || 0) ? "bg-red-100" : ""}
                     />
-                  )}
+                  ) : null}
                   
                   {subscriptionInfo.isOverLimit && (
                     <div className="flex items-center text-red-500 text-xs gap-1">
@@ -356,7 +349,9 @@ export function SubscriptionPlans() {
                   <div className="flex justify-between text-sm">
                     <span>Próxima renovación:</span>
                     <span>
-                      {subscriptionInfo.renewalDate?.toLocaleDateString() || 'No disponible'}
+                      {subscriptionInfo.renewalDate ? 
+                        new Date(subscriptionInfo.renewalDate).toLocaleDateString() : 
+                        'No disponible'}
                     </span>
                   </div>
                 </div>
