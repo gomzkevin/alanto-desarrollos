@@ -16,8 +16,10 @@ export interface Venta {
   unidad?: {
     id: string;
     numero: string;
+    prototipo_id?: string;
     prototipo?: {
       nombre: string;
+      desarrollo_id?: string;
       desarrollo?: {
         nombre: string;
         empresa_id?: number;
@@ -41,7 +43,6 @@ export const useVentas = (filters: VentasFilter = {}) => {
 
   console.log('useVentas initialized with empresaId:', empresaId);
 
-  // Consulta para obtener las ventas
   const fetchVentas = async (): Promise<Venta[]> => {
     try {
       console.log('Fetching ventas with filters:', filters, 'empresaId:', empresaId);
@@ -115,6 +116,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
         .select(`
           *,
           unidad:unidades(
+            id,
             numero,
             prototipo_id,
             prototipo:prototipos(
@@ -173,7 +175,6 @@ export const useVentas = (filters: VentasFilter = {}) => {
     queryFn: fetchVentas,
   });
 
-  // Función para crear una venta
   const createVenta = async (ventaData: {
     unidad_id: string;
     precio_total: number;
@@ -214,7 +215,6 @@ export const useVentas = (filters: VentasFilter = {}) => {
     }
   };
 
-  // Función para actualizar una venta
   const updateVenta = async (id: string, updates: Partial<Omit<Venta, 'id'>>) => {
     setIsUpdating(true);
     try {

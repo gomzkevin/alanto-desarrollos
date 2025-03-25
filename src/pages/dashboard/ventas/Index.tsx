@@ -7,13 +7,11 @@ import { PlusCircle, Search } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import VentasTable from './components/VentasTable';
-import VentasStatistics from './components/VentasStatistics';
 
 const VentasPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
-  const [showStats, setShowStats] = useState(true);
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -29,7 +27,7 @@ const VentasPage = () => {
           </p>
         </div>
 
-        {/* Sales Table Section - Now First */}
+        {/* Sales Table Section */}
         <div>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
             <div className="flex flex-grow max-w-md relative">
@@ -66,36 +64,6 @@ const VentasPage = () => {
 
           <VentasTable refreshTrigger={refreshTrigger} />
         </div>
-
-        {/* Statistics Section - Now Second */}
-        {showStats && (
-          <div className="mt-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Estadísticas de Ventas</h2>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowStats(false)}
-                className="text-sm"
-              >
-                Ocultar estadísticas
-              </Button>
-            </div>
-            <VentasStatistics />
-          </div>
-        )}
-
-        {/* Control Bar - only show the "show stats" button when stats are hidden */}
-        {!showStats && (
-          <div className="flex justify-end mb-4 mt-8">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowStats(true)}
-              className="text-sm"
-            >
-              Mostrar estadísticas
-            </Button>
-          </div>
-        )}
       </div>
     </DashboardLayout>
   );
