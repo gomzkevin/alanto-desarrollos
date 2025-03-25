@@ -246,11 +246,15 @@ serve(async (req) => {
 
       // Return the session URL for redirection
       return new Response(
-        JSON.stringify({ url: session.url }),
+        JSON.stringify({ 
+          url: session.url,
+          sessionId: session.id
+        }),
         {
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json",
+            "Cache-Control": "no-cache, no-store, must-revalidate"
           },
           status: 200,
         }

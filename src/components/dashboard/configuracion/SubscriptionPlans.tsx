@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Check, Building, Home, AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { createCheckoutSession } from "@/lib/stripe";
 
 interface SubscriptionPlan {
   id: string;
@@ -54,7 +56,6 @@ export function SubscriptionPlans() {
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [processingPlans, setProcessingPlans] = useState<Record<string, boolean>>({});
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const { userId } = useUserRole();
@@ -169,44 +170,46 @@ export function SubscriptionPlans() {
         return;
       }
 
+      if (!userId) {
+        toast({
+          title: "Error",
+          description: "Debes iniciar sesión para suscribirte.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Set loading state only for this specific plan
       setProcessingPlans(prev => ({ ...prev, [plan.id]: true }));
-      setProcessingError(null);
       
       if (!plan.stripe_price_id) {
         throw new Error("Este plan no tiene un ID de precio configurado");
       }
       
-      console.log("Initiating subscription for plan:", plan.name, "price ID:", plan.stripe_price_id);
+      console.log("Iniciando suscripción para plan:", plan.name, "price ID:", plan.stripe_price_id);
       
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: {
-          priceId: plan.stripe_price_id,
-          planId: plan.id,
-          userId: userId,
-          successPath: "/dashboard/configuracion"
-        }
-      });
+      // Usar la nueva utilidad para crear la sesión de checkout
+      const checkoutUrl = await createCheckoutSession(
+        plan.stripe_price_id,
+        plan.id,
+        userId,
+        "/dashboard/configuracion"
+      );
       
-      if (error) {
-        console.error("Edge function error:", error);
-        setProcessingError(error.message || "Error al procesar la solicitud");
-        setShowErrorDialog(true);
-        return;
-      }
-      
-      if (data?.url) {
-        console.log("Redirecting to Stripe checkout:", data.url);
-        setCheckoutUrl(data.url);
-        window.location.href = data.url;
+      if (checkoutUrl) {
+        console.log("Redireccionando a:", checkoutUrl);
+        // Redireccionar al usuario a la página de checkout
+        window.location.assign(checkoutUrl);
       } else {
-        throw new Error("No se recibió la URL de Stripe Checkout");
+        throw new Error("No se pudo crear la sesión de checkout");
       }
       
     } catch (error) {
-      console.error("Error initiating subscription:", error);
+      console.error("Error al iniciar suscripción:", error);
       setProcessingError(error.message || "Ocurrió un error al procesar la suscripción.");
       setShowErrorDialog(true);
     } finally {
+      // Clear the loading state when done
       setProcessingPlans(prev => ({ ...prev, [plan.id]: false }));
     }
   };
