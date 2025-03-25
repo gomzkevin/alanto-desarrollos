@@ -2,3 +2,7 @@
 [storage]
 [storage.prototipo-images]
 public = true
+
+# This bucket will store promotional images for the subscription plans
+[storage.subscription-images]
+public = true
