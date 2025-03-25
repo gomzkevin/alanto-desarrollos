@@ -21,16 +21,16 @@ const VentasPage = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-8">
-        <div className="flex flex-col space-y-3">
+        <div className="flex flex-col space-y-1">
           <h1 className="text-3xl font-bold tracking-tight">Ventas</h1>
-          <p className="text-muted-foreground mb-4">
+          <p className="text-muted-foreground mb-6">
             Gestiona las ventas de unidades y da seguimiento a los pagos
           </p>
         </div>
 
         <VentasStatistics />
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex flex-grow max-w-md relative">
             <Input
               placeholder="Buscar ventas..."
