@@ -141,7 +141,7 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
   if (ventas.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center">
-        <h3 className="text-xl font-semibold mb-2">No hay ventas registradas</h3>
+        <h3 className="text-xl font-semibold mb-2">No hay ventas registradas para tu organización</h3>
         <p className="text-muted-foreground mb-4">
           Actualiza el estado de tus unidades para comenzar a dar seguimiento a tus ventas
         </p>

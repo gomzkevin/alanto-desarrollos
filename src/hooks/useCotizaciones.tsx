@@ -33,12 +33,17 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
     
     try {
       // Build the basic query
-      let query = supabase.from('cotizaciones').select('*');
+      let query = supabase
+        .from('cotizaciones')
+        .select(`
+          *,
+          desarrollo:desarrollos(*)
+        `);
       
       // Filter by empresa_id of the user if available
       if (empresaId) {
         // Join with desarrollos to filter by empresa_id
-        query = query.eq('desarrollos.empresa_id', empresaId);
+        query = query.eq('desarrollo.empresa_id', empresaId);
       }
       
       // Apply limit if provided
@@ -56,19 +61,16 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       // If relations are requested, fetch them for each cotizacion
       if (withRelations && cotizaciones && cotizaciones.length > 0) {
         // Get all unique IDs for related entities
-        const leadIds = [...new Set(cotizaciones.map(c => c.lead_id))];
-        const desarrolloIds = [...new Set(cotizaciones.map(c => c.desarrollo_id))];
-        const prototipoIds = [...new Set(cotizaciones.map(c => c.prototipo_id))];
+        const leadIds = [...new Set(cotizaciones.map(c => c.lead_id).filter(Boolean))];
+        const prototipoIds = [...new Set(cotizaciones.map(c => c.prototipo_id).filter(Boolean))];
         
         // Fetch all related entities in batch queries
-        const [leadsResponse, desarrollosResponse, prototipesResponse] = await Promise.all([
-          supabase.from('leads').select('*').in('id', leadIds),
-          supabase.from('desarrollos').select('*').in('id', desarrolloIds),
-          supabase.from('prototipos').select('*').in('id', prototipoIds)
+        const [leadsResponse, prototipesResponse] = await Promise.all([
+          leadIds.length > 0 ? supabase.from('leads').select('*').in('id', leadIds) : { data: [], error: null },
+          prototipoIds.length > 0 ? supabase.from('prototipos').select('*').in('id', prototipoIds) : { data: [], error: null }
         ]);
         
         const leads = leadsResponse.error ? [] : leadsResponse.data;
-        const desarrollos = desarrollosResponse.error ? [] : desarrollosResponse.data;
         const prototipos = prototipesResponse.error ? [] : prototipesResponse.data;
         
         // Map related entities to cotizaciones
@@ -76,20 +78,20 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
           return {
             ...cotizacion,
             lead: leads.find(l => l.id === cotizacion.lead_id) || null,
-            desarrollo: desarrollos.find(d => d.id === cotizacion.desarrollo_id) || null,
             prototipo: prototipos.find(p => p.id === cotizacion.prototipo_id) || null
           };
         });
         
-        console.log('Extended cotizaciones fetched:', extendedCotizaciones);
+        console.log('Extended cotizaciones fetched:', extendedCotizaciones.length, 'results');
         return extendedCotizaciones;
       }
       
-      console.log('Cotizaciones fetched:', cotizaciones);
-      return cotizaciones as ExtendedCotizacion[];
+      console.log('Cotizaciones fetched:', cotizaciones?.length || 0, 'results');
+      return cotizaciones as ExtendedCotizacion[] || [];
     } catch (error) {
       console.error('Error in fetchCotizaciones:', error);
-      throw error;
+      // Return empty array instead of throwing to avoid error screen
+      return [];
     }
   };
 

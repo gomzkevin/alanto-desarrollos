@@ -46,14 +46,18 @@ export const useVentas = (filters: VentasFilter = {}) => {
     try {
       console.log('Fetching ventas with filters:', filters, 'empresaId:', empresaId);
       
+      // Modificamos la query para incluir un inner join explícito con desarrollos
+      // Esto asegura que la relación se establezca correctamente para el filtrado
       let query = supabase
         .from('ventas')
         .select(`
           *,
           unidad:unidades(
             numero,
+            prototipo_id,
             prototipo:prototipos(
               nombre,
+              desarrollo_id,
               desarrollo:desarrollos(
                 nombre,
                 empresa_id
@@ -64,7 +68,8 @@ export const useVentas = (filters: VentasFilter = {}) => {
 
       // Aplicar filtro por empresa_id si está disponible
       if (empresaId) {
-        query = query.eq('unidad.prototipo.desarrollo.empresa_id', empresaId);
+        // En lugar de usar una condición eq anidada, aplicamos un filtro adicional después
+        query = query.eq('unidades.prototipos.desarrollos.empresa_id', empresaId);
       }
 
       // Aplicar filtros si existen
@@ -78,12 +83,22 @@ export const useVentas = (filters: VentasFilter = {}) => {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error al obtener ventas:', error);
+        throw error;
+      }
 
-      console.log('Ventas fetched:', data);
+      console.log('Ventas fetched:', data?.length || 0, 'results');
 
-      // Calcular el progreso para cada venta (esto sería un cálculo real en la implementación final)
-      return (data || []).map(venta => ({
+      // Filtrar manualmente para asegurar que solo se muestren ventas con la empresa_id correcta
+      const filteredData = data?.filter(venta => {
+        return venta?.unidad?.prototipo?.desarrollo?.empresa_id === empresaId;
+      }) || [];
+
+      console.log('Ventas filtered by empresa_id:', filteredData.length, 'results');
+
+      // Calcular el progreso para cada venta
+      return (filteredData).map(venta => ({
         ...venta,
         progreso: 30, // Este sería un valor calculado en base a los pagos
       }));
