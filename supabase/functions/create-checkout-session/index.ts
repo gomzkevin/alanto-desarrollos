@@ -163,9 +163,12 @@ serve(async (req) => {
     });
 
     try {
-      // Simplified session creation with proper line items structure
+      // Corrección: Agregar quantity al line_items
       const sessionParams = {
-        line_items: [{ price: priceId }], // Remove quantity for metered billing
+        line_items: [{ 
+          price: priceId, 
+          quantity: 1 // Añadimos el campo quantity requerido por Stripe
+        }],
         mode: 'subscription',
         success_url: successUrl,
         cancel_url: cancelUrl,

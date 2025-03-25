@@ -22,7 +22,7 @@ export interface SubscriptionInfo {
   renewalDate: Date | null;
   desarrolloCount: number;
   desarrolloLimit: number | null;
-  prototipoCount: number | null;
+  prototipoCount: number;
   prototipoLimit: number | null;
   totalResourceCount: number;
   totalResourceLimit: number | null;
