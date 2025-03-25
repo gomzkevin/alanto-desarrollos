@@ -144,8 +144,21 @@ export const useUserRole = () => {
     return isAdmin;
   };
 
-  const canCreateResource = () => {
-    return isAdmin || userRole === 'vendedor';
+  // Actualizado: Ahora solo admins pueden crear prototipos
+  const canCreateResource = (resourceType?: string) => {
+    // Si es admin, puede crear cualquier recurso
+    if (isAdmin) return true;
+    
+    // Si es vendedor, solo puede crear ciertos recursos
+    if (userRole === 'vendedor') {
+      // Vendedores no pueden crear prototipos
+      if (resourceType === 'prototipos') return false;
+      
+      // Para otros recursos (leads, cotizaciones, etc.), sí pueden
+      return true;
+    }
+    
+    return false;
   };
 
   return {

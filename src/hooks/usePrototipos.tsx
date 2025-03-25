@@ -90,8 +90,23 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
   });
 
   // Check if can add more prototipos based on subscription limits
+  // Aquí pasamos el tipo específico de recurso a canCreatePrototipo
   const canAddPrototipo = async () => {
     try {
+      // Importamos useUserRole para verificar permisos
+      const { default: useUserRole } = await import('./useUserRole');
+      const { canCreateResource } = useUserRole();
+      
+      // Verificar si el usuario tiene permisos para crear prototipos
+      if (!canCreateResource('prototipos')) {
+        toast({
+          title: "Permisos insuficientes",
+          description: "No tienes permisos para crear prototipos. Contacta al administrador.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
       // Fetch subscription data directly
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return false;
