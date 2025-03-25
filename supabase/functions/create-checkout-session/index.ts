@@ -171,15 +171,20 @@ serve(async (req) => {
     try {
       // Obtener los datos de precio desde Stripe
       let isMetered = false;
+      let priceData;
       
       try {
         console.log("Retrieving price data for:", priceId);
-        const price = await stripe.prices.retrieve(priceId);
-        console.log("Retrieved price data:", JSON.stringify(price, null, 2));
+        priceData = await stripe.prices.retrieve(priceId);
+        console.log("Retrieved price data:", JSON.stringify(priceData, null, 2));
         
         // Comprobar si es un precio con facturación por uso (metered)
-        isMetered = price?.recurring?.usage_type === 'metered';
-        console.log("Is metered pricing:", isMetered);
+        if (priceData && priceData.recurring) {
+          isMetered = priceData.recurring.usage_type === 'metered';
+          console.log("Is metered pricing:", isMetered);
+        } else {
+          console.log("Price data missing recurring info:", priceData);
+        }
       } catch (priceError) {
         console.error("Error retrieving price data from Stripe:", priceError);
         // Continuamos con el valor predeterminado de isMetered = false
