@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { useState } from "react";
@@ -68,10 +67,8 @@ export const EditCotizacionButton = ({
       description: "La cotización ha sido actualizada exitosamente."
     });
     
-    // Refetch cotizaciones data
     refetch();
     
-    // Call additional onSuccess callback if provided
     if (onSuccess) {
       onSuccess();
     }
