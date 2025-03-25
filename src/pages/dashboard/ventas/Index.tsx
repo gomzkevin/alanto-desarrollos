@@ -29,37 +29,7 @@ const VentasPage = () => {
           </p>
         </div>
 
-        {/* Statistics Section */}
-        {showStats && (
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Estadísticas de Ventas</h2>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowStats(false)}
-                className="text-sm"
-              >
-                Ocultar estadísticas
-              </Button>
-            </div>
-            <VentasStatistics />
-          </div>
-        )}
-
-        {/* Control Bar - only show the "show stats" button when stats are hidden */}
-        {!showStats && (
-          <div className="flex justify-end mb-4">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowStats(true)}
-              className="text-sm"
-            >
-              Mostrar estadísticas
-            </Button>
-          </div>
-        )}
-
-        {/* Sales Table Section */}
+        {/* Sales Table Section - Now First */}
         <div>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
             <div className="flex flex-grow max-w-md relative">
@@ -96,6 +66,36 @@ const VentasPage = () => {
 
           <VentasTable refreshTrigger={refreshTrigger} />
         </div>
+
+        {/* Statistics Section - Now Second */}
+        {showStats && (
+          <div className="mt-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Estadísticas de Ventas</h2>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowStats(false)}
+                className="text-sm"
+              >
+                Ocultar estadísticas
+              </Button>
+            </div>
+            <VentasStatistics />
+          </div>
+        )}
+
+        {/* Control Bar - only show the "show stats" button when stats are hidden */}
+        {!showStats && (
+          <div className="flex justify-end mb-4 mt-8">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowStats(true)}
+              className="text-sm"
+            >
+              Mostrar estadísticas
+            </Button>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
