@@ -102,6 +102,26 @@ export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
             progreso,
             montoPagado
           };
+          
+          // Check if we need to update venta status based on payment progress
+          if (progreso >= 100 && venta?.estado === 'en_proceso') {
+            // Update venta status to 'completada'
+            await supabase
+              .from('ventas')
+              .update({ 
+                estado: 'completada',
+                fecha_actualizacion: new Date().toISOString()
+              })
+              .eq('id', ventaId);
+              
+            // Update unidad status to 'vendido'
+            if (venta?.unidad_id) {
+              await supabase
+                .from('unidades')
+                .update({ estado: 'vendido' })
+                .eq('id', venta.unidad_id);
+            }
+          }
         }
         
         setVentasPayments(paymentsData);

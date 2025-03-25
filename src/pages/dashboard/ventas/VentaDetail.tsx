@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronLeft, Building2, Home, Calendar, CreditCard, Edit, Users } from 'lucide-react';
+import { ChevronLeft, Building2, Home, Calendar, CreditCard, Edit, Users, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import { useVentaDetail } from '@/hooks/useVentaDetail';
@@ -14,6 +15,7 @@ import { VentaProgress } from './components/VentaProgress';
 import { PagoDialog } from './components/PagoDialog';
 import { VentaEditDialog } from './components/VentaEditDialog';
 import { CompradorDialog } from './components/CompradorDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const VentaDetail = () => {
   const { ventaId } = useParams<{ ventaId: string }>();
@@ -30,8 +32,12 @@ const VentaDetail = () => {
     montoPagado,
     progreso,
     refetch,
-    compradorVentaId
+    compradorVentaId,
+    updateVentaStatus
   } = useVentaDetail(ventaId);
+
+  // Check if sale status should be updated based on payment progress
+  const canMarkAsCompleted = venta?.estado === 'en_proceso' && progreso >= 100;
 
   if (isLoading) {
     return (
@@ -69,6 +75,31 @@ const VentaDetail = () => {
           </Button>
           
           <div className="flex gap-2">
+            {canMarkAsCompleted && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="success">
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Marcar como Completada
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Completar Venta</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción marcará la venta como "completada" y la unidad como "vendida". 
+                      ¿Desea continuar?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => updateVentaStatus('completada')}>
+                      Confirmar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             <Button 
               variant="outline" 
               onClick={() => setOpenCompradorDialog(true)}

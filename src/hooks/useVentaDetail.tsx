@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Venta } from './useVentas';
 import { Pago } from './usePagos';
 import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Comprador {
   id: string;
@@ -18,6 +19,7 @@ export const useVentaDetail = (ventaId?: string) => {
   const [compradores, setCompradores] = useState<Comprador[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   
   // Fetch venta details
   const fetchVentaDetail = async (): Promise<Venta | null> => {
@@ -76,7 +78,7 @@ export const useVentaDetail = (ventaId?: string) => {
             .from('pagos')
             .select('id', { count: 'exact', head: true })
             .eq('comprador_venta_id', item.id)
-            .eq('estado', 'registrado'); // Cambiado de 'verificado' a 'registrado'
+            .eq('estado', 'registrado');
             
           return {
             id: item.id,
@@ -161,6 +163,101 @@ export const useVentaDetail = (ventaId?: string) => {
     ? Math.round((montoPagado / venta.precio_total) * 100)
     : 0;
 
+  // Update venta status if needed
+  useEffect(() => {
+    const updateVentaStatus = async () => {
+      if (!venta || !ventaId) return;
+      
+      // Check if we've reached 100% payment but status is still "en_proceso"
+      if (progreso >= 100 && venta.estado === 'en_proceso') {
+        try {
+          // Update venta status to "completada"
+          const { error } = await supabase
+            .from('ventas')
+            .update({ 
+              estado: 'completada',
+              fecha_actualizacion: new Date().toISOString()
+            })
+            .eq('id', ventaId);
+            
+          if (error) {
+            console.error('Error al actualizar estado de venta:', error);
+            return;
+          }
+          
+          // Also update the unidad status to "vendido"
+          if (venta.unidad?.id) {
+            const { error: unidadError } = await supabase
+              .from('unidades')
+              .update({ estado: 'vendido' })
+              .eq('id', venta.unidad.id);
+              
+            if (unidadError) {
+              console.error('Error al actualizar estado de unidad:', unidadError);
+            }
+          }
+          
+          // Refresh data
+          refetchVenta();
+          
+          toast({
+            title: "¡Venta completada!",
+            description: "La venta ha sido marcada como completada porque se ha alcanzado el 100% del pago.",
+          });
+        } catch (err) {
+          console.error('Error en actualización automática de estado:', err);
+        }
+      }
+    };
+    
+    updateVentaStatus();
+  }, [progreso, venta, ventaId, toast, refetchVenta]);
+
+  // Manual function to update venta status
+  const updateVentaStatus = async (newStatus: string) => {
+    if (!ventaId) return false;
+    
+    try {
+      const { error } = await supabase
+        .from('ventas')
+        .update({ 
+          estado: newStatus,
+          fecha_actualizacion: new Date().toISOString()
+        })
+        .eq('id', ventaId);
+        
+      if (error) throw error;
+      
+      // If marking as completada, also update unidad status
+      if (newStatus === 'completada' && venta?.unidad?.id) {
+        const { error: unidadError } = await supabase
+          .from('unidades')
+          .update({ estado: 'vendido' })
+          .eq('id', venta.unidad.id);
+          
+        if (unidadError) {
+          console.error('Error al actualizar estado de unidad:', unidadError);
+        }
+      }
+      
+      toast({
+        title: "Estado actualizado",
+        description: `La venta ha sido marcada como "${newStatus}".`,
+      });
+      
+      await refetchVenta();
+      return true;
+    } catch (err) {
+      console.error('Error al actualizar estado:', err);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de la venta.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   // Refetch all data
   const refetch = async () => {
     await refetchVenta();
@@ -178,7 +275,8 @@ export const useVentaDetail = (ventaId?: string) => {
     montoPagado,
     progreso,
     refetch,
-    compradorVentaId
+    compradorVentaId,
+    updateVentaStatus
   };
 };
 
