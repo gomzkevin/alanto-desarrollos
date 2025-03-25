@@ -70,7 +70,7 @@ export function SubscriptionPlans() {
       toast({
         title: "¡Suscripción exitosa!",
         description: "Tu suscripción ha sido activada correctamente.",
-        variant: "success",
+        variant: "default", // Changed from "success" to "default"
       });
       
       // Clean up URL parameters
@@ -82,7 +82,7 @@ export function SubscriptionPlans() {
       toast({
         title: "Suscripción cancelada",
         description: "Has cancelado el proceso de suscripción.",
-        variant: "destructive",
+        variant: "destructive", // This is a valid variant
       });
       
       // Clean up URL parameters
