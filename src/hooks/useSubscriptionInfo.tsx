@@ -117,27 +117,27 @@ export const useSubscriptionInfo = () => {
       const resourceType = plan.features.tipo || null;
       console.log('Resource type:', resourceType);
       
-      // Get resource counts based on the plan type
+      // Get resource counts - improved version with better error handling and more precise queries
       let resourceCount = 0;
       
       try {
-        if (empresaId) {
-          if (resourceType === 'desarrollo') {
-            // Para planes tipo 'desarrollo', contamos directamente los desarrollos
-            const { count, error: countError } = await supabase
-              .from('desarrollos')
-              .select('*', { count: 'exact', head: true })
-              .eq('empresa_id', empresaId);
-              
-            if (countError) {
-              console.error('Error counting desarrollos:', countError);
-            } else if (count !== null) {
-              resourceCount = count;
-              console.log(`Found ${count} desarrollos for empresa_id ${empresaId}`);
-            }
-          } else if (resourceType === 'prototipo') {
-            // Para planes tipo 'prototipo', contamos todos los prototipos asociados a todos los desarrollos de la empresa
-            // Primero obtenemos todos los IDs de desarrollos para esta empresa
+        if (resourceType === 'desarrollo' && empresaId) {
+          // For desarrollo plans, count desarrollos filtered by empresa_id
+          const { count, error: countError } = await supabase
+            .from('desarrollos')
+            .select('*', { count: 'exact', head: true })
+            .eq('empresa_id', empresaId);
+            
+          if (countError) {
+            console.error('Error counting desarrollos:', countError);
+          } else if (count !== null) {
+            resourceCount = count;
+            console.log(`Found ${count} desarrollos for empresa_id ${empresaId}`);
+          }
+        } else if (resourceType === 'prototipo') {
+          // For prototipo plans, count all prototipos associated with the empresa's desarrollos
+          if (empresaId) {
+            // First, get all desarrollo_ids for this empresa
             const { data: desarrollos, error: desarError } = await supabase
               .from('desarrollos')
               .select('id')
@@ -146,11 +146,11 @@ export const useSubscriptionInfo = () => {
             if (desarError) {
               console.error('Error getting empresa desarrollos:', desarError);
             } else if (desarrollos && desarrollos.length > 0) {
-              // Obtenemos todos los IDs de desarrollos
+              // Get all desarrollo IDs
               const desarrolloIds = desarrollos.map(d => d.id);
               console.log('Desarrollo IDs for this empresa:', desarrolloIds);
               
-              // Contamos prototipos asociados con estos desarrollos
+              // Count prototipos associated with these desarrollos
               const { count: protoCount, error: protoError } = await supabase
                 .from('prototipos')
                 .select('*', { count: 'exact', head: true })

@@ -169,40 +169,65 @@ serve(async (req) => {
     });
 
     try {
-      // Create the checkout session with simplified parameters based on Stripe's example
-      const session = await stripe.checkout.sessions.create({
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
-        mode: 'subscription',
+      // Obtener los datos de precio desde Stripe
+      let isMetered = false;
+      
+      try {
+        console.log("Retrieving price data for:", priceId);
+        const price = await stripe.prices.retrieve(priceId);
+        console.log("Retrieved price data:", JSON.stringify(price, null, 2));
+        
+        // Comprobar si es un precio con facturación por uso (metered)
+        isMetered = price?.recurring?.usage_type === 'metered';
+        console.log("Is metered pricing:", isMetered);
+      } catch (priceError) {
+        console.error("Error retrieving price data from Stripe:", priceError);
+        // Continuamos con el valor predeterminado de isMetered = false
+      }
+      
+      // Configurar los items para la compra según el tipo de precio
+      const lineItems = isMetered 
+        ? [{ price: priceId }]  // Para facturación por uso, no incluimos cantidad
+        : [{ price: priceId, quantity: 1 }];  // Para facturación normal, incluimos cantidad
+      
+      console.log("Line items for checkout:", JSON.stringify(lineItems, null, 2));
+
+      // Crear la sesión de checkout con Stripe
+      const sessionParams = {
+        line_items: lineItems,
+        mode: "subscription",
         success_url: successUrl,
         cancel_url: cancelUrl,
-        customer_email: userData.email,
-        client_reference_id: userId,
+        customer_email: userData.email, // Use email from the user data
+        client_reference_id: userId, // to link session to your user
         metadata: {
           user_id: userId,
           plan_id: planId,
           empresa_id: userData.empresa_id,
+          plan_name: planData.name,
         },
-      });
-
+        subscription_data: {
+          metadata: {
+            user_id: userId,
+            plan_id: planId,
+            empresa_id: userData.empresa_id,
+          },
+        },
+      };
+      
+      console.log("Creating session with params:", JSON.stringify(sessionParams, null, 2));
+      
+      const session = await stripe.checkout.sessions.create(sessionParams);
       console.log("Stripe checkout session created successfully:", session.id);
       console.log("Session URL:", session.url);
 
-      // Return the session URL for redirection with clear cache control
+      // Return the session URL for redirection
       return new Response(
-        JSON.stringify({ 
-          url: session.url,
-          sessionId: session.id
-        }),
+        JSON.stringify({ url: session.url }),
         {
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json",
-            "Cache-Control": "no-cache, no-store, must-revalidate"
           },
           status: 200,
         }
