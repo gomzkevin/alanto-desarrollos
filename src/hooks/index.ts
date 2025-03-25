@@ -13,3 +13,4 @@ export { default as useDesarrolloStats } from './useDesarrolloStats';
 export { default as useUnidades } from './useUnidades';
 export { default as usePermissions } from './usePermissions';
 export { default as useVentas } from './useVentas';
+export { default as useVentaDetail } from './useVentaDetail';
