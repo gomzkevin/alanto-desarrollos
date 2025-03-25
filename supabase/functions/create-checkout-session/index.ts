@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import Stripe from 'https://esm.sh/stripe@14.0.0';
@@ -39,7 +38,7 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Stripe with your secret key from environment variables
+    // Initialize Stripe
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeSecretKey) {
       console.error("STRIPE_SECRET_KEY is not configured");
@@ -54,13 +53,7 @@ serve(async (req) => {
         }
       );
     }
-    
-    // Log the Stripe secret key being used (last 4 chars)
-    if (stripeSecretKey) {
-      const lastFourChars = stripeSecretKey.slice(-4);
-      console.log(`Using Stripe key ending in: ${lastFourChars}`);
-    }
-    
+
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2023-10-16",
     });
@@ -169,74 +162,18 @@ serve(async (req) => {
     });
 
     try {
-      // Obtener los datos de precio desde Stripe
-      let isMetered = false;
-      
-      // Verificamos que el priceId existe en Stripe antes de continuar
-      try {
-        console.log("Retrieving price data for:", priceId);
-        const priceData = await stripe.prices.retrieve(priceId);
-        
-        if (!priceData) {
-          console.error("Price not found in Stripe:", priceId);
-          return new Response(
-            JSON.stringify({ error: `El plan con ID ${priceId} no existe en Stripe.` }),
-            {
-              headers: {
-                ...corsHeaders,
-                "Content-Type": "application/json",
-              },
-              status: 404,
-            }
-          );
-        }
-        
-        console.log("Retrieved price data:", JSON.stringify(priceData, null, 2));
-        
-        // Comprobar si es un precio con facturación por uso (metered)
-        if (priceData.recurring) {
-          isMetered = priceData.recurring.usage_type === 'metered';
-          console.log("Is metered pricing:", isMetered);
-        } else {
-          console.log("Price data missing recurring info or is not a subscription price");
-        }
-      } catch (priceError) {
-        console.error("Error retrieving price data from Stripe:", priceError);
-        return new Response(
-          JSON.stringify({ 
-            error: "Error al obtener información del precio en Stripe", 
-            details: priceError.message 
-          }),
-          {
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-            },
-            status: 500,
-          }
-        );
-      }
-      
-      // Configurar los items para la compra según el tipo de precio
-      const lineItems = isMetered 
-        ? [{ price: priceId }]  // Para facturación por uso, no incluimos cantidad
-        : [{ price: priceId, quantity: 1 }];  // Para facturación normal, incluimos cantidad
-      
-      console.log("Line items for checkout:", JSON.stringify(lineItems, null, 2));
-
-      // Crear la sesión de checkout con Stripe
+      // Simplified session creation with proper line items structure
       const sessionParams = {
-        line_items: lineItems,
-        mode: "subscription",
+        line_items: [{ price: priceId }], // Remove quantity for metered billing
+        mode: 'subscription',
         success_url: successUrl,
         cancel_url: cancelUrl,
-        customer_email: userData.email, // Use email from the user data
-        client_reference_id: userId, // to link session to your user
+        customer_email: userData.email,
+        client_reference_id: userId,
         metadata: {
           user_id: userId,
           plan_id: planId,
           empresa_id: userData.empresa_id,
-          plan_name: planData.name,
         },
         subscription_data: {
           metadata: {
@@ -253,7 +190,6 @@ serve(async (req) => {
       console.log("Stripe checkout session created successfully:", session.id);
       console.log("Session URL:", session.url);
 
-      // Return the session URL for redirection
       return new Response(
         JSON.stringify({ url: session.url }),
         {
