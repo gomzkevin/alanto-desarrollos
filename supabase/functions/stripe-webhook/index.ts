@@ -5,10 +5,12 @@ import Stripe from 'https://esm.sh/stripe@14.0.0';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
 serve(async (req) => {
+  console.log("Received webhook request");
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -64,6 +66,7 @@ serve(async (req) => {
     let event;
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      console.log(`Webhook signature verification successful for event: ${event.type}`);
     } catch (err) {
       console.error(`Webhook signature verification failed: ${err.message}`);
       return new Response(
@@ -112,6 +115,12 @@ serve(async (req) => {
         break;
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data.object, supabase);
+        break;
+      case 'invoice.payment_succeeded':
+        await handleInvoicePaymentSucceeded(event.data.object, supabase, stripe);
+        break;
+      case 'invoice.payment_failed':
+        await handleInvoicePaymentFailed(event.data.object, supabase);
         break;
       default:
         console.log(`Unhandled event type: ${event.type}`);
@@ -259,20 +268,31 @@ async function handleSubscriptionUpdated(subscription, supabase, stripe) {
     if (!subscriptionData) {
       console.log("Subscription not found in database, creating new record");
       
-      // Find the customer who this subscription belongs to
-      const { data: userData, error: userError } = await supabase
-        .from('usuarios')
-        .select('*')
-        .eq('email', subscription.customer_email)
-        .maybeSingle();
-        
-      if (userError) {
-        console.error("Error finding user by email:", userError);
-        throw userError;
+      // Find the customer information
+      let customerId, userId, empresaId;
+      
+      // First try to extract from metadata
+      userId = subscription.metadata?.user_id;
+      empresaId = subscription.metadata?.empresa_id;
+      
+      // If not in metadata, try to get user from customer email
+      if (!userId && subscription.customer_email) {
+        const { data: userData, error: userError } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('email', subscription.customer_email)
+          .maybeSingle();
+          
+        if (userError) {
+          console.error("Error finding user by email:", userError);
+        } else if (userData) {
+          userId = userData.auth_id;
+          empresaId = userData.empresa_id;
+        }
       }
       
-      if (!userData) {
-        console.error("User not found for email:", subscription.customer_email);
+      if (!userId) {
+        console.error("Could not determine user ID for subscription", subscription.id);
         return;
       }
       
@@ -309,9 +329,9 @@ async function handleSubscriptionUpdated(subscription, supabase, stripe) {
       const { error: insertError } = await supabase
         .from('subscriptions')
         .insert({
-          user_id: userData.auth_id,
+          user_id: userId,
           plan_id: planId,
-          empresa_id: userData.empresa_id,
+          empresa_id: empresaId,
           stripe_customer_id: subscription.customer,
           stripe_subscription_id: subscription.id,
           status: subscription.status,
@@ -377,6 +397,60 @@ async function handleSubscriptionDeleted(subscription, supabase) {
     
   } catch (error) {
     console.error("Error in handleSubscriptionDeleted:", error);
+    throw error;
+  }
+}
+
+// Handler for invoice.payment_succeeded event
+async function handleInvoicePaymentSucceeded(invoice, supabase, stripe) {
+  console.log('Processing invoice.payment_succeeded event:', invoice.id);
+  
+  try {
+    // If this is a subscription-related invoice, update our subscription
+    if (invoice.subscription) {
+      const subscriptionId = invoice.subscription;
+      
+      // Get the subscription details from Stripe to ensure we have the latest data
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      
+      // Update or create the subscription in our database
+      await handleSubscriptionUpdated(subscription, supabase, stripe);
+      
+      console.log("Subscription updated after successful payment");
+    }
+  } catch (error) {
+    console.error("Error in handleInvoicePaymentSucceeded:", error);
+    throw error;
+  }
+}
+
+// Handler for invoice.payment_failed event
+async function handleInvoicePaymentFailed(invoice, supabase) {
+  console.log('Processing invoice.payment_failed event:', invoice.id);
+  
+  try {
+    // If this is a subscription-related invoice, update our subscription
+    if (invoice.subscription) {
+      const subscriptionId = invoice.subscription;
+      
+      // Update the subscription status in our database
+      const { error: updateError } = await supabase
+        .from('subscriptions')
+        .update({
+          status: 'past_due', // or another appropriate status
+          updated_at: new Date().toISOString()
+        })
+        .eq('stripe_subscription_id', subscriptionId);
+        
+      if (updateError) {
+        console.error("Error updating subscription after payment failure:", updateError);
+        throw updateError;
+      }
+      
+      console.log("Subscription status updated after payment failure");
+    }
+  } catch (error) {
+    console.error("Error in handleInvoicePaymentFailed:", error);
     throw error;
   }
 }
