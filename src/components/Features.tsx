@@ -1,6 +1,6 @@
 
 import { useEffect, useRef } from 'react';
-import { BarChart3, FileText, Users, Building2, PieChart, Sliders, ClipboardEdit, TrendingUp } from 'lucide-react';
+import { BarChart3, FileText, Users, Building2, PieChart, Sliders, ClipboardList, TrendingUp, LayoutDashboard, Calendar, Building, Clock, Presentation } from 'lucide-react';
 
 const Features = () => {
   const revealRefs = useRef<HTMLDivElement[]>([]);
@@ -33,42 +33,42 @@ const Features = () => {
     {
       icon: <Building2 className="h-6 w-6" />,
       title: "Gestión de inventario",
-      description: "Administra desarrollos, prototipos y unidades disponibles desde una interfaz intuitiva."
+      description: "Control integral de desarrollos, prototipos y unidades disponibles con actualizaciones en tiempo real."
     },
     {
-      icon: <ClipboardEdit className="h-6 w-6" />,
-      title: "Cotizaciones personalizables",
-      description: "Crea planes de pago flexibles con anticipos, mensualidades y finiquitos configurables."
+      icon: <ClipboardList className="h-6 w-6" />,
+      title: "Pipeline de ventas",
+      description: "Seguimiento del ciclo completo de ventas desde prospectos hasta escrituración."
     },
     {
       icon: <TrendingUp className="h-6 w-6" />,
-      title: "Proyecciones financieras",
-      description: "Genera análisis de rentabilidad a 10 años con comparativas de inversión."
+      title: "Análisis de rendimiento",
+      description: "Indicadores clave de desempeño para optimizar estrategias comerciales y maximizar resultados."
     },
     {
       icon: <Users className="h-6 w-6" />,
-      title: "CRM integrado",
-      description: "Seguimiento de leads desde el primer contacto hasta el cierre de la venta."
+      title: "Gestión de equipos",
+      description: "Administra vendedores, asigna metas y monitorea resultados individuales de forma efectiva."
     },
     {
       icon: <FileText className="h-6 w-6" />,
-      title: "Generación de PDFs",
-      description: "Exporta cotizaciones y proyecciones financieras con diseño profesional."
+      title: "Documentación profesional",
+      description: "Genera cotizaciones, contratos y reportes con tu imagen corporativa integrada."
     },
     {
-      icon: <BarChart3 className="h-6 w-6" />,
-      title: "Dashboard analítico",
-      description: "Visualiza métricas de ventas, conversiones y proyecciones en tiempo real."
+      icon: <LayoutDashboard className="h-6 w-6" />,
+      title: "Dashboard ejecutivo",
+      description: "Visualiza métricas clave, proyecciones y estado general de la comercialización."
     },
     {
-      icon: <Sliders className="h-6 w-6" />,
-      title: "Parámetros configurables",
-      description: "Personaliza tasas, comisiones y otros valores para proyecciones precisas."
+      icon: <Calendar className="h-6 w-6" />,
+      title: "Planificación comercial",
+      description: "Establece metas de ventas, programación de pagos y fechas clave del proceso."
     },
     {
-      icon: <PieChart className="h-6 w-6" />,
-      title: "Comparativas de inversión",
-      description: "Demuestra el valor de la inversión inmobiliaria frente a otras alternativas."
+      icon: <Presentation className="h-6 w-6" />,
+      title: "Herramientas de presentación",
+      description: "Material visual optimizado para presentar proyectos y cerrar ventas efectivamente."
     }
   ];
 
@@ -80,11 +80,11 @@ const Features = () => {
             Características
           </div>
           <h2 className="text-slate-800">
-            Todo lo que necesitas para <span className="text-indigo-600">impulsar tus ventas</span>
+            Todo lo que necesitas para <span className="text-indigo-600">impulsar tu comercialización</span>
           </h2>
           <p className="mt-4 text-lg text-slate-600">
-            Una plataforma integral diseñada específicamente para equipos de venta de desarrollos inmobiliarios 
-            enfocados en inversionistas de propiedades vacacionales.
+            Una plataforma integral diseñada específicamente para equipos comerciales de desarrollos inmobiliarios,
+            enfocada en optimizar procesos, aumentar conversiones y maximizar resultados.
           </p>
         </div>
 

@@ -1,5 +1,5 @@
 
-import { ChevronRight, LineChart, Building, CreditCard } from 'lucide-react';
+import { ChevronRight, ClipboardList, TrendingUp, BarChart4 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 const Hero = () => {
@@ -24,13 +24,13 @@ const Hero = () => {
           
           {/* Main heading */}
           <h1 className="mt-5 text-slate-800 opacity-0 animate-fade-in stagger-1">
-            Potencia tus ventas de propiedades <span className="text-indigo-600">para inversionistas Airbnb</span>
+            Potencia tus ventas inmobiliarias con <span className="text-indigo-600">analítica avanzada y gestión comercial</span>
           </h1>
           
           {/* Subheading */}
           <p className="mt-6 text-lg md:text-xl text-slate-600 max-w-3xl opacity-0 animate-fade-in stagger-2">
-            Plataforma integral para equipos inmobiliarios que simplifica la gestión de inventario, 
-            cotizaciones y proyecciones financieras para propiedades de alquiler vacacional.
+            Plataforma integral que optimiza la gestión comercial de desarrollos inmobiliarios, 
+            aumentando conversiones y simplificando el seguimiento de ventas para maximizar el ROI.
           </p>
           
           {/* CTA Buttons */}
@@ -48,31 +48,31 @@ const Hero = () => {
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 opacity-0 animate-fade-in stagger-4">
             <div className="flex items-start p-5 rounded-xl border border-slate-200 bg-white/50 shadow-soft transition-all hover:shadow-medium hover:-translate-y-1">
               <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-indigo-50 text-indigo-600">
-                <Building className="h-6 w-6" />
+                <ClipboardList className="h-6 w-6" />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-semibold text-slate-800">Gestión de inventario</h3>
-                <p className="mt-1 text-sm text-slate-500">Administra tus desarrollos y prototipos fácilmente</p>
+                <h3 className="text-lg font-semibold text-slate-800">Gestión centralizada</h3>
+                <p className="mt-1 text-sm text-slate-500">Unifica inventario, ventas y seguimiento comercial</p>
               </div>
             </div>
             
             <div className="flex items-start p-5 rounded-xl border border-slate-200 bg-white/50 shadow-soft transition-all hover:shadow-medium hover:-translate-y-1">
               <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-teal-50 text-teal-600">
-                <CreditCard className="h-6 w-6" />
+                <TrendingUp className="h-6 w-6" />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-semibold text-slate-800">Cotizaciones personalizadas</h3>
-                <p className="mt-1 text-sm text-slate-500">Crea planes de pago a la medida para cada cliente</p>
+                <h3 className="text-lg font-semibold text-slate-800">Incrementa conversiones</h3>
+                <p className="mt-1 text-sm text-slate-500">Aumenta tus cierres de venta con herramientas especializadas</p>
               </div>
             </div>
             
             <div className="flex items-start p-5 rounded-xl border border-slate-200 bg-white/50 shadow-soft transition-all hover:shadow-medium hover:-translate-y-1">
               <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-amber-50 text-amber-600">
-                <LineChart className="h-6 w-6" />
+                <BarChart4 className="h-6 w-6" />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-semibold text-slate-800">Proyecciones financieras</h3>
-                <p className="mt-1 text-sm text-slate-500">Demuestra la rentabilidad de la inversión</p>
+                <h3 className="text-lg font-semibold text-slate-800">Reportes avanzados</h3>
+                <p className="mt-1 text-sm text-slate-500">Toma decisiones basadas en datos en tiempo real</p>
               </div>
             </div>
           </div>
