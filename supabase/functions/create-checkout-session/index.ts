@@ -169,82 +169,30 @@ serve(async (req) => {
     });
 
     try {
-      // Verificamos que el priceId existe en Stripe antes de continuar
-      console.log("Retrieving price data for:", priceId);
-      const priceData = await stripe.prices.retrieve(priceId);
-      
-      if (!priceData) {
-        console.error("Price not found in Stripe:", priceId);
-        return new Response(
-          JSON.stringify({ error: `El plan con ID ${priceId} no existe en Stripe.` }),
+      // Simplified session creation focusing on the required parameters
+      const session = await stripe.checkout.sessions.create({
+        line_items: [
           {
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-            },
-            status: 404,
-          }
-        );
-      }
-      
-      console.log("Retrieved price data:", JSON.stringify(priceData, null, 2));
-      
-      // Verify that this is indeed a subscription price
-      if (!priceData.recurring) {
-        console.error("The provided price ID is not for a subscription:", priceId);
-        return new Response(
-          JSON.stringify({ error: "El precio proporcionado no es para una suscripción." }),
-          {
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-            },
-            status: 400,
-          }
-        );
-      }
-      
-      // Comprobar si es un precio con facturación por uso (metered)
-      const isMetered = priceData.recurring.usage_type === 'metered';
-      console.log("Is metered pricing:", isMetered);
-      
-      // Configurar los items para la compra según el tipo de precio
-      const lineItems = isMetered 
-        ? [{ price: priceId }]  // Para facturación por uso, no incluimos cantidad
-        : [{ price: priceId, quantity: 1 }];  // Para facturación normal, incluimos cantidad
-      
-      console.log("Line items for checkout:", JSON.stringify(lineItems, null, 2));
-
-      // Crear la sesión de checkout con Stripe - asegurando que mode sea 'subscription'
-      const sessionParams = {
-        line_items: lineItems,
-        mode: "subscription", // Importante: debe ser 'subscription' para suscripciones
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
         success_url: successUrl,
         cancel_url: cancelUrl,
-        customer_email: userData.email, // Use email from the user data
-        client_reference_id: userId, // to link session to your user
+        customer_email: userData.email,
+        client_reference_id: userId,
         metadata: {
           user_id: userId,
           plan_id: planId,
           empresa_id: userData.empresa_id,
-          plan_name: planData.name,
         },
-        subscription_data: {
-          metadata: {
-            user_id: userId,
-            plan_id: planId,
-            empresa_id: userData.empresa_id,
-          },
-        },
-      };
-      
-      console.log("Creating session with params:", JSON.stringify(sessionParams, null, 2));
-      
-      const session = await stripe.checkout.sessions.create(sessionParams);
+      });
+
       console.log("Stripe checkout session created successfully:", session.id);
       console.log("Session URL:", session.url);
 
-      // Return the session URL for redirection
+      // Return the session URL for redirection with clear cache control
       return new Response(
         JSON.stringify({ 
           url: session.url,
