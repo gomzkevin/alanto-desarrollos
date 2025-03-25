@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { signUpWithEmailPassword } from "@/services/authService";
+import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SignupFormProps {
   onSuccess?: () => void;
@@ -16,6 +17,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [companyName, setCompanyName] = useState("");
   const navigate = useNavigate();
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -23,13 +25,36 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     setLoading(true);
     
     try {
-      const result = await signUpWithEmailPassword(email, password);
+      // Primero crear la empresa y obtener el ID
+      const { data: empresaData, error: empresaError } = await supabase
+        .from('empresa_info')
+        .insert([
+          { nombre: companyName || "Mi Empresa" }
+        ])
+        .select();
+        
+      if (empresaError) {
+        console.error("Error al crear la empresa:", empresaError);
+        toast({
+          title: "Error al crear la empresa",
+          description: empresaError.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
+      const empresaId = empresaData?.[0]?.id;
+      console.log("Empresa creada con ID:", empresaId);
+      
+      // Luego registrar al usuario como administrador de esa empresa
+      const result = await signUpWithEmailPassword(email, password, empresaId, "admin");
       
       if (result.success) {
         if (result.user || result.autoSignIn) {
           toast({
             title: "Registro e inicio de sesión exitosos",
-            description: result.message || "Has sido registrado e iniciado sesión automáticamente",
+            description: result.message || "Has sido registrado e iniciado sesión automáticamente como administrador de tu empresa",
           });
           navigate("/dashboard");
           if (onSuccess) onSuccess();
@@ -62,6 +87,20 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     <form onSubmit={handleSignUp}>
       <CardContent className="space-y-4">
         <div className="space-y-2">
+          <Label htmlFor="company-name">Nombre de la Empresa</Label>
+          <Input 
+            id="company-name" 
+            type="text" 
+            placeholder="Nombre de tu empresa" 
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            required
+          />
+        </div>
+        
+        <Separator className="my-4" />
+        
+        <div className="space-y-2">
           <Label htmlFor="signup-email">Correo electrónico</Label>
           <Input 
             id="signup-email" 
@@ -88,7 +127,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
       </CardContent>
       <CardFooter className="flex flex-col space-y-2">
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Cargando..." : "Registrarse"}
+          {loading ? "Registrando..." : "Registrarse como Administrador"}
         </Button>
       </CardFooter>
     </form>
