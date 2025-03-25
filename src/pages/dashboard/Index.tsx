@@ -1,16 +1,35 @@
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Building2, Users, Home, BarChart3, CalendarClock, TrendingUp } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, TooltipProps } from 'recharts';
+import { Building2, Users, BarChart3, TrendingUp, AlertTriangle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Link } from 'react-router-dom';
 import useDashboardMetrics from '@/hooks/useDashboardMetrics';
+import { formatCurrency } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+
+// Tooltip formatter for the charts
+const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 border rounded shadow-md">
+        <p className="font-semibold">{label}</p>
+        {payload.map((entry, index) => (
+          <p key={`item-${index}`} style={{ color: entry.color }}>
+            {entry.name}: {entry.name === 'ventas' ? formatCurrency(entry.value) : entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
 const COLORS = ['#4F46E5', '#14B8A6', '#F97066'];
 
 const Dashboard = () => {
-  const { metrics, isLoading, error } = useDashboardMetrics();
+  const { metrics, isLoading, error, refetch } = useDashboardMetrics();
   
   const salesMetrics = {
     leads: metrics?.leads || 0,
@@ -23,13 +42,55 @@ const Dashboard = () => {
   const salesData = metrics?.salesData || [];
   const inventoryData = metrics?.inventoryData || [];
 
+  const hasError = error !== null;
+
   return (
     <DashboardLayout>
       <div className="space-y-6 p-6 pb-16">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-slate-800">Dashboard</h1>
-          <p className="text-slate-600">Visualiza las métricas clave de ventas e inventario.</p>
+        <div className="flex justify-between items-center">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold text-slate-800">Dashboard</h1>
+            <p className="text-slate-600">Visualiza las métricas clave de ventas e inventario.</p>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            onClick={() => refetch()}
+            disabled={isLoading}
+            className="flex items-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+            >
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+              <path d="M3 21v-5h5" />
+            </svg>
+            Actualizar
+          </Button>
         </div>
+      
+        {hasError && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-4 flex items-center gap-3 text-red-700">
+              <AlertTriangle className="h-5 w-5" />
+              <div>
+                <p className="font-medium">Error al cargar los datos del dashboard</p>
+                <p className="text-sm">Por favor intenta de nuevo más tarde o contacta a soporte.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       
         {/* Tarjetas de métricas */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -46,7 +107,9 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardFooter className="pt-2">
-              <p className="text-xs text-green-600">↑ 12% último mes</p>
+              <Link to="/dashboard/leads" className="text-xs text-indigo-600 hover:underline">
+                Ver todos los leads →
+              </Link>
             </CardFooter>
           </Card>
           
@@ -63,7 +126,9 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardFooter className="pt-2">
-              <p className="text-xs text-green-600">↑ 8% último mes</p>
+              <Link to="/dashboard/leads?status=seguimiento" className="text-xs text-indigo-600 hover:underline">
+                Ver prospectos activos →
+              </Link>
             </CardFooter>
           </Card>
           
@@ -80,7 +145,9 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardFooter className="pt-2">
-              <p className="text-xs text-green-600">↑ 5% último mes</p>
+              <Link to="/dashboard/cotizaciones" className="text-xs text-indigo-600 hover:underline">
+                Ver cotizaciones →
+              </Link>
             </CardFooter>
           </Card>
           
@@ -97,7 +164,9 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardFooter className="pt-2">
-              <p className="text-xs text-green-600">↑ 15% último mes</p>
+              <Link to="/dashboard/ventas" className="text-xs text-teal-600 hover:underline">
+                Ver ventas →
+              </Link>
             </CardFooter>
           </Card>
         </div>
@@ -113,67 +182,95 @@ const Dashboard = () => {
           <TabsContent value="ventas" className="bg-white p-6 rounded-lg shadow-sm">
             <h3 className="text-lg font-semibold mb-4">Ventas por mes</h3>
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={salesData}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="ventas" fill="#4F46E5" />
-                </BarChart>
-              </ResponsiveContainer>
+              {isLoading ? (
+                <div className="h-full w-full flex items-center justify-center">
+                  <div className="animate-spin h-10 w-10 rounded-full border-4 border-indigo-500 border-t-transparent"></div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={salesData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis 
+                      tickFormatter={(value) => value.toLocaleString('es-MX', {
+                        notation: 'compact',
+                        compactDisplay: 'short',
+                      })}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                    <Bar dataKey="ventas" name="Ventas" fill="#4F46E5" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </TabsContent>
           
           <TabsContent value="inventario" className="bg-white p-6 rounded-lg shadow-sm">
             <h3 className="text-lg font-semibold mb-4">Estado del inventario</h3>
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={inventoryData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {inventoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              {isLoading ? (
+                <div className="h-full w-full flex items-center justify-center">
+                  <div className="animate-spin h-10 w-10 rounded-full border-4 border-indigo-500 border-t-transparent"></div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={inventoryData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                      nameKey="name"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {inventoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </TabsContent>
           
           <TabsContent value="proyecciones" className="bg-white p-6 rounded-lg shadow-sm">
             <h3 className="text-lg font-semibold mb-4">Proyecciones financieras</h3>
-            <p className="text-slate-600">
-              Próximamente: Visualización de proyecciones de ventas y rendimiento de inversiones.
-            </p>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Link to="/dashboard/proyecciones">
+                <Button>Ver proyecciones</Button>
+              </Link>
+              <p className="text-slate-600 mt-4">
+                Accede a la sección de proyecciones para visualizar proyecciones financieras detalladas.
+              </p>
+            </div>
           </TabsContent>
         </Tabs>
         
         {/* Desarrollos destacados */}
         <div className="pt-4">
-          <h3 className="text-lg font-semibold mb-4">Desarrollos destacados</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Desarrollos destacados</h3>
+            <Link to="/dashboard/desarrollos" className="text-sm text-indigo-600 hover:underline">
+              Ver todos →
+            </Link>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {isLoading ? (
               [1, 2, 3].map((i) => (
                 <div key={i} className="h-[250px] bg-slate-100 animate-pulse rounded-xl" />
               ))
-            ) : (
-              desarrollos.slice(0, 3).map((desarrollo) => (
+            ) : desarrollos.length > 0 ? (
+              desarrollos.map((desarrollo) => (
                 <Card key={desarrollo.id} className="shadow-sm">
                   <CardHeader>
                     <CardTitle>{desarrollo.nombre}</CardTitle>
@@ -202,6 +299,13 @@ const Dashboard = () => {
                   </CardFooter>
                 </Card>
               ))
+            ) : (
+              <div className="col-span-3 py-12 text-center">
+                <p className="text-slate-500 mb-4">No hay desarrollos disponibles.</p>
+                <Link to="/dashboard/desarrollos/nuevo">
+                  <Button>Crear desarrollo</Button>
+                </Link>
+              </div>
             )}
           </div>
         </div>
