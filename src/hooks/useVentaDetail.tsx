@@ -15,6 +15,21 @@ interface Comprador {
   total_pagos?: number;
 }
 
+// Extended Venta interface to ensure unidad has the id property
+interface VentaWithDetail extends Omit<Venta, 'unidad'> {
+  unidad?: {
+    id: string;
+    numero: string;
+    prototipo?: {
+      nombre: string;
+      desarrollo?: {
+        nombre: string;
+        empresa_id?: number;
+      };
+    };
+  };
+}
+
 export const useVentaDetail = (ventaId?: string) => {
   const [compradores, setCompradores] = useState<Comprador[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
@@ -22,7 +37,7 @@ export const useVentaDetail = (ventaId?: string) => {
   const { toast } = useToast();
   
   // Fetch venta details
-  const fetchVentaDetail = async (): Promise<Venta | null> => {
+  const fetchVentaDetail = async (): Promise<VentaWithDetail | null> => {
     if (!ventaId) return null;
     
     try {

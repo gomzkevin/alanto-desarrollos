@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +14,7 @@ export interface Venta {
   fecha_actualizacion: string;
   unidad_id: string;
   unidad?: {
+    id: string;
     numero: string;
     prototipo?: {
       nombre: string;
