@@ -13,6 +13,7 @@ serve(async (req) => {
   
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
+    console.log("Handling OPTIONS request");
     return new Response(null, {
       headers: corsHeaders,
       status: 200,
@@ -20,6 +21,21 @@ serve(async (req) => {
   }
 
   try {
+    // Only process POST requests for the webhook
+    if (req.method !== "POST") {
+      console.error(`Unsupported method: ${req.method}`);
+      return new Response(
+        JSON.stringify({ error: `Method ${req.method} not allowed` }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 405,
+        }
+      );
+    }
+
     // Get the stripe signature from the headers
     const signature = req.headers.get('stripe-signature');
     
@@ -37,8 +53,9 @@ serve(async (req) => {
       );
     }
 
-    // Get the raw body as text
+    // Get the raw body as text - IMPORTANT: do not parse as JSON to avoid modifying the raw body
     const body = await req.text();
+    console.log("Received webhook body length:", body.length);
     
     // Initialize Stripe
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -61,13 +78,16 @@ serve(async (req) => {
       );
     }
 
+    console.log("Stripe configuration found, initializing client");
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2025-02-24.acacia", // Updated API version to match Stripe's current version
+      apiVersion: "2025-02-24.acacia", // Using the specified API version
     });
 
     // Verify webhook signature and construct event
     let event;
     try {
+      console.log("Verifying webhook signature with secret:", webhookSecret.substring(0, 5) + "...");
+      console.log("Signature header:", signature);
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
       console.log(`Webhook signature verification successful for event: ${event.type}`);
     } catch (err) {
@@ -79,7 +99,7 @@ serve(async (req) => {
             ...corsHeaders,
             "Content-Type": "application/json",
           },
-          status: 400,
+          status: 401, // Changed to 401 for authentication failure
         }
       );
     }
@@ -102,11 +122,11 @@ serve(async (req) => {
       );
     }
     
+    console.log("Supabase configuration found, initializing client");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Handle the event
     console.log(`Processing event: ${event.type}`);
-    console.log(`Event data:`, JSON.stringify(event.data.object, null, 2));
     
     switch (event.type) {
       case 'checkout.session.completed':
@@ -129,6 +149,7 @@ serve(async (req) => {
         console.log(`Unhandled event type: ${event.type}`);
     }
 
+    console.log("Webhook processed successfully");
     return new Response(
       JSON.stringify({ received: true }),
       {
