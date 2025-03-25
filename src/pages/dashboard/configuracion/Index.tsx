@@ -10,11 +10,26 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export function ConfiguracionPage() {
   const [activeTab, setActiveTab] = useState<string>("perfil");
   const { isAdmin, userName, userEmail, isLoading: userLoading, userId } = useUserRole();
   const { toast } = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Handle URL params for subscription status
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const success = params.get('success');
+    const canceled = params.get('canceled');
+    
+    if (success === 'true') {
+      // Auto-switch to subscription tab on success
+      setActiveTab("suscripcion");
+    }
+  }, [location]);
 
   console.log("ConfiguracionPage - userId:", userId);
   console.log("ConfiguracionPage - Admin status:", isAdmin());

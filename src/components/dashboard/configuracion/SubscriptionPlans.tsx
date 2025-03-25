@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Check, Building, Home, AlertTriangle } from "lucide-react";
+import { Check, Building, Home, AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,6 +17,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface SubscriptionPlan {
   id: string;
@@ -24,6 +25,7 @@ interface SubscriptionPlan {
   description: string;
   price: number;
   interval: 'month' | 'year';
+  stripe_price_id?: string;
   features: {
     tipo?: 'desarrollo' | 'prototipo';
     precio_por_unidad?: number;
@@ -44,8 +46,11 @@ export function SubscriptionPlans() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<CurrentSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { userId } = useUserRole();
   const { subscriptionInfo } = useSubscriptionInfo();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Helper function to ensure features is always an object
   const normalizeFeatures = (features: any): SubscriptionPlan['features'] => {
@@ -54,75 +59,106 @@ export function SubscriptionPlans() {
     return {}; // Default empty object if features is not in expected format
   };
 
+  // Handle success/cancel URL parameters
   useEffect(() => {
-    const fetchPlansAndSubscription = async () => {
-      if (!userId) return;
+    const params = new URLSearchParams(location.search);
+    const success = params.get('success');
+    const canceled = params.get('canceled');
+    const planId = params.get('plan_id');
+
+    if (success === 'true' && planId) {
+      toast({
+        title: "¡Suscripción exitosa!",
+        description: "Tu suscripción ha sido activada correctamente.",
+        variant: "success",
+      });
       
-      try {
-        setIsLoading(true);
-        
-        // Fetch plans
-        const { data: plansData, error: plansError } = await supabase
-          .from('subscription_plans')
-          .select('*')
-          .order('price');
+      // Clean up URL parameters
+      navigate('/dashboard/configuracion', { replace: true });
+      
+      // Refresh subscription data
+      fetchPlansAndSubscription();
+    } else if (canceled === 'true') {
+      toast({
+        title: "Suscripción cancelada",
+        description: "Has cancelado el proceso de suscripción.",
+        variant: "destructive",
+      });
+      
+      // Clean up URL parameters
+      navigate('/dashboard/configuracion', { replace: true });
+    }
+  }, [location, navigate]);
 
-        if (plansError) {
-          throw plansError;
-        }
+  const fetchPlansAndSubscription = async () => {
+    if (!userId) return;
+    
+    try {
+      setIsLoading(true);
+      
+      // Fetch plans
+      const { data: plansData, error: plansError } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .order('price');
 
-        // Convert and ensure proper typing
-        const typedPlans: SubscriptionPlan[] = plansData?.map(plan => ({
-          ...plan,
-          interval: plan.interval === 'year' ? 'year' : 'month' as 'month' | 'year',
-          features: normalizeFeatures(plan.features)
-        })) || [];
-
-        setPlans(typedPlans);
-
-        // Fetch current subscription
-        const { data: subData, error: subError } = await supabase
-          .from('subscriptions')
-          .select('*, subscription_plans(*)')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        if (subError && subError.code !== 'PGRST116') {
-          throw subError;
-        }
-
-        // If we have subscription data, properly type it
-        if (subData) {
-          const typedSubscription: CurrentSubscription = {
-            ...subData,
-            subscription_plans: {
-              ...subData.subscription_plans,
-              interval: subData.subscription_plans.interval === 'year' 
-                ? 'year' 
-                : 'month' as 'month' | 'year',
-              features: normalizeFeatures(subData.subscription_plans.features)
-            }
-          };
-          
-          setCurrentSubscription(typedSubscription);
-        }
-      } catch (error) {
-        console.error("Error fetching subscription data:", error);
-        toast({
-          title: "Error",
-          description: "No se pudo cargar la información de suscripciones.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
+      if (plansError) {
+        throw plansError;
       }
-    };
 
+      // Convert and ensure proper typing
+      const typedPlans: SubscriptionPlan[] = plansData?.map(plan => ({
+        ...plan,
+        interval: plan.interval === 'year' ? 'year' : 'month' as 'month' | 'year',
+        features: normalizeFeatures(plan.features)
+      })) || [];
+
+      setPlans(typedPlans);
+
+      // Fetch current subscription
+      const { data: subData, error: subError } = await supabase
+        .from('subscriptions')
+        .select('*, subscription_plans(*)')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (subError && subError.code !== 'PGRST116') {
+        throw subError;
+      }
+
+      // If we have subscription data, properly type it
+      if (subData) {
+        const typedSubscription: CurrentSubscription = {
+          ...subData,
+          subscription_plans: {
+            ...subData.subscription_plans,
+            interval: subData.subscription_plans.interval === 'year' 
+              ? 'year' 
+              : 'month' as 'month' | 'year',
+            features: normalizeFeatures(subData.subscription_plans.features)
+          }
+        };
+        
+        setCurrentSubscription(typedSubscription);
+      }
+    } catch (error) {
+      console.error("Error fetching subscription data:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo cargar la información de suscripciones.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchPlansAndSubscription();
   }, [userId]);
 
-  const handleSubscribe = async (planId: string) => {
+  const handleSubscribe = async (plan: SubscriptionPlan) => {
     try {
       // Check if user already has a subscription
       if (currentSubscription) {
@@ -133,59 +169,42 @@ export function SubscriptionPlans() {
         return;
       }
 
-      // Simulate subscription creation
-      setIsLoading(true);
+      setIsProcessing(true);
       
-      const { data: planData, error: planError } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('id', planId)
-        .single();
-        
-      if (planError) throw planError;
-      
-      // For demo purposes, create a subscription directly
-      const { data: subscriptionData, error: subscriptionError } = await supabase
-        .from('subscriptions')
-        .insert({
-          user_id: userId,
-          plan_id: planId,
-          status: 'active',
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 days
-        })
-        .select('*, subscription_plans(*)');
-      
-      if (subscriptionError) throw subscriptionError;
-      
-      if (subscriptionData && subscriptionData.length > 0) {
-        const typedSubscription: CurrentSubscription = {
-          ...subscriptionData[0],
-          subscription_plans: {
-            ...subscriptionData[0].subscription_plans,
-            interval: subscriptionData[0].subscription_plans.interval === 'year' 
-              ? 'year' 
-              : 'month' as 'month' | 'year',
-            features: normalizeFeatures(subscriptionData[0].subscription_plans.features)
-          }
-        };
-        
-        setCurrentSubscription(typedSubscription);
+      // Check if the plan has a Stripe price ID
+      if (!plan.stripe_price_id) {
+        throw new Error("Este plan no tiene un ID de precio configurado");
       }
       
-      toast({
-        title: "Suscripción activada",
-        description: `Te has suscrito al plan ${planData.name} correctamente.`,
+      // Call Edge Function to create Stripe checkout session
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: {
+          priceId: plan.stripe_price_id,
+          planId: plan.id,
+          userId: userId,
+          successPath: "/dashboard/configuracion"
+        }
       });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Redirect to Stripe Checkout
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No se recibió la URL de Stripe Checkout");
+      }
+      
     } catch (error) {
-      console.error("Error subscribing to plan:", error);
+      console.error("Error initiating subscription:", error);
       toast({
         title: "Error",
-        description: "Ocurrió un error al procesar la suscripción.",
+        description: error.message || "Ocurrió un error al procesar la suscripción.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
+      setIsProcessing(false);
     }
   };
 
@@ -196,6 +215,9 @@ export function SubscriptionPlans() {
           <CardTitle>Planes de Suscripción</CardTitle>
           <CardDescription>Cargando planes disponibles...</CardDescription>
         </CardHeader>
+        <CardContent className="flex justify-center p-6">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </CardContent>
       </Card>
     );
   }
@@ -399,10 +421,21 @@ export function SubscriptionPlans() {
                   <CardFooter>
                     <Button 
                       className="w-full" 
-                      disabled={isCurrentPlan || isLoading}
-                      onClick={() => handleSubscribe(plan.id)}
+                      disabled={isCurrentPlan || isProcessing}
+                      onClick={() => handleSubscribe(plan)}
                     >
-                      {isCurrentPlan ? 'Plan Actual' : 'Suscribirse'}
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Procesando...
+                        </>
+                      ) : isCurrentPlan ? (
+                        'Plan Actual'
+                      ) : (
+                        <>
+                          Suscribirse <ExternalLink className="ml-2 h-4 w-4" />
+                        </>
+                      )}
                     </Button>
                   </CardFooter>
                 </Card>
