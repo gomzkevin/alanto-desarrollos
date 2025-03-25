@@ -5,7 +5,9 @@ import Stripe from 'https://esm.sh/stripe@14.0.0';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
+  "Access-Control-Max-Age": "86400",
 };
 
 serve(async (req) => {
@@ -59,7 +61,7 @@ serve(async (req) => {
     
     // Initialize Stripe
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "whsec_Nc7JtPRL5RN953irfYvCDmzfBassGNqF";
     
     if (!stripeSecretKey || !webhookSecret) {
       console.error("Missing Stripe configuration", { 
