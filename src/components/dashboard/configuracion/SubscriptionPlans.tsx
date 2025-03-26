@@ -212,6 +212,26 @@ export function SubscriptionPlans() {
     }
   };
 
+  // Helper function to determine if a plan is the current active plan
+  const isActivePlan = (planId: string): boolean => {
+    // Check if we have a direct match from the currentSubscription object
+    if (currentSubscription?.plan_id === planId) {
+      return true;
+    }
+    
+    // Check if we have a match from the subscription_plans.id in currentSubscription
+    if (currentSubscription?.subscription_plans?.id === planId) {
+      return true;
+    }
+    
+    // Check if we have a match from the subscriptionInfo.currentPlan.id
+    if (subscriptionInfo.isActive && subscriptionInfo.currentPlan?.id === planId) {
+      return true;
+    }
+    
+    return false;
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -390,8 +410,7 @@ export function SubscriptionPlans() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {plans.map((plan) => {
-              const isCurrentPlan = currentSubscription?.subscription_plans.id === plan.id || 
-                                    (subscriptionInfo.isActive && subscriptionInfo.currentPlan?.id === plan.id);
+              const isCurrentPlan = isActivePlan(plan.id);
               const isPlanProcessing = processingPlans[plan.id] || false;
               
               return (
