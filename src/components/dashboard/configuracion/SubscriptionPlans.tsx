@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Check, Building, Home, AlertTriangle, ExternalLink, Loader2, Building2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -341,7 +342,7 @@ export function SubscriptionPlans() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Precio:</span>
-                    <span>${subscriptionInfo.currentPlan.price}/{subscriptionInfo.currentPlan.interval}</span>
+                    <span>${subscriptionInfo.currentPlan.price}/{subscriptionInfo.currentPlan.interval === 'month' ? 'mes' : 'año'}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Estado:</span>
@@ -389,7 +390,8 @@ export function SubscriptionPlans() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {plans.map((plan) => {
-              const isCurrentPlan = currentSubscription?.plan_id === plan.id;
+              const isCurrentPlan = currentSubscription?.subscription_plans.id === plan.id || 
+                                    (subscriptionInfo.isActive && subscriptionInfo.currentPlan?.id === plan.id);
               const isPlanProcessing = processingPlans[plan.id] || false;
               
               return (
@@ -444,24 +446,30 @@ export function SubscriptionPlans() {
                     </ul>
                   </CardContent>
                   <CardFooter>
-                    <Button 
-                      className="w-full" 
-                      disabled={isCurrentPlan || isPlanProcessing}
-                      onClick={() => handleSubscribe(plan)}
-                    >
-                      {isPlanProcessing ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Procesando...
-                        </>
-                      ) : isCurrentPlan ? (
-                        'Plan Actual'
-                      ) : (
-                        <>
-                          Suscribirse <ExternalLink className="ml-2 h-4 w-4" />
-                        </>
-                      )}
-                    </Button>
+                    {isCurrentPlan ? (
+                      <Button className="w-full" variant="outline" disabled>
+                        Plan Actual
+                      </Button>
+                    ) : (
+                      <Button 
+                        className="w-full" 
+                        disabled={!!currentSubscription || isPlanProcessing}
+                        onClick={() => handleSubscribe(plan)}
+                      >
+                        {isPlanProcessing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Procesando...
+                          </>
+                        ) : currentSubscription ? (
+                          'Ya tienes un plan activo'
+                        ) : (
+                          <>
+                            Suscribirse <ExternalLink className="ml-2 h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </CardFooter>
                 </Card>
               );
