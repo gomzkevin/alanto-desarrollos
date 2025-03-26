@@ -268,7 +268,8 @@ export function SubscriptionPlans() {
                   </div>
                   {subscriptionInfo.desarrolloLimit ? (
                     <Progress 
-                      value={((subscriptionInfo.desarrolloCount || 0) / subscriptionInfo.desarrolloLimit) * 100} 
+                      value={subscriptionInfo.desarrolloLimit > 0 ? 
+                        ((subscriptionInfo.desarrolloCount || 0) / subscriptionInfo.desarrolloLimit) * 100 : 0}
                       className={(subscriptionInfo.desarrolloCount || 0) > (subscriptionInfo.desarrolloLimit || 0) ? "bg-red-100" : ""}
                     />
                   ) : null}
@@ -284,7 +285,8 @@ export function SubscriptionPlans() {
                   </div>
                   {subscriptionInfo.prototipoLimit ? (
                     <Progress 
-                      value={((subscriptionInfo.prototipoCount || 0) / (subscriptionInfo.prototipoLimit || 1)) * 100} 
+                      value={subscriptionInfo.prototipoLimit > 0 ? 
+                        ((subscriptionInfo.prototipoCount || 0) / (subscriptionInfo.prototipoLimit)) * 100 : 0}
                       className={(subscriptionInfo.prototipoCount || 0) > (subscriptionInfo.prototipoLimit || 0) ? "bg-red-100" : ""}
                     />
                   ) : null}
@@ -312,7 +314,8 @@ export function SubscriptionPlans() {
                   </div>
                   {subscriptionInfo.vendorLimit && (
                     <Progress 
-                      value={(subscriptionInfo.vendorCount / subscriptionInfo.vendorLimit) * 100} 
+                      value={subscriptionInfo.vendorLimit > 0 ?
+                        (subscriptionInfo.vendorCount / subscriptionInfo.vendorLimit) * 100 : 0}
                       className={subscriptionInfo.isOverVendorLimit ? "bg-red-100" : ""}
                     />
                   )}

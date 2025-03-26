@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from './useUserRole';
@@ -21,7 +20,6 @@ export interface SubscriptionInfo {
   vendorCount?: number;
   isOverLimit: boolean;
   isOverVendorLimit: boolean;
-  // Adding the missing properties for prototype and development counts
   desarrolloCount?: number;
   desarrolloLimit?: number;
   prototipoCount?: number;
@@ -50,7 +48,6 @@ export const useSubscriptionInfo = () => {
         setIsLoading(true);
         setError(null);
         
-        // Si tenemos un ID de empresa, intentar obtener información de suscripción a nivel de empresa
         if (empresaId) {
           const { data: rawData, error: statusError } = await supabase
             .rpc('get_subscription_status', { company_id: empresaId });
@@ -65,7 +62,28 @@ export const useSubscriptionInfo = () => {
           if (rawData) {
             console.log('Subscription status data:', rawData);
             
-            // Type assertion to prevent TypeScript errors
+            const { data: desarrolloData, error: desarrolloError } = await supabase
+              .from('desarrollos')
+              .select('id')
+              .eq('empresa_id', empresaId);
+              
+            if (desarrolloError) {
+              console.error('Error counting desarrollos:', desarrolloError);
+            }
+            
+            const desarrolloCount = desarrolloData?.length || 0;
+            
+            const { data: prototipoData, error: prototipoError } = await supabase
+              .from('prototipos')
+              .select('prototipos.id, desarrollos!inner(empresa_id)')
+              .eq('desarrollos.empresa_id', empresaId);
+              
+            if (prototipoError) {
+              console.error('Error counting prototipos:', prototipoError);
+            }
+            
+            const prototipoCount = prototipoData?.length || 0;
+            
             const data = rawData as {
               isActive: boolean;
               currentPlan?: {
@@ -84,22 +102,37 @@ export const useSubscriptionInfo = () => {
               [key: string]: any;
             };
             
-            // Actualizar state con info de suscripción
+            let desarrolloLimit = 0;
+            let prototipoLimit = 0;
+            
+            if (data.currentPlan?.features) {
+              const features = data.currentPlan.features;
+              if (features.tipo === 'desarrollo') {
+                desarrolloLimit = parseInt(features.max_recursos?.toString() || '0', 10);
+              } else if (features.tipo === 'prototipo') {
+                prototipoLimit = parseInt(features.max_recursos?.toString() || '0', 10);
+              }
+            }
+            
+            const isOverDesarrolloLimit = desarrolloLimit > 0 && desarrolloCount > desarrolloLimit;
+            const isOverPrototipoLimit = prototipoLimit > 0 && prototipoCount > prototipoLimit;
+            
             setSubscriptionInfo({
               isActive: data.isActive || false,
               currentPlan: data.currentPlan,
               renewalDate: data.renewalDate,
               resourceType: data.resourceType,
               resourceLimit: data.resourceLimit,
-              resourceCount: data.resourceCount || 0,
+              resourceCount: data.resourceType === 'desarrollo' ? desarrolloCount : 
+                            data.resourceType === 'prototipo' ? prototipoCount : 0,
               vendorLimit: data.vendorLimit,
               vendorCount: data.vendorCount || 0,
-              isOverLimit: data.resourceLimit ? data.resourceCount >= data.resourceLimit : false,
+              isOverLimit: isOverDesarrolloLimit || isOverPrototipoLimit,
               isOverVendorLimit: data.vendorLimit ? data.vendorCount >= data.vendorLimit : false,
-              desarrolloCount: data.resourceType === 'desarrollo' ? data.resourceCount || 0 : 0,
-              desarrolloLimit: data.resourceType === 'desarrollo' ? data.resourceLimit : 0,
-              prototipoCount: data.resourceType === 'prototipo' ? data.resourceCount || 0 : 0,
-              prototipoLimit: data.resourceType === 'prototipo' ? data.resourceLimit : 0
+              desarrolloCount: desarrolloCount,
+              desarrolloLimit: desarrolloLimit,
+              prototipoCount: prototipoCount,
+              prototipoLimit: prototipoLimit
             });
             
             setIsLoading(false);
@@ -107,7 +140,6 @@ export const useSubscriptionInfo = () => {
           }
         }
         
-        // Si no hay información de empresa disponible, verificar si el usuario tiene una suscripción personal
         const { data: userSubscriptions, error: subscriptionError } = await supabase
           .from('subscriptions')
           .select('*, subscription_plans(*)')
@@ -127,17 +159,14 @@ export const useSubscriptionInfo = () => {
           const subscription = userSubscriptions[0];
           const plan = subscription.subscription_plans;
           
-          // Safely extract features
           let features: Record<string, any> = {};
           if (typeof plan.features === 'object' && plan.features !== null && !Array.isArray(plan.features)) {
             features = plan.features as Record<string, any>;
           }
           
-          // Convert string dates to Date objects for proper formatting
           const renewalDate = subscription.current_period_end ? 
             new Date(subscription.current_period_end) : undefined;
           
-          // Extract resource limits with safer type handling
           const maxRecursos = features.max_recursos ? parseInt(features.max_recursos.toString(), 10) : 0;
           const maxVendedores = features.max_vendedores ? parseInt(features.max_vendedores.toString(), 10) : 0;
           const featureType = features.tipo ? features.tipo.toString() : undefined;
@@ -153,9 +182,9 @@ export const useSubscriptionInfo = () => {
             },
             renewalDate: renewalDate?.toISOString(),
             resourceLimit: maxRecursos,
-            resourceCount: 0, // No contamos recursos para suscripciones personales por ahora
+            resourceCount: 0,
             vendorLimit: maxVendedores,
-            vendorCount: 0, // No contamos vendedores para suscripciones personales por ahora
+            vendorCount: 0,
             isOverLimit: false,
             isOverVendorLimit: false,
             desarrolloCount: 0,
@@ -165,7 +194,6 @@ export const useSubscriptionInfo = () => {
           });
         } else {
           console.info('No active subscription found');
-          // No hay suscripción activa
           setSubscriptionInfo({
             isActive: false,
             isOverLimit: false,
