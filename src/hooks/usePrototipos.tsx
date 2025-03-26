@@ -1,8 +1,8 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, Json } from '@/integrations/supabase/types';
 import { toast } from '@/components/ui/use-toast';
+import { usePermissions } from './usePermissions';
 
 export type Prototipo = Tables<"prototipos">;
 
@@ -19,6 +19,7 @@ type FetchPrototiposOptions = {
 
 export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
   const { limit, desarrolloId, withDesarrollo = false } = options;
+  const { canCreatePrototipo } = usePermissions();
   
   // Function to fetch prototipos
   const fetchPrototipos = async (): Promise<ExtendedPrototipo[]> => {
@@ -90,18 +91,12 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
   });
 
   // Check if can add more prototipos based on subscription limits
-  // Aquí pasamos el tipo específico de recurso a canCreatePrototipo
   const canAddPrototipo = async () => {
     try {
-      // Importamos useUserRole para verificar permisos
-      const { default: useUserRole } = await import('./useUserRole');
-      const { canCreateResource } = useUserRole();
-      
-      // Verificar si el usuario tiene permisos para crear prototipos
-      if (!canCreateResource('prototipos')) {
+      if (!canCreatePrototipo()) {
         toast({
           title: "Permisos insuficientes",
-          description: "No tienes permisos para crear prototipos. Contacta al administrador.",
+          description: "No tienes permisos para crear prototipos. Solo los administradores pueden crear prototipos.",
           variant: "destructive",
         });
         return false;

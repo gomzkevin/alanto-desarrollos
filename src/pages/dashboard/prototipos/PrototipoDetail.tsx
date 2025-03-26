@@ -12,6 +12,8 @@ import PrototipoHeader from './components/PrototipoHeader';
 import PrototipoSpecs from './components/PrototipoSpecs';
 import PrototipoUnidades from './components/PrototipoUnidades';
 import useUnitCounts from './hooks/useUnitCounts';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const PrototipoDetail = () => {
   const { toast } = useToast();
@@ -20,6 +22,7 @@ const PrototipoDetail = () => {
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const lastRefreshTimeRef = useRef(Date.now());
+  const { isAdmin } = useUserRole();
   
   // Estados estables para las unidades
   const { 
@@ -154,7 +157,18 @@ const PrototipoDetail = () => {
         <PrototipoHeader 
           prototipo={prototipo} 
           onBack={handleBack} 
-          onEdit={() => setOpenEditDialog(true)} 
+          onEdit={() => {
+            // Solo permitir editar si es administrador
+            if (isAdmin()) {
+              setOpenEditDialog(true);
+            } else {
+              toast({
+                title: "Permisos insuficientes",
+                description: "Solo los administradores pueden editar prototipos.",
+                variant: "destructive",
+              });
+            }
+          }} 
           updatePrototipoImage={updatePrototipoImage}
         />
         
@@ -173,13 +187,15 @@ const PrototipoDetail = () => {
         </div>
       </div>
       
-      <AdminResourceDialog 
-        resourceType="prototipos"
-        resourceId={id}
-        open={openEditDialog}
-        onClose={() => setOpenEditDialog(false)}
-        onSuccess={handleRefresh}
-      />
+      {isAdmin() && (
+        <AdminResourceDialog 
+          resourceType="prototipos"
+          resourceId={id}
+          open={openEditDialog}
+          onClose={() => setOpenEditDialog(false)}
+          onSuccess={handleRefresh}
+        />
+      )}
       
       <AdminResourceDialog 
         resourceType="unidades"

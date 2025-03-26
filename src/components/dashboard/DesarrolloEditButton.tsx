@@ -15,6 +15,7 @@ interface DesarrolloEditButtonProps {
 const DesarrolloEditButton = ({ desarrollo, onSuccess }: DesarrolloEditButtonProps) => {
   const { isAdmin } = useUserRole();
   
+  // Si no es administrador, no mostrar el botón de edición
   if (!isAdmin()) {
     return null;
   }

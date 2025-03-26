@@ -38,8 +38,10 @@ export const usePermissions = () => {
   };
   
   // Función específica para verificar si se pueden crear prototipos
+  // Solo los administradores pueden crear prototipos, los vendedores no
   const canCreatePrototipo = () => {
-    return canCreateResource('prototipos') && isWithinResourceLimits();
+    // Verificamos explícitamente que sea admin para crear prototipos
+    return isAdmin() && canCreateResource('prototipos') && isWithinResourceLimits();
   };
   
   // Función específica para verificar si se pueden crear desarrollos
