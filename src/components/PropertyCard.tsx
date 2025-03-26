@@ -1,11 +1,13 @@
 
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { MapPin, Bed, Bath, Square, ChevronRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 
 interface PropertyCardProps {
+  id: number;
   image: string;
   title: string;
   location: string;
@@ -17,6 +19,7 @@ interface PropertyCardProps {
 }
 
 const PropertyCard = ({ 
+  id,
   image, 
   title, 
   location, 
@@ -86,10 +89,12 @@ const PropertyCard = ({
 
       {/* Action button */}
       <div className="px-5 pb-5">
-        <Button variant="outline" className="w-full justify-between group">
-          <span>Ver detalles</span>
-          <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-        </Button>
+        <Link to={`/desarrollo/${id}`}>
+          <Button variant="outline" className="w-full justify-between group">
+            <span>Ver detalles</span>
+            <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+          </Button>
+        </Link>
       </div>
     </div>
   );

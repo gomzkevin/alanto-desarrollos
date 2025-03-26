@@ -4,7 +4,6 @@ import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import Features from '@/components/Features';
 import Properties from '@/components/Properties';
-import Calculator from '@/components/Calculator';
 import Footer from '@/components/Footer';
 
 const Index = () => {
@@ -55,7 +54,6 @@ const Index = () => {
         <Hero />
         <Features />
         <Properties />
-        <Calculator />
       </main>
       <Footer />
       

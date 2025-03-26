@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Pages
 import HomePage from '@/pages/Index';
+import DesarrolloPreview from '@/pages/DesarrolloPreview';
 import AuthPage from '@/pages/auth/Auth';
 import DashboardPage from '@/pages/dashboard/Index';
 import LeadsPage from '@/pages/dashboard/leads/Index';
@@ -88,6 +89,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/desarrollo/:id" element={<DesarrolloPreview />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/404" element={<NotFoundPage />} />
           
