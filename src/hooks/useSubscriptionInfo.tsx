@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from './useUserRole';
@@ -62,6 +63,7 @@ export const useSubscriptionInfo = () => {
           if (rawData) {
             console.log('Subscription status data:', rawData);
             
+            // Fetch desarrollos count
             const { data: desarrolloData, error: desarrolloError } = await supabase
               .from('desarrollos')
               .select('id')
@@ -73,16 +75,18 @@ export const useSubscriptionInfo = () => {
             
             const desarrolloCount = desarrolloData?.length || 0;
             
+            // Fetch prototipos count with proper join to ensure company relation
             const { data: prototipoData, error: prototipoError } = await supabase
               .from('prototipos')
-              .select('prototipos.id, desarrollos!inner(empresa_id)')
-              .eq('desarrollos.empresa_id', empresaId);
+              .select('id, desarrollo:desarrollo_id(empresa_id)')
+              .eq('desarrollo.empresa_id', empresaId);
               
             if (prototipoError) {
               console.error('Error counting prototipos:', prototipoError);
             }
             
             const prototipoCount = prototipoData?.length || 0;
+            console.log('Prototipos count:', prototipoCount, 'data:', prototipoData);
             
             const data = rawData as {
               isActive: boolean;
