@@ -9,8 +9,9 @@ import DesarrolloEditButton from '@/components/dashboard/DesarrolloEditButton';
 import PrototipoCard from '@/components/dashboard/PrototipoCard';
 import PrototipoActions from '@/pages/dashboard/prototipos/components/PrototipoActions';
 import DesarrolloImageCarousel from '@/components/dashboard/DesarrolloImageCarousel';
-import { useDesarrollos, usePrototipos } from '@/hooks';
+import { usePrototipos } from '@/hooks';
 import { Tables } from '@/integrations/supabase/types';
+import { supabase } from '@/integrations/supabase/client';
 
 type Desarrollo = Tables<"desarrollos">;
 
@@ -21,7 +22,6 @@ const DesarrolloDetail = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   
   // Use hooks to fetch data
-  const { fetchDesarrolloById } = useDesarrollos();
   const { prototipos, isLoading: prototiposLoading, refetch: refetchPrototipos } = usePrototipos({
     desarrolloId: id || undefined,
     withDesarrollo: true
@@ -29,6 +29,22 @@ const DesarrolloDetail = () => {
   
   // Fetch desarrollo details
   useEffect(() => {
+    const fetchDesarrolloById = async (id: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('desarrollos')
+          .select('*')
+          .eq('id', id)
+          .single();
+          
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        console.error('Error fetching desarrollo:', error);
+        throw error;
+      }
+    };
+    
     const loadDesarrollo = async () => {
       if (!id) return;
       
@@ -44,7 +60,7 @@ const DesarrolloDetail = () => {
     };
     
     loadDesarrollo();
-  }, [id, fetchDesarrolloById]);
+  }, [id]);
   
   const handleBack = () => {
     navigate('/dashboard/desarrollos');
@@ -99,7 +115,25 @@ const DesarrolloDetail = () => {
           
           <DesarrolloEditButton
             desarrollo={desarrollo}
-            onSuccess={() => fetchDesarrolloById(id!).then(setDesarrollo)}
+            onSuccess={() => {
+              // After successful edit, fetch the desarrollo again
+              const fetchUpdatedDesarrollo = async () => {
+                try {
+                  const { data, error } = await supabase
+                    .from('desarrollos')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                    
+                  if (error) throw error;
+                  setDesarrollo(data);
+                } catch (error) {
+                  console.error('Error fetching updated desarrollo:', error);
+                }
+              };
+              
+              fetchUpdatedDesarrollo();
+            }}
           />
         </div>
         
@@ -114,9 +148,10 @@ const DesarrolloDetail = () => {
                 <p>{desarrollo.ubicacion}</p>
               </div>
               
+              {/* The 'tipo' field is not available on the desarrollo type */}
               <div>
                 <h3 className="font-medium">Tipo</h3>
-                <p>{desarrollo.tipo || 'No especificado'}</p>
+                <p>No especificado</p>
               </div>
               
               <div>
@@ -126,7 +161,7 @@ const DesarrolloDetail = () => {
               
               <div>
                 <h3 className="font-medium">Fecha de finalización</h3>
-                <p>{desarrollo.fecha_fin ? new Date(desarrollo.fecha_fin).toLocaleDateString() : 'No especificada'}</p>
+                <p>{desarrollo.fecha_entrega ? new Date(desarrollo.fecha_entrega).toLocaleDateString() : 'No especificada'}</p>
               </div>
             </div>
           </div>
@@ -157,7 +192,7 @@ const DesarrolloDetail = () => {
                 <PrototipoCard 
                   key={prototipo.id} 
                   prototipo={prototipo} 
-                  onPrototipoSelected={() => navigate(`/dashboard/prototipos/${prototipo.id}`)}
+                  onViewDetails={() => navigate(`/dashboard/prototipos/${prototipo.id}`)}
                 />
               ))}
             </div>
