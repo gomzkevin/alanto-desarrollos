@@ -15,7 +15,7 @@ import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 
 const properties = [
   {
-    id: '1',
+    id: 1,
     image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750',
     title: 'Torre Mirador - Unidad A1',
     location: 'Puerto Vallarta, Jalisco',
@@ -26,7 +26,7 @@ const properties = [
     category: 'Premium'
   },
   {
-    id: '2',
+    id: 2,
     image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
     title: 'Loft Urbano - Unidad B3',
     location: 'Playa del Carmen, Q. Roo',
@@ -37,7 +37,7 @@ const properties = [
     category: 'Loft'
   },
   {
-    id: '3',
+    id: 3,
     image: 'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde',
     title: 'Residencias Costa - Unidad C2',
     location: 'Los Cabos, BCS',
@@ -48,7 +48,7 @@ const properties = [
     category: 'Lujo'
   },
   {
-    id: '4',
+    id: 4,
     image: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3',
     title: 'Pent Garden - Unidad PH1',
     location: 'Tulum, Q. Roo',
@@ -59,7 +59,7 @@ const properties = [
     category: 'Penthouse'
   },
   {
-    id: '5',
+    id: 5,
     image: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d',
     title: 'Mirador Maya - Unidad M2',
     location: 'Mérida, Yucatán',
@@ -70,7 +70,7 @@ const properties = [
     category: 'Estándar'
   },
   {
-    id: '6',
+    id: 6,
     image: 'https://images.unsplash.com/photo-1600607687644-a24c75f8b507',
     title: 'Bosque Eleva - Unidad E4',
     location: 'Valle de Bravo, EdoMex',
@@ -179,6 +179,7 @@ const PropiedadesPage = () => {
             {filteredProperties.map((property) => (
               <PropertyCard
                 key={property.id}
+                id={property.id}
                 image={property.image}
                 title={property.title}
                 location={property.location}
