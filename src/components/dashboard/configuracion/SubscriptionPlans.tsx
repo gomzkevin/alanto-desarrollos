@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Check, Building, Home, AlertTriangle, ExternalLink, Loader2, Building2, Users } from "lucide-react";
+import { Check, Building, Home, AlertTriangle, ExternalLink, Loader2, Building2, Users, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useCreateCheckout } from "@/hooks/useCreateCheckout";
 
 interface SubscriptionPlan {
   id: string;
@@ -62,6 +63,7 @@ export function SubscriptionPlans() {
   const { subscriptionInfo } = useSubscriptionInfo();
   const navigate = useNavigate();
   const location = useLocation();
+  const { createCheckoutSession, isLoading: isCheckoutLoading } = useCreateCheckout();
 
   const normalizeFeatures = (features: any): SubscriptionPlan['features'] => {
     if (!features) return {};
@@ -162,14 +164,6 @@ export function SubscriptionPlans() {
 
   const handleSubscribe = async (plan: SubscriptionPlan) => {
     try {
-      if (currentSubscription) {
-        toast({
-          title: "Ya tienes una suscripción activa",
-          description: "Contacta a soporte para cambiar de plan.",
-        });
-        return;
-      }
-
       setProcessingPlans(prev => ({ ...prev, [plan.id]: true }));
       setProcessingError(null);
       
@@ -179,27 +173,13 @@ export function SubscriptionPlans() {
       
       console.log("Initiating subscription for plan:", plan.name, "price ID:", plan.stripe_price_id);
       
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: {
-          priceId: plan.stripe_price_id,
-          planId: plan.id,
-          userId: userId,
-          successPath: "/dashboard/configuracion"
-        }
+      const url = await createCheckoutSession({
+        priceId: plan.stripe_price_id,
+        planId: plan.id,
+        successPath: "/dashboard/configuracion"
       });
       
-      if (error) {
-        console.error("Edge function error:", error);
-        setProcessingError(error.message || "Error al procesar la solicitud");
-        setShowErrorDialog(true);
-        return;
-      }
-      
-      if (data?.url) {
-        console.log("Redirecting to Stripe checkout:", data.url);
-        setCheckoutUrl(data.url);
-        window.location.href = data.url;
-      } else {
+      if (!url) {
         throw new Error("No se recibió la URL de Stripe Checkout");
       }
       
@@ -230,6 +210,14 @@ export function SubscriptionPlans() {
     }
     
     return false;
+  };
+
+  // Helper function to compare plan prices to determine if it's an upgrade
+  const isPlanUpgrade = (planPrice: number): boolean => {
+    const currentPlanPrice = currentSubscription?.subscription_plans?.price || 
+                            subscriptionInfo.currentPlan?.price || 0;
+    
+    return planPrice > currentPlanPrice;
   };
 
   if (isLoading) {
@@ -412,6 +400,7 @@ export function SubscriptionPlans() {
             {plans.map((plan) => {
               const isCurrentPlan = isActivePlan(plan.id);
               const isPlanProcessing = processingPlans[plan.id] || false;
+              const canUpgrade = !isCurrentPlan && isPlanUpgrade(plan.price);
               
               return (
                 <Card key={plan.id} className={isCurrentPlan ? "border-2 border-indigo-500" : ""}>
@@ -469,10 +458,11 @@ export function SubscriptionPlans() {
                       <Button className="w-full" variant="outline" disabled>
                         Plan Actual
                       </Button>
-                    ) : (
+                    ) : currentSubscription && canUpgrade ? (
                       <Button 
                         className="w-full" 
-                        disabled={!!currentSubscription || isPlanProcessing}
+                        variant="default"
+                        disabled={isPlanProcessing}
                         onClick={() => handleSubscribe(plan)}
                       >
                         {isPlanProcessing ? (
@@ -480,8 +470,41 @@ export function SubscriptionPlans() {
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Procesando...
                           </>
-                        ) : currentSubscription ? (
-                          'Ya tienes un plan activo'
+                        ) : (
+                          <>
+                            Mejorar Plan <ArrowUpRight className="ml-2 h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
+                    ) : currentSubscription ? (
+                      <Button 
+                        className="w-full" 
+                        variant="outline"
+                        disabled={isPlanProcessing}
+                        onClick={() => handleSubscribe(plan)}
+                      >
+                        {isPlanProcessing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Procesando...
+                          </>
+                        ) : (
+                          <>
+                            Cambiar Plan <ExternalLink className="ml-2 h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button 
+                        className="w-full" 
+                        disabled={isPlanProcessing}
+                        onClick={() => handleSubscribe(plan)}
+                      >
+                        {isPlanProcessing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Procesando...
+                          </>
                         ) : (
                           <>
                             Suscribirse <ExternalLink className="ml-2 h-4 w-4" />
