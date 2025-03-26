@@ -74,19 +74,42 @@ export const useSubscriptionInfo = () => {
             }
             
             const desarrolloCount = desarrolloData?.length || 0;
+            console.log('Desarrollos count:', desarrolloCount);
             
-            // Fetch prototipos count with proper join to ensure company relation
-            const { data: prototipoData, error: prototipoError } = await supabase
-              .from('prototipos')
-              .select('id, desarrollo:desarrollo_id(empresa_id)')
-              .eq('desarrollo.empresa_id', empresaId);
+            // Fetch prototipos count by first getting all desarollos for the company,
+            // then finding prototypes linked to those developments
+            // This is a two-step process to ensure accurate company-based filtering
+            
+            // 1. Get all development IDs for the company
+            const { data: companyDesarrollos, error: companyDesarrollosError } = await supabase
+              .from('desarrollos')
+              .select('id')
+              .eq('empresa_id', empresaId);
               
-            if (prototipoError) {
-              console.error('Error counting prototipos:', prototipoError);
+            if (companyDesarrollosError) {
+              console.error('Error fetching company desarrollos:', companyDesarrollosError);
             }
             
-            const prototipoCount = prototipoData?.length || 0;
-            console.log('Prototipos count:', prototipoCount, 'data:', prototipoData);
+            // 2. If we have developments, count prototypes associated with them
+            let prototipoCount = 0;
+            if (companyDesarrollos && companyDesarrollos.length > 0) {
+              const desarrolloIds = companyDesarrollos.map(d => d.id);
+              console.log('Desarrollo IDs for company:', desarrolloIds);
+              
+              const { data: prototipoData, error: prototipoError } = await supabase
+                .from('prototipos')
+                .select('id')
+                .in('desarrollo_id', desarrolloIds);
+                
+              if (prototipoError) {
+                console.error('Error counting prototipos:', prototipoError);
+              } else {
+                prototipoCount = prototipoData?.length || 0;
+                console.log('Prototipos count:', prototipoCount, 'data:', prototipoData);
+              }
+            } else {
+              console.log('No developments found for company, prototype count is 0');
+            }
             
             const data = rawData as {
               isActive: boolean;
