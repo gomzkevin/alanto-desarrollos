@@ -5,7 +5,7 @@ import { useSubscriptionInfo } from '@/hooks/useSubscriptionInfo';
 import { useUserRole } from '@/hooks/useUserRole';
 
 export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
-  const { subscriptionInfo, isLoading } = useSubscriptionInfo();
+  const { subscriptionInfo, isLoading: subscriptionLoading } = useSubscriptionInfo();
   const { isAdmin, userId, empresaId, authChecked } = useUserRole();
   const location = useLocation();
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
     // 3. El usuario existe
     // 4. Tenemos un empresaId (la empresa existe)
     // 5. No estamos en una ruta exenta
-    if (!isLoading && authChecked && userId && empresaId && !isExemptRoute) {
+    if (!subscriptionLoading && authChecked && userId && empresaId && !isExemptRoute) {
       // Verificamos si la empresa no tiene suscripción activa (aplica a cualquier rol)
       if (!subscriptionInfo.isActive) {
         console.log('No hay suscripción activa para la empresa, redirigiendo a configuración');
@@ -37,7 +37,7 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
         }
       }
     }
-  }, [isLoading, authChecked, userId, empresaId, subscriptionInfo.isActive, isExemptRoute, navigate, location.pathname]);
+  }, [subscriptionLoading, authChecked, userId, empresaId, subscriptionInfo.isActive, isExemptRoute, navigate, location.pathname]);
   
   // Si es una ruta exenta, mostrar el contenido normal
   if (isExemptRoute) {

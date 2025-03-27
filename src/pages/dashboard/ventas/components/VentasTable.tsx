@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 
 interface VentasTableProps {
   refreshTrigger?: number;
+  estadoFilter?: string;
 }
 
 type VentaWithPayments = {
@@ -21,8 +22,8 @@ type VentaWithPayments = {
   montoPagado: number;
 }
 
-export const VentasTable = ({ refreshTrigger = 0 }: VentasTableProps) => {
-  const { ventas, isLoading, refetch } = useVentas();
+export const VentasTable = ({ refreshTrigger = 0, estadoFilter }: VentasTableProps) => {
+  const { ventas, isLoading, refetch } = useVentas({ estado: estadoFilter });
   const [ventasPayments, setVentasPayments] = useState<Record<string, VentaWithPayments>>({});
   const [loadingPayments, setLoadingPayments] = useState(false);
   const { empresaId } = useUserRole();

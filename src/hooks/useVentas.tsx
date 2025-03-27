@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,7 +52,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
         return [];
       }
       
-      // First, get desarrollos for the empresa
+      // Get desarrollos for the empresa first - this ensures we only get data for the current company
       const { data: desarrollos, error: desarrollosError } = await supabase
         .from('desarrollos')
         .select('id')
@@ -69,7 +68,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
         return [];
       }
       
-      // Get the desarrollo IDs
+      // Get the desarrollo IDs for this company only
       const desarrolloIds = desarrollos.map(d => d.id);
       console.log('Filtering ventas by desarrollos:', desarrolloIds);
       
@@ -132,12 +131,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
         `)
         .in('unidad_id', unidadIds);
       
-      // Aplicar filtros si existen
-      if (filters.desarrollo_id) {
-        // We'll filter client-side since we need to check desarrollo_id through the chain
-        console.log('Will filter by desarrollo_id:', filters.desarrollo_id);
-      }
-
+      // Apply additional filters if they exist
       if (filters.estado && filters.estado !== 'todos') {
         query = query.eq('estado', filters.estado);
       }
@@ -174,6 +168,7 @@ export const useVentas = (filters: VentasFilter = {}) => {
   const { data = [], isLoading, error, refetch } = useQuery({
     queryKey: ['ventas', filters, empresaId],
     queryFn: fetchVentas,
+    enabled: !!empresaId, // Only run the query if empresaId exists
   });
 
   const createVenta = async (ventaData: {

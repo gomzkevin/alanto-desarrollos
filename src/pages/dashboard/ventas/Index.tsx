@@ -7,11 +7,13 @@ import { PlusCircle, Search } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import VentasTable from './components/VentasTable';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const VentasPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+  const { empresaId } = useUserRole();
 
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -62,7 +64,10 @@ const VentasPage = () => {
             </div>
           </div>
 
-          <VentasTable refreshTrigger={refreshTrigger} />
+          <VentasTable 
+            refreshTrigger={refreshTrigger} 
+            estadoFilter={statusFilter !== 'todos' ? statusFilter : undefined}
+          />
         </div>
       </div>
     </DashboardLayout>
