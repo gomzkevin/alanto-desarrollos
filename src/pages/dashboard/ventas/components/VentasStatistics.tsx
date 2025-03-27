@@ -1,10 +1,9 @@
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, LineChart } from "@/components/ui/chart";
-import { useVentas } from "@/hooks/useVentas";
-import { useVentaDetail } from "@/hooks/useVentaDetail";
-import { formatCurrency } from "@/lib/utils";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CircleDollarSign, Home, ListChecks } from 'lucide-react';
+import useVentas from '@/hooks/useVentas';
+import { formatCurrency } from '@/lib/utils';
 import { useEffect, useState } from "react";
 import { format, parseISO, isAfter, isBefore } from "date-fns";
 import { es } from "date-fns/locale";
