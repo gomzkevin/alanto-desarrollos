@@ -89,12 +89,13 @@ function App() {
     <Router>
       <QueryClientProvider client={queryClient}>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/desarrollo/:id" element={<DesarrolloPreview />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/404" element={<NotFoundPage />} />
           
-          {/* Dashboard Routes */}
+          {/* Dashboard Routes - Wrapped with SubscriptionCheck */}
           <Route path="/dashboard" element={
             <SubscriptionCheck>
               <DashboardPage />
@@ -115,8 +116,6 @@ function App() {
               <DesarrolloDetailPage />
             </SubscriptionCheck>
           } />
-          {/* Propiedades route commented out */}
-          {/* <Route path="/dashboard/propiedades" element={<PropiedadesPage />} /> */}
           <Route path="/dashboard/cotizaciones" element={
             <SubscriptionCheck>
               <CotizacionesPage />
@@ -142,6 +141,7 @@ function App() {
               <PrototipoDetailPage />
             </SubscriptionCheck>
           } />
+          {/* Configuración route doesn't need subscription check as it's exempt */}
           <Route path="/dashboard/configuracion" element={<ConfiguracionPage />} />
           <Route path="/dashboard/proyecciones" element={
             <SubscriptionCheck>

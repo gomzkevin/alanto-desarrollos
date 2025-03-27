@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -19,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 import LogoutButton from './LogoutButton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useSubscriptionInfo } from '@/hooks/useSubscriptionInfo';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -29,7 +31,20 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [attemptedAuth, setAttemptedAuth] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { isLoading, userId, userEmail, userName, authChecked } = useUserRole();
+  const { isLoading: userLoading, userId, userEmail, userName, authChecked, isAdmin, empresaId } = useUserRole();
+  const { subscriptionInfo, isLoading: subscriptionLoading } = useSubscriptionInfo();
+  
+  // Verificar suscripción al cargar el dashboard para administradores
+  useEffect(() => {
+    // Solo ejecutar para administradores con empresa asignada
+    if (authChecked && !userLoading && !subscriptionLoading && userId && isAdmin() && empresaId) {
+      // Si no tiene suscripción y no está ya en configuración
+      if (!subscriptionInfo.isActive && !location.pathname.includes('/dashboard/configuracion')) {
+        console.log('Administrador sin suscripción detectado en el layout, redirigiendo a configuración');
+        navigate('/dashboard/configuracion', { replace: true });
+      }
+    }
+  }, [authChecked, userLoading, subscriptionLoading, userId, isAdmin, empresaId, subscriptionInfo.isActive, location.pathname, navigate]);
   
   const getUserInitials = () => {
     if (userName) {
@@ -80,7 +95,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     setIsSidebarOpen(false);
   }, [location.pathname]);
 
-  if (isLoading || !authChecked) {
+  if (userLoading || !authChecked) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
         <div className="text-center">

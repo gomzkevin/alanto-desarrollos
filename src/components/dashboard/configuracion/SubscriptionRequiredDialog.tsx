@@ -24,14 +24,23 @@ export function SubscriptionRequiredDialog({ open, onOpenChange }: SubscriptionR
   
   // Asegurarse de que el diálogo permanezca abierto si no hay suscripción activa
   useEffect(() => {
-    if (!isLoading && !subscriptionInfo.isActive) {
-      setInternalOpen(true);
-    } else if (subscriptionInfo.isActive) {
-      setInternalOpen(false);
-      // Navegar al dashboard si ya tiene suscripción activa
-      navigate('/dashboard');
+    if (!isLoading) {
+      if (!subscriptionInfo.isActive) {
+        setInternalOpen(true);
+      } else if (subscriptionInfo.isActive) {
+        setInternalOpen(false);
+        // Navegar al dashboard si ya tiene suscripción activa
+        navigate('/dashboard', { replace: true });
+      }
     }
   }, [isLoading, subscriptionInfo.isActive, navigate]);
+  
+  // Sincronizar estado interno con prop open
+  useEffect(() => {
+    if (open !== internalOpen) {
+      setInternalOpen(open);
+    }
+  }, [open]);
   
   // Este controlador garantiza que el diálogo no se pueda cerrar si no hay suscripción
   const handleOpenChange = (newOpen: boolean) => {
@@ -39,9 +48,12 @@ export function SubscriptionRequiredDialog({ open, onOpenChange }: SubscriptionR
     if (!newOpen && subscriptionInfo.isActive) {
       setInternalOpen(false);
       if (onOpenChange) onOpenChange(false);
-    } else {
+    } else if (!subscriptionInfo.isActive) {
       setInternalOpen(true);
       if (onOpenChange) onOpenChange(true);
+    } else {
+      setInternalOpen(newOpen);
+      if (onOpenChange) onOpenChange(newOpen);
     }
   };
   

@@ -17,7 +17,7 @@ import SubscriptionRequiredDialog from "@/components/dashboard/configuracion/Sub
 export function ConfiguracionPage() {
   const [activeTab, setActiveTab] = useState<string>("perfil");
   const { isAdmin, userName, userEmail, isLoading: userLoading, userId } = useUserRole();
-  const { subscriptionInfo } = useSubscriptionInfo();
+  const { subscriptionInfo, isLoading: subscriptionLoading } = useSubscriptionInfo();
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
@@ -27,29 +27,32 @@ export function ConfiguracionPage() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const success = params.get('success');
-    const canceled = params.get('canceled');
     
     if (success === 'true') {
       // Auto-switch to subscription tab on success
       setActiveTab("suscripcion");
+      
+      // Limpiar la URL para evitar problemas al recargar
+      navigate('/dashboard/configuracion', { replace: true });
     }
-  }, [location]);
+  }, [location, navigate]);
 
   console.log("ConfiguracionPage - userId:", userId);
   console.log("ConfiguracionPage - Admin status:", isAdmin());
   console.log("ConfiguracionPage - userLoading:", userLoading);
+  console.log("ConfiguracionPage - subscriptionInfo:", subscriptionInfo);
 
   // Check if admin has an active subscription
   useEffect(() => {
-    if (!userLoading && isAdmin() && userId) {
+    if (!userLoading && !subscriptionLoading && isAdmin() && userId) {
       // Si es administrador y no tiene suscripción activa, mostrar diálogo
       if (!subscriptionInfo.isActive) {
-        console.log("Admin sin suscripción activa, mostrando diálogo");
+        console.log("Admin sin suscripción activa, mostrando diálogo y cambiando a tab de suscripción");
         setShowSubscriptionDialog(true);
         setActiveTab("suscripcion");
       }
     }
-  }, [userLoading, isAdmin, userId, subscriptionInfo.isActive]);
+  }, [userLoading, subscriptionLoading, isAdmin, userId, subscriptionInfo.isActive]);
 
   // Set default tab based on user role
   useEffect(() => {
@@ -98,7 +101,7 @@ export function ConfiguracionPage() {
     );
   };
 
-  if (userLoading) {
+  if (userLoading || subscriptionLoading) {
     return (
       <DashboardLayout>
         <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
