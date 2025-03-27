@@ -78,7 +78,6 @@ serve(async (req) => {
     console.log("Webhook v2: Configuración de Stripe encontrada, inicializando cliente");
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2025-02-24.acacia",
-      httpClient: Stripe.createFetchHttpClient(),
     });
 
     let event;

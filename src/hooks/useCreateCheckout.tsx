@@ -21,13 +21,13 @@ export const useCreateCheckout = () => {
         description: 'Debes iniciar sesión para suscribirte',
         variant: 'destructive',
       });
-      return null;
+      return;
     }
     
     setIsLoading(true);
     
     try {
-      console.log('Iniciando suscripción para plan:', planId, 'price ID:', priceId);
+      console.log('Initiating subscription for plan:', planId, 'price ID:', priceId);
       
       // Llamar a nuestro endpoint de Supabase Edge Function para crear la sesión de checkout
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
@@ -40,7 +40,7 @@ export const useCreateCheckout = () => {
       });
       
       if (error) {
-        console.error('Error creando sesión de checkout:', error);
+        console.error('Error creating checkout session:', error);
         toast({
           title: 'Error',
           description: 'No se pudo crear la sesión de pago',
@@ -50,12 +50,12 @@ export const useCreateCheckout = () => {
       }
       
       if (data?.url) {
-        console.log('Redirigiendo a checkout de Stripe:', data.url);
+        console.log('Redirecting to Stripe checkout:', data.url);
         // Redirigir al usuario a la sesión de checkout de Stripe
         window.location.href = data.url;
         return data.url;
       } else {
-        console.error('No se recibió URL de checkout:', data);
+        console.error('No checkout URL returned:', data);
         toast({
           title: 'Error',
           description: 'No se recibió URL de pago válida',
@@ -64,7 +64,7 @@ export const useCreateCheckout = () => {
         return null;
       }
     } catch (error) {
-      console.error('Error en createCheckoutSession:', error);
+      console.error('Error in createCheckoutSession:', error);
       toast({
         title: 'Error',
         description: 'Ocurrió un error al procesar la suscripción',
