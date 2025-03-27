@@ -8,7 +8,7 @@ import { useUserRole } from '../useUserRole';
  * Hook para obtener ventas filtradas por empresa y criterios adicionales
  */
 export const useVentasQuery = (filters: VentasFilter = {}) => {
-  const { empresaId } = useUserRole();
+  const { empresaId, isLoading: isUserRoleLoading } = useUserRole();
 
   const fetchVentas = async (): Promise<Venta[]> => {
     try {
@@ -135,7 +135,7 @@ export const useVentasQuery = (filters: VentasFilter = {}) => {
   return useQuery({
     queryKey: ['ventas', filters, empresaId],
     queryFn: fetchVentas,
-    enabled: !!empresaId, // Only run the query if empresaId exists
+    enabled: !!empresaId && !isUserRoleLoading, // Only run the query if empresaId exists and user role is loaded
   });
 };
 

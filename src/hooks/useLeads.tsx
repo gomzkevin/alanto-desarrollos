@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
@@ -71,17 +70,21 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
   const { toast } = useToast();
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos();
-  const { empresaId } = useUserRole();
+  const { empresaId, isLoading: isUserRoleLoading } = useUserRole();
   
   const effectiveEmpresaId = empresa_id || empresaId;
   
   console.log("useLeads initialization with options:", { ...options, empresaId: effectiveEmpresaId });
-  console.log("Lead status options:", LEAD_STATUS_OPTIONS);
-  console.log("Lead origin options:", LEAD_ORIGIN_OPTIONS);
   
   // Function to fetch leads
   const fetchLeads = async () => {
     console.log('Fetching leads with options:', { ...options, empresaId: effectiveEmpresaId });
+    
+    // Only proceed if we have the empresaId
+    if (!effectiveEmpresaId) {
+      console.log('No empresa ID available yet, returning empty array');
+      return [];
+    }
     
     try {
       let query = supabase
@@ -101,10 +104,8 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
         query = query.or(`nombre.ilike.%${search}%,email.ilike.%${search}%,telefono.ilike.%${search}%`);
       }
       
-      // Filter by empresa_id if provided
-      if (effectiveEmpresaId) {
-        query = query.eq('empresa_id', effectiveEmpresaId);
-      }
+      // Always filter by empresa_id
+      query = query.eq('empresa_id', effectiveEmpresaId);
       
       // Apply limit if provided
       if (limit) {
@@ -138,6 +139,15 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
       throw error;
     }
   };
+
+  // Use React Query to fetch and cache the data, with proper enabled state
+  const queryResult = useQuery({
+    queryKey: ['leads', estado, agente, limit, search, effectiveEmpresaId],
+    queryFn: fetchLeads,
+    enabled: !!effectiveEmpresaId && !isUserRoleLoading, // Only run query when empresaId is available
+    retry: 3,
+    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
+  });
 
   // Function to update lead
   const updateLead = async (id: string, updatedData: Partial<Lead>) => {
@@ -176,14 +186,6 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
       throw error;
     }
   };
-
-  // Use React Query to fetch and cache the data
-  const queryResult = useQuery({
-    queryKey: ['leads', estado, agente, limit, search, effectiveEmpresaId],
-    queryFn: fetchLeads,
-    retry: 3,
-    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30 * 1000),
-  });
 
   // Function to get substatus options based on a status
   const getSubstatusOptions = (status: string) => {
@@ -239,7 +241,7 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
 
   return {
     leads: queryResult.data || [],
-    isLoading: queryResult.isLoading,
+    isLoading: queryResult.isLoading || isUserRoleLoading, // Consider user role loading as part of the loading state
     error: queryResult.error,
     refetch: queryResult.refetch,
     updateLead,

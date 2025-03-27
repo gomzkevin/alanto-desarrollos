@@ -46,7 +46,7 @@ const LeadsPage = () => {
   const [selectedEstado, setSelectedEstado] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
-  const { empresaId } = useUserRole();
+  const { empresaId, isLoading: isUserLoading } = useUserRole();
   
   const { 
     leads, 
@@ -182,7 +182,7 @@ const LeadsPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {(isLoading || isUserLoading) ? (
                 [1, 2, 3, 4, 5].map((i) => (
                   <TableRow key={i} className="animate-pulse">
                     <TableCell><div className="h-4 w-32 bg-slate-100 rounded-md"></div></TableCell>
