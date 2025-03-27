@@ -26,11 +26,35 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     setLoading(true);
     
     try {
-      // Create the company without specifying an ID - let the database generate it
+      // Get the maximum empresa_id currently in the table to generate a new one
+      const { data: maxIdData, error: maxIdError } = await supabase
+        .from('empresa_info')
+        .select('id')
+        .order('id', { ascending: false })
+        .limit(1);
+        
+      if (maxIdError) {
+        console.error("Error al obtener el ID máximo de empresa:", maxIdError);
+        toast({
+          title: "Error al crear la empresa",
+          description: maxIdError.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Calculate new ID (max + 1, or 1 if no companies exist)
+      const newEmpresaId = maxIdData && maxIdData.length > 0 ? maxIdData[0].id + 1 : 1;
+      
+      // Create the company with explicit ID
       const { data: empresaData, error: empresaError } = await supabase
         .from('empresa_info')
         .insert([
-          { nombre: companyName || "Mi Empresa" }
+          { 
+            id: newEmpresaId,
+            nombre: companyName || "Mi Empresa" 
+          }
         ])
         .select();
         
