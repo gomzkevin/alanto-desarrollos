@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useVentas } from '@/hooks/useVentas';
+import { useVentas } from '@/hooks/ventas';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
