@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -157,7 +156,10 @@ export function ConfiguracionPage() {
               </TabsContent>
 
               <TabsContent value="suscripcion" className="space-y-6">
-                <SubscriptionPlans />
+                {adminStatus && !subscriptionInfo.isActive && (
+                  <SubscriptionRequiredDialog />
+                )}
+                {subscriptionInfo.isActive && <SubscriptionPlans />}
               </TabsContent>
             </>
           )}
@@ -167,14 +169,6 @@ export function ConfiguracionPage() {
           </TabsContent>
         </Tabs>
       </div>
-      
-      {/* Mostrar diálogo de suscripción requerida si es necesario */}
-      {adminStatus && (
-        <SubscriptionRequiredDialog 
-          open={showSubscriptionDialog}
-          onOpenChange={setShowSubscriptionDialog}
-        />
-      )}
     </DashboardLayout>
   );
 }

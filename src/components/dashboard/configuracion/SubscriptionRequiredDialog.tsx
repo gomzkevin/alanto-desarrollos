@@ -5,7 +5,12 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import SubscriptionPlans from './SubscriptionPlans';
 import { Loader2 } from 'lucide-react';
 
-export function SubscriptionRequiredDialog() {
+interface SubscriptionRequiredDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function SubscriptionRequiredDialog({ open, onOpenChange }: SubscriptionRequiredDialogProps) {
   const { subscriptionInfo, isLoading } = useSubscriptionInfo();
   
   // Si hay una suscripción activa, no mostrar nada
