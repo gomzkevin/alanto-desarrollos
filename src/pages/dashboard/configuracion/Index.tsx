@@ -11,13 +11,17 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
+import SubscriptionRequiredDialog from "@/components/dashboard/configuracion/SubscriptionRequiredDialog";
 
 export function ConfiguracionPage() {
   const [activeTab, setActiveTab] = useState<string>("perfil");
   const { isAdmin, userName, userEmail, isLoading: userLoading, userId } = useUserRole();
+  const { subscriptionInfo } = useSubscriptionInfo();
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
+  const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
 
   // Handle URL params for subscription status
   useEffect(() => {
@@ -34,6 +38,18 @@ export function ConfiguracionPage() {
   console.log("ConfiguracionPage - userId:", userId);
   console.log("ConfiguracionPage - Admin status:", isAdmin());
   console.log("ConfiguracionPage - userLoading:", userLoading);
+
+  // Check if admin has an active subscription
+  useEffect(() => {
+    if (!userLoading && isAdmin() && userId) {
+      // Si es administrador y no tiene suscripción activa, mostrar diálogo
+      if (!subscriptionInfo.isActive) {
+        console.log("Admin sin suscripción activa, mostrando diálogo");
+        setShowSubscriptionDialog(true);
+        setActiveTab("suscripcion");
+      }
+    }
+  }, [userLoading, isAdmin, userId, subscriptionInfo.isActive]);
 
   // Set default tab based on user role
   useEffect(() => {
@@ -148,6 +164,14 @@ export function ConfiguracionPage() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Mostrar diálogo de suscripción requerida si es necesario */}
+      {adminStatus && (
+        <SubscriptionRequiredDialog 
+          open={showSubscriptionDialog}
+          onOpenChange={setShowSubscriptionDialog}
+        />
+      )}
     </DashboardLayout>
   );
 }

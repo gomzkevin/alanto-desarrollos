@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { supabase } from '@/integrations/supabase/client';
+import SubscriptionCheck from '@/components/dashboard/SubscriptionCheck';
 
 // Pages
 import HomePage from '@/pages/Index';
@@ -94,19 +95,59 @@ function App() {
           <Route path="/404" element={<NotFoundPage />} />
           
           {/* Dashboard Routes */}
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/dashboard/leads" element={<LeadsPage />} />
-          <Route path="/dashboard/desarrollos" element={<DesarrollosPage />} />
-          <Route path="/dashboard/desarrollos/:id" element={<DesarrolloDetailPage />} />
+          <Route path="/dashboard" element={
+            <SubscriptionCheck>
+              <DashboardPage />
+            </SubscriptionCheck>
+          } />
+          <Route path="/dashboard/leads" element={
+            <SubscriptionCheck>
+              <LeadsPage />
+            </SubscriptionCheck>
+          } />
+          <Route path="/dashboard/desarrollos" element={
+            <SubscriptionCheck>
+              <DesarrollosPage />
+            </SubscriptionCheck>
+          } />
+          <Route path="/dashboard/desarrollos/:id" element={
+            <SubscriptionCheck>
+              <DesarrolloDetailPage />
+            </SubscriptionCheck>
+          } />
           {/* Propiedades route commented out */}
           {/* <Route path="/dashboard/propiedades" element={<PropiedadesPage />} /> */}
-          <Route path="/dashboard/cotizaciones" element={<CotizacionesPage />} />
-          <Route path="/dashboard/cotizaciones/nueva" element={<NuevaCotizacionPage />} />
-          <Route path="/dashboard/ventas" element={<VentasPage />} />
-          <Route path="/dashboard/ventas/:ventaId" element={<VentaDetail />} />
-          <Route path="/dashboard/prototipos/:id" element={<PrototipoDetailPage />} />
+          <Route path="/dashboard/cotizaciones" element={
+            <SubscriptionCheck>
+              <CotizacionesPage />
+            </SubscriptionCheck>
+          } />
+          <Route path="/dashboard/cotizaciones/nueva" element={
+            <SubscriptionCheck>
+              <NuevaCotizacionPage />
+            </SubscriptionCheck>
+          } />
+          <Route path="/dashboard/ventas" element={
+            <SubscriptionCheck>
+              <VentasPage />
+            </SubscriptionCheck>
+          } />
+          <Route path="/dashboard/ventas/:ventaId" element={
+            <SubscriptionCheck>
+              <VentaDetail />
+            </SubscriptionCheck>
+          } />
+          <Route path="/dashboard/prototipos/:id" element={
+            <SubscriptionCheck>
+              <PrototipoDetailPage />
+            </SubscriptionCheck>
+          } />
           <Route path="/dashboard/configuracion" element={<ConfiguracionPage />} />
-          <Route path="/dashboard/proyecciones" element={<ProyeccionesPage />} />
+          <Route path="/dashboard/proyecciones" element={
+            <SubscriptionCheck>
+              <ProyeccionesPage />
+            </SubscriptionCheck>
+          } />
           
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/404" replace />} />
