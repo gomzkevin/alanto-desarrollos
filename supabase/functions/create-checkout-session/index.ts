@@ -1,14 +1,18 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import Stripe from 'https://esm.sh/stripe@14.0.0';
 
+// Configuración de CORS para permitir solicitudes desde cualquier origen
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Max-Age": "86400",
 };
 
 serve(async (req) => {
-  // Handle CORS preflight request
+  // Manejo de preflight requests CORS
   if (req.method === "OPTIONS") {
     console.log("Handling OPTIONS request");
     return new Response(null, {
@@ -18,17 +22,29 @@ serve(async (req) => {
   }
 
   try {
-    // Get request body
-    const requestData = await req.json();
-    const { priceId, planId, userId, successPath } = requestData;
-    
-    console.log("Creating checkout session for plan:", planId, "user:", userId);
-    
-    // Validación de datos de entrada
+    // Verificar que sea una solicitud POST
+    if (req.method !== "POST") {
+      console.error(`Unsupported method: ${req.method}`);
+      return new Response(
+        JSON.stringify({ error: `Method ${req.method} not allowed` }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 405,
+        }
+      );
+    }
+
+    // Obtener el cuerpo de la solicitud
+    const body = await req.json();
+    const { priceId, planId, userId, successPath } = body;
+
     if (!priceId || !planId || !userId) {
       console.error("Missing required parameters:", { priceId, planId, userId });
       return new Response(
-        JSON.stringify({ error: "Missing required parameters. Need priceId, planId, and userId." }),
+        JSON.stringify({ error: "Missing required parameters: priceId, planId, or userId" }),
         {
           headers: {
             ...corsHeaders,
@@ -39,27 +55,7 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Stripe
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeSecretKey) {
-      console.error("STRIPE_SECRET_KEY is not configured");
-      return new Response(
-        JSON.stringify({ error: "Stripe is not configured correctly" }),
-        {
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-          status: 500,
-        }
-      );
-    }
-
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2025-02-24.acacia",
-    });
-
-    // Create a Supabase client
+    // Inicializar cliente Supabase
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
@@ -79,31 +75,17 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user information to associate with the subscription
+    // Obtener información del usuario
     const { data: userData, error: userError } = await supabase
-      .from("usuarios")
-      .select("*, empresas:empresa_id(*)")
-      .eq("auth_id", userId)
-      .maybeSingle();
-
+      .from('usuarios')
+      .select('*')
+      .eq('auth_id', userId)
+      .single();
+      
     if (userError) {
-      console.error("Error fetching user data:", userError.message);
+      console.error("Error retrieving user data:", userError);
       return new Response(
-        JSON.stringify({ error: `Error fetching user data: ${userError.message}` }),
-        {
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-          status: 500,
-        }
-      );
-    }
-
-    if (!userData) {
-      console.error("User not found:", userId);
-      return new Response(
-        JSON.stringify({ error: "User not found" }),
+        JSON.stringify({ error: "Could not find user information" }),
         {
           headers: {
             ...corsHeaders,
@@ -114,17 +96,13 @@ serve(async (req) => {
       );
     }
 
-    // Get subscription plan details for metadata
-    const { data: planData, error: planError } = await supabase
-      .from("subscription_plans")
-      .select("*")
-      .eq("id", planId)
-      .maybeSingle();
-
-    if (planError) {
-      console.error("Error fetching plan data:", planError.message);
+    // Inicializar Stripe
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    
+    if (!stripeSecretKey) {
+      console.error("Missing Stripe configuration");
       return new Response(
-        JSON.stringify({ error: `Error fetching plan data: ${planError.message}` }),
+        JSON.stringify({ error: "Stripe is not configured correctly" }),
         {
           headers: {
             ...corsHeaders,
@@ -135,29 +113,17 @@ serve(async (req) => {
       );
     }
 
-    if (!planData) {
-      console.error("Plan not found:", planId);
-      return new Response(
-        JSON.stringify({ error: "Plan not found" }),
-        {
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-          status: 404,
-        }
-      );
-    }
-
-    // Determine the success and cancel URLs
-    const domain = req.headers.get("origin") || "http://localhost:5173";
-    const successUrl = `${domain}${successPath || "/dashboard/configuracion"}?success=true&plan_id=${planId}`;
-    const cancelUrl = `${domain}${successPath || "/dashboard/configuracion"}?canceled=true`;
-
-    console.log("Creating Stripe checkout session with: ", { 
-      priceId, 
-      domain,
-      successUrl, 
+    console.log("Creating checkout session for plan:", planId, "user:", userId);
+    
+    // Determinar la URL base para redirección
+    const origin = req.headers.get("origin") || "https://desarrollos.alanto.mx";
+    const successUrl = `${origin}${successPath || "/dashboard/configuracion"}?success=true&plan_id=${planId}`;
+    const cancelUrl = `${origin}${successPath || "/dashboard/configuracion"}?canceled=true`;
+    
+    console.log("Creating Stripe checkout session with: ", {
+      priceId,
+      domain: origin,
+      successUrl,
       cancelUrl,
       customerEmail: userData.email,
       metadata: {
@@ -168,75 +134,66 @@ serve(async (req) => {
       }
     });
 
-    try {
-      // Crear el objeto de sesión con el formato exacto que requiere Stripe
-      const sessionParams = {
-        // Formato correcto de line_items como array con objetos que contienen price y quantity
-        line_items: [
-          { 
-            price: priceId, 
-            quantity: 1
-          }
-        ],
-        mode: 'subscription',
-        success_url: successUrl,
-        cancel_url: cancelUrl,
-        customer_email: userData.email,
-        client_reference_id: userId,
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: "2025-02-24.acacia",
+      httpClient: Stripe.createFetchHttpClient(), // Asegurar que usamos Fetch como cliente HTTP
+    });
+
+    // Crear parámetros para la sesión de checkout
+    const sessionParams = {
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1
+        }
+      ],
+      mode: "subscription",
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      customer_email: userData.email,
+      client_reference_id: userId,
+      metadata: {
+        user_id: userId,
+        plan_id: planId,
+        empresa_id: userData.empresa_id,
+        user_email: userData.email
+      },
+      subscription_data: {
         metadata: {
           user_id: userId,
           plan_id: planId,
           empresa_id: userData.empresa_id,
           user_email: userData.email
-        },
-        subscription_data: {
-          metadata: {
-            user_id: userId,
-            plan_id: planId,
-            empresa_id: userData.empresa_id,
-            user_email: userData.email
-          },
-        },
-      };
-      
-      console.log("Creating session with params:", JSON.stringify(sessionParams, null, 2));
-      
-      const session = await stripe.checkout.sessions.create(sessionParams);
-      console.log("Stripe checkout session created successfully:", session.id);
-      console.log("Session URL:", session.url);
+        }
+      }
+    };
+    
+    console.log("Creating session with params:", JSON.stringify(sessionParams, null, 2));
 
-      return new Response(
-        JSON.stringify({ url: session.url }),
-        {
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-          status: 200,
-        }
-      );
-    } catch (stripeError) {
-      console.error("Stripe checkout creation error:", stripeError);
-      return new Response(
-        JSON.stringify({ 
-          error: stripeError.message || "Error creating Stripe checkout session",
-          details: stripeError
-        }),
-        {
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-          status: 500,
-        }
-      );
-    }
+    // Crear sesión de checkout
+    const session = await stripe.checkout.sessions.create(sessionParams);
+    
+    console.log("Stripe checkout session created successfully:", session.id);
+    console.log("Session URL:", session.url);
+
+    // Devolver URL de la sesión de checkout
+    return new Response(
+      JSON.stringify({ url: session.url }),
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+        status: 200,
+      }
+    );
+
   } catch (error) {
-    console.error("General error creating checkout session:", error);
+    console.error("Error creating checkout session:", error);
     return new Response(
       JSON.stringify({ 
         error: error.message || "An unexpected error occurred",
-        stack: error.stack 
+        details: error.toString()
       }),
       {
         headers: {

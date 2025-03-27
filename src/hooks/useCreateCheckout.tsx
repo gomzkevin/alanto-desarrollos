@@ -21,7 +21,7 @@ export const useCreateCheckout = () => {
         description: 'Debes iniciar sesión para suscribirte',
         variant: 'destructive',
       });
-      return;
+      return null;
     }
     
     setIsLoading(true);
@@ -43,18 +43,13 @@ export const useCreateCheckout = () => {
         console.error('Error creating checkout session:', error);
         toast({
           title: 'Error',
-          description: 'No se pudo crear la sesión de pago',
+          description: 'No se pudo crear la sesión de pago: ' + error.message,
           variant: 'destructive',
         });
         return null;
       }
       
-      if (data?.url) {
-        console.log('Redirecting to Stripe checkout:', data.url);
-        // Redirigir al usuario a la sesión de checkout de Stripe
-        window.location.href = data.url;
-        return data.url;
-      } else {
+      if (!data || !data.url) {
         console.error('No checkout URL returned:', data);
         toast({
           title: 'Error',
@@ -63,11 +58,16 @@ export const useCreateCheckout = () => {
         });
         return null;
       }
+      
+      console.log('Redirecting to Stripe checkout:', data.url);
+      // Redirigir al usuario a la sesión de checkout de Stripe
+      window.location.href = data.url;
+      return data.url;
     } catch (error) {
       console.error('Error in createCheckoutSession:', error);
       toast({
         title: 'Error',
-        description: 'Ocurrió un error al procesar la suscripción',
+        description: 'Ocurrió un error al procesar la suscripción: ' + (error.message || error),
         variant: 'destructive',
       });
       return null;
