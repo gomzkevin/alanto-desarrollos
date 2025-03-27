@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSubscriptionInfo } from '@/hooks/useSubscriptionInfo';
 import { useUserRole } from '@/hooks/useUserRole';
+import { toast } from '@/components/ui/use-toast';
 
 export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
   const { subscriptionInfo, isLoading: subscriptionLoading } = useSubscriptionInfo();
@@ -31,6 +32,12 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
       if (!subscriptionInfo.isActive) {
         console.log('No hay suscripción activa para la empresa, redirigiendo a configuración');
         
+        toast({
+          title: "Suscripción requerida",
+          description: "Tu empresa no tiene una suscripción activa. Por favor, actualiza tu plan para continuar usando todas las funcionalidades.",
+          variant: "destructive",
+        });
+        
         // Solo redirigir si no estamos ya en la página de configuración
         if (!location.pathname.includes('/dashboard/configuracion')) {
           navigate('/dashboard/configuracion', { replace: true });
@@ -49,9 +56,15 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
   
+  // Si estamos cargando, mostrar el contenido normal (la redirección se manejará en el efecto)
+  if (subscriptionLoading) {
+    return <>{children}</>;
+  }
+  
   // En este punto sabemos que:
   // 1. No tiene suscripción activa
   // 2. No está en una ruta exenta
+  // 3. No estamos cargando
   // Por lo tanto, no renderizamos nada y dejamos que el efecto redirija
   return null;
 }

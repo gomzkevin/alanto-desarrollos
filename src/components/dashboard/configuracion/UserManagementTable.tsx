@@ -53,6 +53,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
+import { usePermissions } from "@/hooks/usePermissions";
 import { signUpWithEmailPassword } from "@/services/authService";
 
 type User = {
@@ -76,38 +78,10 @@ export function UserManagementTable() {
     rol: "vendedor",
     password: "",
   });
-  const [activeSubscription, setActiveSubscription] = useState<any>(null);
-  const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(true);
   const { isAdmin, userId, empresaId } = useUserRole();
+  const { subscriptionInfo } = useSubscriptionInfo();
+  const { canCreateVendedor } = usePermissions();
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const checkSubscription = async () => {
-      if (!userId) return;
-      
-      try {
-        setIsSubscriptionLoading(true);
-        const { data, error } = await supabase
-          .from('subscriptions')
-          .select('*, subscription_plans(*)')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        if (error) {
-          console.error("Error checking subscription:", error);
-        }
-
-        setActiveSubscription(data);
-      } catch (error) {
-        console.error("Error checking subscription:", error);
-      } finally {
-        setIsSubscriptionLoading(false);
-      }
-    };
-    
-    checkSubscription();
-  }, [userId]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -205,18 +179,10 @@ export function UserManagementTable() {
       return;
     }
 
-    if (activeSubscription?.subscription_plans?.features?.max_vendedores) {
-      const vendedorCount = users.filter(u => u.rol === 'vendedor' && u.activo).length;
-      const maxVendedores = activeSubscription.subscription_plans.features.max_vendedores;
-      
-      if (vendedorCount >= maxVendedores && newUser.rol === 'vendedor') {
-        toast({
-          title: "Límite alcanzado",
-          description: `Tu plan actual permite ${maxVendedores} vendedores. Actualiza tu suscripción para añadir más.`,
-          variant: "destructive",
-        });
-        return;
-      }
+    // Verificar si puede añadir más vendedores
+    if (newUser.rol === 'vendedor' && !canCreateVendedor()) {
+      // El toast ya se muestra dentro de canCreateVendedor
+      return;
     }
 
     try {
@@ -426,16 +392,10 @@ export function UserManagementTable() {
     );
   }
 
-  const canAddMoreUsers = () => {
-    if (!activeSubscription?.subscription_plans?.features?.max_vendedores) {
-      return true;
-    }
-    
-    const vendedorCount = users.filter(u => u.rol === 'vendedor' && u.activo).length;
-    const maxVendedores = activeSubscription.subscription_plans.features.max_vendedores;
-    
-    return vendedorCount < maxVendedores;
-  };
+  // Contamos los vendedores activos
+  const activeVendorCount = users.filter(u => u.rol === 'vendedor' && u.activo).length;
+  const vendorLimit = subscriptionInfo.vendorLimit || 0;
+  const isAtVendorLimit = vendorLimit > 0 && activeVendorCount >= vendorLimit;
 
   return (
     <Card>
@@ -444,13 +404,17 @@ export function UserManagementTable() {
           <CardTitle>Gestión de Usuarios</CardTitle>
           <CardDescription>
             Administra los usuarios que tienen acceso a la plataforma.
-            {activeSubscription?.subscription_plans?.features?.max_vendedores && (
+            {vendorLimit > 0 && (
               <p className="mt-1">
-                Vendedores activos: {users.filter(u => u.rol === 'vendedor' && u.activo).length} / 
-                {activeSubscription.subscription_plans.features.max_vendedores}
+                Vendedores activos: {activeVendorCount} / {vendorLimit}
+                {isAtVendorLimit && (
+                  <span className="text-red-500 ml-2">
+                    (Límite alcanzado)
+                  </span>
+                )}
               </p>
             )}
-            {!activeSubscription && !isSubscriptionLoading && (
+            {!subscriptionInfo.isActive && (
               <p className="text-red-500 mt-1">
                 Necesitas una suscripción activa para gestionar usuarios.
               </p>
@@ -461,7 +425,7 @@ export function UserManagementTable() {
           <DialogTrigger asChild>
             <Button
               size="sm"
-              disabled={isLoading || (activeSubscription?.subscription_plans?.features?.max_vendedores && !canAddMoreUsers())}
+              disabled={isLoading || !subscriptionInfo.isActive || (newUser.rol === 'vendedor' && isAtVendorLimit)}
             >
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Usuario
@@ -533,6 +497,12 @@ export function UserManagementTable() {
                     <SelectItem value="vendedor">Vendedor</SelectItem>
                   </SelectContent>
                 </Select>
+                {newUser.rol === 'vendedor' && isAtVendorLimit && (
+                  <p className="text-sm text-red-500">
+                    Has alcanzado el límite de vendedores de tu plan ({vendorLimit}). 
+                    Actualiza tu suscripción para añadir más.
+                  </p>
+                )}
               </div>
             </div>
             <DialogFooter>
@@ -541,7 +511,7 @@ export function UserManagementTable() {
               </Button>
               <Button 
                 onClick={createNewUser} 
-                disabled={isCreatingUser}
+                disabled={isCreatingUser || (newUser.rol === 'vendedor' && isAtVendorLimit)}
               >
                 {isCreatingUser ? (
                   <>
