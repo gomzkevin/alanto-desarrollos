@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Check, Building, Home, AlertTriangle, ExternalLink, Loader2, Building2, Users, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +26,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useCreateCheckout } from "@/hooks/useCreateCheckout";
+
+const STRIPE_CUSTOMER_PORTAL_URL = "https://billing.stripe.com/p/login/test_6oE1601ki9u10hy8ww";
 
 interface SubscriptionPlan {
   id: string;
@@ -192,19 +193,19 @@ export function SubscriptionPlans() {
     }
   };
 
-  // Helper function to determine if a plan is the current active plan
+  const openStripeCustomerPortal = () => {
+    window.open(STRIPE_CUSTOMER_PORTAL_URL, '_blank');
+  };
+
   const isActivePlan = (planId: string): boolean => {
-    // Check if we have a direct match from the currentSubscription object
     if (currentSubscription?.plan_id === planId) {
       return true;
     }
     
-    // Check if we have a match from the subscription_plans.id in currentSubscription
     if (currentSubscription?.subscription_plans?.id === planId) {
       return true;
     }
     
-    // Check if we have a match from the subscriptionInfo.currentPlan.id
     if (subscriptionInfo.isActive && subscriptionInfo.currentPlan?.id === planId) {
       return true;
     }
@@ -212,7 +213,6 @@ export function SubscriptionPlans() {
     return false;
   };
 
-  // Helper function to compare plan prices to determine if it's an upgrade
   const isPlanUpgrade = (planPrice: number): boolean => {
     const currentPlanPrice = currentSubscription?.subscription_plans?.price || 
                             subscriptionInfo.currentPlan?.price || 0;
@@ -371,8 +371,12 @@ export function SubscriptionPlans() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button variant="outline" className="w-full">
-              Gestionar Suscripción
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={openStripeCustomerPortal}
+            >
+              Gestionar Suscripción <ExternalLink className="ml-2 h-4 w-4" />
             </Button>
           </CardFooter>
         </Card>
@@ -455,15 +459,19 @@ export function SubscriptionPlans() {
                   </CardContent>
                   <CardFooter>
                     {isCurrentPlan ? (
-                      <Button className="w-full" variant="outline" disabled>
-                        Plan Actual
+                      <Button 
+                        className="w-full" 
+                        variant="outline" 
+                        onClick={openStripeCustomerPortal}
+                      >
+                        Plan Actual <ExternalLink className="ml-2 h-4 w-4" />
                       </Button>
                     ) : currentSubscription && canUpgrade ? (
                       <Button 
                         className="w-full" 
                         variant="default"
                         disabled={isPlanProcessing}
-                        onClick={() => handleSubscribe(plan)}
+                        onClick={openStripeCustomerPortal}
                       >
                         {isPlanProcessing ? (
                           <>
@@ -481,7 +489,7 @@ export function SubscriptionPlans() {
                         className="w-full" 
                         variant="outline"
                         disabled={isPlanProcessing}
-                        onClick={() => handleSubscribe(plan)}
+                        onClick={openStripeCustomerPortal}
                       >
                         {isPlanProcessing ? (
                           <>
