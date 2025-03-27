@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     setLoading(true);
     
     try {
-      // Primero crear la empresa y obtener el ID
+      // Create the company without specifying an ID - let the database generate it
       const { data: empresaData, error: empresaError } = await supabase
         .from('empresa_info')
         .insert([
@@ -47,7 +48,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
       const empresaId = empresaData?.[0]?.id;
       console.log("Empresa creada con ID:", empresaId);
       
-      // Luego registrar al usuario como administrador de esa empresa
+      // Register the user as admin of that company
       const result = await signUpWithEmailPassword(email, password, empresaId, "admin");
       
       if (result.success) {
