@@ -3,7 +3,7 @@ import { useUserRole } from './useUserRole';
 import { useSubscriptionInfo } from './useSubscriptionInfo';
 
 export const usePermissions = () => {
-  const { canCreateResource, isAdmin } = useUserRole();
+  const { canCreateResource, isAdmin, empresaId } = useUserRole();
   const { subscriptionInfo } = useSubscriptionInfo();
   
   // Check if the user has active subscription
@@ -13,12 +13,13 @@ export const usePermissions = () => {
   
   // Check if user has exceeded resource limits
   const isWithinResourceLimits = () => {
-    if (isAdmin() && !hasActiveSubscription()) {
-      return false; // Admin without subscription can't create resources
+    // Verificar si es un administrador sin suscripción activa para su empresa
+    if (isAdmin() && !hasActiveSubscription() && empresaId) {
+      return false; // Admin sin suscripción para su empresa no puede crear recursos
     }
     
     if (subscriptionInfo.isOverLimit) {
-      return false; // Over the resource limit
+      return false; // Sobre el límite de recursos
     }
     
     return true;
@@ -26,12 +27,13 @@ export const usePermissions = () => {
   
   // Check if user has exceeded vendor limits
   const isWithinVendorLimits = () => {
-    if (isAdmin() && !hasActiveSubscription()) {
-      return false; // Admin without subscription can't create vendors
+    // Verificar si es un administrador sin suscripción activa para su empresa
+    if (isAdmin() && !hasActiveSubscription() && empresaId) {
+      return false; // Admin sin suscripción para su empresa no puede crear vendedores
     }
     
     if (subscriptionInfo.isOverVendorLimit) {
-      return false; // Over the vendor limit
+      return false; // Sobre el límite de vendedores
     }
     
     return true;

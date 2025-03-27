@@ -7,7 +7,7 @@ import SubscriptionRequiredDialog from './configuracion/SubscriptionRequiredDial
 
 export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
   const { subscriptionInfo, isLoading } = useSubscriptionInfo();
-  const { isAdmin, userId } = useUserRole();
+  const { isAdmin, userId, empresaId } = useUserRole();
   const [showDialog, setShowDialog] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -26,18 +26,19 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
     // 1. No estamos cargando datos
     // 2. El usuario existe
     // 3. El usuario es administrador (solo admins necesitan suscripción activa)
-    // 4. No estamos en una ruta exenta
-    if (!isLoading && userId && isAdmin() && !isExemptRoute) {
+    // 4. Tenemos un empresaId (la empresa existe)
+    // 5. No estamos en una ruta exenta
+    if (!isLoading && userId && isAdmin() && empresaId && !isExemptRoute) {
       if (!subscriptionInfo.isActive) {
-        console.log('No hay suscripción activa, redirigiendo a configuración');
-        // Mostrar el diálogo o redirigir
+        console.log('No hay suscripción activa para la empresa, redirigiendo a configuración');
+        // Mostrar el diálogo y redirigir
         setShowDialog(true);
         navigate('/dashboard/configuracion');
       }
     }
-  }, [isLoading, userId, subscriptionInfo.isActive, isAdmin, isExemptRoute, navigate]);
+  }, [isLoading, userId, empresaId, subscriptionInfo.isActive, isAdmin, isExemptRoute, navigate]);
   
-  // Si es una ruta exenta o no es admin, mostrar el contenido normal
+  // Si es una ruta exenta, no es admin, o es admin con suscripción activa, mostrar el contenido normal
   if (isExemptRoute || !isAdmin() || (isAdmin() && subscriptionInfo.isActive)) {
     return <>{children}</>;
   }

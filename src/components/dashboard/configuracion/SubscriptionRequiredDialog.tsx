@@ -47,7 +47,7 @@ export function SubscriptionRequiredDialog({ open, onOpenChange }: SubscriptionR
   
   return (
     <Dialog open={internalOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" showCloseButton={subscriptionInfo.isActive}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Suscripción Requerida</DialogTitle>
           <DialogDescription>
