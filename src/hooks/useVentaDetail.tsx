@@ -3,5 +3,6 @@
 // para mantener compatibilidad con el código existente
 
 import useVentaDetail from './ventaDetail';
+export { useVentaDetail };
 export type { Comprador, VentaWithDetail } from './ventaDetail/types';
 export default useVentaDetail;

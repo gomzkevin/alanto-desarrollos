@@ -1,15 +1,14 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CircleDollarSign, Home, ListChecks } from 'lucide-react';
-import useVentas from '@/hooks/useVentas';
-import { formatCurrency } from '@/lib/utils';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { useVentas } from '@/hooks/useVentas';
 import { useEffect, useState } from "react";
 import { format, parseISO, isAfter, isBefore } from "date-fns";
 import { es } from "date-fns/locale";
 import { BarChart, LineChart } from '@/components/ui/chart';
-import useVentaDetail from '@/hooks/useVentaDetail';
+import { useVentaDetail } from '@/hooks/useVentaDetail';
 
 const VentasStatistics = () => {
   const { ventas, isLoading } = useVentas();
@@ -129,7 +128,7 @@ const VentasStatistics = () => {
             <CardTitle>Cargando datos...</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px] flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+            <Skeleton className="animate-pulse rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500" />
           </CardContent>
         </Card>
       </div>
