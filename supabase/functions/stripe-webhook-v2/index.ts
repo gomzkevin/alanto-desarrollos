@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import Stripe from 'https://esm.sh/stripe@14.0.0';
@@ -132,6 +133,8 @@ serve(async (req) => {
         await handleCheckoutSessionCompleted(event.data.object, supabase);
         break;
       case 'customer.subscription.created':
+        await handleSubscriptionCreated(event.data.object, supabase, stripe);
+        break;
       case 'customer.subscription.updated':
         await handleSubscriptionUpdated(event.data.object, supabase, stripe);
         break;
@@ -189,33 +192,38 @@ async function handleCheckoutSessionCompleted(session, supabase) {
       return;
     }
     
-    const { data: existingSubscription, error: checkError } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('stripe_subscription_id', session.subscription)
-      .maybeSingle();
+    // Si tenemos un ID de suscripción de Stripe, verificamos si ya existe
+    if (session.subscription) {
+      const { data: existingSubscription, error: checkError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('stripe_subscription_id', session.subscription)
+        .maybeSingle();
+        
+      if (checkError) {
+        console.error("Webhook v2: Error verificando suscripción existente:", checkError);
+        throw checkError;
+      }
       
-    if (checkError) {
-      console.error("Webhook v2: Error verificando suscripción existente:", checkError);
-      throw checkError;
+      if (existingSubscription) {
+        console.log("Webhook v2: La suscripción ya existe, omitiendo creación:", existingSubscription.id);
+        return;
+      }
     }
     
-    if (existingSubscription) {
-      console.log("Webhook v2: La suscripción ya existe, omitiendo creación:", existingSubscription.id);
-      return;
-    }
-    
+    // Usamos upsert para evitar conflictos si la suscripción ya existe
+    // pero capturamos el primer pago a través de checkout.session.completed
     const { data: subscription, error: subscriptionError } = await supabase
       .from('subscriptions')
-      .insert({
+      .upsert({
         user_id,
         plan_id,
         empresa_id: empresa_id || null,
         stripe_customer_id: session.customer,
         stripe_subscription_id: session.subscription,
-        status: 'active',
+        status: 'active', // Por defecto asumimos activa hasta que sepamos más
         current_period_start: new Date().toISOString(),
-        current_period_end: null
+        current_period_end: null // Será actualizado cuando recibamos los detalles de la suscripción
       })
       .select()
       .single();
@@ -233,82 +241,58 @@ async function handleCheckoutSessionCompleted(session, supabase) {
   }
 }
 
-async function handleSubscriptionUpdated(subscription, supabase, stripe) {
-  console.log('Webhook v2: Procesando evento de actualizaci��n de suscripción ID:', subscription.id);
+// Nueva función separada para manejar específicamente eventos de suscripción creada
+async function handleSubscriptionCreated(subscription, supabase, stripe) {
+  console.log('Webhook v2: Procesando evento de suscripción creada ID:', subscription.id, 'Estado:', subscription.status);
   
   try {
-    if (!subscription.metadata?.plan_id) {
-      console.log("Webhook v2: La suscripción carece de metadatos plan_id, intentando recuperar de items de suscripción");
-      
-      const subscriptionItems = await stripe.subscriptionItems.list({
-        subscription: subscription.id,
-      });
-      
-      if (subscriptionItems.data.length > 0) {
-        const priceId = subscriptionItems.data[0].price.id;
-        
-        const { data: plans, error: planError } = await supabase
-          .from('subscription_plans')
-          .select('*')
-          .eq('stripe_price_id', priceId)
-          .maybeSingle();
-          
-        if (planError) {
-          console.error("Webhook v2: Error encontrando plan por ID de precio:", planError);
-        } else if (plans) {
-          console.log("Webhook v2: Plan encontrado para ID de precio:", plans.id);
-          
-          await stripe.subscriptions.update(subscription.id, {
-            metadata: {
-              plan_id: plans.id,
-              ...subscription.metadata
-            }
-          });
-        }
-      }
-    }
-    
-    const { data: subscriptionData, error: findError } = await supabase
+    // Verificamos si la suscripción ya existe en nuestra base de datos
+    const { data: existingSubscription, error: findError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('stripe_subscription_id', subscription.id)
       .maybeSingle();
       
     if (findError) {
-      console.error("Webhook v2: Error encontrando suscripción:", findError);
+      console.error("Webhook v2: Error verificando suscripción existente:", findError);
       throw findError;
     }
     
-    if (!subscriptionData) {
-      console.log("Webhook v2: Suscripción no encontrada en base de datos, creando nuevo registro");
+    if (existingSubscription) {
+      console.log("Webhook v2: Actualizando suscripción existente con estado:", subscription.status);
       
-      let customerId, userId, empresaId;
-      
-      userId = subscription.metadata?.user_id;
-      empresaId = subscription.metadata?.empresa_id;
-      
-      if (!userId && subscription.customer_email) {
-        const { data: userData, error: userError } = await supabase
-          .from('usuarios')
-          .select('*')
-          .eq('email', subscription.customer_email)
-          .maybeSingle();
-          
-        if (userError) {
-          console.error("Webhook v2: Error encontrando usuario por email:", userError);
-        } else if (userData) {
-          userId = userData.auth_id;
-          empresaId = userData.empresa_id;
-        }
+      // Actualizamos la suscripción existente con los datos más recientes de Stripe
+      const { error: updateError } = await supabase
+        .from('subscriptions')
+        .update({
+          status: subscription.status,
+          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          cancel_at_period_end: subscription.cancel_at_period_end,
+          updated_at: new Date().toISOString()
+        })
+        .eq('stripe_subscription_id', subscription.id);
+        
+      if (updateError) {
+        console.error("Webhook v2: Error actualizando suscripción existente:", updateError);
+        throw updateError;
       }
       
-      if (!userId) {
-        console.error("Webhook v2: No se pudo determinar ID de usuario para suscripción", subscription.id);
-        return;
-      }
+      console.log("Webhook v2: Suscripción existente actualizada con estado:", subscription.status);
+      return;
+    }
+    
+    // Si la suscripción no existe, necesitamos asegurarnos de que tengamos suficiente información
+    // para crearla correctamente
+    let userId = subscription.metadata?.user_id;
+    let planId = subscription.metadata?.plan_id;
+    let empresaId = subscription.metadata?.empresa_id;
+    
+    // Si no tenemos la información necesaria en los metadatos, intentamos obtenerla
+    if (!userId || !planId) {
+      console.log("Webhook v2: Información insuficiente en metadatos, buscando datos adicionales");
       
-      let planId = subscription.metadata?.plan_id;
-      
+      // Intentamos encontrar el ID del plan a partir del precio
       if (!planId) {
         const subscriptionItems = await stripe.subscriptionItems.list({
           subscription: subscription.id,
@@ -325,42 +309,91 @@ async function handleSubscriptionUpdated(subscription, supabase, stripe) {
             
           if (!planError && plans) {
             planId = plans.id;
+            console.log("Webhook v2: Plan encontrado por precio:", planId);
           }
         }
       }
       
-      if (!planId) {
-        console.error("Webhook v2: No se pudo determinar ID del plan para suscripción", subscription.id);
-        return;
+      // Si todavía no tenemos el user_id pero tenemos el email, buscamos el usuario
+      if (!userId && subscription.customer_email) {
+        const { data: userData, error: userError } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('email', subscription.customer_email)
+          .maybeSingle();
+          
+        if (!userError && userData) {
+          userId = userData.auth_id;
+          empresaId = userData.empresa_id;
+          console.log("Webhook v2: Usuario encontrado por email:", userId);
+        }
       }
-      
-      const { error: insertError } = await supabase
-        .from('subscriptions')
-        .insert({
-          user_id: userId,
-          plan_id: planId,
-          empresa_id: empresaId,
-          stripe_customer_id: subscription.customer,
-          stripe_subscription_id: subscription.id,
-          status: subscription.status,
-          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          cancel_at_period_end: subscription.cancel_at_period_end
-        });
-        
-      if (insertError) {
-        console.error("Webhook v2: Error creando nueva suscripción:", insertError);
-        throw insertError;
-      }
-      
-      console.log("Webhook v2: Nuevo registro de suscripción creado exitosamente");
+    }
+    
+    // Si aún nos falta información crítica, no podemos continuar
+    if (!userId || !planId) {
+      console.error("Webhook v2: No se pudo determinar user_id o plan_id para la suscripción", subscription.id);
       return;
     }
+    
+    // Creamos una nueva suscripción
+    const { data: newSubscription, error: insertError } = await supabase
+      .from('subscriptions')
+      .insert({
+        user_id: userId,
+        plan_id: planId,
+        empresa_id: empresaId,
+        stripe_customer_id: subscription.customer,
+        stripe_subscription_id: subscription.id,
+        status: subscription.status,
+        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        cancel_at_period_end: subscription.cancel_at_period_end
+      })
+      .select()
+      .single();
+      
+    if (insertError) {
+      console.error("Webhook v2: Error creando nueva suscripción:", insertError);
+      throw insertError;
+    }
+    
+    console.log("Webhook v2: Nueva suscripción creada exitosamente:", newSubscription.id);
+  } catch (error) {
+    console.error("Webhook v2: Error en handleSubscriptionCreated:", error);
+    throw error;
+  }
+}
+
+async function handleSubscriptionUpdated(subscription, supabase, stripe) {
+  console.log('Webhook v2: Procesando evento de actualización de suscripción ID:', subscription.id, 'Estado:', subscription.status);
+  
+  try {
+    // Verificamos primero si la suscripción existe en nuestra base de datos
+    const { data: existingSubscription, error: findError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('stripe_subscription_id', subscription.id)
+      .maybeSingle();
+      
+    if (findError) {
+      console.error("Webhook v2: Error buscando suscripción para actualizar:", findError);
+      throw findError;
+    }
+    
+    // Si la suscripción no existe en nuestra base de datos, intentamos crearla
+    if (!existingSubscription) {
+      console.log("Webhook v2: Suscripción no encontrada para actualizar, intentando crear nueva");
+      return await handleSubscriptionCreated(subscription, supabase, stripe);
+    }
+    
+    // Actualizamos la suscripción con la información más reciente de Stripe
+    console.log(`Webhook v2: Actualizando suscripción ${subscription.id} de estado ${existingSubscription.status} a ${subscription.status}`);
     
     const { error: updateError } = await supabase
       .from('subscriptions')
       .update({
-        status: subscription.status,
+        status: subscription.status, // Actualizamos al estado más reciente de Stripe
         current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
         current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
         cancel_at_period_end: subscription.cancel_at_period_end,
@@ -373,8 +406,7 @@ async function handleSubscriptionUpdated(subscription, supabase, stripe) {
       throw updateError;
     }
     
-    console.log("Webhook v2: Suscripción actualizada exitosamente");
-    
+    console.log("Webhook v2: Suscripción actualizada exitosamente con estado:", subscription.status);
   } catch (error) {
     console.error("Webhook v2: Error en handleSubscriptionUpdated:", error);
     throw error;
@@ -412,9 +444,13 @@ async function handleInvoicePaymentSucceeded(invoice, supabase, stripe) {
   try {
     if (invoice.subscription) {
       const subscriptionId = invoice.subscription;
+      console.log(`Webhook v2: Evento de pago exitoso para suscripción ${subscriptionId}`);
       
+      // Obtenemos los detalles más recientes de la suscripción desde Stripe
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      console.log(`Webhook v2: Estado actual de la suscripción en Stripe: ${subscription.status}`);
       
+      // Actualizamos la suscripción con los detalles más recientes
       await handleSubscriptionUpdated(subscription, supabase, stripe);
       
       console.log("Webhook v2: Suscripción actualizada después de pago exitoso");
