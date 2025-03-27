@@ -24,10 +24,10 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
     // 1. No estamos cargando datos de suscripción 
     // 2. La autenticación ya se verificó
     // 3. El usuario existe
-    // 4. El usuario es administrador (solo admins necesitan suscripción activa)
-    // 5. Tenemos un empresaId (la empresa existe)
-    // 6. No estamos en una ruta exenta
-    if (!isLoading && authChecked && userId && isAdmin() && empresaId && !isExemptRoute) {
+    // 4. Tenemos un empresaId (la empresa existe)
+    // 5. No estamos en una ruta exenta
+    if (!isLoading && authChecked && userId && empresaId && !isExemptRoute) {
+      // Verificamos si la empresa no tiene suscripción activa (aplica a cualquier rol)
       if (!subscriptionInfo.isActive) {
         console.log('No hay suscripción activa para la empresa, redirigiendo a configuración');
         
@@ -37,22 +37,21 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
         }
       }
     }
-  }, [isLoading, authChecked, userId, empresaId, subscriptionInfo.isActive, isAdmin, isExemptRoute, navigate, location.pathname]);
+  }, [isLoading, authChecked, userId, empresaId, subscriptionInfo.isActive, isExemptRoute, navigate, location.pathname]);
   
-  // Si es una ruta exenta o no es admin, mostrar el contenido normal
-  if (isExemptRoute || !isAdmin()) {
+  // Si es una ruta exenta, mostrar el contenido normal
+  if (isExemptRoute) {
     return <>{children}</>;
   }
   
-  // Si es admin y tiene una suscripción activa, mostrar el contenido normal
-  if (isAdmin() && subscriptionInfo.isActive) {
+  // Si tiene una suscripción activa, mostrar el contenido normal
+  if (subscriptionInfo.isActive) {
     return <>{children}</>;
   }
   
   // En este punto sabemos que:
-  // 1. Es un administrador 
-  // 2. No tiene suscripción activa
-  // 3. No está en una ruta exenta
+  // 1. No tiene suscripción activa
+  // 2. No está en una ruta exenta
   // Por lo tanto, no renderizamos nada y dejamos que el efecto redirija
   return null;
 }

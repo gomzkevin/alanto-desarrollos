@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -34,17 +33,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { isLoading: userLoading, userId, userEmail, userName, authChecked, isAdmin, empresaId } = useUserRole();
   const { subscriptionInfo, isLoading: subscriptionLoading } = useSubscriptionInfo();
   
-  // Verificar suscripción al cargar el dashboard para administradores
+  // Verificar suscripción al cargar el dashboard
   useEffect(() => {
-    // Solo ejecutar para administradores con empresa asignada
-    if (authChecked && !userLoading && !subscriptionLoading && userId && isAdmin() && empresaId) {
+    // Solo ejecutar cuando tenemos la información necesaria
+    if (authChecked && !userLoading && !subscriptionLoading && userId && empresaId) {
       // Si no tiene suscripción y no está ya en configuración
       if (!subscriptionInfo.isActive && !location.pathname.includes('/dashboard/configuracion')) {
-        console.log('Administrador sin suscripción detectado en el layout, redirigiendo a configuración');
+        console.log('Usuario sin suscripción detectado en el layout, redirigiendo a configuración');
         navigate('/dashboard/configuracion', { replace: true });
       }
     }
-  }, [authChecked, userLoading, subscriptionLoading, userId, isAdmin, empresaId, subscriptionInfo.isActive, location.pathname, navigate]);
+  }, [authChecked, userLoading, subscriptionLoading, userId, empresaId, subscriptionInfo.isActive, location.pathname, navigate]);
   
   const getUserInitials = () => {
     if (userName) {

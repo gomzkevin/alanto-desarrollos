@@ -12,26 +12,23 @@ import { Loader2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
 import SubscriptionRequiredDialog from "@/components/dashboard/configuracion/SubscriptionRequiredDialog";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 export function ConfiguracionPage() {
   const [activeTab, setActiveTab] = useState<string>("perfil");
-  const { isAdmin, userName, userEmail, isLoading: userLoading, userId } = useUserRole();
+  const { isAdmin, userName, userEmail, isLoading: userLoading, userId, empresaId } = useUserRole();
   const { subscriptionInfo, isLoading: subscriptionLoading } = useSubscriptionInfo();
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
 
-  // Handle URL params for subscription status
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const success = params.get('success');
     
     if (success === 'true') {
-      // Auto-switch to subscription tab on success
       setActiveTab("suscripcion");
-      
-      // Limpiar la URL para evitar problemas al recargar
       navigate('/dashboard/configuracion', { replace: true });
     }
   }, [location, navigate]);
@@ -41,19 +38,15 @@ export function ConfiguracionPage() {
   console.log("ConfiguracionPage - userLoading:", userLoading);
   console.log("ConfiguracionPage - subscriptionInfo:", subscriptionInfo);
 
-  // Check if admin has an active subscription
   useEffect(() => {
-    if (!userLoading && !subscriptionLoading && isAdmin() && userId) {
-      // Si es administrador y no tiene suscripción activa, mostrar diálogo
+    if (!userLoading && !subscriptionLoading && userId && empresaId) {
       if (!subscriptionInfo.isActive) {
-        console.log("Admin sin suscripción activa, mostrando diálogo y cambiando a tab de suscripción");
-        setShowSubscriptionDialog(true);
+        console.log("Empresa sin suscripción activa, cambiando a tab de suscripción");
         setActiveTab("suscripcion");
       }
     }
-  }, [userLoading, subscriptionLoading, isAdmin, userId, subscriptionInfo.isActive]);
+  }, [userLoading, subscriptionLoading, userId, empresaId, subscriptionInfo.isActive]);
 
-  // Set default tab based on user role
   useEffect(() => {
     console.log("Setting default tab based on admin status:", isAdmin());
     if (!isAdmin()) {
@@ -61,7 +54,6 @@ export function ConfiguracionPage() {
     }
   }, [isAdmin]);
 
-  // Simple account settings component for the "Mi Cuenta" tab
   const AccountSettings = () => {
     return (
       <Card>
@@ -148,15 +140,37 @@ export function ConfiguracionPage() {
           {adminStatus && (
             <>
               <TabsContent value="perfil" className="space-y-6">
+                {!subscriptionInfo.isActive && (
+                  <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                    <AlertTitle className="text-amber-800">
+                      Se requiere una suscripción
+                    </AlertTitle>
+                    <AlertDescription className="text-amber-700">
+                      Para poder acceder a todas las funcionalidades, su empresa necesita una suscripción activa.
+                      Por favor, vaya a la pestaña "Suscripción" para activarla.
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <CompanyProfileForm />
               </TabsContent>
 
               <TabsContent value="usuarios" className="space-y-6">
+                {!subscriptionInfo.isActive && (
+                  <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                    <AlertTitle className="text-amber-800">
+                      Se requiere una suscripción
+                    </AlertTitle>
+                    <AlertDescription className="text-amber-700">
+                      Para poder acceder a todas las funcionalidades, su empresa necesita una suscripción activa.
+                      Por favor, vaya a la pestaña "Suscripción" para activarla.
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <UserManagementTable />
               </TabsContent>
 
               <TabsContent value="suscripcion" className="space-y-6">
-                {adminStatus && !subscriptionInfo.isActive && (
+                {!subscriptionInfo.isActive && (
                   <SubscriptionRequiredDialog />
                 )}
                 {subscriptionInfo.isActive && <SubscriptionPlans />}
@@ -165,6 +179,17 @@ export function ConfiguracionPage() {
           )}
 
           <TabsContent value="cuenta" className="space-y-6">
+            {!subscriptionInfo.isActive && empresaId && (
+              <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                <AlertTitle className="text-amber-800">
+                  Se requiere una suscripción
+                </AlertTitle>
+                <AlertDescription className="text-amber-700">
+                  Su empresa no cuenta con una suscripción activa. Algunas funcionalidades estarán limitadas.
+                  {!isAdmin() && " Por favor, contacte al administrador de su empresa."}
+                </AlertDescription>
+              </Alert>
+            )}
             <AccountSettings />
           </TabsContent>
         </Tabs>

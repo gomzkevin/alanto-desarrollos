@@ -13,9 +13,9 @@ export const usePermissions = () => {
   
   // Check if user has exceeded resource limits
   const isWithinResourceLimits = () => {
-    // Verificar si es un administrador sin suscripción activa para su empresa
-    if (isAdmin() && !hasActiveSubscription() && empresaId) {
-      return false; // Admin sin suscripción para su empresa no puede crear recursos
+    // Verificar si el usuario pertenece a una empresa sin suscripción activa
+    if (empresaId && !hasActiveSubscription()) {
+      return false; // Cualquier usuario de una empresa sin suscripción no puede crear recursos
     }
     
     if (subscriptionInfo.isOverLimit) {
@@ -27,9 +27,9 @@ export const usePermissions = () => {
   
   // Check if user has exceeded vendor limits
   const isWithinVendorLimits = () => {
-    // Verificar si es un administrador sin suscripción activa para su empresa
-    if (isAdmin() && !hasActiveSubscription() && empresaId) {
-      return false; // Admin sin suscripción para su empresa no puede crear vendedores
+    // Verificar si el usuario pertenece a una empresa sin suscripción activa
+    if (empresaId && !hasActiveSubscription()) {
+      return false; // Cualquier usuario de una empresa sin suscripción no puede crear vendedores
     }
     
     if (subscriptionInfo.isOverVendorLimit) {
