@@ -53,10 +53,14 @@ export const useVentaDetail = (ventaId?: string): UseVentaDetailReturn => {
   const { montoPagado, progreso } = useProgresoCalculation(venta, pagos);
 
   // Actualización automática del estado de venta
-  useAutoUpdateVentaStatus(ventaId, venta, progreso, refetchVenta);
+  useAutoUpdateVentaStatus(ventaId, venta, progreso, async () => {
+    await refetchVenta();
+  });
 
   // Función para actualizar el estado de una venta manualmente
-  const { updateVentaStatus } = useVentaStatus(ventaId, venta, refetchVenta);
+  const { updateVentaStatus } = useVentaStatus(ventaId, venta, async () => {
+    await refetchVenta();
+  });
 
   // Refetch all data
   const refetch = async () => {

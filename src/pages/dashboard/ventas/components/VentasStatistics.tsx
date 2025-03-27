@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,6 +8,8 @@ import { formatCurrency } from '@/lib/utils';
 import { useEffect, useState } from "react";
 import { format, parseISO, isAfter, isBefore } from "date-fns";
 import { es } from "date-fns/locale";
+import { BarChart, LineChart } from '@/components/ui/chart';
+import useVentaDetail from '@/hooks/useVentaDetail';
 
 const VentasStatistics = () => {
   const { ventas, isLoading } = useVentas();
