@@ -1,82 +1,38 @@
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import SubscriptionPlans from './SubscriptionPlans';
+import React from 'react';
 import { useSubscriptionInfo } from '@/hooks/useSubscriptionInfo';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import SubscriptionPlans from './SubscriptionPlans';
 import { Loader2 } from 'lucide-react';
 
-interface SubscriptionRequiredDialogProps {
-  open: boolean;
-  onOpenChange?: (open: boolean) => void;
-}
-
-export function SubscriptionRequiredDialog({ open, onOpenChange }: SubscriptionRequiredDialogProps) {
+export function SubscriptionRequiredDialog() {
   const { subscriptionInfo, isLoading } = useSubscriptionInfo();
-  const [internalOpen, setInternalOpen] = useState(open);
-  const navigate = useNavigate();
   
-  // Asegurarse de que el diálogo permanezca abierto si no hay suscripción activa
-  useEffect(() => {
-    if (!isLoading) {
-      if (!subscriptionInfo.isActive) {
-        setInternalOpen(true);
-      } else if (subscriptionInfo.isActive) {
-        setInternalOpen(false);
-        // Navegar al dashboard si ya tiene suscripción activa
-        navigate('/dashboard', { replace: true });
-      }
-    }
-  }, [isLoading, subscriptionInfo.isActive, navigate]);
-  
-  // Sincronizar estado interno con prop open
-  useEffect(() => {
-    if (open !== internalOpen) {
-      setInternalOpen(open);
-    }
-  }, [open]);
-  
-  // Este controlador garantiza que el diálogo no se pueda cerrar si no hay suscripción
-  const handleOpenChange = (newOpen: boolean) => {
-    // Solo permitir cerrar si hay una suscripción activa
-    if (!newOpen && subscriptionInfo.isActive) {
-      setInternalOpen(false);
-      if (onOpenChange) onOpenChange(false);
-    } else if (!subscriptionInfo.isActive) {
-      setInternalOpen(true);
-      if (onOpenChange) onOpenChange(true);
-    } else {
-      setInternalOpen(newOpen);
-      if (onOpenChange) onOpenChange(newOpen);
-    }
-  };
+  // Si hay una suscripción activa, no mostrar nada
+  if (!isLoading && subscriptionInfo.isActive) {
+    return null;
+  }
   
   return (
-    <Dialog open={internalOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Suscripción Requerida</DialogTitle>
-          <DialogDescription>
-            Para continuar usando la plataforma, es necesario contar con una suscripción activa. 
-            Por favor, selecciona un plan de suscripción a continuación.
-          </DialogDescription>
-        </DialogHeader>
-        
-        {isLoading ? (
-          <div className="py-12 flex justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <SubscriptionPlans />
-        )}
-      </DialogContent>
-    </Dialog>
+    <div className="space-y-6 mb-8">
+      <Alert variant="warning" className="bg-amber-50 border-amber-200">
+        <AlertTitle className="text-amber-800 text-lg font-semibold">
+          Se requiere una suscripción
+        </AlertTitle>
+        <AlertDescription className="text-amber-700">
+          Para continuar usando todas las funciones de la plataforma, es necesario contar con una suscripción activa.
+          Por favor, selecciona un plan de suscripción a continuación.
+        </AlertDescription>
+      </Alert>
+      
+      {isLoading ? (
+        <div className="py-12 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <SubscriptionPlans />
+      )}
+    </div>
   );
 }
 

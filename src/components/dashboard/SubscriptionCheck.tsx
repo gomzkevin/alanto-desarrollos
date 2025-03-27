@@ -1,14 +1,12 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSubscriptionInfo } from '@/hooks/useSubscriptionInfo';
 import { useUserRole } from '@/hooks/useUserRole';
-import SubscriptionRequiredDialog from './configuracion/SubscriptionRequiredDialog';
 
 export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
   const { subscriptionInfo, isLoading } = useSubscriptionInfo();
   const { isAdmin, userId, empresaId, authChecked } = useUserRole();
-  const [showDialog, setShowDialog] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -31,10 +29,7 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
     // 6. No estamos en una ruta exenta
     if (!isLoading && authChecked && userId && isAdmin() && empresaId && !isExemptRoute) {
       if (!subscriptionInfo.isActive) {
-        console.log('No hay suscripción activa para la empresa, mostrando diálogo de suscripción');
-        
-        // Mostrar el diálogo y redirigir a configuración sin recargar la página
-        setShowDialog(true);
+        console.log('No hay suscripción activa para la empresa, redirigiendo a configuración');
         
         // Solo redirigir si no estamos ya en la página de configuración
         if (!location.pathname.includes('/dashboard/configuracion')) {
@@ -44,21 +39,22 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, authChecked, userId, empresaId, subscriptionInfo.isActive, isAdmin, isExemptRoute, navigate, location.pathname]);
   
-  // Si es una ruta exenta, no es admin, o es admin con suscripción activa, mostrar el contenido normal
-  if (isExemptRoute || !isAdmin() || (isAdmin() && subscriptionInfo.isActive)) {
+  // Si es una ruta exenta o no es admin, mostrar el contenido normal
+  if (isExemptRoute || !isAdmin()) {
     return <>{children}</>;
   }
   
-  // Mostrar el diálogo para usuarios admin sin suscripción
-  return (
-    <>
-      {children}
-      <SubscriptionRequiredDialog 
-        open={showDialog}
-        onOpenChange={setShowDialog}
-      />
-    </>
-  );
+  // Si es admin y tiene una suscripción activa, mostrar el contenido normal
+  if (isAdmin() && subscriptionInfo.isActive) {
+    return <>{children}</>;
+  }
+  
+  // En este punto sabemos que:
+  // 1. Es un administrador 
+  // 2. No tiene suscripción activa
+  // 3. No está en una ruta exenta
+  // Por lo tanto, no renderizamos nada y dejamos que el efecto redirija
+  return null;
 }
 
 export default SubscriptionCheck;

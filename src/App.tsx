@@ -95,7 +95,10 @@ function App() {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/404" element={<NotFoundPage />} />
           
-          {/* Dashboard Routes - Wrapped with SubscriptionCheck */}
+          {/* Configuración route no need for SubscriptionCheck */}
+          <Route path="/dashboard/configuracion" element={<ConfiguracionPage />} />
+          
+          {/* All other dashboard routes - Wrapped with SubscriptionCheck */}
           <Route path="/dashboard" element={
             <SubscriptionCheck>
               <DashboardPage />
@@ -141,8 +144,6 @@ function App() {
               <PrototipoDetailPage />
             </SubscriptionCheck>
           } />
-          {/* Configuración route doesn't need subscription check as it's exempt */}
-          <Route path="/dashboard/configuracion" element={<ConfiguracionPage />} />
           <Route path="/dashboard/proyecciones" element={
             <SubscriptionCheck>
               <ProyeccionesPage />
