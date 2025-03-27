@@ -29,13 +29,23 @@ export const useCreateCheckout = () => {
     try {
       console.log('Initiating subscription for plan:', planId, 'price ID:', priceId);
       
-      // Llamar a nuestro endpoint de Supabase Edge Function para crear la sesión de checkout
+      // Primero verificamos que tengamos una sesión de autenticación válida
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No hay sesión de autenticación activa');
+      }
+      
+      // Llamar a nuestro endpoint de Supabase Edge Function con autenticación explícita
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           priceId,
           planId,
           userId,
           successPath
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
       
