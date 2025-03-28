@@ -1,4 +1,3 @@
-
 import { useUserRole } from './useUserRole';
 import { useSubscriptionInfo } from './useSubscriptionInfo';
 import { toast } from '@/components/ui/use-toast';
@@ -16,11 +15,6 @@ export const usePermissions = () => {
   const isWithinResourceLimits = (resourceType?: 'desarrollo' | 'prototipo') => {
     // Verificar si el usuario pertenece a una empresa sin suscripción activa
     if (empresaId && !hasActiveSubscription()) {
-      toast({
-        title: "Suscripción inactiva",
-        description: "Tu empresa no tiene una suscripción activa. Actualiza tu plan para crear recursos.",
-        variant: "destructive",
-      });
       return false; // Cualquier usuario de una empresa sin suscripción no puede crear recursos
     }
     
@@ -29,9 +23,6 @@ export const usePermissions = () => {
         subscriptionInfo.desarrolloCount !== undefined && 
         subscriptionInfo.desarrolloLimit !== undefined && 
         subscriptionInfo.desarrolloCount >= subscriptionInfo.desarrolloLimit) {
-      
-      // No mostramos toast aquí para evitar duplicación
-      // Las notificaciones ahora se controlan en SubscriptionCheck
       console.log(`Límite de desarrollos alcanzado: ${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}`);
       return false;
     }
@@ -41,9 +32,6 @@ export const usePermissions = () => {
         subscriptionInfo.prototipoCount !== undefined && 
         subscriptionInfo.prototipoLimit !== undefined && 
         subscriptionInfo.prototipoCount >= subscriptionInfo.prototipoLimit) {
-      
-      // No mostramos toast aquí para evitar duplicación
-      // Las notificaciones ahora se controlan en SubscriptionCheck
       console.log(`Límite de prototipos alcanzado: ${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}`);
       return false;
     }
@@ -213,16 +201,30 @@ export const usePermissions = () => {
     return isWithinResourceLimits('desarrollo');
   };
   
+  // Función específica para verificar si se pueden crear unidades
+  // Las unidades dependen de los límites de prototipos
+  const canCreateUnidad = () => {
+    // Verificar permisos básicos
+    if (!canCreateResource('unidades')) {
+      return false;
+    }
+    
+    // Verificar si tiene suscripción activa
+    if (!hasActiveSubscription()) {
+      return false;
+    }
+    
+    // Las unidades dependen de los límites de prototipos
+    return isWithinResourceLimits('prototipo');
+  };
+  
   // Función específica para verificar si se pueden crear cotizaciones
   const canCreateCotizacion = () => canCreateResource('cotizaciones');
   
   // Función específica para verificar si se pueden crear leads
   const canCreateLead = () => canCreateResource('leads');
   
-  // Función específica para verificar si se pueden crear unidades
-  const canCreateUnidad = () => canCreateResource('unidades');
-  
-  // Función para verificar si se pueden crear vendedores
+  // Función específica para verificar si se pueden crear vendedores
   const canCreateVendedor = () => {
     return canCreateResource('vendedores') && isWithinVendorLimits();
   };

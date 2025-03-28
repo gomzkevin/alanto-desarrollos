@@ -42,14 +42,14 @@ export const UnidadTableActions = ({
   return (
     <div className="flex space-x-2">
       {shouldShowGenerateButton && (
-        <Button onClick={onGenerateClick} variant={noUnidadesYet ? "default" : "outline"}>
+        <Button onClick={onGenerateClick} variant={noUnidadesYet ? "default" : "outline"} disabled={!canAddMore}>
           <Plus className="mr-2 h-4 w-4" />
           Generar unidades
         </Button>
       )}
       
       {shouldShowAddButton && (
-        <Button onClick={onAddClick}>
+        <Button onClick={onAddClick} disabled={!canAddMore}>
           <Plus className="mr-2 h-4 w-4" />
           Agregar unidad
         </Button>

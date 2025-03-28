@@ -23,7 +23,7 @@ const PrototipoDetail = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const lastRefreshTimeRef = useRef(Date.now());
   const { isAdmin } = useUserRole();
-  const { canCreatePrototipo } = usePermissions();
+  const { canCreatePrototipo, canCreateUnidad } = usePermissions();
   
   // Estados estables para las unidades
   const { 
@@ -41,6 +41,9 @@ const PrototipoDetail = () => {
   
   // Comprobamos si se pueden crear más prototipos (para funcionamiento del botón)
   const canAddMore = canCreatePrototipo();
+  
+  // También comprobamos si se pueden crear unidades
+  const canAddUnidades = canCreateUnidad();
   
   // Controlador de refresco con limitación de frecuencia
   const handleRefresh = useCallback(() => {
@@ -196,9 +199,9 @@ const PrototipoDetail = () => {
             unitCounts={unitCounts}
             onAddUnidad={() => {
               // Verificar si el usuario puede crear unidades basado en su plan
-              if (isAdmin() && canAddMore) {
+              if (isAdmin() && canAddUnidades) {
                 setOpenAddUnidadDialog(true);
-              } else if (!canAddMore) {
+              } else if (!canAddUnidades) {
                 toast({
                   title: "Límite alcanzado",
                   description: "Has alcanzado el límite de prototipos de tu plan. Actualiza tu suscripción para añadir más unidades.",
@@ -214,7 +217,7 @@ const PrototipoDetail = () => {
             }}
             onGenerateUnidades={handleGenerarUnidades}
             onRefreshUnidades={handleRefresh}
-            canAddMore={canAddMore} // Pasar esta prop a PrototipoUnidades
+            canAddMore={canAddMore && canAddUnidades} // Comprobar ambos permisos
           />
         </div>
       </div>

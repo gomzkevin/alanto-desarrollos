@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import ResourceDialog from './index';
 import { ResourceType } from './types';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface AdminResourceDialogProps {
   resourceType: ResourceType;
@@ -34,6 +35,32 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
   defaultValues
 }) => {
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const { 
+    canCreateDesarrollo, 
+    canCreatePrototipo, 
+    canCreateLead,
+    canCreateCotizacion,
+    canCreateUnidad
+  } = usePermissions();
+
+  // Check if button should be disabled based on resource type
+  const isDisabled = React.useMemo(() => {
+    if (resourceId) return false; // Don't disable if editing existing resource
+    
+    if (resourceType === 'desarrollos') {
+      return !canCreateDesarrollo();
+    } else if (resourceType === 'prototipos') {
+      return !canCreatePrototipo();
+    } else if (resourceType === 'leads') {
+      return !canCreateLead();
+    } else if (resourceType === 'cotizaciones') {
+      return !canCreateCotizacion();
+    } else if (resourceType === 'unidades') {
+      return !canCreateUnidad();
+    }
+    
+    return false;
+  }, [resourceType, resourceId, canCreateDesarrollo, canCreatePrototipo, canCreateLead, canCreateCotizacion, canCreateUnidad]);
 
   const handleOpen = () => {
     setDialogOpen(true);
@@ -64,6 +91,7 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
           variant={buttonVariant} 
           onClick={handleOpen}
           className="border-2 border-gray-200 shadow-sm hover:bg-indigo-600"
+          disabled={isDisabled}
         >
           {buttonIcon}
           {buttonText || `Nuevo ${resourceType.slice(0, -1)}`}
