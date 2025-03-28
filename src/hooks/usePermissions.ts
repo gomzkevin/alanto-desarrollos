@@ -201,8 +201,9 @@ export const usePermissions = () => {
     return isWithinResourceLimits('desarrollo');
   };
   
-  // Función específica para verificar si se pueden crear unidades
-  // Las unidades dependen de los límites de prototipos
+  // Función específica para verificar si se pueden crear unidades individuales
+  // Note: This should only be used for individual unit creation, not for generating units for 
+  // an existing prototype
   const canCreateUnidad = () => {
     // Verificar permisos básicos
     if (!canCreateResource('unidades')) {
@@ -214,7 +215,7 @@ export const usePermissions = () => {
       return false;
     }
     
-    // Las unidades dependen de los límites de prototipos
+    // Las unidades individuales dependen de los límites de prototipos
     return isWithinResourceLimits('prototipo');
   };
   

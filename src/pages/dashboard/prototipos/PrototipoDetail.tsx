@@ -82,16 +82,6 @@ const PrototipoDetail = () => {
   const handleGenerarUnidades = async (cantidad: number, prefijo: string) => {
     if (!id || cantidad <= 0) return;
     
-    // Verificar límites de suscripción
-    if (!canAddMore) {
-      toast({
-        title: "Límite alcanzado",
-        description: "Has alcanzado el límite de prototipos de tu plan. Actualiza tu suscripción para generar más unidades.",
-        variant: "warning"
-      });
-      return;
-    }
-    
     try {
       await createMultipleUnidades.mutateAsync({
         prototipo_id: id,
@@ -217,7 +207,7 @@ const PrototipoDetail = () => {
             }}
             onGenerateUnidades={handleGenerarUnidades}
             onRefreshUnidades={handleRefresh}
-            canAddMore={canAddMore && canAddUnidades} // Comprobar ambos permisos
+            canAddMore={canAddUnidades} // Only check canAddUnidades for individual unit creation
           />
         </div>
       </div>

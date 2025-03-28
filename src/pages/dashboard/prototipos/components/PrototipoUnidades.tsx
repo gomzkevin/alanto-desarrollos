@@ -23,7 +23,7 @@ interface PrototipoUnidadesProps {
   onAddUnidad: () => void;
   onGenerateUnidades: (cantidad: number, prefijo: string) => Promise<void>;
   onRefreshUnidades: () => void;
-  canAddMore?: boolean; // Added this prop with optional flag
+  canAddMore?: boolean;
 }
 
 export const PrototipoUnidades = React.memo(({ 
@@ -34,13 +34,13 @@ export const PrototipoUnidades = React.memo(({
   onAddUnidad, 
   onGenerateUnidades,
   onRefreshUnidades,
-  canAddMore = true // Added default value to maintain backward compatibility
+  canAddMore = true
 }: PrototipoUnidadesProps) => {
   const [currentTab, setCurrentTab] = useState("todas");
   const [generarUnidadesModalOpen, setGenerarUnidadesModalOpen] = useState(false);
   const [prefijo, setPrefijo] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const { canCreatePrototipo } = usePermissions();
+  const { canCreateUnidad } = usePermissions();
   
   // Memoize filtered units to prevent unnecessary re-renders
   const filteredUnidades = useMemo(() => {
@@ -72,9 +72,9 @@ export const PrototipoUnidades = React.memo(({
     }
   };
   
-  // Use the passed canAddMore prop instead of recalculating it
-  // This allows the parent component to control whether more units can be added
-  const canAddMoreUnits = canAddMore !== undefined ? canAddMore : canCreatePrototipo();
+  // Updated: Always allow generating units for existing prototypes 
+  // Only check for canCreateUnidad for individual unit creation
+  const canCreateIndividualUnit = canCreateUnidad();
   
   return (
     <div className="bg-slate-50 p-6 rounded-lg">
@@ -94,15 +94,12 @@ export const PrototipoUnidades = React.memo(({
         
         <UnidadTableActions
           onAddClick={onAddUnidad}
-          onGenerateClick={() => {
-            if (canAddMoreUnits) {
-              setGenerarUnidadesModalOpen(true);
-            }
-          }}
+          onGenerateClick={() => setGenerarUnidadesModalOpen(true)}
           unidadesCount={unidades.length}
           totalUnidades={prototipo.total_unidades || 0}
           showGenerateButton={true}
-          canAddMore={canAddMoreUnits}
+          canAddMore={canCreateIndividualUnit} // Only apply limit to individual unit creation
+          alwaysAllowGenerate={true} // New prop to allow generating units even if limits reached
         />
       </div>
       
