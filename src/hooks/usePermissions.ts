@@ -13,7 +13,7 @@ export const usePermissions = () => {
   };
   
   // Check if user has exceeded resource limits
-  const isWithinResourceLimits = () => {
+  const isWithinResourceLimits = (resourceType?: 'desarrollo' | 'prototipo') => {
     // Verificar si el usuario pertenece a una empresa sin suscripción activa
     if (empresaId && !hasActiveSubscription()) {
       toast({
@@ -24,40 +24,27 @@ export const usePermissions = () => {
       return false; // Cualquier usuario de una empresa sin suscripción no puede crear recursos
     }
     
-    if (subscriptionInfo.isOverLimit) {
-      const resourceType = subscriptionInfo.resourceType === 'desarrollo' ? 'desarrollos' : 'prototipos';
-      const currentCount = subscriptionInfo.resourceCount || 0;
-      const limit = subscriptionInfo.resourceLimit || 0;
-      
-      toast({
-        title: "Límite alcanzado",
-        description: `Has alcanzado el límite de ${limit} ${resourceType} de tu plan (${currentCount}/${limit}). Actualiza tu suscripción para añadir más.`,
-        variant: "warning",
-      });
-      return false; // Sobre el límite de recursos
-    }
-    
     // Verificar límites específicos para desarrollos
-    if (subscriptionInfo.desarrolloCount !== undefined && 
+    if (resourceType === 'desarrollo' && 
+        subscriptionInfo.desarrolloCount !== undefined && 
         subscriptionInfo.desarrolloLimit !== undefined && 
         subscriptionInfo.desarrolloCount >= subscriptionInfo.desarrolloLimit) {
-      toast({
-        title: "Límite de desarrollos alcanzado",
-        description: `Has alcanzado el límite de ${subscriptionInfo.desarrolloLimit} desarrollos de tu plan (${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}). Actualiza tu suscripción para añadir más.`,
-        variant: "warning",
-      });
+      
+      // No mostramos toast aquí para evitar duplicación
+      // Las notificaciones ahora se controlan en SubscriptionCheck
+      console.log(`Límite de desarrollos alcanzado: ${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}`);
       return false;
     }
     
     // Verificar límites específicos para prototipos
-    if (subscriptionInfo.prototipoCount !== undefined && 
+    if (resourceType === 'prototipo' && 
+        subscriptionInfo.prototipoCount !== undefined && 
         subscriptionInfo.prototipoLimit !== undefined && 
         subscriptionInfo.prototipoCount >= subscriptionInfo.prototipoLimit) {
-      toast({
-        title: "Límite de prototipos alcanzado",
-        description: `Has alcanzado el límite de ${subscriptionInfo.prototipoLimit} prototipos de tu plan (${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}). Actualiza tu suscripción para añadir más.`,
-        variant: "warning",
-      });
+      
+      // No mostramos toast aquí para evitar duplicación
+      // Las notificaciones ahora se controlan en SubscriptionCheck
+      console.log(`Límite de prototipos alcanzado: ${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}`);
       return false;
     }
     
@@ -68,25 +55,15 @@ export const usePermissions = () => {
   const isWithinVendorLimits = () => {
     // Verificar si el usuario pertenece a una empresa sin suscripción activa
     if (empresaId && !hasActiveSubscription()) {
-      toast({
-        title: "Suscripción inactiva",
-        description: "Tu empresa no tiene una suscripción activa. Actualiza tu plan para crear vendedores.",
-        variant: "destructive",
-      });
       return false; // Cualquier usuario de una empresa sin suscripción no puede crear vendedores
     }
     
     if (subscriptionInfo.vendorCount !== undefined && 
         subscriptionInfo.vendorLimit !== undefined &&
         subscriptionInfo.vendorCount >= subscriptionInfo.vendorLimit) {
-      const currentCount = subscriptionInfo.vendorCount || 0;
-      const limit = subscriptionInfo.vendorLimit || 0;
       
-      toast({
-        title: "Límite de vendedores alcanzado",
-        description: `Has alcanzado el límite de ${limit} vendedores de tu plan (${currentCount}/${limit}). Actualiza tu suscripción para añadir más.`,
-        variant: "warning",
-      });
+      // No mostramos toast aquí para evitar duplicación
+      console.log(`Límite de vendedores alcanzado: ${subscriptionInfo.vendorCount}/${subscriptionInfo.vendorLimit}`);
       return false; // Sobre el límite de vendedores
     }
     
@@ -111,18 +88,7 @@ export const usePermissions = () => {
       return false;
     }
     
-    // Comprobación específica para límites de prototipos
-    if (subscriptionInfo.prototipoCount !== undefined && 
-        subscriptionInfo.prototipoLimit !== undefined && 
-        subscriptionInfo.prototipoCount >= subscriptionInfo.prototipoLimit) {
-      
-      // No mostramos toast aquí para evitar duplicación
-      // Las notificaciones ahora se controlan en SubscriptionCheck
-      console.log(`Límite de prototipos alcanzado: ${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}`);
-      return false;
-    }
-    
-    return true;
+    return isWithinResourceLimits('prototipo');
   };
   
   // Función específica para verificar si se pueden crear desarrollos
@@ -142,18 +108,7 @@ export const usePermissions = () => {
       return false;
     }
     
-    // Comprobación específica para límites de desarrollos
-    if (subscriptionInfo.desarrolloCount !== undefined && 
-        subscriptionInfo.desarrolloLimit !== undefined && 
-        subscriptionInfo.desarrolloCount >= subscriptionInfo.desarrolloLimit) {
-      
-      // No mostramos toast aquí para evitar duplicación
-      // Las notificaciones ahora se controlan en SubscriptionCheck
-      console.log(`Límite de desarrollos alcanzado: ${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}`);
-      return false;
-    }
-    
-    return true;
+    return isWithinResourceLimits('desarrollo');
   };
   
   // Función específica para verificar si se pueden crear cotizaciones

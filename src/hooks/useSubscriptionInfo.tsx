@@ -111,6 +111,21 @@ export const useSubscriptionInfo = () => {
               console.log('No developments found for company, prototype count is 0');
             }
             
+            // 3. Count vendedores for the company
+            const { data: vendedoresData, error: vendedoresError } = await supabase
+              .from('usuarios')
+              .select('id')
+              .eq('empresa_id', empresaId)
+              .eq('rol', 'vendedor')
+              .eq('activo', true);
+              
+            if (vendedoresError) {
+              console.error('Error counting vendedores:', vendedoresError);
+            }
+            
+            const vendedorCount = vendedoresData?.length || 0;
+            console.log('Vendedores count:', vendedorCount);
+            
             const data = rawData as {
               isActive: boolean;
               currentPlan?: {
@@ -129,20 +144,50 @@ export const useSubscriptionInfo = () => {
               [key: string]: any;
             };
             
+            // Extract limits from plan features
             let desarrolloLimit = 0;
             let prototipoLimit = 0;
+            let vendedorLimit = 0;
             
             if (data.currentPlan?.features) {
               const features = data.currentPlan.features;
-              if (features.tipo === 'desarrollo') {
-                desarrolloLimit = parseInt(features.max_recursos?.toString() || '0', 10);
-              } else if (features.tipo === 'prototipo') {
-                prototipoLimit = parseInt(features.max_recursos?.toString() || '0', 10);
+              
+              // Look for specific limits in the features object
+              if (features.max_desarrollos) {
+                desarrolloLimit = parseInt(features.max_desarrollos.toString(), 10);
               }
+              
+              if (features.max_prototipos) {
+                prototipoLimit = parseInt(features.max_prototipos.toString(), 10);
+              }
+              
+              if (features.max_vendedores) {
+                vendedorLimit = parseInt(features.max_vendedores.toString(), 10);
+              }
+              
+              // If the old format is present, use it as a fallback
+              if (desarrolloLimit === 0 && features.tipo === 'desarrollo' && features.max_recursos) {
+                desarrolloLimit = parseInt(features.max_recursos.toString(), 10);
+              } else if (prototipoLimit === 0 && features.tipo === 'prototipo' && features.max_recursos) {
+                prototipoLimit = parseInt(features.max_recursos.toString(), 10);
+              }
+              
+              // If vendorLimit is not set but max_vendedores exists in old format
+              if (vendedorLimit === 0 && features.max_vendedores) {
+                vendedorLimit = parseInt(features.max_vendedores.toString(), 10);
+              }
+              
+              console.log('Extracted limits from plan:', { 
+                desarrolloLimit, 
+                prototipoLimit, 
+                vendedorLimit 
+              });
             }
             
+            // Determine if limits are exceeded (only if limits are > 0)
             const isOverDesarrolloLimit = desarrolloLimit > 0 && desarrolloCount > desarrolloLimit;
             const isOverPrototipoLimit = prototipoLimit > 0 && prototipoCount > prototipoLimit;
+            const isOverVendorLimit = vendedorLimit > 0 && vendedorCount > vendedorLimit;
             
             setSubscriptionInfo({
               isActive: data.isActive || false,
@@ -152,10 +197,10 @@ export const useSubscriptionInfo = () => {
               resourceLimit: data.resourceLimit,
               resourceCount: data.resourceType === 'desarrollo' ? desarrolloCount : 
                             data.resourceType === 'prototipo' ? prototipoCount : 0,
-              vendorLimit: data.vendorLimit,
-              vendorCount: data.vendorCount || 0,
+              vendorLimit: vendedorLimit || data.vendorLimit,
+              vendorCount: vendedorCount || data.vendorCount || 0,
               isOverLimit: isOverDesarrolloLimit || isOverPrototipoLimit,
-              isOverVendorLimit: data.vendorLimit ? data.vendorCount >= data.vendorLimit : false,
+              isOverVendorLimit: isOverVendorLimit,
               desarrolloCount: desarrolloCount,
               desarrolloLimit: desarrolloLimit,
               prototipoCount: prototipoCount,
@@ -194,9 +239,29 @@ export const useSubscriptionInfo = () => {
           const renewalDate = subscription.current_period_end ? 
             new Date(subscription.current_period_end) : undefined;
           
-          const maxRecursos = features.max_recursos ? parseInt(features.max_recursos.toString(), 10) : 0;
-          const maxVendedores = features.max_vendedores ? parseInt(features.max_vendedores.toString(), 10) : 0;
-          const featureType = features.tipo ? features.tipo.toString() : undefined;
+          // Extract limits from features
+          let desarrolloLimit = 0;
+          let prototipoLimit = 0;
+          let vendedorLimit = 0;
+          
+          if (features.max_desarrollos) {
+            desarrolloLimit = parseInt(features.max_desarrollos.toString(), 10);
+          }
+          
+          if (features.max_prototipos) {
+            prototipoLimit = parseInt(features.max_prototipos.toString(), 10);
+          }
+          
+          if (features.max_vendedores) {
+            vendedorLimit = parseInt(features.max_vendedores.toString(), 10);
+          }
+          
+          // Fallback to old format if specific limits are not found
+          if (desarrolloLimit === 0 && features.tipo === 'desarrollo' && features.max_recursos) {
+            desarrolloLimit = parseInt(features.max_recursos.toString(), 10);
+          } else if (prototipoLimit === 0 && features.tipo === 'prototipo' && features.max_recursos) {
+            prototipoLimit = parseInt(features.max_recursos.toString(), 10);
+          }
           
           setSubscriptionInfo({
             isActive: subscription.status === 'active',
@@ -208,16 +273,16 @@ export const useSubscriptionInfo = () => {
               features: features
             },
             renewalDate: renewalDate?.toISOString(),
-            resourceLimit: maxRecursos,
+            resourceLimit: features.max_recursos ? parseInt(features.max_recursos.toString(), 10) : 0,
             resourceCount: 0,
-            vendorLimit: maxVendedores,
+            vendorLimit: vendedorLimit,
             vendorCount: 0,
             isOverLimit: false,
             isOverVendorLimit: false,
             desarrolloCount: 0,
-            desarrolloLimit: featureType === 'desarrollo' ? maxRecursos : 0,
+            desarrolloLimit: desarrolloLimit,
             prototipoCount: 0,
-            prototipoLimit: featureType === 'prototipo' ? maxRecursos : 0
+            prototipoLimit: prototipoLimit
           });
         } else {
           console.info('No active subscription found');

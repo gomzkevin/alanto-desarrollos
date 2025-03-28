@@ -24,6 +24,9 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
     vendedores: false
   });
   
+  // Guardamos la última ruta para evitar mostrar notificaciones en la misma ruta
+  const lastPathRef = useRef<string>(location.pathname);
+  
   // Rutas que están exentas de la comprobación de suscripción
   const exemptRoutes = [
     '/dashboard/configuracion',
@@ -34,6 +37,17 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
   const isExemptRoute = exemptRoutes.some(route => location.pathname.startsWith(route));
   
   useEffect(() => {
+    // Resetear notificaciones cuando cambiamos de ruta
+    if (lastPathRef.current !== location.pathname) {
+      notificationsShown.current = {
+        noSubscription: false,
+        desarrollos: false,
+        prototipos: false,
+        vendedores: false
+      };
+      lastPathRef.current = location.pathname;
+    }
+    
     // Solo ejecutar esta lógica si:
     // 1. No estamos cargando datos de suscripción 
     // 2. La autenticación ya se verificó
@@ -63,39 +77,48 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
       // Verificar los límites del plan y mostrar avisos informativos
       if (subscriptionInfo.isActive) {
         // Verificar límites de desarrollos
-        if (subscriptionInfo.desarrolloCount !== undefined && 
-            subscriptionInfo.desarrolloLimit !== undefined && 
-            subscriptionInfo.desarrolloCount > subscriptionInfo.desarrolloLimit &&
+        if (subscriptionInfo.desarrolloLimit !== undefined && 
+            subscriptionInfo.desarrolloCount !== undefined && 
+            subscriptionInfo.desarrolloCount >= subscriptionInfo.desarrolloLimit &&
             !notificationsShown.current.desarrollos) {
+          
+          const isExceeded = subscriptionInfo.desarrolloCount > subscriptionInfo.desarrolloLimit;
+          
           toast({
-            title: "Límite de desarrollos excedido",
-            description: `Has excedido el límite de ${subscriptionInfo.desarrolloLimit} desarrollos de tu plan (${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}). Actualiza tu suscripción para evitar restricciones.`,
+            title: isExceeded ? "Límite de desarrollos excedido" : "Límite de desarrollos alcanzado",
+            description: `${isExceeded ? 'Has excedido' : 'Has alcanzado'} el límite de ${subscriptionInfo.desarrolloLimit} desarrollos de tu plan (${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}). Actualiza tu suscripción para ${isExceeded ? 'evitar restricciones' : 'añadir más'}.`,
             variant: "warning",
           });
           notificationsShown.current.desarrollos = true;
         }
         
         // Verificar límites de prototipos
-        if (subscriptionInfo.prototipoCount !== undefined && 
-            subscriptionInfo.prototipoLimit !== undefined && 
-            subscriptionInfo.prototipoCount > subscriptionInfo.prototipoLimit &&
+        if (subscriptionInfo.prototipoLimit !== undefined && 
+            subscriptionInfo.prototipoCount !== undefined && 
+            subscriptionInfo.prototipoCount >= subscriptionInfo.prototipoLimit &&
             !notificationsShown.current.prototipos) {
+          
+          const isExceeded = subscriptionInfo.prototipoCount > subscriptionInfo.prototipoLimit;
+          
           toast({
-            title: "Límite de prototipos excedido",
-            description: `Has excedido el límite de ${subscriptionInfo.prototipoLimit} prototipos de tu plan (${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}). Actualiza tu suscripción para evitar restricciones.`,
+            title: isExceeded ? "Límite de prototipos excedido" : "Límite de prototipos alcanzado",
+            description: `${isExceeded ? 'Has excedido' : 'Has alcanzado'} el límite de ${subscriptionInfo.prototipoLimit} prototipos de tu plan (${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}). Actualiza tu suscripción para ${isExceeded ? 'evitar restricciones' : 'añadir más'}.`,
             variant: "warning",
           });
           notificationsShown.current.prototipos = true;
         }
         
         // Verificar límites de vendedores
-        if (subscriptionInfo.vendorCount !== undefined && 
-            subscriptionInfo.vendorLimit !== undefined && 
-            subscriptionInfo.vendorCount > subscriptionInfo.vendorLimit &&
+        if (subscriptionInfo.vendorLimit !== undefined && 
+            subscriptionInfo.vendorCount !== undefined && 
+            subscriptionInfo.vendorCount >= subscriptionInfo.vendorLimit &&
             !notificationsShown.current.vendedores) {
+          
+          const isExceeded = subscriptionInfo.vendorCount > subscriptionInfo.vendorLimit;
+          
           toast({
-            title: "Límite de vendedores excedido",
-            description: `Has excedido el límite de ${subscriptionInfo.vendorLimit} vendedores de tu plan (${subscriptionInfo.vendorCount}/${subscriptionInfo.vendorLimit}). Actualiza tu suscripción para evitar restricciones.`,
+            title: isExceeded ? "Límite de vendedores excedido" : "Límite de vendedores alcanzado",
+            description: `${isExceeded ? 'Has excedido' : 'Has alcanzado'} el límite de ${subscriptionInfo.vendorLimit} vendedores de tu plan (${subscriptionInfo.vendorCount}/${subscriptionInfo.vendorLimit}). Actualiza tu suscripción para ${isExceeded ? 'evitar restricciones' : 'añadir más'}.`,
             variant: "warning",
           });
           notificationsShown.current.vendedores = true;

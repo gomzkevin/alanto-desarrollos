@@ -278,7 +278,7 @@ export function SubscriptionPlans() {
                 {subscriptionInfo.desarrolloLimit ? (
                   <Progress 
                     value={subscriptionInfo.desarrolloLimit > 0 ? 
-                      ((subscriptionInfo.desarrolloCount || 0) / subscriptionInfo.desarrolloLimit) * 100 : 0}
+                      Math.min(((subscriptionInfo.desarrolloCount || 0) / subscriptionInfo.desarrolloLimit) * 100, 100) : 0}
                     className={
                       (subscriptionInfo.desarrolloCount || 0) > (subscriptionInfo.desarrolloLimit || 0) 
                         ? "bg-red-100" 
@@ -317,7 +317,7 @@ export function SubscriptionPlans() {
                 {subscriptionInfo.prototipoLimit ? (
                   <Progress 
                     value={subscriptionInfo.prototipoLimit > 0 ? 
-                      ((subscriptionInfo.prototipoCount || 0) / (subscriptionInfo.prototipoLimit)) * 100 : 0}
+                      Math.min(((subscriptionInfo.prototipoCount || 0) / (subscriptionInfo.prototipoLimit)) * 100, 100) : 0}
                     className={
                       (subscriptionInfo.prototipoCount || 0) > (subscriptionInfo.prototipoLimit || 0) 
                         ? "bg-red-100" 
@@ -356,7 +356,7 @@ export function SubscriptionPlans() {
                 {subscriptionInfo.vendorLimit ? (
                   <Progress 
                     value={subscriptionInfo.vendorLimit > 0 ?
-                      ((subscriptionInfo.vendorCount || 0) / subscriptionInfo.vendorLimit) * 100 : 0}
+                      Math.min(((subscriptionInfo.vendorCount || 0) / subscriptionInfo.vendorLimit) * 100, 100) : 0}
                     className={
                       (subscriptionInfo.vendorCount || 0) > (subscriptionInfo.vendorLimit || 0) 
                         ? "bg-red-100" 
