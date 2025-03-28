@@ -100,19 +100,38 @@ export const usePermissions = () => {
   
   // Función específica para verificar si se pueden crear desarrollos
   const canCreateDesarrollo = () => {
+    // Verificar si es admin
+    if (!isAdmin()) {
+      return false;
+    }
+    
+    // Verificar si tiene permiso para crear el recurso
+    if (!canCreateResource('desarrollos')) {
+      return false;
+    }
+    
+    // Verificar si tiene suscripción activa
+    if (!hasActiveSubscription()) {
+      return false;
+    }
+    
     // Comprobación específica para límites de desarrollos
     if (subscriptionInfo.desarrolloCount !== undefined && 
         subscriptionInfo.desarrolloLimit !== undefined && 
         subscriptionInfo.desarrolloCount >= subscriptionInfo.desarrolloLimit) {
+      
+      // Mostrar toast solo cuando se llama directamente a esta función
       toast({
         title: "Límite de desarrollos alcanzado",
         description: `Has alcanzado el límite de ${subscriptionInfo.desarrolloLimit} desarrollos de tu plan (${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}). Actualiza tu suscripción para añadir más.`,
-        variant: "destructive",
+        variant: "warning",
       });
+      
+      console.log(`Límite de desarrollos alcanzado: ${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}`);
       return false;
     }
     
-    return canCreateResource('desarrollos') && isWithinResourceLimits();
+    return true;
   };
   
   // Función específica para verificar si se pueden crear cotizaciones

@@ -10,6 +10,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Tables } from '@/integrations/supabase/types';
 import useUnidades from '@/hooks/useUnidades';
 import { toast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 
 type Desarrollo = Tables<"desarrollos">;
 
@@ -27,6 +28,9 @@ const DesarrollosPage = () => {
     isLoading: isUserLoading 
   } = useUserRole();
   
+  // Use permissions hook to check if user can create desarrollos
+  const { canCreateDesarrollo } = usePermissions();
+  
   // Use empresa_id instead of user_id for filtering desarrollos
   const { 
     desarrollos = [], 
@@ -40,10 +44,6 @@ const DesarrollosPage = () => {
   });
   
   const { countDesarrolloUnidadesByStatus } = useUnidades();
-
-  const canCreateResource = () => {
-    return isAdmin();
-  };
 
   // Force a refetch when empresaId becomes available
   useEffect(() => {
@@ -128,7 +128,8 @@ const DesarrollosPage = () => {
     isFetched,
     hasTriedInitialLoad,
     desarrollosCount: desarrollos.length,
-    displayDesarrollosCount: displayDesarrollos.length
+    displayDesarrollosCount: displayDesarrollos.length,
+    canCreateDesarrollo: canCreateDesarrollo()
   });
 
   return (
@@ -140,10 +141,11 @@ const DesarrollosPage = () => {
             <p className="text-slate-600">Gestiona y monitorea tus desarrollos inmobiliarios</p>
           </div>
           
-          {canCreateResource() && (
+          {isAdmin() && (
             <Button 
               onClick={() => setOpenDialog(true)}
               className="flex items-center gap-2"
+              disabled={!canCreateDesarrollo()}
             >
               Nuevo desarrollo
             </Button>
@@ -179,10 +181,11 @@ const DesarrollosPage = () => {
         ) : displayDesarrollos.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-slate-600">No tienes desarrollos inmobiliarios</p>
-            {canCreateResource() && (
+            {isAdmin() && (
               <Button 
                 className="mt-4"
                 onClick={() => setOpenDialog(true)}
+                disabled={!canCreateDesarrollo()}
               >
                 Crear tu primer desarrollo
               </Button>
