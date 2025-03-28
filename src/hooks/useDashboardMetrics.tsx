@@ -150,29 +150,40 @@ export const useDashboardMetrics = () => {
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(now.getMonth() - 5);
       
-      // Initialize month data
-      const monthLabels = [];
-      const salesByMonth = {};
-      
-      // Create month labels and initialize with zero values
-      for (let i = 0; i < 6; i++) {
-        const date = new Date();
-        date.setMonth(now.getMonth() - i);
-        const monthName = date.toLocaleString('es-MX', { month: 'short' });
-        const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
+      // Create an array with the last 6 months data (from oldest to newest)
+      const months = [];
+      for (let i = 5; i >= 0; i--) {
+        const monthDate = new Date();
+        monthDate.setMonth(now.getMonth() - i);
+        const year = monthDate.getFullYear();
+        const month = monthDate.getMonth();
         
-        // Add to beginning of array to have oldest months first
-        monthLabels.unshift(monthName);
-        salesByMonth[monthKey] = 0;
+        months.push({
+          date: monthDate,
+          year,
+          month,
+          name: monthDate.toLocaleString('es-MX', { month: 'short' }).toLowerCase(),
+          key: `${year}-${month + 1}`,
+          ingresos: 0
+        });
       }
+      
+      // Initialize sales data with zero values for each month
+      const salesByMonth = {};
+      months.forEach(monthData => {
+        salesByMonth[monthData.key] = 0;
+      });
       
       // Sum all payments by month
       if (pagos && pagos.length > 0) {
         pagos.forEach(pago => {
           if (pago.estado === 'registrado') {
             const pagoDate = new Date(pago.fecha);
-            const monthKey = `${pagoDate.getFullYear()}-${pagoDate.getMonth() + 1}`;
+            const pagoYear = pagoDate.getFullYear();
+            const pagoMonth = pagoDate.getMonth();
+            const monthKey = `${pagoYear}-${pagoMonth + 1}`;
             
+            // Only count this payment if it falls within our 6-month window
             if (salesByMonth.hasOwnProperty(monthKey)) {
               salesByMonth[monthKey] += pago.monto || 0;
             }
@@ -180,13 +191,18 @@ export const useDashboardMetrics = () => {
         });
       }
       
-      // Format sales data for chart
-      const salesData = Object.keys(salesByMonth).map((key, index) => {
-        return {
-          name: monthLabels[index],
-          ingresos: salesByMonth[key]
-        };
+      // Map the aggregated data back to our months array
+      months.forEach(monthData => {
+        monthData.ingresos = salesByMonth[monthData.key] || 0;
       });
+      
+      // Sort months from oldest to newest for the chart
+      const salesData = months.map(monthData => ({
+        name: monthData.name,
+        ingresos: monthData.ingresos
+      }));
+      
+      console.log('Processed sales data by month:', salesData);
       
       // Get latest desarrollos and sort them by most recent
       const topDesarrollos = [...desarrollos].sort((a, b) => {
