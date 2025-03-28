@@ -17,7 +17,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
         <p className="font-semibold">{label}</p>
         {payload.map((entry, index) => (
           <p key={`item-${index}`} style={{ color: entry.color }}>
-            {entry.name}: {entry.name === 'ventas' ? formatCurrency(entry.value) : entry.value}
+            {entry.name === 'ingresos' ? `Ingresos: ${formatCurrency(entry.value)}` : `${entry.name}: ${entry.value}`}
           </p>
         ))}
       </div>
@@ -126,7 +126,7 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardFooter className="pt-2">
-              <Link to="/dashboard/leads?status=seguimiento" className="text-xs text-indigo-600 hover:underline">
+              <Link to="/dashboard/leads?status=convertido" className="text-xs text-indigo-600 hover:underline">
                 Ver prospectos activos →
               </Link>
             </CardFooter>
@@ -174,13 +174,13 @@ const Dashboard = () => {
         {/* Gráficas */}
         <Tabs defaultValue="ventas" className="pt-4">
           <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="ventas">Ventas</TabsTrigger>
+            <TabsTrigger value="ventas">Ingresos</TabsTrigger>
             <TabsTrigger value="inventario">Inventario</TabsTrigger>
             <TabsTrigger value="proyecciones">Proyecciones</TabsTrigger>
           </TabsList>
           
           <TabsContent value="ventas" className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="text-lg font-semibold mb-4">Ventas por mes</h3>
+            <h3 className="text-lg font-semibold mb-4">Ingresos por mes</h3>
             <div className="h-80">
               {isLoading ? (
                 <div className="h-full w-full flex items-center justify-center">
@@ -202,7 +202,7 @@ const Dashboard = () => {
                     />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend />
-                    <Bar dataKey="ventas" name="Ventas" fill="#4F46E5" />
+                    <Bar dataKey="ingresos" name="Ingresos" fill="#4F46E5" />
                   </BarChart>
                 </ResponsiveContainer>
               )}
