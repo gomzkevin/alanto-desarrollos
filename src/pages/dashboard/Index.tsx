@@ -69,20 +69,29 @@ const Dashboard = () => {
       try {
         const desarrollosWithUpdatedStats = await Promise.all(
           desarrollos.map(async (desarrollo) => {
-            const { data: stats } = await useDesarrolloStats(desarrollo.id);
-            
-            return {
-              ...desarrollo,
-              unidades_disponibles: stats?.unidadesDisponibles || 0,
-              total_unidades: stats?.totalUnidades || 0,
-              avance_porcentaje: stats?.avanceComercial || 0
-            };
+            try {
+              const { data: stats } = await useDesarrolloStats(desarrollo.id);
+              
+              return {
+                ...desarrollo,
+                unidades_disponibles: stats?.unidadesDisponibles || desarrollo.unidades_disponibles || 0,
+                total_unidades: stats?.totalUnidades || desarrollo.total_unidades || 0,
+                avance_porcentaje: stats?.avanceComercial || desarrollo.avance_porcentaje || 0
+              };
+            } catch (err) {
+              console.error(`Error al cargar stats para desarrollo ${desarrollo.id}:`, err);
+              // Devolver el desarrollo original si hay un error al obtener las estadísticas
+              return desarrollo;
+            }
           })
         );
         
+        console.log("Desarrollos con estadísticas actualizadas:", desarrollosWithUpdatedStats);
         setDesarrollosWithStats(desarrollosWithUpdatedStats);
       } catch (error) {
         console.error('Error cargando estadísticas de desarrollos:', error);
+        // En caso de error, usar los desarrollos originales
+        setDesarrollosWithStats(desarrollos);
       } finally {
         setIsLoadingStats(false);
       }
@@ -316,8 +325,16 @@ const Dashboard = () => {
               [1, 2, 3].map((i) => (
                 <div key={i} className="h-[250px] bg-slate-100 animate-pulse rounded-xl" />
               ))
-            ) : desarrollosWithStats.length > 0 ? (
-              desarrollosWithStats.map((desarrollo) => (
+            ) : desarrollos.length === 0 ? (
+              <div className="col-span-3 py-12 text-center">
+                <p className="text-slate-500 mb-4">No hay desarrollos disponibles.</p>
+                <Link to="/dashboard/desarrollos/nuevo">
+                  <Button>Crear desarrollo</Button>
+                </Link>
+              </div>
+            ) : (
+              // Usamos los desarrollos originales si no hay datos en desarrollosWithStats
+              (desarrollosWithStats.length > 0 ? desarrollosWithStats : desarrollos).map((desarrollo) => (
                 <Card key={desarrollo.id} className="shadow-sm">
                   <CardHeader>
                     <CardTitle>{desarrollo.nombre}</CardTitle>
@@ -350,13 +367,6 @@ const Dashboard = () => {
                   </CardFooter>
                 </Card>
               ))
-            ) : (
-              <div className="col-span-3 py-12 text-center">
-                <p className="text-slate-500 mb-4">No hay desarrollos disponibles.</p>
-                <Link to="/dashboard/desarrollos/nuevo">
-                  <Button>Crear desarrollo</Button>
-                </Link>
-              </div>
             )}
           </div>
         </div>
