@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -115,9 +116,9 @@ export const useResourceFields = (resourceType: ResourceType, status?: string | 
           ];
         case 'desarrollos':
           return [
-            { name: 'nombre', label: 'Nombre', type: 'text' },
-            { name: 'ubicacion', label: 'Ubicación', type: 'text' },
-            { name: 'total_unidades', label: 'Total Unidades', type: 'number' },
+            { name: 'nombre', label: 'Nombre', type: 'text', required: true },
+            { name: 'ubicacion', label: 'Ubicación', type: 'text', required: true },
+            { name: 'total_unidades', label: 'Total Unidades', type: 'number', required: true },
             { name: 'unidades_disponibles', label: 'Unidades Disponibles', type: 'number', readOnly: true },
             { name: 'avance_porcentaje', label: 'Avance (%)', type: 'number', readOnly: true },
             { name: 'fecha_inicio', label: 'Fecha Inicio', type: 'date' },
@@ -143,14 +144,14 @@ export const useResourceFields = (resourceType: ResourceType, status?: string | 
           ];
         case 'prototipos':
           return [
-            { name: 'nombre', label: 'Nombre', type: 'text' },
-            { name: 'tipo', label: 'Tipo', type: 'select', options: TIPOS_PROPIEDADES, placeholder: 'Seleccionar tipo...' },
-            { name: 'precio', label: 'Precio', type: 'number', formatCurrency: true },
+            { name: 'nombre', label: 'Nombre', type: 'text', required: true },
+            { name: 'tipo', label: 'Tipo', type: 'select', options: TIPOS_PROPIEDADES, placeholder: 'Seleccionar tipo...', required: true },
+            { name: 'precio', label: 'Precio', type: 'number', formatCurrency: true, required: true },
             { name: 'superficie', label: 'Superficie (m²)', type: 'number' },
             { name: 'habitaciones', label: 'Habitaciones', type: 'number' },
             { name: 'baños', label: 'Baños', type: 'number' },
             { name: 'estacionamientos', label: 'Estacionamientos', type: 'number' },
-            { name: 'total_unidades', label: 'Total Unidades', type: 'number' },
+            { name: 'total_unidades', label: 'Total Unidades', type: 'number', required: true },
             { name: 'unidades_vendidas', label: 'Unidades Vendidas', type: 'number', readOnly: true },
             { name: 'unidades_con_anticipo', label: 'Unidades con Anticipo', type: 'number', readOnly: true },
             { name: 'descripcion', label: 'Descripción', type: 'textarea' },
@@ -212,30 +213,34 @@ export const useResourceFields = (resourceType: ResourceType, status?: string | 
                 value: lead.id, 
                 label: lead.nombre + (lead.email ? ` (${lead.email})` : lead.telefono ? ` (${lead.telefono})` : '')
               })),
-              placeholder: 'Seleccionar cliente...'
+              placeholder: 'Seleccionar cliente...',
+              required: true
             },
             { 
               name: 'desarrollo_id', 
               label: 'Desarrollo', 
               type: 'select', 
               options: desarrollos.map(d => ({ value: d.id, label: d.nombre })),
-              placeholder: 'Seleccionar desarrollo...'
+              placeholder: 'Seleccionar desarrollo...',
+              required: true
             },
             { 
               name: 'prototipo_id', 
               label: 'Prototipo', 
               type: 'select', 
               options: prototipos.map(p => ({ value: p.id, label: p.nombre })),
-              placeholder: 'Seleccionar prototipo...'
+              placeholder: 'Seleccionar prototipo...',
+              required: true
             },
             { name: 'usar_finiquito', label: 'Liquidar con finiquito', type: 'switch' },
             { name: 'monto_anticipo', 
               label: 'Monto de anticipo', 
               type: 'number',
               tab: 'financiamiento',
-              formatCurrency: true 
+              formatCurrency: true,
+              required: true 
             },
-            { name: 'numero_pagos', label: 'Número de Pagos', type: 'number', placeholder: '0' },
+            { name: 'numero_pagos', label: 'Número de Pagos', type: 'number', placeholder: '0', required: true },
             { name: 'monto_finiquito', 
               label: 'Monto de finiquito', 
               type: 'number', 
