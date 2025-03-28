@@ -39,8 +39,18 @@ const queryClient = new QueryClient({
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Establecer un timeout de seguridad para prevenir carga indefinida
+    const safetyTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.log("Safety timeout triggered: resetting loading state");
+        setIsLoading(false);
+        setIsLoggedIn(false);
+      }
+    }, 5000); // 5 segundos como máximo para cargar
+
     const checkAuth = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
@@ -48,10 +58,12 @@ function App() {
         if (error) {
           console.error("Error checking auth session:", error);
           setIsLoggedIn(false);
+          setIsLoading(false);
           return;
         }
         
         setIsLoggedIn(!!data.session);
+        setIsLoading(false);
         
         // Suscribirse a cambios de autenticación
         const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -67,14 +79,17 @@ function App() {
       } catch (err) {
         console.error("Unexpected error checking auth:", err);
         setIsLoggedIn(false);
+        setIsLoading(false);
       }
     };
     
     checkAuth();
+    
+    return () => clearTimeout(safetyTimeout);
   }, []);
 
   // Mostrar un loader mientras se verifica la autenticación
-  if (isLoggedIn === null) {
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
         <div className="text-center">

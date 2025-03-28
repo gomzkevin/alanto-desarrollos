@@ -7,10 +7,16 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function isAuthenticated(): Promise<boolean> {
   try {
-    const { data } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error("Error al verificar autenticación:", error);
+      return false;
+    }
+    
     return !!data.session;
   } catch (error) {
-    console.error("Error al verificar autenticación:", error);
+    console.error("Error inesperado al verificar autenticación:", error);
     return false;
   }
 }
@@ -21,10 +27,16 @@ export async function isAuthenticated(): Promise<boolean> {
  */
 export async function getCurrentUserId(): Promise<string | null> {
   try {
-    const { data } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error("Error al obtener ID de usuario:", error);
+      return null;
+    }
+    
     return data.session?.user?.id || null;
   } catch (error) {
-    console.error("Error al obtener ID de usuario:", error);
+    console.error("Error inesperado al obtener ID de usuario:", error);
     return null;
   }
 }

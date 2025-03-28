@@ -9,6 +9,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,14 +22,27 @@ const Header = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const auth = await isAuthenticated();
-      setIsLoggedIn(auth);
+      setIsCheckingAuth(true);
+      try {
+        const auth = await isAuthenticated();
+        setIsLoggedIn(auth);
+      } catch (error) {
+        console.error("Error verificando autenticación:", error);
+        setIsLoggedIn(false);
+      } finally {
+        setIsCheckingAuth(false);
+      }
     };
+    
     checkAuth();
 
     // Suscribirse a cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsLoggedIn(!!session);
+      if (event === 'SIGNED_IN') {
+        setIsLoggedIn(true);
+      } else if (event === 'SIGNED_OUT') {
+        setIsLoggedIn(false);
+      }
     });
 
     return () => {
@@ -53,7 +67,9 @@ const Header = () => {
             <a href="#features" className="text-slate-700 hover:text-indigo-600 transition-colors">Características</a>
             <a href="#properties" className="text-slate-700 hover:text-indigo-600 transition-colors">Propiedades</a>
             <a href="#calculator" className="text-slate-700 hover:text-indigo-600 transition-colors">Calculadora</a>
-            {isLoggedIn ? (
+            {isCheckingAuth ? (
+              <Button disabled className="opacity-75">Cargando...</Button>
+            ) : isLoggedIn ? (
               <Link to="/dashboard">
                 <Button>Dashboard</Button>
               </Link>
@@ -112,7 +128,9 @@ const Header = () => {
             >
               Calculadora
             </a>
-            {isLoggedIn ? (
+            {isCheckingAuth ? (
+              <Button disabled className="w-full opacity-75">Cargando...</Button>
+            ) : isLoggedIn ? (
               <Link to="/dashboard" className="block px-3 py-2">
                 <Button 
                   className="w-full"

@@ -11,6 +11,10 @@ const LogoutButton = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    if (isLoggingOut) {
+      return; // Prevenir múltiples clicks
+    }
+    
     try {
       setIsLoggingOut(true);
       
@@ -43,11 +47,14 @@ const LogoutButton = () => {
           description: "Has cerrado sesión correctamente",
         });
         
-        // Limpiamos cualquier dato de sesión que pudiera quedar en localStorage
+        // Limpiamos cualquier dato de sesión que pudiera quedar
         localStorage.removeItem('supabase.auth.token');
+        sessionStorage.clear();
         
-        // Redirigir a la página de autenticación
-        navigate('/auth');
+        // Esperar un momento antes de redirigir para asegurar que se complete el cierre de sesión
+        setTimeout(() => {
+          navigate('/auth', { replace: true });
+        }, 300);
       }
     } catch (error) {
       console.error("Error inesperado al cerrar sesión:", error);
