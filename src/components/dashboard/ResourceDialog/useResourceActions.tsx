@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -111,45 +112,191 @@ const useResourceActions = ({
       
       if (resourceId) {
         // Update existing resource
-        const { data, error } = await supabase
-          .from(resourceType)
-          .update(dataToSave)
-          .eq('id', resourceId)
-          .select();
-        
-        if (error) {
-          console.error(`Error updating ${resourceType}:`, error);
-          toast({
-            title: 'Error',
-            description: `No se pudo actualizar: ${error.message}`,
-            variant: 'destructive',
-          });
-          return false;
+        if (resourceType === 'desarrollos') {
+          const { data, error } = await supabase
+            .from(resourceType)
+            .update(dataToSave as any)
+            .eq('id', resourceId)
+            .select();
+          
+          if (error) {
+            console.error(`Error updating ${resourceType}:`, error);
+            toast({
+              title: 'Error',
+              description: `No se pudo actualizar: ${error.message}`,
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
+          result = data;
+        } else if (resourceType === 'leads') {
+          const { data, error } = await supabase
+            .from(resourceType)
+            .update(dataToSave as any)
+            .eq('id', resourceId)
+            .select();
+          
+          if (error) {
+            console.error(`Error updating ${resourceType}:`, error);
+            toast({
+              title: 'Error',
+              description: `No se pudo actualizar: ${error.message}`,
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
+          result = data;
+        } else if (resourceType === 'cotizaciones') {
+          const { data, error } = await supabase
+            .from(resourceType)
+            .update(dataToSave as any)
+            .eq('id', resourceId)
+            .select();
+          
+          if (error) {
+            console.error(`Error updating ${resourceType}:`, error);
+            toast({
+              title: 'Error',
+              description: `No se pudo actualizar: ${error.message}`,
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
+          result = data;
+        } else if (resourceType === 'prototipos') {
+          const { data, error } = await supabase
+            .from(resourceType)
+            .update(dataToSave as any)
+            .eq('id', resourceId)
+            .select();
+          
+          if (error) {
+            console.error(`Error updating ${resourceType}:`, error);
+            toast({
+              title: 'Error',
+              description: `No se pudo actualizar: ${error.message}`,
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
+          result = data;
+        } else {
+          const { data, error } = await supabase
+            .from(resourceType)
+            .update(dataToSave as any)
+            .eq('id', resourceId)
+            .select();
+          
+          if (error) {
+            console.error(`Error updating ${resourceType}:`, error);
+            toast({
+              title: 'Error',
+              description: `No se pudo actualizar: ${error.message}`,
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
+          result = data;
         }
         
-        result = data;
         toast({
           title: 'Actualizado',
           description: `${resourceType} actualizado correctamente`,
         });
       } else {
         // Create new resource
-        const { data, error } = await supabase
-          .from(resourceType)
-          .insert(dataToSave)
-          .select();
-        
-        if (error) {
-          console.error(`Error creating ${resourceType}:`, error);
-          toast({
-            title: 'Error',
-            description: `No se pudo crear: ${error.message}`,
-            variant: 'destructive',
-          });
-          return false;
+        if (resourceType === 'desarrollos') {
+          const { data, error } = await supabase
+            .from(resourceType)
+            .insert(dataToSave as any)
+            .select();
+          
+          if (error) {
+            console.error(`Error creating ${resourceType}:`, error);
+            toast({
+              title: 'Error',
+              description: `No se pudo crear: ${error.message}`,
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
+          result = data;
+        } else if (resourceType === 'leads') {
+          const { data, error } = await supabase
+            .from(resourceType)
+            .insert(dataToSave as any)
+            .select();
+          
+          if (error) {
+            console.error(`Error creating ${resourceType}:`, error);
+            toast({
+              title: 'Error',
+              description: `No se pudo crear: ${error.message}`,
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
+          result = data;
+        } else if (resourceType === 'cotizaciones') {
+          const { data, error } = await supabase
+            .from(resourceType)
+            .insert(dataToSave as any)
+            .select();
+          
+          if (error) {
+            console.error(`Error creating ${resourceType}:`, error);
+            toast({
+              title: 'Error',
+              description: `No se pudo crear: ${error.message}`,
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
+          result = data;
+        } else if (resourceType === 'prototipos') {
+          const { data, error } = await supabase
+            .from(resourceType)
+            .insert(dataToSave as any)
+            .select();
+          
+          if (error) {
+            console.error(`Error creating ${resourceType}:`, error);
+            toast({
+              title: 'Error',
+              description: `No se pudo crear: ${error.message}`,
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
+          result = data;
+        } else {
+          const { data, error } = await supabase
+            .from(resourceType)
+            .insert(dataToSave as any)
+            .select();
+          
+          if (error) {
+            console.error(`Error creating ${resourceType}:`, error);
+            toast({
+              title: 'Error',
+              description: `No se pudo crear: ${error.message}`,
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
+          result = data;
         }
         
-        result = data;
         toast({
           title: 'Creado',
           description: `${resourceType} creado correctamente`,
