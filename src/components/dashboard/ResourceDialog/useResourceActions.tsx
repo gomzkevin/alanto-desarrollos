@@ -1,12 +1,8 @@
-
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 import { ResourceType, FormValues } from './types';
-import { getCurrentUserId } from '@/lib/supabase';
 import useUserRole from '@/hooks/useUserRole';
-import useDesarrollos from '@/hooks/useDesarrollos';
-import usePrototipos from '@/hooks/usePrototipos';
 
 interface UseResourceActionsProps {
   resourceType: ResourceType;
@@ -15,144 +11,111 @@ interface UseResourceActionsProps {
   selectedAmenities?: string[];
   clientConfig?: {
     isExistingClient: boolean;
-    newClientData: { nombre: string; email: string; telefono: string };
+    newClientData: {
+      nombre: string;
+      email: string;
+      telefono: string;
+    };
   };
 }
 
-export default function useResourceActions({
+const useResourceActions = ({
   resourceType,
   resourceId,
   onSuccess,
   selectedAmenities = [],
-  clientConfig
-}: UseResourceActionsProps) {
+  clientConfig = { isExistingClient: true, newClientData: { nombre: '', email: '', telefono: '' } }
+}: UseResourceActionsProps) => {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
   const { empresaId } = useUserRole();
-  const { canAddDesarrollo } = useDesarrollos({ empresaId });
-  const { canAddPrototipo } = usePrototipos();
+  const [isUploading, setIsUploading] = useState(false);
 
-  // Save resource function
-  const saveResource = async (values: FormValues) => {
-    setIsLoading(true);
-    console.log('Starting saveResource with:', values);
+  const saveResource = async (resource: FormValues): Promise<boolean> => {
+    console.log('Saving resource:', resource);
+    
+    if (!resource) {
+      console.error('No resource data provided');
+      return false;
+    }
 
     try {
-      console.log('Saving resource:', resourceType, values);
-      
-      // Verificar límites de suscripción antes de crear un nuevo recurso
-      if (!resourceId) {
-        if (resourceType === 'desarrollos' && !canAddDesarrollo()) {
-          setIsLoading(false);
-          return false;
-        } else if (resourceType === 'prototipos' && !canAddPrototipo()) {
-          setIsLoading(false);
-          return false;
-        }
-      }
-      
       // Prepare the data to be saved
-      let data = { ...values };
-      
-      // Handle special cases for each resource type
-      if (resourceType === 'desarrollos' && selectedAmenities.length > 0) {
-        data.amenidades = selectedAmenities;
-      }
-      
-      // If creating a new desarrollo, ensure it has a user_id
-      if (resourceType === 'desarrollos' && !resourceId && !data.user_id) {
-        const userId = await getCurrentUserId();
+      let dataToSave = { ...resource };
+
+      // Special handling per resource type
+      if (resourceType === 'desarrollos') {
+        // Handle amenidades for desarrollos
+        if (selectedAmenities && selectedAmenities.length > 0) {
+          dataToSave.amenidades = selectedAmenities;
+        }
         
-        if (userId) {
-          data.user_id = userId;
+        // Ensure empresa_id is set
+        if (!dataToSave.empresa_id && empresaId) {
+          dataToSave.empresa_id = empresaId;
+        }
+      } else if (resourceType === 'leads') {
+        // For leads, ensure empresa_id is set
+        if (!dataToSave.empresa_id && empresaId) {
+          dataToSave.empresa_id = empresaId;
+        }
+        
+        // The rest of lead handling remains the same
+        // No need to modify agente handling as it's now a UUID
+      }
+
+      // Handle client creation for cotizaciones if needed
+      if (resourceType === 'cotizaciones' && !clientConfig.isExistingClient && !resourceId) {
+        const { nombre, email, telefono } = clientConfig.newClientData;
+        
+        if (nombre) {
+          // Create a new client first
+          const { data: newClient, error: clientError } = await supabase
+            .from('leads')
+            .insert({
+              nombre,
+              email,
+              telefono,
+              estado: 'seguimiento',
+              subestado: 'cotizacion_enviada',
+              empresa_id: empresaId
+            })
+            .select()
+            .single();
+          
+          if (clientError) {
+            console.error('Error creating new client:', clientError);
+            toast({
+              title: 'Error',
+              description: `No se pudo crear el cliente: ${clientError.message}`,
+              variant: 'destructive',
+            });
+            return false;
+          }
+          
+          // Use the new client ID
+          if (newClient) {
+            dataToSave.lead_id = newClient.id;
+          }
         } else {
           toast({
             title: 'Error',
-            description: 'No se pudo obtener el ID de usuario. Por favor, inicia sesión nuevamente.',
+            description: 'Se requiere un nombre para crear un nuevo cliente',
             variant: 'destructive',
           });
-          setIsLoading(false);
           return false;
         }
       }
+
+      // Save the resource
+      let result;
       
-      // Ensure empresa_id is set for relevant resource types
-      if ((resourceType === 'desarrollos' || resourceType === 'leads' || resourceType === 'cotizaciones') 
-          && !data.empresa_id && empresaId) {
-        data.empresa_id = empresaId;
-      }
-      
-      // Handle client creation for cotizaciones
-      if (resourceType === 'cotizaciones' && !clientConfig?.isExistingClient) {
-        // Create a new lead first
-        const { data: newLead, error: leadError } = await supabase
-          .from('leads')
-          .insert({
-            nombre: clientConfig?.newClientData.nombre,
-            email: clientConfig?.newClientData.email,
-            telefono: clientConfig?.newClientData.telefono,
-            estado: 'nuevo',
-            subestado: 'sin_contactar',
-            empresa_id: empresaId
-          })
-          .select()
-          .single();
-        
-        if (leadError) {
-          console.error('Error creating new lead:', leadError);
-          toast({
-            title: 'Error',
-            description: `No se pudo crear el nuevo cliente: ${leadError.message}`,
-            variant: 'destructive',
-          });
-          setIsLoading(false);
-          return false;
-        }
-        
-        // Update the cotizacion with the new lead_id
-        data.lead_id = newLead.id;
-      }
-      
-      // Handle update or insert based on resourceId
       if (resourceId) {
         // Update existing resource
-        console.log('Updating existing resource with id:', resourceId);
-        let error;
-        
-        if (resourceType === 'desarrollos') {
-          const result = await supabase
-            .from(resourceType)
-            .update({
-              ...data,
-              empresa_id: data.empresa_id || empresaId
-            } as any)
-            .eq('id', resourceId);
-          error = result.error;
-        } else if (resourceType === 'leads') {
-          const result = await supabase
-            .from(resourceType)
-            .update({
-              ...data,
-              empresa_id: data.empresa_id || empresaId
-            } as any)
-            .eq('id', resourceId);
-          error = result.error;
-        } else if (resourceType === 'cotizaciones') {
-          const result = await supabase
-            .from(resourceType)
-            .update({
-              ...data,
-              empresa_id: data.empresa_id || empresaId
-            } as any)
-            .eq('id', resourceId);
-          error = result.error;
-        } else {
-          const result = await supabase
-            .from(resourceType)
-            .update(data as any)
-            .eq('id', resourceId);
-          error = result.error;
-        }
+        const { data, error } = await supabase
+          .from(resourceType)
+          .update(dataToSave)
+          .eq('id', resourceId)
+          .select();
         
         if (error) {
           console.error(`Error updating ${resourceType}:`, error);
@@ -161,50 +124,20 @@ export default function useResourceActions({
             description: `No se pudo actualizar: ${error.message}`,
             variant: 'destructive',
           });
-          setIsLoading(false);
           return false;
         }
         
-        console.log(`Successfully updated ${resourceType} with id ${resourceId}`);
+        result = data;
         toast({
           title: 'Actualizado',
-          description: `${getResourceLabel(resourceType)} actualizado correctamente`,
+          description: `${resourceType} actualizado correctamente`,
         });
       } else {
         // Create new resource
-        console.log('Creating new resource');
-        let error;
-        
-        if (resourceType === 'desarrollos') {
-          const result = await supabase
-            .from(resourceType)
-            .insert({
-              ...data,
-              empresa_id: data.empresa_id || empresaId
-            } as any);
-          error = result.error;
-        } else if (resourceType === 'leads') {
-          const result = await supabase
-            .from(resourceType)
-            .insert({
-              ...data,
-              empresa_id: data.empresa_id || empresaId
-            } as any);
-          error = result.error;
-        } else if (resourceType === 'cotizaciones') {
-          const result = await supabase
-            .from(resourceType)
-            .insert({
-              ...data,
-              empresa_id: data.empresa_id || empresaId
-            } as any);
-          error = result.error;
-        } else {
-          const result = await supabase
-            .from(resourceType)
-            .insert(data as any);
-          error = result.error;
-        }
+        const { data, error } = await supabase
+          .from(resourceType)
+          .insert(dataToSave)
+          .select();
         
         if (error) {
           console.error(`Error creating ${resourceType}:`, error);
@@ -213,53 +146,43 @@ export default function useResourceActions({
             description: `No se pudo crear: ${error.message}`,
             variant: 'destructive',
           });
-          setIsLoading(false);
           return false;
         }
         
-        console.log(`Successfully created new ${resourceType}`);
+        result = data;
         toast({
           title: 'Creado',
-          description: `${getResourceLabel(resourceType)} creado correctamente`,
+          description: `${resourceType} creado correctamente`,
         });
       }
       
-      // Call onSuccess callback if provided
+      console.log(`${resourceType} saved:`, result);
+      
       if (onSuccess) {
-        console.log('Calling onSuccess callback');
         onSuccess();
       }
       
-      setIsLoading(false);
       return true;
     } catch (error) {
-      console.error('Error in saveResource:', error);
+      console.error(`Error saving ${resourceType}:`, error);
       toast({
         title: 'Error',
-        description: 'Ha ocurrido un error inesperado',
+        description: 'Ocurrió un error inesperado',
         variant: 'destructive',
       });
-      setIsLoading(false);
       return false;
     }
   };
-  
-  // Function to handle image uploads
+
   const handleImageUpload = async (file: File): Promise<string | null> => {
     if (!file) return null;
     
+    setIsUploading(true);
+    
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      let filePath = '';
-      
-      if (resourceType === 'desarrollos') {
-        filePath = `desarrollos/${fileName}`;
-      } else if (resourceType === 'prototipos') {
-        filePath = `prototipos/${fileName}`;
-      } else {
-        filePath = `otros/${fileName}`;
-      }
+      const fileName = `${resourceType}_${Date.now()}.${fileExt}`;
+      const filePath = `${resourceType}/${fileName}`;
       
       const { error: uploadError } = await supabase.storage
         .from('prototipo-images')
@@ -284,34 +207,19 @@ export default function useResourceActions({
       console.error('Error in handleImageUpload:', error);
       toast({
         title: 'Error',
-        description: 'No se pudo subir la imagen',
+        description: 'Ocurrió un error al subir la imagen',
         variant: 'destructive',
       });
       return null;
-    }
-  };
-  
-  // Helper function to get user-friendly resource type label
-  const getResourceLabel = (type: ResourceType): string => {
-    switch (type) {
-      case 'desarrollos':
-        return 'Desarrollo';
-      case 'prototipos':
-        return 'Prototipo';
-      case 'leads':
-        return 'Lead';
-      case 'cotizaciones':
-        return 'Cotización';
-      case 'unidades':
-        return 'Unidad';
-      default:
-        return 'Recurso';
+    } finally {
+      setIsUploading(false);
     }
   };
 
   return {
-    isLoading,
     saveResource,
-    handleImageUpload
+    handleImageUpload,
   };
-}
+};
+
+export default useResourceActions;

@@ -5,6 +5,7 @@ import { FieldDefinition, ResourceType } from '../types';
 import useLeads, { LEAD_STATUS_OPTIONS, LEAD_SUBSTATUS_OPTIONS, LEAD_ORIGIN_OPTIONS } from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
+import useUsuarios from '@/hooks/useUsuarios';
 
 const ESTADOS_UNIDAD = [
   { value: 'disponible', label: 'Disponible' },
@@ -28,6 +29,7 @@ export const useResourceFields = (resourceType: ResourceType, status?: string | 
   const { leads } = useLeads();
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos();
+  const { usuarios } = useUsuarios();
   
   const { data: vendedores = [] } = useQuery({
     queryKey: ['vendedores'],
@@ -160,16 +162,23 @@ export const useResourceFields = (resourceType: ResourceType, status?: string | 
             : [];
           
           return [
-            { name: 'nombre', label: 'Nombre', type: 'text', placeholder: 'Ingrese el nombre completo...' },
+            { name: 'nombre', label: 'Nombre', type: 'text', placeholder: 'Ingrese el nombre completo...', required: true },
             { name: 'email', label: 'Email', type: 'email', placeholder: 'ejemplo@correo.com' },
             { name: 'telefono', label: 'Teléfono', type: 'text', placeholder: '+52 1234567890' },
-            { name: 'agente', label: 'Agente', type: 'text', placeholder: 'Nombre del agente asignado...' },
+            { 
+              name: 'agente', 
+              label: 'Agente', 
+              type: 'select', 
+              options: usuarios.map(user => ({ value: user.id, label: user.nombre })),
+              placeholder: 'Seleccionar agente...'
+            },
             { 
               name: 'estado', 
               label: 'Estado', 
               type: 'select', 
               options: LEAD_STATUS_OPTIONS,
-              placeholder: 'Seleccionar estado...'
+              placeholder: 'Seleccionar estado...',
+              required: true
             },
             { 
               name: 'subestado', 
@@ -243,7 +252,7 @@ export const useResourceFields = (resourceType: ResourceType, status?: string | 
     };
 
     setFields(getFieldDefinitions());
-  }, [resourceType, leads, vendedores, status, desarrollos, prototipos]);
+  }, [resourceType, leads, vendedores, status, desarrollos, prototipos, usuarios]);
 
   return fields;
 };

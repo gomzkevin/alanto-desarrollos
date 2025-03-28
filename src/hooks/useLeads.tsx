@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
@@ -241,7 +242,7 @@ export const useLeads = (options: FetchLeadsOptions = {}) => {
 
   return {
     leads: queryResult.data || [],
-    isLoading: queryResult.isLoading || isUserRoleLoading, // Consider user role loading as part of the loading state
+    isLoading: queryResult.isLoading || isUserRoleLoading,
     error: queryResult.error,
     refetch: queryResult.refetch,
     updateLead,

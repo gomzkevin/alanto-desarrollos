@@ -25,6 +25,7 @@ import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 import { useUserRole } from '@/hooks';
+import useUsuarios from '@/hooks/useUsuarios';
 
 const getBadgeVariant = (estado: string) => {
   switch (estado?.toLowerCase()) {
@@ -64,6 +65,7 @@ const LeadsPage = () => {
   
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos();
+  const { usuarios } = useUsuarios();
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -115,6 +117,11 @@ const LeadsPage = () => {
     }
     
     return interesEn;
+  };
+
+  const getAgenteNombre = (agenteId: string) => {
+    const usuario = usuarios.find(u => u.id === agenteId);
+    return usuario ? usuario.nombre : agenteId;
   };
 
   return (
@@ -176,6 +183,7 @@ const LeadsPage = () => {
                 <TableHead>Estado</TableHead>
                 <TableHead>Subestado</TableHead>
                 <TableHead>Interés</TableHead>
+                <TableHead>Agente</TableHead>
                 <TableHead>Origen</TableHead>
                 <TableHead>Último contacto</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
@@ -183,13 +191,14 @@ const LeadsPage = () => {
             </TableHeader>
             <TableBody>
               {(isLoading || isUserLoading) ? (
-                [1, 2, 3, 4, 5].map((i) => (
+                [1, 2, 3, 4, 5, 6].map((i) => (
                   <TableRow key={i} className="animate-pulse">
                     <TableCell><div className="h-4 w-32 bg-slate-100 rounded-md"></div></TableCell>
                     <TableCell><div className="h-4 w-48 bg-slate-100 rounded-md"></div></TableCell>
                     <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
                     <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
                     <TableCell><div className="h-4 w-40 bg-slate-100 rounded-md"></div></TableCell>
+                    <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
                     <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
                     <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
                     <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
@@ -232,6 +241,12 @@ const LeadsPage = () => {
                       {formatInterest(lead.interes_en)}
                     </TableCell>
                     <TableCell>
+                      {lead.agente ? 
+                        <span className="text-gray-600">{getAgenteNombre(lead.agente)}</span> : 
+                        <span className="text-gray-400">Sin asignar</span>
+                      }
+                    </TableCell>
+                    <TableCell>
                       {lead.origen ? 
                         <span className="flex items-center">
                           {getOriginLabel(lead.origen)}
@@ -258,7 +273,7 @@ const LeadsPage = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                     No se encontraron prospectos que coincidan con tu búsqueda.
                   </TableCell>
                 </TableRow>
