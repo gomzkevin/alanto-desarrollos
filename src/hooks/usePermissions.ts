@@ -106,6 +106,11 @@ export const usePermissions = () => {
     
     // Verificar si tiene suscripción activa
     if (!hasActiveSubscription()) {
+      toast({
+        title: "Suscripción inactiva",
+        description: "Tu empresa no tiene una suscripción activa. Actualiza tu plan para crear prototipos.",
+        variant: "destructive",
+      });
       return false;
     }
     
@@ -142,6 +147,11 @@ export const usePermissions = () => {
     
     // Verificar si tiene suscripción activa
     if (!hasActiveSubscription()) {
+      toast({
+        title: "Suscripción inactiva",
+        description: "Tu empresa no tiene una suscripción activa. Actualiza tu plan para crear desarrollos.",
+        variant: "destructive",
+      });
       return false;
     }
     

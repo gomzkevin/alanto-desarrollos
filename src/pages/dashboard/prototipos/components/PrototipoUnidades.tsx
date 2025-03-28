@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { UnidadTable } from '../UnidadTable';
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import UnidadTableActions from './UnidadTableActions';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface PrototipoUnidadesProps {
   prototipo: ExtendedPrototipo;
@@ -37,6 +38,7 @@ export const PrototipoUnidades = React.memo(({
   const [generarUnidadesModalOpen, setGenerarUnidadesModalOpen] = useState(false);
   const [prefijo, setPrefijo] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const { canCreatePrototipo } = usePermissions();
   
   // Memoize filtered units to prevent unnecessary re-renders
   const filteredUnidades = useMemo(() => {
@@ -68,6 +70,9 @@ export const PrototipoUnidades = React.memo(({
     }
   };
   
+  // Verificar si se pueden crear más unidades basado en los límites de suscripción
+  const canAddMoreUnits = canCreatePrototipo();
+  
   return (
     <div className="bg-slate-50 p-6 rounded-lg">
       <div className="flex justify-between items-center mb-6">
@@ -86,10 +91,15 @@ export const PrototipoUnidades = React.memo(({
         
         <UnidadTableActions
           onAddClick={onAddUnidad}
-          onGenerateClick={() => setGenerarUnidadesModalOpen(true)}
+          onGenerateClick={() => {
+            if (canAddMoreUnits) {
+              setGenerarUnidadesModalOpen(true);
+            }
+          }}
           unidadesCount={unidades.length}
           totalUnidades={prototipo.total_unidades || 0}
           showGenerateButton={true}
+          canAddMore={canAddMoreUnits}
         />
       </div>
       
