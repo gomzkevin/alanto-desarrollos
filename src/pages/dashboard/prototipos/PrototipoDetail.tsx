@@ -23,6 +23,7 @@ const PrototipoDetail = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const lastRefreshTimeRef = useRef(Date.now());
   const { isAdmin } = useUserRole();
+  const { canCreatePrototipo } = usePermissions();
   
   // Estados estables para las unidades
   const { 
@@ -180,7 +181,18 @@ const PrototipoDetail = () => {
             unidades={safeUnidades}
             unidadesLoading={combinedLoadingState}
             unitCounts={unitCounts}
-            onAddUnidad={() => setOpenAddUnidadDialog(true)}
+            onAddUnidad={() => {
+              // Verificar si el usuario puede crear unidades basado en su plan
+              if (isAdmin() && canCreatePrototipo()) {
+                setOpenAddUnidadDialog(true);
+              } else {
+                toast({
+                  title: "Acción no permitida",
+                  description: "No puedes añadir más unidades debido a las limitaciones de tu plan o permisos.",
+                  variant: "destructive",
+                });
+              }
+            }}
             onGenerateUnidades={handleGenerarUnidades}
             onRefreshUnidades={handleRefresh}
           />

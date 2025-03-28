@@ -95,7 +95,37 @@ export const usePermissions = () => {
   // Solo los administradores pueden crear prototipos, los vendedores no
   const canCreatePrototipo = () => {
     // Verificamos explícitamente que sea admin para crear prototipos
-    return isAdmin() && canCreateResource('prototipos') && isWithinResourceLimits();
+    if (!isAdmin()) {
+      return false;
+    }
+    
+    // Verificar si tiene permiso para crear el recurso
+    if (!canCreateResource('prototipos')) {
+      return false;
+    }
+    
+    // Verificar si tiene suscripción activa
+    if (!hasActiveSubscription()) {
+      return false;
+    }
+    
+    // Comprobación específica para límites de prototipos
+    if (subscriptionInfo.prototipoCount !== undefined && 
+        subscriptionInfo.prototipoLimit !== undefined && 
+        subscriptionInfo.prototipoCount >= subscriptionInfo.prototipoLimit) {
+      
+      // Mostrar toast solo cuando se llama directamente a esta función
+      toast({
+        title: "Límite de prototipos alcanzado",
+        description: `Has alcanzado el límite de ${subscriptionInfo.prototipoLimit} prototipos de tu plan (${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}). Actualiza tu suscripción para añadir más.`,
+        variant: "warning",
+      });
+      
+      console.log(`Límite de prototipos alcanzado: ${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}`);
+      return false;
+    }
+    
+    return true;
   };
   
   // Función específica para verificar si se pueden crear desarrollos

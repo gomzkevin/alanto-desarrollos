@@ -93,68 +93,10 @@ export const usePrototipos = (options: FetchPrototiposOptions = {}) => {
   // Check if can add more prototipos based on subscription limits
   const canAddPrototipo = async () => {
     try {
-      if (!canCreatePrototipo()) {
-        toast({
-          title: "Permisos insuficientes",
-          description: "No tienes permisos para crear prototipos. Solo los administradores pueden crear prototipos.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      // Fetch subscription data directly
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return false;
-      
-      const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('*, subscription_plans(*)')
-        .eq('user_id', userData.user.id)
-        .eq('status', 'active')
-        .maybeSingle();
-      
-      if (!subscription) {
-        toast({
-          title: "Suscripción requerida",
-          description: "Necesitas una suscripción activa para crear prototipos.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      // Extract plan features safely
-      const planFeatures = subscription.subscription_plans.features || {};
-      let resourceType: 'desarrollo' | 'prototipo' | undefined = undefined;
-      let resourceLimit: number | undefined = undefined;
-      
-      // Check if features is an object (not array) and assign properties safely
-      if (planFeatures && typeof planFeatures === 'object' && !Array.isArray(planFeatures)) {
-        const featuresObj = planFeatures as { [key: string]: Json };
-        resourceType = featuresObj.tipo as 'desarrollo' | 'prototipo' | undefined;
-        resourceLimit = typeof featuresObj.max_recursos === 'number' ? featuresObj.max_recursos : undefined;
-      }
-      
-      if (resourceType !== 'prototipo' && resourceType !== undefined) {
-        toast({
-          title: "Plan incompatible",
-          description: "Tu plan actual no permite la creación de prototipos. Considera cambiar a un plan por prototipo.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      if (resourceLimit !== undefined && queryResult.data && queryResult.data.length >= resourceLimit) {
-        toast({
-          title: "Límite alcanzado",
-          description: `Has alcanzado el límite de ${resourceLimit} prototipos de tu plan. Contacta a soporte para aumentar tu límite.`,
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      return true;
+      // Usar la función canCreatePrototipo del hook usePermissions
+      return canCreatePrototipo();
     } catch (error) {
-      console.error("Error checking subscription:", error);
+      console.error("Error checking permissions:", error);
       return false;
     }
   };
