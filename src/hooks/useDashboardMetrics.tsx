@@ -62,10 +62,10 @@ export const useDashboardMetrics = () => {
       // Get prototipo IDs
       const prototipoIds = prototipos?.map(p => p.id) || [];
       
-      // Get unidades for these prototipos
+      // Get unidades for these prototipos, ensuring we select the estado field
       const { data: unidades, error: unidadesError } = await supabase
         .from('unidades')
-        .select('id, prototipo_id')
+        .select('id, prototipo_id, estado')
         .in('prototipo_id', prototipoIds);
       
       if (unidadesError) throw unidadesError;
@@ -131,6 +131,7 @@ export const useDashboardMetrics = () => {
       
       if (unidades && unidades.length > 0) {
         totalUnits = unidades.length;
+        // Fixed: Now 'estado' is properly included in the query result type
         availableUnits = unidades.filter(u => u.estado === 'disponible').length;
         reservedUnits = unidades.filter(u => u.estado === 'apartado' || u.estado === 'en_proceso').length;
       }
