@@ -8,8 +8,6 @@ import { Link } from 'react-router-dom';
 import useDashboardMetrics from '@/hooks/useDashboardMetrics';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
-import useDesarrolloStats from '@/hooks/useDesarrolloStats';
 
 // Tooltip formatter for the charts
 const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
@@ -33,9 +31,6 @@ const COLORS = ['#4F46E5', '#14B8A6', '#F97066'];
 const Dashboard = () => {
   const { metrics, isLoading, error, refetch } = useDashboardMetrics();
   
-  // Estado para almacenar los desarrollos con estadísticas actualizadas
-  const [desarrollosWithStats, setDesarrollosWithStats] = useState<any[]>([]);
-  
   const salesMetrics = {
     leads: metrics?.leads || 0,
     prospectos: metrics?.prospectos || 0,
@@ -48,36 +43,6 @@ const Dashboard = () => {
   const inventoryData = metrics?.inventoryData || [];
 
   const hasError = error !== null;
-  
-  // Obtener estadísticas actualizadas para cada desarrollo
-  useEffect(() => {
-    const fetchDesarrolloStats = async () => {
-      if (!desarrollos.length) return;
-      
-      const updatedDesarrollos = await Promise.all(
-        desarrollos.map(async (desarrollo) => {
-          // Usar el hook useDesarrolloStats para cada desarrollo
-          const { data } = await useDesarrolloStats(desarrollo.id).refetch();
-          
-          if (data) {
-            return {
-              ...desarrollo,
-              unidades_disponibles: data.unidadesDisponibles,
-              avance_comercial: data.avanceComercial,
-              total_unidades: data.totalUnidades
-            };
-          }
-          return desarrollo;
-        })
-      );
-      
-      setDesarrollosWithStats(updatedDesarrollos);
-    };
-    
-    if (desarrollos.length > 0) {
-      fetchDesarrolloStats();
-    }
-  }, [desarrollos]);
 
   return (
     <DashboardLayout>
@@ -304,8 +269,8 @@ const Dashboard = () => {
               [1, 2, 3].map((i) => (
                 <div key={i} className="h-[250px] bg-slate-100 animate-pulse rounded-xl" />
               ))
-            ) : desarrollosWithStats.length > 0 ? (
-              desarrollosWithStats.map((desarrollo) => (
+            ) : desarrollos.length > 0 ? (
+              desarrollos.map((desarrollo) => (
                 <Card key={desarrollo.id} className="shadow-sm">
                   <CardHeader>
                     <CardTitle>{desarrollo.nombre}</CardTitle>
@@ -315,21 +280,15 @@ const Dashboard = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600">Unidades:</span>
-                        <span className="text-sm font-medium">
-                          {desarrollo.unidades_disponibles}/{desarrollo.total_unidades} disponibles
-                        </span>
+                        <span className="text-sm font-medium">{desarrollo.unidades_disponibles}/{desarrollo.total_unidades} disponibles</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600">Ventas:</span>
-                        <span className="text-sm font-medium">
-                          {desarrollo.total_unidades - desarrollo.unidades_disponibles} unidades
-                        </span>
+                        <span className="text-sm font-medium">{desarrollo.total_unidades - desarrollo.unidades_disponibles} unidades</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600">Avance:</span>
-                        <span className="text-sm font-medium">
-                          {desarrollo.avance_comercial || desarrollo.avance_porcentaje || '0'}%
-                        </span>
+                        <span className="text-sm font-medium">{desarrollo.avance_porcentaje || '0'}%</span>
                       </div>
                     </div>
                   </CardContent>
