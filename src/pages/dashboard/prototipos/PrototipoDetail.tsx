@@ -39,6 +39,9 @@ const PrototipoDetail = () => {
   // Memoize unit counts for stability
   const unitCounts = useUnitCounts(safeUnidades);
   
+  // Comprobamos si se pueden crear más prototipos (para funcionamiento del botón)
+  const canAddMore = canCreatePrototipo();
+  
   // Controlador de refresco con limitación de frecuencia
   const handleRefresh = useCallback(() => {
     const now = Date.now();
@@ -75,6 +78,16 @@ const PrototipoDetail = () => {
   
   const handleGenerarUnidades = async (cantidad: number, prefijo: string) => {
     if (!id || cantidad <= 0) return;
+    
+    // Verificar límites de suscripción
+    if (!canAddMore) {
+      toast({
+        title: "Límite alcanzado",
+        description: "Has alcanzado el límite de prototipos de tu plan. Actualiza tu suscripción para generar más unidades.",
+        variant: "warning"
+      });
+      return;
+    }
     
     try {
       await createMultipleUnidades.mutateAsync({
@@ -183,18 +196,25 @@ const PrototipoDetail = () => {
             unitCounts={unitCounts}
             onAddUnidad={() => {
               // Verificar si el usuario puede crear unidades basado en su plan
-              if (isAdmin() && canCreatePrototipo()) {
+              if (isAdmin() && canAddMore) {
                 setOpenAddUnidadDialog(true);
+              } else if (!canAddMore) {
+                toast({
+                  title: "Límite alcanzado",
+                  description: "Has alcanzado el límite de prototipos de tu plan. Actualiza tu suscripción para añadir más unidades.",
+                  variant: "warning",
+                });
               } else {
                 toast({
-                  title: "Acción no permitida",
-                  description: "No puedes añadir más unidades debido a las limitaciones de tu plan o permisos.",
+                  title: "Permisos insuficientes",
+                  description: "Solo los administradores pueden añadir unidades.",
                   variant: "destructive",
                 });
               }
             }}
             onGenerateUnidades={handleGenerarUnidades}
             onRefreshUnidades={handleRefresh}
+            canAddMore={canAddMore} // Pasar esta prop a PrototipoUnidades
           />
         </div>
       </div>

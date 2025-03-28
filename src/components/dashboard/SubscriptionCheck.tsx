@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSubscriptionInfo } from '@/hooks/useSubscriptionInfo';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -9,6 +10,19 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
   const { isAdmin, userId, empresaId, authChecked } = useUserRole();
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // Referencia para controlar notificaciones mostradas
+  const notificationsShown = useRef<{
+    noSubscription: boolean;
+    desarrollos: boolean;
+    prototipos: boolean;
+    vendedores: boolean;
+  }>({
+    noSubscription: false,
+    desarrollos: false,
+    prototipos: false,
+    vendedores: false
+  });
   
   // Rutas que están exentas de la comprobación de suscripción
   const exemptRoutes = [
@@ -28,7 +42,7 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
     // 5. No estamos en una ruta exenta
     if (!subscriptionLoading && authChecked && userId && empresaId && !isExemptRoute) {
       // Verificamos si la empresa no tiene suscripción activa (aplica a cualquier rol)
-      if (!subscriptionInfo.isActive) {
+      if (!subscriptionInfo.isActive && !notificationsShown.current.noSubscription) {
         console.log('No hay suscripción activa para la empresa, redirigiendo a configuración');
         
         // Mostrar mensaje más informativo
@@ -37,6 +51,8 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
           description: "Tu empresa no tiene una suscripción activa. Por favor, actualiza tu plan para continuar usando todas las funcionalidades.",
           variant: "destructive",
         });
+        
+        notificationsShown.current.noSubscription = true;
         
         // Solo redirigir si no estamos ya en la página de configuración
         if (!location.pathname.includes('/dashboard/configuracion')) {
@@ -49,34 +65,40 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
         // Verificar límites de desarrollos
         if (subscriptionInfo.desarrolloCount !== undefined && 
             subscriptionInfo.desarrolloLimit !== undefined && 
-            subscriptionInfo.desarrolloCount > subscriptionInfo.desarrolloLimit) {
+            subscriptionInfo.desarrolloCount > subscriptionInfo.desarrolloLimit &&
+            !notificationsShown.current.desarrollos) {
           toast({
             title: "Límite de desarrollos excedido",
             description: `Has excedido el límite de ${subscriptionInfo.desarrolloLimit} desarrollos de tu plan (${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}). Actualiza tu suscripción para evitar restricciones.`,
             variant: "warning",
           });
+          notificationsShown.current.desarrollos = true;
         }
         
         // Verificar límites de prototipos
         if (subscriptionInfo.prototipoCount !== undefined && 
             subscriptionInfo.prototipoLimit !== undefined && 
-            subscriptionInfo.prototipoCount > subscriptionInfo.prototipoLimit) {
+            subscriptionInfo.prototipoCount > subscriptionInfo.prototipoLimit &&
+            !notificationsShown.current.prototipos) {
           toast({
             title: "Límite de prototipos excedido",
             description: `Has excedido el límite de ${subscriptionInfo.prototipoLimit} prototipos de tu plan (${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}). Actualiza tu suscripción para evitar restricciones.`,
             variant: "warning",
           });
+          notificationsShown.current.prototipos = true;
         }
         
         // Verificar límites de vendedores
         if (subscriptionInfo.vendorCount !== undefined && 
             subscriptionInfo.vendorLimit !== undefined && 
-            subscriptionInfo.vendorCount > subscriptionInfo.vendorLimit) {
+            subscriptionInfo.vendorCount > subscriptionInfo.vendorLimit &&
+            !notificationsShown.current.vendedores) {
           toast({
             title: "Límite de vendedores excedido",
             description: `Has excedido el límite de ${subscriptionInfo.vendorLimit} vendedores de tu plan (${subscriptionInfo.vendorCount}/${subscriptionInfo.vendorLimit}). Actualiza tu suscripción para evitar restricciones.`,
             variant: "warning",
           });
+          notificationsShown.current.vendedores = true;
         }
       }
     }

@@ -262,79 +262,122 @@ export function SubscriptionPlans() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-sm font-medium">Uso de Recursos</h3>
-                <div className="mt-2 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Desarrollos:</span>
-                    <span className="font-medium">
-                      {subscriptionInfo.desarrolloCount || 0}
-                      {subscriptionInfo.desarrolloLimit ? (
-                        <> / {subscriptionInfo.desarrolloLimit}</>
-                      ) : null}
-                    </span>
-                  </div>
-                  {subscriptionInfo.desarrolloLimit ? (
-                    <Progress 
-                      value={subscriptionInfo.desarrolloLimit > 0 ? 
-                        ((subscriptionInfo.desarrolloCount || 0) / subscriptionInfo.desarrolloLimit) * 100 : 0}
-                      className={(subscriptionInfo.desarrolloCount || 0) > (subscriptionInfo.desarrolloLimit || 0) ? "bg-red-100" : ""}
-                    />
-                  ) : null}
-                  
-                  <div className="flex justify-between text-sm">
-                    <span>Prototipos:</span>
-                    <span className="font-medium">
-                      {subscriptionInfo.prototipoCount || 0}
-                      {subscriptionInfo.prototipoLimit ? (
-                        <> / {subscriptionInfo.prototipoLimit}</>
-                      ) : null}
-                    </span>
-                  </div>
-                  {subscriptionInfo.prototipoLimit ? (
-                    <Progress 
-                      value={subscriptionInfo.prototipoLimit > 0 ? 
-                        ((subscriptionInfo.prototipoCount || 0) / (subscriptionInfo.prototipoLimit)) * 100 : 0}
-                      className={(subscriptionInfo.prototipoCount || 0) > (subscriptionInfo.prototipoLimit || 0) ? "bg-red-100" : ""}
-                    />
-                  ) : null}
-                  
-                  {subscriptionInfo.isOverLimit && (
-                    <div className="flex items-center text-red-500 text-xs gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      <span>Excediste el límite de tu plan</span>
-                    </div>
-                  )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Desarrollos */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Desarrollos</h3>
+                <div className="flex justify-between text-sm">
+                  <span>Usados:</span>
+                  <span className="font-medium">
+                    {subscriptionInfo.desarrolloCount || 0}
+                    {subscriptionInfo.desarrolloLimit ? (
+                      <> / {subscriptionInfo.desarrolloLimit}</>
+                    ) : null}
+                  </span>
                 </div>
+                {subscriptionInfo.desarrolloLimit ? (
+                  <Progress 
+                    value={subscriptionInfo.desarrolloLimit > 0 ? 
+                      ((subscriptionInfo.desarrolloCount || 0) / subscriptionInfo.desarrolloLimit) * 100 : 0}
+                    className={
+                      (subscriptionInfo.desarrolloCount || 0) > (subscriptionInfo.desarrolloLimit || 0) 
+                        ? "bg-red-100" 
+                        : (subscriptionInfo.desarrolloCount || 0) >= (subscriptionInfo.desarrolloLimit || 0)
+                          ? "bg-yellow-100"
+                          : ""
+                    }
+                  />
+                ) : null}
+                {(subscriptionInfo.desarrolloCount || 0) > (subscriptionInfo.desarrolloLimit || 0) && (
+                  <div className="flex items-center text-red-500 text-xs gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>Límite excedido</span>
+                  </div>
+                )}
+                {(subscriptionInfo.desarrolloCount || 0) === (subscriptionInfo.desarrolloLimit || 0) && (
+                  <div className="flex items-center text-amber-500 text-xs gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>Límite alcanzado</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Prototipos */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Prototipos</h3>
+                <div className="flex justify-between text-sm">
+                  <span>Usados:</span>
+                  <span className="font-medium">
+                    {subscriptionInfo.prototipoCount || 0}
+                    {subscriptionInfo.prototipoLimit ? (
+                      <> / {subscriptionInfo.prototipoLimit}</>
+                    ) : null}
+                  </span>
+                </div>
+                {subscriptionInfo.prototipoLimit ? (
+                  <Progress 
+                    value={subscriptionInfo.prototipoLimit > 0 ? 
+                      ((subscriptionInfo.prototipoCount || 0) / (subscriptionInfo.prototipoLimit)) * 100 : 0}
+                    className={
+                      (subscriptionInfo.prototipoCount || 0) > (subscriptionInfo.prototipoLimit || 0) 
+                        ? "bg-red-100" 
+                        : (subscriptionInfo.prototipoCount || 0) >= (subscriptionInfo.prototipoLimit || 0)
+                          ? "bg-yellow-100"
+                          : ""
+                    }
+                  />
+                ) : null}
+                {(subscriptionInfo.prototipoCount || 0) > (subscriptionInfo.prototipoLimit || 0) && (
+                  <div className="flex items-center text-red-500 text-xs gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>Límite excedido</span>
+                  </div>
+                )}
+                {(subscriptionInfo.prototipoCount || 0) === (subscriptionInfo.prototipoLimit || 0) && (
+                  <div className="flex items-center text-amber-500 text-xs gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>Límite alcanzado</span>
+                  </div>
+                )}
               </div>
               
-              <div>
+              {/* Vendedores */}
+              <div className="space-y-2">
                 <h3 className="text-sm font-medium">Vendedores</h3>
-                <div className="mt-2 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Total de vendedores:</span>
-                    <span className="font-medium">
-                      {subscriptionInfo.vendorCount}
-                      {subscriptionInfo.vendorLimit && (
-                        <> / {subscriptionInfo.vendorLimit}</>
-                      )}
-                    </span>
-                  </div>
-                  {subscriptionInfo.vendorLimit && (
-                    <Progress 
-                      value={subscriptionInfo.vendorLimit > 0 ?
-                        (subscriptionInfo.vendorCount / subscriptionInfo.vendorLimit) * 100 : 0}
-                      className={subscriptionInfo.isOverVendorLimit ? "bg-red-100" : ""}
-                    />
-                  )}
-                  {subscriptionInfo.isOverVendorLimit && (
-                    <div className="flex items-center text-red-500 text-xs gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      <span>Excediste el límite de vendedores</span>
-                    </div>
-                  )}
+                <div className="flex justify-between text-sm">
+                  <span>Total:</span>
+                  <span className="font-medium">
+                    {subscriptionInfo.vendorCount || 0}
+                    {subscriptionInfo.vendorLimit ? (
+                      <> / {subscriptionInfo.vendorLimit}</>
+                    ) : null}
+                  </span>
                 </div>
+                {subscriptionInfo.vendorLimit ? (
+                  <Progress 
+                    value={subscriptionInfo.vendorLimit > 0 ?
+                      ((subscriptionInfo.vendorCount || 0) / subscriptionInfo.vendorLimit) * 100 : 0}
+                    className={
+                      (subscriptionInfo.vendorCount || 0) > (subscriptionInfo.vendorLimit || 0) 
+                        ? "bg-red-100" 
+                        : (subscriptionInfo.vendorCount || 0) >= (subscriptionInfo.vendorLimit || 0)
+                          ? "bg-yellow-100"
+                          : ""
+                    }
+                  />
+                ) : null}
+                {(subscriptionInfo.vendorCount || 0) > (subscriptionInfo.vendorLimit || 0) && (
+                  <div className="flex items-center text-red-500 text-xs gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>Límite excedido</span>
+                  </div>
+                )}
+                {(subscriptionInfo.vendorCount || 0) === (subscriptionInfo.vendorLimit || 0) && (
+                  <div className="flex items-center text-amber-500 text-xs gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>Límite alcanzado</span>
+                  </div>
+                )}
               </div>
             </div>
             

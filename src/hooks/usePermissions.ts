@@ -76,7 +76,9 @@ export const usePermissions = () => {
       return false; // Cualquier usuario de una empresa sin suscripción no puede crear vendedores
     }
     
-    if (subscriptionInfo.isOverVendorLimit) {
+    if (subscriptionInfo.vendorCount !== undefined && 
+        subscriptionInfo.vendorLimit !== undefined &&
+        subscriptionInfo.vendorCount >= subscriptionInfo.vendorLimit) {
       const currentCount = subscriptionInfo.vendorCount || 0;
       const limit = subscriptionInfo.vendorLimit || 0;
       
@@ -106,11 +108,6 @@ export const usePermissions = () => {
     
     // Verificar si tiene suscripción activa
     if (!hasActiveSubscription()) {
-      toast({
-        title: "Suscripción inactiva",
-        description: "Tu empresa no tiene una suscripción activa. Actualiza tu plan para crear prototipos.",
-        variant: "destructive",
-      });
       return false;
     }
     
@@ -119,13 +116,8 @@ export const usePermissions = () => {
         subscriptionInfo.prototipoLimit !== undefined && 
         subscriptionInfo.prototipoCount >= subscriptionInfo.prototipoLimit) {
       
-      // Mostrar toast solo cuando se llama directamente a esta función
-      toast({
-        title: "Límite de prototipos alcanzado",
-        description: `Has alcanzado el límite de ${subscriptionInfo.prototipoLimit} prototipos de tu plan (${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}). Actualiza tu suscripción para añadir más.`,
-        variant: "warning",
-      });
-      
+      // No mostramos toast aquí para evitar duplicación
+      // Las notificaciones ahora se controlan en SubscriptionCheck
       console.log(`Límite de prototipos alcanzado: ${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}`);
       return false;
     }
@@ -147,11 +139,6 @@ export const usePermissions = () => {
     
     // Verificar si tiene suscripción activa
     if (!hasActiveSubscription()) {
-      toast({
-        title: "Suscripción inactiva",
-        description: "Tu empresa no tiene una suscripción activa. Actualiza tu plan para crear desarrollos.",
-        variant: "destructive",
-      });
       return false;
     }
     
@@ -160,13 +147,8 @@ export const usePermissions = () => {
         subscriptionInfo.desarrolloLimit !== undefined && 
         subscriptionInfo.desarrolloCount >= subscriptionInfo.desarrolloLimit) {
       
-      // Mostrar toast solo cuando se llama directamente a esta función
-      toast({
-        title: "Límite de desarrollos alcanzado",
-        description: `Has alcanzado el límite de ${subscriptionInfo.desarrolloLimit} desarrollos de tu plan (${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}). Actualiza tu suscripción para añadir más.`,
-        variant: "warning",
-      });
-      
+      // No mostramos toast aquí para evitar duplicación
+      // Las notificaciones ahora se controlan en SubscriptionCheck
       console.log(`Límite de desarrollos alcanzado: ${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}`);
       return false;
     }
