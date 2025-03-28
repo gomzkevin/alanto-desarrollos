@@ -23,6 +23,7 @@ interface PrototipoUnidadesProps {
   onAddUnidad: () => void;
   onGenerateUnidades: (cantidad: number, prefijo: string) => Promise<void>;
   onRefreshUnidades: () => void;
+  canAddMore?: boolean; // Added this prop with optional flag
 }
 
 export const PrototipoUnidades = React.memo(({ 
@@ -32,7 +33,8 @@ export const PrototipoUnidades = React.memo(({
   unitCounts,
   onAddUnidad, 
   onGenerateUnidades,
-  onRefreshUnidades 
+  onRefreshUnidades,
+  canAddMore = true // Added default value to maintain backward compatibility
 }: PrototipoUnidadesProps) => {
   const [currentTab, setCurrentTab] = useState("todas");
   const [generarUnidadesModalOpen, setGenerarUnidadesModalOpen] = useState(false);
@@ -70,8 +72,9 @@ export const PrototipoUnidades = React.memo(({
     }
   };
   
-  // Verificar si se pueden crear más unidades basado en los límites de suscripción
-  const canAddMoreUnits = canCreatePrototipo();
+  // Use the passed canAddMore prop instead of recalculating it
+  // This allows the parent component to control whether more units can be added
+  const canAddMoreUnits = canAddMore !== undefined ? canAddMore : canCreatePrototipo();
   
   return (
     <div className="bg-slate-50 p-6 rounded-lg">
