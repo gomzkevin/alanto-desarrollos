@@ -37,6 +37,30 @@ export const usePermissions = () => {
       return false; // Sobre el límite de recursos
     }
     
+    // Verificar límites específicos para desarrollos
+    if (subscriptionInfo.desarrolloCount !== undefined && 
+        subscriptionInfo.desarrolloLimit !== undefined && 
+        subscriptionInfo.desarrolloCount >= subscriptionInfo.desarrolloLimit) {
+      toast({
+        title: "Límite de desarrollos alcanzado",
+        description: `Has alcanzado el límite de ${subscriptionInfo.desarrolloLimit} desarrollos de tu plan (${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}). Actualiza tu suscripción para añadir más.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    // Verificar límites específicos para prototipos
+    if (subscriptionInfo.prototipoCount !== undefined && 
+        subscriptionInfo.prototipoLimit !== undefined && 
+        subscriptionInfo.prototipoCount >= subscriptionInfo.prototipoLimit) {
+      toast({
+        title: "Límite de prototipos alcanzado",
+        description: `Has alcanzado el límite de ${subscriptionInfo.prototipoLimit} prototipos de tu plan (${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}). Actualiza tu suscripción para añadir más.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    
     return true;
   };
   
@@ -76,6 +100,18 @@ export const usePermissions = () => {
   
   // Función específica para verificar si se pueden crear desarrollos
   const canCreateDesarrollo = () => {
+    // Comprobación específica para límites de desarrollos
+    if (subscriptionInfo.desarrolloCount !== undefined && 
+        subscriptionInfo.desarrolloLimit !== undefined && 
+        subscriptionInfo.desarrolloCount >= subscriptionInfo.desarrolloLimit) {
+      toast({
+        title: "Límite de desarrollos alcanzado",
+        description: `Has alcanzado el límite de ${subscriptionInfo.desarrolloLimit} desarrollos de tu plan (${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}). Actualiza tu suscripción para añadir más.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    
     return canCreateResource('desarrollos') && isWithinResourceLimits();
   };
   

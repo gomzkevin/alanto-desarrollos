@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
@@ -207,58 +206,40 @@ export const signInWithEmailPassword = async (email: string, password: string, f
 /**
  * Signs up with email and password
  */
-export const signUpWithEmailPassword = async (email: string, password: string, empresaId?: number, userRole?: string) => {
+export const signUpWithEmailPassword = async (
+  email: string, 
+  password: string, 
+  empresaId?: number, 
+  userRole?: string,
+  autoSignIn: boolean = true // Añadir parámetro para controlar el inicio de sesión automático
+) => {
   try {
     console.log("Iniciando registro con email:", email, "rol:", userRole);
     
     // First check if user already exists in auth system
-    const { data: existingUser, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    // If the user exists and can sign in with these credentials, return success
-    if (existingUser?.user) {
-      console.log("Usuario ya existía en auth, usando el existente:", existingUser.user.id);
-      // Ensure user exists in the usuarios table with empresa_id and specified role
-      await ensureUserInDatabase(existingUser.user.id, existingUser.user.email || email, empresaId, userRole);
-      return { success: true, user: existingUser.user, message: "Se utilizó un usuario existente" };
-    }
-    
-    // Si no pudo iniciar sesión, verificamos si es por correo no confirmado
-    if (signInError && signInError.message.includes("Email not confirmed")) {
-      // Intentamos obtener el usuario existente
+    if (autoSignIn) {
+      const { data: existingUser, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      // If the user exists and can sign in with these credentials, return success
+      if (existingUser?.user) {
+        console.log("Usuario ya existía en auth, usando el existente:", existingUser.user.id);
+        // Ensure user exists in the usuarios table with empresa_id and specified role
+        await ensureUserInDatabase(existingUser.user.id, existingUser.user.email || email, empresaId, userRole);
+        return { success: true, user: existingUser.user, message: "Se utilizó un usuario existente" };
+      }
+    } else {
+      // Si autoSignIn es false, solo verificamos si el usuario existe sin iniciar sesión
       const { data: userByEmail } = await supabase
         .from('usuarios')
         .select('auth_id, email')
         .eq('email', email)
         .maybeSingle();
-      
+
       if (userByEmail && userByEmail.auth_id) {
-        // Intentamos actualizar el usuario para marcar su correo como confirmado y cambiar la contraseña
-        try {
-          // Actualizamos directamente su contraseña 
-          const { data: updatedUser, error: updateError } = await supabase.auth.admin.updateUserById(
-            userByEmail.auth_id,
-            { password, email_confirm: true }
-          );
-          
-          if (!updateError && updatedUser) {
-            // Intentar iniciar sesión con las nuevas credenciales
-            const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-              email,
-              password,
-            });
-            
-            if (!loginError && loginData.user) {
-              // Ensure user exists in the usuarios table with empresa_id and specified role
-              await ensureUserInDatabase(loginData.user.id, loginData.user.email || email, empresaId, userRole);
-              return { success: true, user: loginData.user, message: "Credenciales actualizadas" };
-            }
-          }
-        } catch (adminError) {
-          console.error("Error al intentar actualizar usuario:", adminError);
-        }
+        console.log("Usuario ya existe, pero no se inicia sesión automáticamente");
       }
     }
     

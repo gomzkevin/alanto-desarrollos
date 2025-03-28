@@ -32,8 +32,9 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
       if (!subscriptionInfo.isActive) {
         console.log('No hay suscripción activa para la empresa, redirigiendo a configuración');
         
+        // Mostrar mensaje más informativo
         toast({
-          title: "Suscripción requerida",
+          title: "Suscripción inactiva",
           description: "Tu empresa no tiene una suscripción activa. Por favor, actualiza tu plan para continuar usando todas las funcionalidades.",
           variant: "destructive",
         });
@@ -43,8 +44,44 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
           navigate('/dashboard/configuracion', { replace: true });
         }
       }
+      
+      // Verificar los límites del plan y mostrar avisos informativos
+      if (subscriptionInfo.isActive) {
+        // Verificar límites de desarrollos
+        if (subscriptionInfo.desarrolloCount !== undefined && 
+            subscriptionInfo.desarrolloLimit !== undefined && 
+            subscriptionInfo.desarrolloCount > subscriptionInfo.desarrolloLimit) {
+          toast({
+            title: "Límite de desarrollos excedido",
+            description: `Has excedido el límite de ${subscriptionInfo.desarrolloLimit} desarrollos de tu plan (${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}). Actualiza tu suscripción para evitar restricciones.`,
+            variant: "warning",
+          });
+        }
+        
+        // Verificar límites de prototipos
+        if (subscriptionInfo.prototipoCount !== undefined && 
+            subscriptionInfo.prototipoLimit !== undefined && 
+            subscriptionInfo.prototipoCount > subscriptionInfo.prototipoLimit) {
+          toast({
+            title: "Límite de prototipos excedido",
+            description: `Has excedido el límite de ${subscriptionInfo.prototipoLimit} prototipos de tu plan (${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}). Actualiza tu suscripción para evitar restricciones.`,
+            variant: "warning",
+          });
+        }
+        
+        // Verificar límites de vendedores
+        if (subscriptionInfo.vendorCount !== undefined && 
+            subscriptionInfo.vendorLimit !== undefined && 
+            subscriptionInfo.vendorCount > subscriptionInfo.vendorLimit) {
+          toast({
+            title: "Límite de vendedores excedido",
+            description: `Has excedido el límite de ${subscriptionInfo.vendorLimit} vendedores de tu plan (${subscriptionInfo.vendorCount}/${subscriptionInfo.vendorLimit}). Actualiza tu suscripción para evitar restricciones.`,
+            variant: "warning",
+          });
+        }
+      }
     }
-  }, [subscriptionLoading, authChecked, userId, empresaId, subscriptionInfo.isActive, isExemptRoute, navigate, location.pathname]);
+  }, [subscriptionLoading, authChecked, userId, empresaId, subscriptionInfo, isExemptRoute, navigate, location.pathname]);
   
   // Si es una ruta exenta, mostrar el contenido normal
   if (isExemptRoute) {

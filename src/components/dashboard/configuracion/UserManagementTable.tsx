@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -210,12 +209,13 @@ export function UserManagementTable() {
 
       console.log("Creating user with role:", newUser.rol);
       
-      // Pass the selected role to the signup function
+      // Pass the selected role to the signup function with autoSignIn set to false to prevent automatic login
       const authResult = await signUpWithEmailPassword(
         newUser.email, 
         newUser.password, 
         empresaId || undefined, 
-        newUser.rol
+        newUser.rol,
+        false // Agregar parámetro para prevenir inicio de sesión automático
       );
 
       if (!authResult.success) {
@@ -226,9 +226,6 @@ export function UserManagementTable() {
       
       if (authResult.user) {
         authUserId = authResult.user.id;
-      } else if (authResult.autoSignIn) {
-        const { data } = await supabase.auth.getUser();
-        authUserId = data.user?.id;
       } else {
         const { data: userData, error: userError } = await supabase
           .from('usuarios')
