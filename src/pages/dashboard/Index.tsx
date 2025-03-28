@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, TooltipProps } from 'recharts';
@@ -10,8 +9,8 @@ import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import useDesarrolloStats from '@/hooks/useDesarrolloStats';
+import { countDesarrolloUnidadesByStatus } from '@/hooks/unidades/countUtils';
 
-// Tooltip formatter for the charts
 const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
   if (active && payload && payload.length) {
     return (
@@ -30,13 +29,13 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
 
 const COLORS = ['#4F46E5', '#14B8A6', '#F97066'];
 
-// Interface para extender un desarrollo con sus estadísticas
 interface DesarrolloWithStats {
   id: string;
   nombre: string;
   ubicacion: string;
   unidades_disponibles: number;
   total_unidades: number;
+  unidades_vendidas?: number;
   avance_porcentaje: number;
   [key: string]: any;
 }
@@ -59,7 +58,6 @@ const Dashboard = () => {
 
   const hasError = error !== null;
 
-  // Cargar estadísticas actualizadas para cada desarrollo
   useEffect(() => {
     const loadDesarrolloStats = async () => {
       if (!desarrollos.length) return;
@@ -70,18 +68,40 @@ const Dashboard = () => {
         const desarrollosWithUpdatedStats = await Promise.all(
           desarrollos.map(async (desarrollo) => {
             try {
-              const { data: stats } = await useDesarrolloStats(desarrollo.id);
+              const counts = await countDesarrolloUnidadesByStatus(desarrollo.id);
+              
+              const totalUnidades = counts.total || desarrollo.total_unidades || 0;
+              const unidadesDisponibles = counts.disponibles;
+              const unidadesVendidas = counts.vendidas;
+              const unidadesConAnticipo = counts.con_anticipo;
+              
+              const totalVentas = unidadesVendidas + unidadesConAnticipo;
+              
+              const avance = totalUnidades > 0 
+                ? Math.round((totalVentas / totalUnidades) * 100) 
+                : 0;
               
               return {
                 ...desarrollo,
-                unidades_disponibles: stats?.unidadesDisponibles || desarrollo.unidades_disponibles || 0,
-                total_unidades: stats?.totalUnidades || desarrollo.total_unidades || 0,
-                avance_porcentaje: stats?.avanceComercial || desarrollo.avance_porcentaje || 0
+                total_unidades: totalUnidades,
+                unidades_disponibles: unidadesDisponibles,
+                unidades_vendidas: totalVentas,
+                avance_porcentaje: avance
               };
             } catch (err) {
               console.error(`Error al cargar stats para desarrollo ${desarrollo.id}:`, err);
-              // Devolver el desarrollo original si hay un error al obtener las estadísticas
-              return desarrollo;
+              const totalUnidades = desarrollo.total_unidades || 0;
+              const unidadesDisponibles = Math.min(desarrollo.unidades_disponibles || 0, totalUnidades);
+              const unidadesVendidas = totalUnidades - unidadesDisponibles;
+              const avance = totalUnidades > 0 
+                ? Math.round((unidadesVendidas / totalUnidades) * 100) 
+                : 0;
+              
+              return {
+                ...desarrollo,
+                unidades_vendidas: unidadesVendidas,
+                avance_porcentaje: avance
+              };
             }
           })
         );
@@ -90,8 +110,22 @@ const Dashboard = () => {
         setDesarrollosWithStats(desarrollosWithUpdatedStats);
       } catch (error) {
         console.error('Error cargando estadísticas de desarrollos:', error);
-        // En caso de error, usar los desarrollos originales
-        setDesarrollosWithStats(desarrollos);
+        const fallbackDesarrollos = desarrollos.map(desarrollo => {
+          const totalUnidades = desarrollo.total_unidades || 0;
+          const unidadesDisponibles = Math.min(desarrollo.unidades_disponibles || 0, totalUnidades);
+          const unidadesVendidas = totalUnidades - unidadesDisponibles;
+          const avance = totalUnidades > 0 
+            ? Math.round((unidadesVendidas / totalUnidades) * 100) 
+            : 0;
+          
+          return {
+            ...desarrollo,
+            unidades_vendidas: unidadesVendidas,
+            avance_porcentaje: avance
+          };
+        });
+        
+        setDesarrollosWithStats(fallbackDesarrollos);
       } finally {
         setIsLoadingStats(false);
       }
@@ -148,7 +182,6 @@ const Dashboard = () => {
           </Card>
         )}
       
-        {/* Tarjetas de métricas */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="shadow-sm">
             <CardHeader className="pb-2">
@@ -227,7 +260,6 @@ const Dashboard = () => {
           </Card>
         </div>
         
-        {/* Gráficas */}
         <Tabs defaultValue="ventas" className="pt-4">
           <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="ventas">Ingresos</TabsTrigger>
@@ -311,7 +343,6 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
         
-        {/* Desarrollos destacados */}
         <div className="pt-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold">Desarrollos destacados</h3>
@@ -333,7 +364,6 @@ const Dashboard = () => {
                 </Link>
               </div>
             ) : (
-              // Usamos los desarrollos originales si no hay datos en desarrollosWithStats
               (desarrollosWithStats.length > 0 ? desarrollosWithStats : desarrollos).map((desarrollo) => (
                 <Card key={desarrollo.id} className="shadow-sm">
                   <CardHeader>
@@ -351,7 +381,9 @@ const Dashboard = () => {
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600">Ventas:</span>
                         <span className="text-sm font-medium">
-                          {desarrollo.total_unidades - desarrollo.unidades_disponibles} unidades
+                          {desarrollo.unidades_vendidas !== undefined 
+                            ? `${desarrollo.unidades_vendidas} unidades` 
+                            : `${desarrollo.total_unidades - desarrollo.unidades_disponibles} unidades`}
                         </span>
                       </div>
                       <div className="flex justify-between">
