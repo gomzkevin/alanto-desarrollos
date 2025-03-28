@@ -70,6 +70,108 @@ export const usePermissions = () => {
     return true;
   };
   
+  // Verifica si los campos obligatorios están llenos
+  const validateRequiredFields = (resource: any, resourceType: string) => {
+    if (!resource) return false;
+    
+    if (resourceType === 'desarrollos') {
+      // Validar campos obligatorios para Desarrollos
+      if (!resource.nombre || resource.nombre.trim() === '') {
+        toast({
+          title: "Campo requerido",
+          description: "El campo 'Nombre' es obligatorio",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (!resource.ubicacion || resource.ubicacion.trim() === '') {
+        toast({
+          title: "Campo requerido",
+          description: "El campo 'Ubicación' es obligatorio",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (!resource.total_unidades || isNaN(Number(resource.total_unidades)) || Number(resource.total_unidades) <= 0) {
+        toast({
+          title: "Campo requerido",
+          description: "El campo 'Total Unidades' es obligatorio y debe ser mayor a 0",
+          variant: "destructive",
+        });
+        return false;
+      }
+    } 
+    else if (resourceType === 'prototipos') {
+      // Validar campos obligatorios para Prototipos
+      if (!resource.nombre || resource.nombre.trim() === '') {
+        toast({
+          title: "Campo requerido",
+          description: "El campo 'Nombre' es obligatorio",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (!resource.tipo || resource.tipo.trim() === '') {
+        toast({
+          title: "Campo requerido",
+          description: "El campo 'Tipo' es obligatorio",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (!resource.precio || isNaN(Number(resource.precio)) || Number(resource.precio) <= 0) {
+        toast({
+          title: "Campo requerido",
+          description: "El campo 'Precio' es obligatorio y debe ser mayor a 0",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (!resource.superficie || isNaN(Number(resource.superficie)) || Number(resource.superficie) <= 0) {
+        toast({
+          title: "Campo requerido",
+          description: "El campo 'Superficie (m²)' es obligatorio y debe ser mayor a 0",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (!resource.total_unidades || isNaN(Number(resource.total_unidades)) || Number(resource.total_unidades) <= 0) {
+        toast({
+          title: "Campo requerido",
+          description: "El campo 'Total Unidades' es obligatorio y debe ser mayor a 0",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (!resource.habitaciones || isNaN(Number(resource.habitaciones)) || Number(resource.habitaciones) < 0) {
+        toast({
+          title: "Campo requerido",
+          description: "El campo 'Habitaciones' es obligatorio",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      if (!resource.baños || isNaN(Number(resource.baños)) || Number(resource.baños) < 0) {
+        toast({
+          title: "Campo requerido",
+          description: "El campo 'Baños' es obligatorio",
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+    
+    return true;
+  };
+  
   // Función específica para verificar si se pueden crear prototipos
   // Solo los administradores pueden crear prototipos, los vendedores no
   const canCreatePrototipo = () => {
@@ -134,7 +236,8 @@ export const usePermissions = () => {
     canCreateVendedor,
     hasActiveSubscription,
     isWithinResourceLimits,
-    isWithinVendorLimits
+    isWithinVendorLimits,
+    validateRequiredFields
   };
 };
 

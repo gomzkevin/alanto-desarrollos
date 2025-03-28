@@ -6,6 +6,8 @@ import { ResourceDialogContent } from './components/ResourceDialogContent';
 import useResourceData from './useResourceData';
 import useResourceActions from './useResourceActions';
 import { useResourceFields } from './hooks/useResourceFields';
+import { usePermissions } from '@/hooks/usePermissions';
+import { toast } from '@/components/ui/use-toast';
 
 interface ResourceDialogProps {
   open?: boolean;
@@ -41,6 +43,7 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
   const [usarFiniquito, setUsarFiniquito] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const { validateRequiredFields } = usePermissions();
 
   const { 
     resource, 
@@ -58,7 +61,7 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     selectedAmenities,
     onStatusChange: setSelectedStatus,
     onAmenitiesChange: setSelectedAmenities,
-    defaultValues // Pass defaultValues to useResourceData
+    defaultValues
   });
 
   const fields = useResourceFields(resourceType, selectedStatus);
@@ -182,6 +185,11 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     console.log("handleSaveResource called with resource:", resource);
     if (!resource) return false;
     
+    // Verificar campos obligatorios antes de guardar
+    if (!validateRequiredFields(resource, resourceType)) {
+      return false;
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -192,6 +200,11 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
       return success;
     } catch (error) {
       console.error('Error saving resource:', error);
+      toast({
+        title: "Error al guardar",
+        description: "Ocurrió un error al guardar el recurso. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setIsSubmitting(false);

@@ -85,13 +85,13 @@ const GenericForm = ({
     
     fields.forEach((field) => {
       if (field.type === 'text' || field.type === 'textarea' || field.type === 'email') {
-        schema[field.name] = z.string().optional();
+        schema[field.name] = field.required ? z.string().min(1, { message: "Este campo es obligatorio" }) : z.string().optional();
       } else if (field.type === 'number') {
-        schema[field.name] = z.number().optional();
+        schema[field.name] = field.required ? z.number().min(0, { message: "Este campo es obligatorio" }) : z.number().optional();
       } else if (field.type === 'select') {
-        schema[field.name] = z.string().optional();
+        schema[field.name] = field.required ? z.string().min(1, { message: "Este campo es obligatorio" }) : z.string().optional();
       } else if (field.type === 'date') {
-        schema[field.name] = z.string().optional();
+        schema[field.name] = field.required ? z.string().min(1, { message: "Este campo es obligatorio" }) : z.string().optional();
       } else if (field.type === 'switch') {
         schema[field.name] = z.boolean().optional();
       } else if (field.type === 'amenities') {
@@ -158,7 +158,10 @@ const GenericForm = ({
           name={field.name as any}
           render={({ field: formField }) => (
             <FormItem className="mb-4">
-              <FormLabel>{field.label}</FormLabel>
+              <FormLabel>
+                {field.label}
+                {field.required && <span className="text-red-500 ml-1">*</span>}
+              </FormLabel>
               {field.description && (
                 <FormDescription>{field.description}</FormDescription>
               )}
@@ -168,7 +171,7 @@ const GenericForm = ({
                     type={field.type}
                     {...formField}
                     readOnly={field.readOnly}
-                    className={field.readOnly ? "bg-gray-100" : ""}
+                    className={field.readOnly ? "bg-gray-100" : field.required ? "border-slate-300" : ""}
                     onChange={(e) => {
                       formField.onChange(e);
                       if (!field.readOnly) {
@@ -182,7 +185,7 @@ const GenericForm = ({
                     type="number"
                     {...formField}
                     readOnly={field.readOnly}
-                    className={field.readOnly ? "bg-gray-100" : ""}
+                    className={field.readOnly ? "bg-gray-100" : field.required ? "border-slate-300" : ""}
                     value={formField.value === undefined || formField.value === null ? '' : formField.value}
                     formatCurrency={field.formatCurrency}
                     onChange={(e) => {
@@ -198,7 +201,7 @@ const GenericForm = ({
                   <Textarea
                     {...formField}
                     readOnly={field.readOnly}
-                    className={field.readOnly ? "bg-gray-100" : ""}
+                    className={field.readOnly ? "bg-gray-100" : field.required ? "border-slate-300" : ""}
                     onChange={(e) => {
                       formField.onChange(e);
                       if (!field.readOnly) {
@@ -218,7 +221,7 @@ const GenericForm = ({
                       }
                     }}
                   >
-                    <SelectTrigger className={field.readOnly ? "bg-gray-100" : ""}>
+                    <SelectTrigger className={field.readOnly ? "bg-gray-100" : field.required ? "border-slate-300" : ""}>
                       <SelectValue placeholder={field.placeholder || `Seleccionar ${field.label}...`} />
                     </SelectTrigger>
                     <SelectContent className="z-50 bg-white">
@@ -238,7 +241,7 @@ const GenericForm = ({
                     type="date"
                     {...formField}
                     readOnly={field.readOnly}
-                    className={field.readOnly ? "bg-gray-100" : ""}
+                    className={field.readOnly ? "bg-gray-100" : field.required ? "border-slate-300" : ""}
                     onChange={(e) => {
                       formField.onChange(e);
                       if (!field.readOnly) {
