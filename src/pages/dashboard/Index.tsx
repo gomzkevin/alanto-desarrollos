@@ -8,6 +8,8 @@ import { Link } from 'react-router-dom';
 import useDashboardMetrics from '@/hooks/useDashboardMetrics';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import useDesarrolloStats from '@/hooks/useDesarrolloStats';
 
 // Tooltip formatter for the charts
 const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
@@ -28,8 +30,21 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
 
 const COLORS = ['#4F46E5', '#14B8A6', '#F97066'];
 
+// Interface para extender un desarrollo con sus estadísticas
+interface DesarrolloWithStats {
+  id: string;
+  nombre: string;
+  ubicacion: string;
+  unidades_disponibles: number;
+  total_unidades: number;
+  avance_porcentaje: number;
+  [key: string]: any;
+}
+
 const Dashboard = () => {
   const { metrics, isLoading, error, refetch } = useDashboardMetrics();
+  const [desarrollosWithStats, setDesarrollosWithStats] = useState<DesarrolloWithStats[]>([]);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
   
   const salesMetrics = {
     leads: metrics?.leads || 0,
@@ -43,6 +58,38 @@ const Dashboard = () => {
   const inventoryData = metrics?.inventoryData || [];
 
   const hasError = error !== null;
+
+  // Cargar estadísticas actualizadas para cada desarrollo
+  useEffect(() => {
+    const loadDesarrolloStats = async () => {
+      if (!desarrollos.length) return;
+      
+      setIsLoadingStats(true);
+      
+      try {
+        const desarrollosWithUpdatedStats = await Promise.all(
+          desarrollos.map(async (desarrollo) => {
+            const { data: stats } = await useDesarrolloStats(desarrollo.id);
+            
+            return {
+              ...desarrollo,
+              unidades_disponibles: stats?.unidadesDisponibles || 0,
+              total_unidades: stats?.totalUnidades || 0,
+              avance_porcentaje: stats?.avanceComercial || 0
+            };
+          })
+        );
+        
+        setDesarrollosWithStats(desarrollosWithUpdatedStats);
+      } catch (error) {
+        console.error('Error cargando estadísticas de desarrollos:', error);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+    
+    loadDesarrolloStats();
+  }, [desarrollos]);
 
   return (
     <DashboardLayout>
@@ -265,12 +312,12 @@ const Dashboard = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading ? (
+            {isLoading || isLoadingStats ? (
               [1, 2, 3].map((i) => (
                 <div key={i} className="h-[250px] bg-slate-100 animate-pulse rounded-xl" />
               ))
-            ) : desarrollos.length > 0 ? (
-              desarrollos.map((desarrollo) => (
+            ) : desarrollosWithStats.length > 0 ? (
+              desarrollosWithStats.map((desarrollo) => (
                 <Card key={desarrollo.id} className="shadow-sm">
                   <CardHeader>
                     <CardTitle>{desarrollo.nombre}</CardTitle>
@@ -280,11 +327,15 @@ const Dashboard = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600">Unidades:</span>
-                        <span className="text-sm font-medium">{desarrollo.unidades_disponibles}/{desarrollo.total_unidades} disponibles</span>
+                        <span className="text-sm font-medium">
+                          {desarrollo.unidades_disponibles}/{desarrollo.total_unidades} disponibles
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600">Ventas:</span>
-                        <span className="text-sm font-medium">{desarrollo.total_unidades - desarrollo.unidades_disponibles} unidades</span>
+                        <span className="text-sm font-medium">
+                          {desarrollo.total_unidades - desarrollo.unidades_disponibles} unidades
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-slate-600">Avance:</span>
