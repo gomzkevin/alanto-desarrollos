@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSubscriptionInfo } from '@/hooks/useSubscriptionInfo';
@@ -54,7 +53,7 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
           toast({
             title: "Límite de desarrollos excedido",
             description: `Has excedido el límite de ${subscriptionInfo.desarrolloLimit} desarrollos de tu plan (${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}). Actualiza tu suscripción para evitar restricciones.`,
-            variant: "destructive", // Changed from "warning" to "destructive"
+            variant: "warning",
           });
         }
         
@@ -65,7 +64,7 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
           toast({
             title: "Límite de prototipos excedido",
             description: `Has excedido el límite de ${subscriptionInfo.prototipoLimit} prototipos de tu plan (${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}). Actualiza tu suscripción para evitar restricciones.`,
-            variant: "destructive", // Changed from "warning" to "destructive"
+            variant: "warning",
           });
         }
         
@@ -76,7 +75,7 @@ export function SubscriptionCheck({ children }: { children: React.ReactNode }) {
           toast({
             title: "Límite de vendedores excedido",
             description: `Has excedido el límite de ${subscriptionInfo.vendorLimit} vendedores de tu plan (${subscriptionInfo.vendorCount}/${subscriptionInfo.vendorLimit}). Actualiza tu suscripción para evitar restricciones.`,
-            variant: "destructive", // Changed from "warning" to "destructive"
+            variant: "warning",
           });
         }
       }

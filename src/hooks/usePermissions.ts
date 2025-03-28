@@ -32,7 +32,7 @@ export const usePermissions = () => {
       toast({
         title: "Límite alcanzado",
         description: `Has alcanzado el límite de ${limit} ${resourceType} de tu plan (${currentCount}/${limit}). Actualiza tu suscripción para añadir más.`,
-        variant: "destructive",
+        variant: "warning",
       });
       return false; // Sobre el límite de recursos
     }
@@ -44,7 +44,7 @@ export const usePermissions = () => {
       toast({
         title: "Límite de desarrollos alcanzado",
         description: `Has alcanzado el límite de ${subscriptionInfo.desarrolloLimit} desarrollos de tu plan (${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}). Actualiza tu suscripción para añadir más.`,
-        variant: "destructive",
+        variant: "warning",
       });
       return false;
     }
@@ -56,7 +56,7 @@ export const usePermissions = () => {
       toast({
         title: "Límite de prototipos alcanzado",
         description: `Has alcanzado el límite de ${subscriptionInfo.prototipoLimit} prototipos de tu plan (${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}). Actualiza tu suscripción para añadir más.`,
-        variant: "destructive",
+        variant: "warning",
       });
       return false;
     }
@@ -83,7 +83,7 @@ export const usePermissions = () => {
       toast({
         title: "Límite de vendedores alcanzado",
         description: `Has alcanzado el límite de ${limit} vendedores de tu plan (${currentCount}/${limit}). Actualiza tu suscripción para añadir más.`,
-        variant: "destructive",
+        variant: "warning",
       });
       return false; // Sobre el límite de vendedores
     }
