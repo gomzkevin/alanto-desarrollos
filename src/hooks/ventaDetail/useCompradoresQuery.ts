@@ -1,57 +1,56 @@
-
+import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Comprador } from './types';
 
-/**
- * Hook para obtener los compradores asociados a una venta
- */
-export const useCompradoresQuery = (ventaId?: string) => {
-  const fetchCompradores = async (): Promise<Comprador[]> => {
-    if (!ventaId) return [];
-    
-    try {
-      const { data, error } = await supabase
-        .from('compradores_venta')
-        .select(`
-          *,
-          comprador:leads(id, nombre)
-        `)
-        .eq('venta_id', ventaId);
+const fetchCompradores = async (ventaId: string): Promise<Comprador[]> => {
+  if (!ventaId) return [];
 
-      if (error) throw error;
+  try {
+    const { data, error } = await supabase
+      .from('compradores_venta')
+      .select(`
+        id,
+        comprador_id,
+        porcentaje_propiedad,
+        monto_comprometido,
+        venta_id,
+        comprador:comprador_id (
+          id,
+          nombre,
+          email,
+          telefono
+        )
+      `)
+      .eq('venta_id', ventaId);
 
-      // Count pagos for each comprador
-      const compradoresWithPagos = await Promise.all(
-        data.map(async (item) => {
-          const { count, error: pagosError } = await supabase
-            .from('pagos')
-            .select('id', { count: 'exact', head: true })
-            .eq('comprador_venta_id', item.id)
-            .eq('estado', 'registrado');
-            
-          return {
-            id: item.id,
-            comprador_id: item.comprador_id,
-            nombre: item.comprador?.nombre || 'Comprador sin nombre',
-            porcentaje: item.porcentaje_propiedad,
-            pagos_realizados: count || 0,
-          };
-        })
-      );
+    if (error) throw error;
 
-      return compradoresWithPagos;
-    } catch (error) {
-      console.error('Error al obtener compradores:', error);
-      return [];
-    }
-  };
-
-  return useQuery({
-    queryKey: ['compradores', ventaId],
-    queryFn: fetchCompradores,
-    enabled: !!ventaId,
-  });
+    // Format the data to match the Comprador type
+    return data.map(item => ({
+      id: item.id,
+      nombre: item.comprador?.nombre || '',
+      email: item.comprador?.email || '',
+      telefono: item.comprador?.telefono || '',
+      porcentaje_propiedad: item.porcentaje_propiedad,
+      monto_comprometido: item.monto_comprometido
+    }));
+  } catch (error) {
+    console.error('Error fetching compradores:', error);
+    throw error;
+  }
 };
 
-export default useCompradoresQuery;
+export const useCompradoresQuery = (ventaId?: string) => {
+  const queryKey = useCallback(() => ['compradores', ventaId], [ventaId]);
+
+  const query = useQuery(
+    queryKey(),
+    () => fetchCompradores(ventaId || ''),
+    {
+      enabled: !!ventaId,
+    }
+  );
+
+  return query;
+};

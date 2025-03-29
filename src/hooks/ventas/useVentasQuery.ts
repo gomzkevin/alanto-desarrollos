@@ -1,23 +1,20 @@
-
+import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserRole } from '@/hooks';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Venta } from './types';
 
-export type FetchVentasOptions = {
+export interface FetchVentasOptions {
   desarrolloId?: string;
   prototipoId?: string;
-  unidadId?: string;
   estado?: string;
   limit?: number;
-  enabled?: boolean;
-};
+}
 
 export const useVentasQuery = (options: FetchVentasOptions = {}) => {
   const { 
     desarrolloId,
     prototipoId,
-    unidadId,
     estado,
     limit,
     enabled = true
@@ -25,7 +22,7 @@ export const useVentasQuery = (options: FetchVentasOptions = {}) => {
   
   const { empresaId, isLoading: isUserRoleLoading } = useUserRole();
 
-  const fetchVentas = async (): Promise<Venta[]> => {
+  const fetchVentas = useCallback(async (options: FetchVentasOptions = {}): Promise<Venta[]> => {
     console.log('Fetching ventas with options:', { ...options, empresaId });
     
     let query = supabase
@@ -83,8 +80,29 @@ export const useVentasQuery = (options: FetchVentasOptions = {}) => {
       throw error;
     }
     
-    return data as Venta[];
-  };
+    return data.map(venta => ({
+      id: venta.id,
+      created_at: venta.created_at,
+      lead_id: venta.lead_id,
+      unidad_id: venta.unidad_id,
+      estado: venta.estado,
+      precio_total: venta.precio_total,
+      fecha_inicio: venta.fecha_inicio,
+      es_fraccional: venta.es_fraccional,
+      fecha_actualizacion: venta.fecha_actualizacion,
+      prototipo: venta.unidad?.prototipo ? {
+        id: venta.unidad.prototipo.id,
+        nombre: venta.unidad.prototipo.nombre,
+        precio: venta.unidad.prototipo.precio,
+        desarrollo: venta.unidad.prototipo.desarrollo
+      } : undefined,
+      unidad: {
+        id: venta.unidad?.id || "",
+        numero: venta.unidad?.numero || "",
+        prototipo_id: venta.unidad?.prototipo?.id || ""
+      }
+    })) as Venta[];
+  }, [empresaId, desarrolloId, prototipoId, unidadId, estado, limit]);
 
   const result = useQuery({
     queryKey: ['ventas', empresaId, desarrolloId, prototipoId, unidadId, estado, limit],

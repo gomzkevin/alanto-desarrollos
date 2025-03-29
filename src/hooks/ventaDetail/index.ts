@@ -1,81 +1,34 @@
-
-import { useState, useEffect } from 'react';
 import { useVentaQuery } from './useVentaQuery';
-import { useCompradoresQuery } from './useCompradoresQuery';
 import { usePagosQuery } from './usePagosQuery';
-import { useVentaStatus } from './useVentaStatus';
-import { useProgresoCalculation } from './useProgresoCalculation';
-import { useAutoUpdateVentaStatus } from './useAutoUpdateVentaStatus';
-import { Comprador, VentaWithDetail, UseVentaDetailReturn } from './types';
-import { Pago } from '../usePagos';
+import { useCompradoresQuery } from './useCompradoresQuery';
+import { useVentaDetailMutations } from './useVentaDetailMutations';
+import { Comprador, VentaWithDetail } from './types';
 
-/**
- * Hook principal para gestionar los detalles de una venta,
- * incluyendo compradores, pagos y cálculos derivados.
- */
-export const useVentaDetail = (ventaId?: string): UseVentaDetailReturn => {
-  const [compradores, setCompradores] = useState<Comprador[]>([]);
-  const [pagos, setPagos] = useState<Pago[]>([]);
-  const [loading, setLoading] = useState(false);
-  
-  // Consultas principales
-  const { 
-    data: venta, 
-    isLoading: isVentaLoading, 
-    refetch: refetchVenta 
-  } = useVentaQuery(ventaId);
-  
-  const { 
-    data: compradoresData = [], 
-    isLoading: isCompradoresLoading, 
-    refetch: refetchCompradores 
-  } = useCompradoresQuery(ventaId);
-  
-  const { 
-    data: pagosData = [], 
-    isLoading: isPagosLoading, 
-    refetch: refetchPagos 
-  } = usePagosQuery(ventaId, compradoresData);
+export type { Comprador, VentaWithDetail };
 
-  // Set compradores to state
-  useEffect(() => {
-    if (compradoresData) {
-      setCompradores(compradoresData);
-    }
-  }, [compradoresData]);
+export const useVentaDetail = (ventaId?: string) => {
+  const { data: venta, ...ventaQuery } = useVentaQuery(ventaId);
+  const { data: pagos, ...pagosQuery } = usePagosQuery(ventaId);
+  const { data: compradores, ...compradoresQuery } = useCompradoresQuery(ventaId);
+  const { updateVentaStatus } = useVentaDetailMutations();
 
-  // Update pagos in state when data changes
-  useEffect(() => {
-    setPagos(pagosData);
-  }, [pagosData]);
+  const compradorVentaId = compradores?.length ? compradores[0].id : null;
 
-  // Cálculos de progreso
-  const { montoPagado, progreso } = useProgresoCalculation(venta, pagos);
+  const montoPagado = pagos?.reduce((acc, pago) => acc + pago.monto, 0) || 0;
 
-  // Actualización automática del estado de venta
-  useAutoUpdateVentaStatus(ventaId, venta, progreso, async () => {
-    await refetchVenta();
-  });
+  const progreso = venta ? (montoPagado / venta.precio_total) * 100 : 0;
 
-  // Función para actualizar el estado de una venta manualmente
-  const { updateVentaStatus } = useVentaStatus(ventaId, venta, async () => {
-    await refetchVenta();
-  });
-
-  // Refetch all data
-  const refetch = async () => {
-    await refetchVenta();
-    await refetchCompradores();
-    await refetchPagos();
+  const refetch = () => {
+    ventaQuery.refetch();
+    pagosQuery.refetch();
+    compradoresQuery.refetch();
   };
-
-  const compradorVentaId = compradores.length > 0 ? compradores[0].id : '';
 
   return {
     venta,
     compradores,
     pagos,
-    isLoading: isVentaLoading || isCompradoresLoading || isPagosLoading || loading,
+    isLoading: ventaQuery.isLoading || pagosQuery.isLoading || compradoresQuery.isLoading,
     montoPagado,
     progreso,
     refetch,
@@ -84,5 +37,4 @@ export const useVentaDetail = (ventaId?: string): UseVentaDetailReturn => {
   };
 };
 
-export type { Comprador, VentaWithDetail };
 export default useVentaDetail;

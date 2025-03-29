@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, Building2, Home, Calendar, CreditCard, Edit, Users, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { useVentaDetail } from '@/hooks/useVentaDetail';
+import { useVentaDetail, VentaWithDetail } from '@/hooks/ventaDetail';
 import { InfoTab } from './components/InfoTab';
 import { PagosTab } from './components/PagosTab';
 import { VentaProgress } from './components/VentaProgress';
@@ -161,7 +161,7 @@ const VentaDetail = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Última actualización</p>
-                  <p className="font-medium">{new Date(venta.fecha_actualizacion || venta.created_at).toLocaleDateString()}</p>
+                  <p className="font-medium">{new Date(venta.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
               
@@ -220,7 +220,7 @@ const VentaDetail = () => {
           
           <TabsContent value="info" className="space-y-4">
             <InfoTab 
-              venta={venta as any}
+              venta={venta}
               compradores={compradores} 
               pagos={pagos}
               onAddComprador={() => setOpenCompradorDialog(true)}
@@ -273,7 +273,7 @@ const VentaDetail = () => {
         <VentaEditDialog
           open={openEditDialog}
           onOpenChange={setOpenEditDialog}
-          venta={venta as any}
+          venta={venta}
           onSuccess={refetch}
         />
 

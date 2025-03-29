@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { FormValues } from './types';
@@ -28,7 +27,6 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
 }) => {
   console.log('CotizacionDialog: Initial defaultValues:', defaultValues);
   
-  // Explicitly ensure isExistingClient exists in defaultValues
   const initialIsExistingClient = defaultValues.isExistingClient !== undefined 
     ? defaultValues.isExistingClient 
     : resourceId ? true : false; // Default to true if editing, false if new
@@ -84,7 +82,7 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     return field;
   });
 
-  const { saveResource, handleImageUpload: uploadResourceImage } = useResourceActions({
+  const { handleFormSubmit, handleImageUpload: uploadResourceImage, isLoading: isActionLoading } = useResourceActions({
     resourceType,
     resourceId,
     onSuccess,
@@ -101,7 +99,6 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
         setSelectedDesarrolloId(desarrolloId);
       }
       
-      // Make sure isExistingClient is correctly set when dialog opens
       console.log("Setting isExistingClient to:", initialIsExistingClient);
       setIsExistingClient(initialIsExistingClient);
       
@@ -200,11 +197,8 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
         });
       }
       
-      const success = await saveResource(resource);
-      if (success && onSuccess) {
-        onSuccess();
-      }
-      return success;
+      await handleFormSubmit(resource);
+      return true;
     } catch (error) {
       console.error('Error saving resource:', error);
       return false;

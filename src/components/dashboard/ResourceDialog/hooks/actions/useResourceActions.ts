@@ -7,13 +7,15 @@ import { useResourceOperations } from './useResourceOperations';
 import { useImageUpload } from './useImageUpload';
 import { useClientCreation } from './useClientCreation';
 import { FormValues, ResourceType } from '../../types';
-import { ResourceData, ResourceOperationResult } from './types';
+import { UseResourceActionsProps, ResourceOperationResult } from './types';
 
-export const useResourceActions = (
-  resourceType: ResourceType,
-  resourceId?: string,
-  onSuccess?: () => void
-) => {
+export const useResourceActions = ({
+  resourceType,
+  resourceId,
+  onSuccess,
+  selectedAmenities,
+  clientConfig
+}: UseResourceActionsProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { empresaId, userId } = useUserRole();
   
