@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -25,14 +25,15 @@ const SellUnidadDialog = ({
   isProcessing,
   unidadNumero
 }: SellUnidadDialogProps) => {
-  const handleConfirm = async () => {
+  // Memoize the handler function to prevent it from being recreated on each render
+  const handleConfirm = useCallback(async () => {
     try {
       await onConfirm();
       onClose();
     } catch (error) {
       console.error("Error vendiendo unidad:", error);
     }
-  };
+  }, [onConfirm, onClose]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isProcessing && onClose()}>

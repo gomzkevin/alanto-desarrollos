@@ -1,5 +1,5 @@
 
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { TableRow, TableCell } from "@/components/ui/table";
 import StatusBadge from './StatusBadge';
 import UnidadActions from './UnidadActions';
@@ -16,6 +16,15 @@ export const UnidadTableRow = memo(({ unidad, onEdit, onSell, isDisabled = false
   // Determinar el precio a mostrar (precio de lista)
   const precioLista = unidad.prototipo?.precio || 0;
   
+  // Memoize the handler functions to prevent them from being recreated on each render
+  const handleEdit = useCallback(() => {
+    onEdit(unidad);
+  }, [unidad, onEdit]);
+
+  const handleSell = useCallback(() => {
+    onSell(unidad);
+  }, [unidad, onSell]);
+  
   return (
     <TableRow>
       <TableCell className="font-medium">{unidad.numero}</TableCell>
@@ -27,8 +36,8 @@ export const UnidadTableRow = memo(({ unidad, onEdit, onSell, isDisabled = false
       <TableCell className="text-right">
         <UnidadActions 
           unidad={unidad} 
-          onEdit={onEdit} 
-          onSell={onSell}
+          onEdit={handleEdit} 
+          onSell={handleSell}
           isDisabled={isDisabled}
         />
       </TableCell>
