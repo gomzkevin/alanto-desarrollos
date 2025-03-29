@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -78,28 +77,30 @@ const useResourceActions = ({
           console.log('Inserting new lead with data:', leadData);
           
           try {
-            // Primero intentamos crear el lead directamente
-            const { data: newClient, error: clientError } = await supabase
+            // Create the lead explicitly with an insert operation
+            const { data: newLeads, error: leadError } = await supabase
               .from('leads')
-              .insert(leadData)
-              .select();
+              .insert([leadData])
+              .select('*');
             
-            if (clientError) {
-              console.error('Error creating new client:', clientError);
+            if (leadError) {
+              console.error('Error creating new lead:', leadError);
               toast({
                 title: 'Error',
-                description: `No se pudo crear el cliente: ${clientError.message}`,
+                description: `No se pudo crear el cliente: ${leadError.message}`,
                 variant: 'destructive',
               });
               return false;
             }
             
-            if (newClient && newClient.length > 0) {
-              console.log('New client created successfully:', newClient[0]);
-              dataToSave.lead_id = newClient[0].id;
-              newClientId = newClient[0].id;
+            console.log('Lead creation response:', newLeads);
+            
+            if (newLeads && newLeads.length > 0) {
+              console.log('New client created successfully:', newLeads[0]);
+              dataToSave.lead_id = newLeads[0].id;
+              newClientId = newLeads[0].id;
             } else {
-              console.error('No client data returned after insertion');
+              console.error('No lead data returned after insertion');
               toast({
                 title: 'Error',
                 description: 'No se pudo crear el cliente, no se recibieron datos del servidor',
@@ -166,6 +167,8 @@ const useResourceActions = ({
           
           result = data;
         } else if (resourceType === 'cotizaciones') {
+          console.log('Creating new cotización with data:', dataToSave);
+          
           const { data, error } = await supabase
             .from(resourceType)
             .update(dataToSave as any)
@@ -183,6 +186,21 @@ const useResourceActions = ({
           }
           
           result = data;
+          
+          const successMessage = newClientId 
+            ? 'Cotización creada y nuevo cliente agregado a prospectos' 
+            : 'Cotización creada correctamente';
+            
+          toast({
+            title: 'Creado',
+            description: successMessage,
+          });
+          
+          if (onSuccess) {
+            onSuccess();
+          }
+          
+          return true;
         } else if (resourceType === 'prototipos') {
           const { data, error } = await supabase
             .from(resourceType)

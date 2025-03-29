@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { FormValues } from './types';
@@ -26,8 +25,12 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
   lead_id,
   defaultValues = {}
 }) => {
+  const initialIsExistingClient = defaultValues.isExistingClient !== undefined 
+    ? defaultValues.isExistingClient 
+    : resourceId ? true : false; // Default to false for new cotizaciones
+  
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  const [isExistingClient, setIsExistingClient] = useState(defaultValues.isExistingClient !== undefined ? defaultValues.isExistingClient : true);
+  const [isExistingClient, setIsExistingClient] = useState(initialIsExistingClient);
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | null>(null);
   const [newClientData, setNewClientData] = useState({ nombre: '', email: '', telefono: '' });
   const [selectedStatus, setSelectedStatus] = useState<string | null>('nuevo');
@@ -89,12 +92,14 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
       if (desarrolloId) {
         setSelectedDesarrolloId(desarrolloId);
       }
+      
+      setIsExistingClient(initialIsExistingClient);
+      
       if (!resourceId) {
-        setIsExistingClient(defaultValues.isExistingClient !== undefined ? defaultValues.isExistingClient : true);
         setNewClientData({ nombre: '', email: '', telefono: '' });
       }
     }
-  }, [open, desarrolloId, resourceId, defaultValues.isExistingClient]);
+  }, [open, desarrolloId, resourceId, initialIsExistingClient]);
 
   const handleChange = (values: FormValues) => {
     if (resource) {

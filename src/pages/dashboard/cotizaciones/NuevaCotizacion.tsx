@@ -26,8 +26,10 @@ const NuevaCotizacion = () => {
   const defaultValues = {
     monto_anticipo: 0,
     monto_finiquito: 0,
-    isExistingClient: false  // Por defecto, asumimos que se está creando un cliente nuevo
+    isExistingClient: false  // Explicitly set to false to default to creating a new client
   };
+  
+  console.log('NuevaCotizacion: Using defaultValues:', defaultValues);
   
   return (
     <AdminCotizacionDialog
