@@ -44,6 +44,7 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
     con_anticipo: 0,
     total: 0
   });
+  const [hasVendidoUnits, setHasVendidoUnits] = useState(false);
   
   useEffect(() => {
     const fetchCardData = async () => {
@@ -62,6 +63,9 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
         // Get actual unit counts from countDesarrolloUnidadesByStatus
         const unitStats = await countDesarrolloUnidadesByStatus(desarrollo.id);
         setUnidadesStats(unitStats);
+        
+        // Check if there are any units with status "vendido"
+        await checkForVendidoUnits();
       } catch (error) {
         console.error('Error loading desarrollo card data:', error);
       } finally {
@@ -71,6 +75,40 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
     
     fetchCardData();
   }, [desarrollo.id]);
+
+  const checkForVendidoUnits = async () => {
+    try {
+      // Get all prototipos for this desarrollo
+      const { data: prototipos, error: prototiposError } = await supabase
+        .from('prototipos')
+        .select('id')
+        .eq('desarrollo_id', desarrollo.id);
+      
+      if (prototiposError || !prototipos || prototipos.length === 0) {
+        setHasVendidoUnits(false);
+        return;
+      }
+      
+      const prototipoIds = prototipos.map(p => p.id);
+      
+      // Check if there's at least one unit with estado = 'vendido'
+      const { count, error } = await supabase
+        .from('unidades')
+        .select('id', { count: 'exact', head: true })
+        .in('prototipo_id', prototipoIds)
+        .eq('estado', 'vendido');
+      
+      if (error) {
+        console.error('Error checking for vendido units:', error);
+        setHasVendidoUnits(false);
+      } else {
+        setHasVendidoUnits(count !== null && count > 0);
+      }
+    } catch (error) {
+      console.error('Error checking for vendido units:', error);
+      setHasVendidoUnits(false);
+    }
+  };
   
   const fetchMainImage = async () => {
     try {
@@ -157,17 +195,20 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
   };
   
   const getDesarrolloStatus = (desarrollo: Desarrollo) => {
-    // Calculate status based on actual unit stats instead of avance_porcentaje
-    const totalUnits = unidadesStats.total || desarrollo.total_unidades || 0;
-    const soldUnits = unidadesStats.vendidas + unidadesStats.con_anticipo;
-    const progressPercent = totalUnits > 0 ? Math.round((soldUnits / totalUnits) * 100) : 0;
-    
-    if (progressPercent === 0) {
-      return { label: 'Pre-venta', color: 'bg-blue-100 text-blue-800' };
-    } else if (progressPercent < 100) {
+    // Calculate status based on whether there are any sold units (vendido status)
+    if (hasVendidoUnits) {
       return { label: 'En venta', color: 'bg-yellow-100 text-yellow-800' };
     } else {
-      return { label: 'Vendido', color: 'bg-green-100 text-green-800' };
+      // If no units have been fully sold, but there might be units with deposits
+      if (unidadesStats.con_anticipo > 0) {
+        return { label: 'Pre-venta', color: 'bg-blue-100 text-blue-800' };
+      } else if (unidadesStats.disponibles === 0 && unidadesStats.total > 0) {
+        // If there are no available units, consider it sold out
+        return { label: 'Vendido', color: 'bg-green-100 text-green-800' };
+      } else {
+        // Default status for developments with only available units
+        return { label: 'Pre-venta', color: 'bg-blue-100 text-blue-800' };
+      }
     }
   };
   
