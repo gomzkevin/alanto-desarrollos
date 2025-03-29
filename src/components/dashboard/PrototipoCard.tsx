@@ -139,6 +139,7 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
           variant="outline"
           className="w-full"
           onClick={handleViewDetails}
+          type="button" // Explicitly setting button type to prevent form submission behavior
         >
           Ver detalles
         </Button>

@@ -45,11 +45,13 @@ export const UnidadTableActions = React.memo(({
   // Memoize click handlers to prevent re-renders
   const handleAddClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     onAddClick();
   }, [onAddClick]);
   
   const handleGenerateClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (onGenerateClick) {
       onGenerateClick();
     }

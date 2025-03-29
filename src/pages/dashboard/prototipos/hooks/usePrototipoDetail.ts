@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import { Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 type Desarrollo = Tables<"desarrollos">;
 
@@ -33,6 +33,7 @@ export const usePrototipoDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isUpdatingImage, setIsUpdatingImage] = useState(false);
   
   // Use stable query configuration to prevent re-renders
   const {
@@ -59,6 +60,8 @@ export const usePrototipoDetail = () => {
   }, [prototipo?.desarrollo, navigate]);
   
   const updatePrototipoImage = useCallback(async (imageUrl: string) => {
+    if (isUpdatingImage) return false;
+    
     if (!id) {
       console.error('No se puede actualizar la imagen: ID del prototipo no disponible');
       toast({
@@ -72,6 +75,8 @@ export const usePrototipoDetail = () => {
     console.log(`Actualizando imagen del prototipo ${id} con URL:`, imageUrl);
     
     try {
+      setIsUpdatingImage(true);
+      
       const { error } = await supabase
         .from('prototipos')
         .update({ imagen_url: imageUrl })
@@ -101,8 +106,10 @@ export const usePrototipoDetail = () => {
     } catch (error: any) {
       console.error('Error al actualizar imagen del prototipo:', error);
       return false;
+    } finally {
+      setIsUpdatingImage(false);
     }
-  }, [id, toast, refetch]);
+  }, [id, toast, refetch, isUpdatingImage]);
   
   return {
     id,

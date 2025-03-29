@@ -148,7 +148,12 @@ const PrototipoDetail = () => {
       <DashboardLayout>
         <div className="p-6 space-y-6">
           <div className="flex items-center">
-            <Button variant="outline" size="sm" onClick={handleBack} type="button">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={(e) => { e.preventDefault(); handleBack(); }} 
+              type="button"
+            >
               <ChevronLeft className="mr-1 h-4 w-4" />
               Volver
             </Button>
@@ -167,7 +172,12 @@ const PrototipoDetail = () => {
     return (
       <DashboardLayout>
         <div className="p-6">
-          <Button variant="outline" size="sm" onClick={handleBack} type="button">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={(e) => { e.preventDefault(); handleBack(); }} 
+            type="button"
+          >
             <ChevronLeft className="mr-1 h-4 w-4" />
             Volver
           </Button>
@@ -183,7 +193,7 @@ const PrototipoDetail = () => {
           <Button 
             variant="outline" 
             className="mt-4"
-            onClick={() => refetch()}
+            onClick={(e) => { e.preventDefault(); refetch(); }}
             type="button"
           >
             Intentar de nuevo
@@ -201,8 +211,8 @@ const PrototipoDetail = () => {
       <div className="space-y-6 p-6 pb-16">
         <PrototipoHeader 
           prototipo={prototipo} 
-          onBack={handleBack} 
-          onEdit={handleEditClick} 
+          onBack={(e) => { if(e) e.preventDefault(); handleBack(); }} 
+          onEdit={(e) => { if(e) e.preventDefault(); handleEditClick(); }} 
           updatePrototipoImage={updatePrototipoImage}
         />
         
