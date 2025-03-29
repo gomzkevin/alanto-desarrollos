@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -70,6 +69,8 @@ const useResourceActions = ({
         const { nombre, email, telefono } = clientConfig.newClientData;
         
         if (nombre) {
+          console.log('Creating new client with data:', { nombre, email, telefono, empresaId });
+          
           // Create a new client first
           const { data: newClient, error: clientError } = await supabase
             .from('leads')
@@ -96,6 +97,7 @@ const useResourceActions = ({
           
           // Use the new client ID
           if (newClient) {
+            console.log('New client created:', newClient);
             dataToSave.lead_id = newClient.id;
             newClientId = newClient.id;
           }
@@ -247,6 +249,8 @@ const useResourceActions = ({
           
           result = data;
         } else if (resourceType === 'cotizaciones') {
+          console.log('Creating new cotización with data:', dataToSave);
+          
           const { data, error } = await supabase
             .from(resourceType)
             .insert(dataToSave as any)
@@ -316,8 +320,8 @@ const useResourceActions = ({
           result = data;
         }
         
-        // Fixed: TypeScript error by changing this comparison
-        if (resourceType !== 'cotizaciones' as ResourceType) {
+        // No need for TypeScript casting, just check directly if not cotizaciones
+        if (resourceType !== 'cotizaciones') {
           toast({
             title: 'Creado',
             description: `${resourceType} creado correctamente`,
