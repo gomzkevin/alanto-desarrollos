@@ -26,7 +26,7 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
   defaultValues = {}
 }) => {
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  const [isExistingClient, setIsExistingClient] = useState(true);
+  const [isExistingClient, setIsExistingClient] = useState(defaultValues.isExistingClient !== undefined ? defaultValues.isExistingClient : true);
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | null>(null);
   const [newClientData, setNewClientData] = useState({ nombre: '', email: '', telefono: '' });
   const [selectedStatus, setSelectedStatus] = useState<string | null>('nuevo');
@@ -89,11 +89,11 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
         setSelectedDesarrolloId(desarrolloId);
       }
       if (!resourceId) {
-        setIsExistingClient(true);
+        setIsExistingClient(defaultValues.isExistingClient !== undefined ? defaultValues.isExistingClient : true);
         setNewClientData({ nombre: '', email: '', telefono: '' });
       }
     }
-  }, [open, desarrolloId, resourceId]);
+  }, [open, desarrolloId, resourceId, defaultValues.isExistingClient]);
 
   const handleChange = (values: FormValues) => {
     if (resource) {

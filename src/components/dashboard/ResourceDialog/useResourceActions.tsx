@@ -63,17 +63,23 @@ const useResourceActions = ({
         if (nombre) {
           console.log('Creating new client with data:', { nombre, email, telefono, empresaId });
           
-          // Ensure we always set the default state for new leads
+          // Verificar que los datos requeridos estén presentes y crear el lead con valores predeterminados
+          const leadData = {
+            nombre,
+            email,
+            telefono,
+            estado: 'nuevo',
+            subestado: 'sin_contactar',
+            empresa_id: empresaId,
+            origen: 'cotizacion_directa', // Añadir un origen para identificar leads creados desde cotizaciones
+            fecha_creacion: new Date().toISOString()
+          };
+          
+          console.log('Inserting new lead with data:', leadData);
+          
           const { data: newClient, error: clientError } = await supabase
             .from('leads')
-            .insert({
-              nombre,
-              email,
-              telefono,
-              estado: 'nuevo',
-              subestado: 'sin_contactar',
-              empresa_id: empresaId
-            })
+            .insert(leadData)
             .select()
             .single();
           
@@ -91,6 +97,14 @@ const useResourceActions = ({
             console.log('New client created:', newClient);
             dataToSave.lead_id = newClient.id;
             newClientId = newClient.id;
+          } else {
+            console.error('No client data returned after insertion');
+            toast({
+              title: 'Error',
+              description: 'No se pudo crear el cliente, no se recibieron datos del servidor',
+              variant: 'destructive',
+            });
+            return false;
           }
         } else {
           toast({
