@@ -57,20 +57,21 @@ const useResourceActions = ({
       }
 
       let newClientId = null;
-      if (resourceType === 'cotizaciones' && !clientConfig.isExistingClient && !resourceId) {
+      if (resourceType === ('cotizaciones' as ResourceType) && !clientConfig.isExistingClient && !resourceId) {
         const { nombre, email, telefono } = clientConfig.newClientData;
         
         if (nombre) {
           console.log('Creating new client with data:', { nombre, email, telefono, empresaId });
           
+          // Ensure we always set the default state for new leads
           const { data: newClient, error: clientError } = await supabase
             .from('leads')
             .insert({
               nombre,
               email,
               telefono,
-              estado: 'seguimiento',
-              subestado: 'cotizacion_enviada',
+              estado: 'nuevo',
+              subestado: 'sin_contactar',
               empresa_id: empresaId
             })
             .select()
@@ -235,7 +236,7 @@ const useResourceActions = ({
           }
           
           result = data;
-        } else if (resourceType === 'cotizaciones') {
+        } else if (resourceType === ('cotizaciones' as ResourceType)) {
           console.log('Creating new cotización with data:', dataToSave);
           
           const { data, error } = await supabase
