@@ -1,8 +1,9 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { ResourceType, FormValues } from './types';
-import { useUserRole } from '@/hooks';
+import useUserRole from '@/hooks/useUserRole';
 
 interface UseResourceActionsProps {
   resourceType: ResourceType;
@@ -32,7 +33,6 @@ const useResourceActions = ({
 
   const saveResource = async (resource: FormValues): Promise<boolean> => {
     console.log('Saving resource:', resource);
-    console.log('Client config:', clientConfig);
     
     if (!resource) {
       console.error('No resource data provided');
@@ -40,83 +40,62 @@ const useResourceActions = ({
     }
 
     try {
+      // Prepare the data to be saved
       let dataToSave = { ...resource };
 
+      // Special handling per resource type
       if (resourceType === 'desarrollos') {
+        // Handle amenidades for desarrollos
         if (selectedAmenities && selectedAmenities.length > 0) {
           dataToSave.amenidades = selectedAmenities;
         }
         
+        // Ensure empresa_id is set
         if (!dataToSave.empresa_id && empresaId) {
           dataToSave.empresa_id = empresaId;
         }
       } else if (resourceType === 'leads') {
+        // For leads, ensure empresa_id is set
         if (!dataToSave.empresa_id && empresaId) {
           dataToSave.empresa_id = empresaId;
         }
+        
+        // The rest of lead handling remains the same
+        // No need to modify agente handling as it's now a UUID
       }
 
-      let newClientId = null;
-      if (resourceType === ('cotizaciones' as ResourceType) && !clientConfig.isExistingClient && !resourceId) {
+      // Handle client creation for cotizaciones if needed
+      if (resourceType === 'cotizaciones' && !clientConfig.isExistingClient && !resourceId) {
         const { nombre, email, telefono } = clientConfig.newClientData;
         
         if (nombre) {
-          console.log('Creating new client with data:', { nombre, email, telefono, empresaId });
+          // Create a new client first
+          const { data: newClient, error: clientError } = await supabase
+            .from('leads')
+            .insert({
+              nombre,
+              email,
+              telefono,
+              estado: 'seguimiento',
+              subestado: 'cotizacion_enviada',
+              empresa_id: empresaId
+            })
+            .select()
+            .single();
           
-          // Verificar que los datos requeridos estén presentes y crear el lead con valores predeterminados
-          const leadData = {
-            nombre,
-            email,
-            telefono,
-            estado: 'nuevo',
-            subestado: 'sin_contactar',
-            empresa_id: empresaId,
-            origen: 'cotizacion_directa', // Añadir un origen para identificar leads creados desde cotizaciones
-            fecha_creacion: new Date().toISOString()
-          };
-          
-          console.log('Inserting new lead with data:', leadData);
-          
-          try {
-            // Create the lead explicitly with an insert operation and specify the return type
-            const { data, error: leadError } = await supabase
-              .from('leads')
-              .insert([leadData])
-              .select('id, nombre');
-            
-            if (leadError) {
-              console.error('Error creating new lead:', leadError);
-              toast({
-                title: 'Error',
-                description: `No se pudo crear el cliente: ${leadError.message}`,
-                variant: 'destructive',
-              });
-              return false;
-            }
-            
-            console.log('Lead creation response:', data);
-            
-            if (data && data.length > 0) {
-              console.log('New client created successfully:', data[0]);
-              dataToSave.lead_id = data[0].id;
-              newClientId = data[0].id;
-            } else {
-              console.error('No lead data returned after insertion');
-              toast({
-                title: 'Error',
-                description: 'No se pudo crear el cliente, no se recibieron datos del servidor',
-                variant: 'destructive',
-              });
-              return false;
-            }
-          } catch (insertError) {
-            console.error('Exception during lead creation:', insertError);
+          if (clientError) {
+            console.error('Error creating new client:', clientError);
             toast({
               title: 'Error',
-              description: 'Error interno al crear el cliente',
+              description: `No se pudo crear el cliente: ${clientError.message}`,
               variant: 'destructive',
             });
             return false;
+          }
+          
+          // Use the new client ID
+          if (newClient) {
+            dataToSave.lead_id = newClient.id;
           }
         } else {
           toast({
@@ -128,9 +107,11 @@ const useResourceActions = ({
         }
       }
 
+      // Save the resource
       let result;
       
       if (resourceId) {
+        // Update existing resource
         if (resourceType === 'desarrollos') {
           const { data, error } = await supabase
             .from(resourceType)
@@ -168,8 +149,6 @@ const useResourceActions = ({
           
           result = data;
         } else if (resourceType === 'cotizaciones') {
-          console.log('Creating new cotización with data:', dataToSave);
-          
           const { data, error } = await supabase
             .from(resourceType)
             .update(dataToSave as any)
@@ -187,21 +166,6 @@ const useResourceActions = ({
           }
           
           result = data;
-          
-          const successMessage = newClientId 
-            ? 'Cotización creada y nuevo cliente agregado a prospectos' 
-            : 'Cotización creada correctamente';
-            
-          toast({
-            title: 'Creado',
-            description: successMessage,
-          });
-          
-          if (onSuccess) {
-            onSuccess();
-          }
-          
-          return true;
         } else if (resourceType === 'prototipos') {
           const { data, error } = await supabase
             .from(resourceType)
@@ -245,6 +209,7 @@ const useResourceActions = ({
           description: `${resourceType} actualizado correctamente`,
         });
       } else {
+        // Create new resource
         if (resourceType === 'desarrollos') {
           const { data, error } = await supabase
             .from(resourceType)
@@ -279,9 +244,7 @@ const useResourceActions = ({
           }
           
           result = data;
-        } else if (resourceType === ('cotizaciones' as ResourceType)) {
-          console.log('Creating new cotización with data:', dataToSave);
-          
+        } else if (resourceType === 'cotizaciones') {
           const { data, error } = await supabase
             .from(resourceType)
             .insert(dataToSave as any)
@@ -298,21 +261,6 @@ const useResourceActions = ({
           }
           
           result = data;
-          
-          const successMessage = newClientId 
-            ? 'Cotización creada y nuevo cliente agregado a prospectos' 
-            : 'Cotización creada correctamente';
-            
-          toast({
-            title: 'Creado',
-            description: successMessage,
-          });
-          
-          if (onSuccess) {
-            onSuccess();
-          }
-          
-          return true;
         } else if (resourceType === 'prototipos') {
           const { data, error } = await supabase
             .from(resourceType)
@@ -349,12 +297,10 @@ const useResourceActions = ({
           result = data;
         }
         
-        if (resourceType !== ('cotizaciones' as ResourceType)) {
-          toast({
-            title: 'Creado',
-            description: `${resourceType} creado correctamente`,
-          });
-        }
+        toast({
+          title: 'Creado',
+          description: `${resourceType} creado correctamente`,
+        });
       }
       
       console.log(`${resourceType} saved:`, result);

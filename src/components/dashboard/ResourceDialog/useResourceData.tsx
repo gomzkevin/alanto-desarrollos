@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ResourceType, FormValues } from './types';
 import { useToast } from '@/hooks/use-toast';
@@ -39,69 +39,82 @@ const useResourceData = ({
   const [isUsarFiniquito, setUsarFiniquito] = useState(false);
   const { empresaId } = useUserRole();
 
-  // Optimización para obtener recursos por ID usando useCallback
-  const fetchResource = useCallback(async () => {
-    try {
-      let query;
+  useEffect(() => {
+    const loadResource = async () => {
+      setIsLoading(true);
       
-      // Consulta optimizada con selección explícita de columnas
-      switch (resourceType) {
-        case 'desarrollos':
-          query = supabase
-            .from('desarrollos')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-          break;
-        case 'prototipos':
-          query = supabase
-            .from('prototipos')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-          break;
-        case 'leads':
-          query = supabase
-            .from('leads')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
-          break;
-        case 'cotizaciones':
-          query = supabase
-            .from('cotizaciones')
-            .select(`
-              *,
-              desarrollo:desarrollos(id, nombre),
-              prototipo:prototipos(id, nombre, precio),
-              lead:leads(id, nombre, email, telefono)
-            `)
-            .eq('id', resourceId)
-            .single();
-          break;
-        case 'unidades':
-          query = supabase
-            .from('unidades')
-            .select(`
-              *,
-              prototipo:prototipos(id, nombre, desarrollo_id)
-            `)
-            .eq('id', resourceId)
-            .single();
-          break;
-        default:
-          return { data: null, error: new Error('Tipo de recurso no soportado') };
+      try {
+        if (resourceId) {
+          // Fetch existing resource
+          const { data, error } = await fetchResource();
+          
+          if (error) {
+            console.error('Error loading resource:', error);
+            toast({
+              title: 'Error',
+              description: 'No se pudo cargar el recurso',
+              variant: 'destructive',
+            });
+            return;
+          }
+          
+          if (data) {
+            const resource = data;
+            setResource(resource);
+            
+            // Handle specific resource type setup
+            if (resourceType === 'leads' && resource.estado) {
+              if (onStatusChange) {
+                onStatusChange(resource.estado);
+              }
+            } else if (resourceType === 'desarrollos' && resource.amenidades) {
+              try {
+                let amenidades = [];
+                if (typeof resource.amenidades === 'string') {
+                  amenidades = JSON.parse(resource.amenidades);
+                } else if (Array.isArray(resource.amenidades)) {
+                  amenidades = resource.amenidades;
+                } else if (typeof resource.amenidades === 'object' && resource.amenidades !== null) {
+                  const jsonObj = resource.amenidades as Json;
+                  amenidades = Object.values(jsonObj).map(val => String(val));
+                }
+                
+                if (onAmenitiesChange) {
+                  onAmenitiesChange(amenidades);
+                }
+              } catch (error) {
+                console.error('Error parsing amenidades:', error);
+              }
+            } else if (resourceType === 'cotizaciones') {
+              if (resource.usar_finiquito !== undefined) {
+                setUsarFiniquito(resource.usar_finiquito);
+              }
+            }
+          }
+        } else {
+          // Create new empty resource with default values
+          const initialValues = getInitialValues();
+          
+          // Merge with provided defaultValues
+          const mergedValues = {
+            ...initialValues,
+            ...defaultValues
+          };
+          
+          setResource(mergedValues);
+        }
+      } catch (error) {
+        console.error('Error in loadResource:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      return await query;
-    } catch (error) {
-      console.error('Error fetching resource:', error);
-      return { data: null, error };
-    }
-  }, [resourceId, resourceType]);
-  
-  // Función para obtener valores iniciales
-  const getInitialValues = useCallback(() => {
+    };
+    
+    loadResource();
+  }, [resourceId, resourceType, desarrolloId, lead_id]);
+
+  // Function to get initial values for a new resource
+  const getInitialValues = () => {
     let initialValues: FormValues = {};
     
     switch (resourceType) {
@@ -165,96 +178,56 @@ const useResourceData = ({
           nivel: '',
         };
         break;
+      default:
+        break;
     }
     
     return initialValues;
-  }, [
-    resourceType, 
-    empresaId, 
-    desarrolloId, 
-    selectedDesarrolloId, 
-    lead_id, 
-    selectedStatus, 
-    usarFiniquito
-  ]);
+  };
 
-  // Efecto para cargar el recurso
-  useEffect(() => {
-    const loadResource = async () => {
-      setIsLoading(true);
+  // Function to fetch resource by ID
+  const fetchResource = async () => {
+    try {
+      let query;
       
-      try {
-        if (resourceId) {
-          // Obtener recurso existente
-          const { data, error } = await fetchResource();
-          
-          if (error) {
-            console.error('Error loading resource:', error);
-            toast({
-              title: 'Error',
-              description: 'No se pudo cargar el recurso',
-              variant: 'destructive',
-            });
-            return;
-          }
-          
-          if (data) {
-            setResource(data);
-            
-            // Manejar configuración específica por tipo de recurso
-            if (resourceType === 'leads' && data.estado && onStatusChange) {
-              onStatusChange(data.estado);
-            } else if (resourceType === 'desarrollos' && data.amenidades && onAmenitiesChange) {
-              try {
-                let amenidades = [];
-                if (typeof data.amenidades === 'string') {
-                  amenidades = JSON.parse(data.amenidades);
-                } else if (Array.isArray(data.amenidades)) {
-                  amenidades = data.amenidades;
-                } else if (typeof data.amenidades === 'object' && data.amenidades !== null) {
-                  const jsonObj = data.amenidades as Json;
-                  amenidades = Object.values(jsonObj).map(val => String(val));
-                }
-                
-                onAmenitiesChange(amenidades);
-              } catch (error) {
-                console.error('Error parsing amenidades:', error);
-              }
-            } else if (resourceType === 'cotizaciones' && data.usar_finiquito !== undefined) {
-              setUsarFiniquito(data.usar_finiquito);
-            }
-          }
-        } else {
-          // Crear recurso vacío con valores predeterminados
-          const initialValues = getInitialValues();
-          
-          // Fusionar con los valores proporcionados
-          const mergedValues = {
-            ...initialValues,
-            ...defaultValues
-          };
-          
-          setResource(mergedValues);
-        }
-      } catch (error) {
-        console.error('Error in loadResource:', error);
-      } finally {
-        setIsLoading(false);
+      if (resourceType === 'desarrollos') {
+        query = supabase
+          .from('desarrollos')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      } else if (resourceType === 'prototipos') {
+        query = supabase
+          .from('prototipos')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      } else if (resourceType === 'leads') {
+        query = supabase
+          .from('leads')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      } else if (resourceType === 'cotizaciones') {
+        query = supabase
+          .from('cotizaciones')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
+      } else if (resourceType === 'unidades') {
+        query = supabase
+          .from('unidades')
+          .select('*')
+          .eq('id', resourceId)
+          .single();
       }
-    };
-    
-    loadResource();
-  }, [
-    resourceId, 
-    resourceType, 
-    desarrolloId, 
-    lead_id, 
-    fetchResource, 
-    getInitialValues, 
-    onAmenitiesChange, 
-    onStatusChange, 
-    defaultValues
-  ]);
+      
+      return await query;
+    } catch (error) {
+      console.error('Error fetching resource:', error);
+      return { data: null, error: error };
+    }
+  };
   
   return {
     resource,

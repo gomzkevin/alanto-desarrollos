@@ -1,20 +1,37 @@
+
 import { useUserRole } from './useUserRole';
 import { useSubscriptionInfo } from './useSubscriptionInfo';
 import { toast } from '@/components/ui/use-toast';
+import { useState, useCallback } from 'react';
 
 export const usePermissions = () => {
-  const { canCreateResource, isAdmin, empresaId } = useUserRole();
-  const { subscriptionInfo } = useSubscriptionInfo();
+  const { canCreateResource, isAdmin, empresaId, isLoading: isUserLoading } = useUserRole();
+  const { subscriptionInfo, isLoading: isSubscriptionLoading } = useSubscriptionInfo();
+  const [subscriptionChecked, setSubscriptionChecked] = useState(false);
   
   // Check if the user has active subscription
-  const hasActiveSubscription = () => {
+  const hasActiveSubscription = useCallback(async () => {
+    // Await any pending subscription data load
+    if (isSubscriptionLoading) {
+      // Wait a moment for subscription data to load if needed
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    // Mark that we've checked subscription status
+    setSubscriptionChecked(true);
+    
     return subscriptionInfo.isActive;
-  };
+  }, [subscriptionInfo.isActive, isSubscriptionLoading]);
   
   // Check if user has exceeded resource limits
   const isWithinResourceLimits = (resourceType?: 'desarrollo' | 'prototipo') => {
+    // If user or subscription data is still loading, assume false for safety
+    if (isUserLoading || isSubscriptionLoading) {
+      return false;
+    }
+    
     // Verificar si el usuario pertenece a una empresa sin suscripción activa
-    if (empresaId && !hasActiveSubscription()) {
+    if (empresaId && !subscriptionInfo.isActive) {
       return false; // Cualquier usuario de una empresa sin suscripción no puede crear recursos
     }
     
@@ -41,8 +58,13 @@ export const usePermissions = () => {
   
   // Check if user has exceeded vendor limits
   const isWithinVendorLimits = () => {
+    // If user or subscription data is still loading, assume false for safety
+    if (isUserLoading || isSubscriptionLoading) {
+      return false;
+    }
+    
     // Verificar si el usuario pertenece a una empresa sin suscripción activa
-    if (empresaId && !hasActiveSubscription()) {
+    if (empresaId && !subscriptionInfo.isActive) {
       return false; // Cualquier usuario de una empresa sin suscripción no puede crear vendedores
     }
     
@@ -163,6 +185,11 @@ export const usePermissions = () => {
   // Función específica para verificar si se pueden crear prototipos
   // Solo los administradores pueden crear prototipos, los vendedores no
   const canCreatePrototipo = () => {
+    // If user or subscription data is still loading, return false for safety
+    if (isUserLoading || isSubscriptionLoading) {
+      return false;
+    }
+    
     // Verificamos explícitamente que sea admin para crear prototipos
     if (!isAdmin()) {
       return false;
@@ -174,7 +201,7 @@ export const usePermissions = () => {
     }
     
     // Verificar si tiene suscripción activa
-    if (!hasActiveSubscription()) {
+    if (!subscriptionInfo.isActive) {
       return false;
     }
     
@@ -183,6 +210,11 @@ export const usePermissions = () => {
   
   // Función específica para verificar si se pueden crear desarrollos
   const canCreateDesarrollo = () => {
+    // If user or subscription data is still loading, return false for safety
+    if (isUserLoading || isSubscriptionLoading) {
+      return false;
+    }
+    
     // Verificar si es admin
     if (!isAdmin()) {
       return false;
@@ -194,7 +226,7 @@ export const usePermissions = () => {
     }
     
     // Verificar si tiene suscripción activa
-    if (!hasActiveSubscription()) {
+    if (!subscriptionInfo.isActive) {
       return false;
     }
     
@@ -227,8 +259,16 @@ export const usePermissions = () => {
   
   // Función específica para verificar si se pueden crear vendedores
   const canCreateVendedor = () => {
+    // If user or subscription data is still loading, return false for safety
+    if (isUserLoading || isSubscriptionLoading) {
+      return false;
+    }
+    
     return canCreateResource('vendedores') && isWithinVendorLimits();
   };
+  
+  // Check if all permissions are loaded
+  const isPermissionsLoading = isUserLoading || isSubscriptionLoading || !subscriptionChecked;
   
   return {
     canCreatePrototipo,
@@ -240,7 +280,8 @@ export const usePermissions = () => {
     hasActiveSubscription,
     isWithinResourceLimits,
     isWithinVendorLimits,
-    validateRequiredFields
+    validateRequiredFields,
+    isPermissionsLoading
   };
 };
 

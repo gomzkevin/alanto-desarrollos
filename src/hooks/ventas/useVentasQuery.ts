@@ -7,46 +7,77 @@ import { useUserRole } from '../useUserRole';
 /**
  * Hook para obtener ventas filtradas por empresa y criterios adicionales
  */
-export const useVentasQuery = (filters: VentasFilter = {}, options = { staleTime: 60000 }) => {
+export const useVentasQuery = (filters: VentasFilter = {}) => {
   const { empresaId, isLoading: isUserRoleLoading } = useUserRole();
 
   const fetchVentas = async (): Promise<Venta[]> => {
     try {
+      console.log('Fetching ventas with filters:', filters, 'empresaId:', empresaId);
+      
       if (!empresaId) {
         console.log('No empresaId available, returning empty array');
         return [];
       }
       
-      // Optimizada: consulta única para obtener desarrollos, prototipos y unidades relacionadas
-      const { data: desarrollosData, error: desarrollosError } = await supabase
+      // Get desarrollos for the empresa first - this ensures we only get data for the current company
+      const { data: desarrollos, error: desarrollosError } = await supabase
         .from('desarrollos')
-        .select(`
-          id, 
-          prototipos:prototipos(
-            id, 
-            unidades:unidades(id)
-          )
-        `)
+        .select('id')
         .eq('empresa_id', empresaId);
       
-      if (desarrollosError || !desarrollosData || desarrollosData.length === 0) {
-        console.log(desarrollosError ? 'Error fetching desarrollos:' : 'No desarrollos found', desarrollosError || '');
+      if (desarrollosError) {
+        console.error('Error fetching desarrollos:', desarrollosError);
         return [];
       }
       
-      // Extraer todas las unidades para la consulta
-      const unidadIds = desarrollosData
-        .flatMap(d => d.prototipos || [])
-        .flatMap(p => p.unidades || [])
-        .map(u => u.id)
-        .filter(Boolean);
-      
-      if (unidadIds.length === 0) {
-        console.log('No unidades found for this empresa');
+      if (!desarrollos || desarrollos.length === 0) {
+        console.log('No desarrollos found for empresa_id:', empresaId);
         return [];
       }
       
-      // Consulta única para ventas con todas las relaciones necesarias
+      // Get the desarrollo IDs for this company only
+      const desarrolloIds = desarrollos.map(d => d.id);
+      console.log('Filtering ventas by desarrollos:', desarrolloIds);
+      
+      // Now fetch prototipos associated with these desarrollos
+      const { data: prototipos, error: prototipesError } = await supabase
+        .from('prototipos')
+        .select('id, desarrollo_id')
+        .in('desarrollo_id', desarrolloIds);
+      
+      if (prototipesError) {
+        console.error('Error fetching prototipos:', prototipesError);
+        return [];
+      }
+      
+      if (!prototipos || prototipos.length === 0) {
+        console.log('No prototipos found for the desarrollos');
+        return [];
+      }
+      
+      // Get the prototipo IDs
+      const prototipoIds = prototipos.map(p => p.id);
+      
+      // Get unidades for these prototipos
+      const { data: unidades, error: unidadesError } = await supabase
+        .from('unidades')
+        .select('id, prototipo_id')
+        .in('prototipo_id', prototipoIds);
+      
+      if (unidadesError) {
+        console.error('Error fetching unidades:', unidadesError);
+        return [];
+      }
+      
+      if (!unidades || unidades.length === 0) {
+        console.log('No unidades found for the prototipos');
+        return [];
+      }
+      
+      // Get the unidad IDs
+      const unidadIds = unidades.map(u => u.id);
+      
+      // Now fetch ventas filtered by these unidades
       let query = supabase
         .from('ventas')
         .select(`
@@ -54,12 +85,11 @@ export const useVentasQuery = (filters: VentasFilter = {}, options = { staleTime
           unidad:unidades(
             id,
             numero,
+            prototipo_id,
             prototipo:prototipos(
-              id,
               nombre,
-              precio,
+              desarrollo_id,
               desarrollo:desarrollos(
-                id,
                 nombre,
                 empresa_id
               )
@@ -68,7 +98,7 @@ export const useVentasQuery = (filters: VentasFilter = {}, options = { staleTime
         `)
         .in('unidad_id', unidadIds);
       
-      // Aplicar filtros adicionales
+      // Apply additional filters if they exist
       if (filters.estado && filters.estado !== 'todos') {
         query = query.eq('estado', filters.estado);
       }
@@ -80,7 +110,9 @@ export const useVentasQuery = (filters: VentasFilter = {}, options = { staleTime
         throw error;
       }
 
-      // Filtrado adicional del lado del cliente si es necesario
+      console.log('Ventas fetched:', data?.length || 0, 'results');
+      
+      // Additional client-side filtering if needed
       let filteredData = data || [];
       
       if (filters.desarrollo_id) {
@@ -92,7 +124,7 @@ export const useVentasQuery = (filters: VentasFilter = {}, options = { staleTime
       // Calcular el progreso para cada venta
       return filteredData.map(venta => ({
         ...venta,
-        progreso: 30, // Valor calculado en base a los pagos
+        progreso: 30, // Este sería un valor calculado en base a los pagos
       }));
     } catch (error) {
       console.error('Error al obtener ventas:', error);
@@ -103,9 +135,7 @@ export const useVentasQuery = (filters: VentasFilter = {}, options = { staleTime
   return useQuery({
     queryKey: ['ventas', filters, empresaId],
     queryFn: fetchVentas,
-    enabled: !!empresaId && !isUserRoleLoading,
-    staleTime: options.staleTime, // Uso de staleTime configurable
-    refetchOnWindowFocus: false, // Prevenir refetch innecesarios
+    enabled: !!empresaId && !isUserRoleLoading, // Only run the query if empresaId exists and user role is loaded
   });
 };
 

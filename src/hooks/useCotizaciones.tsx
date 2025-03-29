@@ -6,10 +6,12 @@ import { useUserRole } from './useUserRole';
 
 export type Cotizacion = Tables<"cotizaciones">;
 
+// Define basic types without circular references
 export type ExtendedCotizacion = Cotizacion & {
   lead?: Tables<"leads"> | null;
   desarrollo?: Tables<"desarrollos"> | null;
   prototipo?: Tables<"prototipos"> | null;
+  // These fields are now part of the database schema
   fecha_inicio_pagos?: string | null;
   fecha_finiquito?: string | null;
 };
@@ -17,22 +19,25 @@ export type ExtendedCotizacion = Cotizacion & {
 type FetchCotizacionesOptions = {
   limit?: number;
   withRelations?: boolean;
-  staleTime?: number;
 };
 
 export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
-  const { limit, withRelations = false, staleTime = 30000 } = options; // Default staleTime: 30 seconds
+  const { limit, withRelations = false } = options;
   const { empresaId } = useUserRole();
+  
+  console.log('useCotizaciones initialized with empresaId:', empresaId);
   
   // Function to fetch cotizaciones
   const fetchCotizaciones = async (): Promise<ExtendedCotizacion[]> => {
+    console.log('Fetching cotizaciones with options:', options, 'empresaId:', empresaId);
+    
     if (!empresaId) {
       console.log('No empresaId available, returning empty array');
       return [];
     }
     
     try {
-      // Get desarrollos for the empresa
+      // First, get desarrollos for the empresa to ensure correct filtering
       const { data: desarrollos, error: desarrollosError } = await supabase
         .from('desarrollos')
         .select('id')
@@ -50,15 +55,15 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
       
       // Get the desarrollo IDs
       const desarrolloIds = desarrollos.map(d => d.id);
+      console.log('Filtering cotizaciones by desarrollo_ids:', desarrolloIds);
       
-      // Now fetch cotizaciones with a single optimized query that includes all relations
+      // Now fetch cotizaciones filtered by those desarrollo_ids
       let query = supabase
         .from('cotizaciones')
         .select(`
           *,
           desarrollo:desarrollos(*),
-          prototipo:prototipos(*),
-          lead:leads(*)
+          prototipo:prototipos(*)
         `)
         .in('desarrollo_id', desarrolloIds);
       
@@ -74,29 +79,53 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         throw new Error(error.message);
       }
       
+      // If relations are requested, fetch them for each cotizacion
+      if (withRelations && cotizaciones && cotizaciones.length > 0) {
+        // Get all unique IDs for related entities
+        const leadIds = [...new Set(cotizaciones.map(c => c.lead_id).filter(Boolean))];
+        
+        // Fetch all related entities in batch queries
+        const { data: leads, error: leadsError } = await supabase
+          .from('leads')
+          .select('*')
+          .in('id', leadIds);
+        
+        if (leadsError) {
+          console.error('Error fetching leads:', leadsError);
+        }
+        
+        // Map related entities to cotizaciones
+        const extendedCotizaciones: ExtendedCotizacion[] = cotizaciones.map(cotizacion => {
+          return {
+            ...cotizacion,
+            lead: leads?.find(l => l.id === cotizacion.lead_id) || null
+          };
+        });
+        
+        console.log('Extended cotizaciones fetched:', extendedCotizaciones.length, 'results');
+        return extendedCotizaciones;
+      }
+      
       console.log('Cotizaciones fetched:', cotizaciones?.length || 0, 'results');
       return cotizaciones as ExtendedCotizacion[] || [];
     } catch (error) {
       console.error('Error in fetchCotizaciones:', error);
+      // Return empty array instead of throwing to avoid error screen
       return [];
     }
   };
 
-  // Use React Query to fetch and cache the data with improved caching
+  // Use React Query to fetch and cache the data
   const queryResult = useQuery({
     queryKey: ['cotizaciones', limit, withRelations, empresaId],
-    queryFn: fetchCotizaciones,
-    staleTime: staleTime, // Use configurable stale time
-    enabled: !!empresaId, // Only run if empresaId exists
-    refetchOnWindowFocus: false // Prevent unnecessary refetches
+    queryFn: fetchCotizaciones
   });
 
   return {
     cotizaciones: queryResult.data || [],
     isLoading: queryResult.isLoading,
     error: queryResult.error,
-    refetch: queryResult.refetch,
-    isFetching: queryResult.isFetching
+    refetch: queryResult.refetch
   };
 };
 

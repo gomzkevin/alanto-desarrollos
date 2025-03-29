@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Building } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -42,7 +42,7 @@ export const PrototipoUnidades = React.memo(({
   const [isGenerating, setIsGenerating] = useState(false);
   const { canCreateUnidad } = usePermissions();
   
-  // Memoize filtered units to prevent unnecessary re-renders
+  // Memoize unidades filtradas para prevenir re-renderizados innecesarios
   const filteredUnidades = useMemo(() => {
     if (currentTab === "todas") return unidades;
     if (currentTab === "disponibles") return unidades.filter(u => u.estado === 'disponible');
@@ -51,13 +51,17 @@ export const PrototipoUnidades = React.memo(({
     return unidades;
   }, [unidades, currentTab]);
   
-  // Determine remaining units
+  // Calcular unidades restantes
   const unidadesRestantes = useMemo(() => 
     (prototipo.total_unidades || 0) - unidades.length,
     [prototipo.total_unidades, unidades.length]
   );
   
-  const handleGenerarUnidades = async () => {
+  // Memoize verificación de permisos para prevenir recálculo en cada renderizado
+  const canCreateIndividualUnit = useMemo(() => canCreateUnidad(), [canCreateUnidad]);
+
+  // Manejador para generar unidades
+  const handleGenerarUnidades = useCallback(async () => {
     if (unidadesRestantes <= 0 || isGenerating) return;
     
     setIsGenerating(true);
@@ -70,11 +74,22 @@ export const PrototipoUnidades = React.memo(({
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [unidadesRestantes, prefijo, isGenerating, onGenerateUnidades]);
+
+  // Manejador para clic en botón "Generar unidades"
+  const handleGenerateClick = useCallback(() => {
+    setGenerarUnidadesModalOpen(true);
+  }, []);
   
-  // Updated: Always allow generating units for existing prototypes 
-  // Only check for canCreateUnidad for individual unit creation
-  const canCreateIndividualUnit = canCreateUnidad();
+  // Manejador para cambiar prefijo
+  const handlePrefijoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setPrefijo(e.target.value);
+  }, []);
+  
+  // Manejador para cerrar modal
+  const handleCloseModal = useCallback(() => {
+    setGenerarUnidadesModalOpen(false);
+  }, []);
   
   return (
     <div className="bg-slate-50 p-6 rounded-lg">
@@ -94,12 +109,12 @@ export const PrototipoUnidades = React.memo(({
         
         <UnidadTableActions
           onAddClick={onAddUnidad}
-          onGenerateClick={() => setGenerarUnidadesModalOpen(true)}
+          onGenerateClick={handleGenerateClick}
           unidadesCount={unidades.length}
           totalUnidades={prototipo.total_unidades || 0}
           showGenerateButton={true}
-          canAddMore={canCreateIndividualUnit} // Only apply limit to individual unit creation
-          alwaysAllowGenerate={true} // New prop to allow generating units even if limits reached
+          canAddMore={canCreateIndividualUnit} // Solo aplicar límite a creación individual de unidades
+          alwaysAllowGenerate={true} // Permitir generar unidades incluso si se alcanzaron los límites
         />
       </div>
       
@@ -192,7 +207,7 @@ export const PrototipoUnidades = React.memo(({
               <Input 
                 id="prefijo" 
                 value={prefijo} 
-                onChange={(e) => setPrefijo(e.target.value)} 
+                onChange={handlePrefijoChange} 
                 placeholder="Ej: 'Unidad-' resultará en Unidad-1, Unidad-2, etc."
               />
             </div>
@@ -201,14 +216,16 @@ export const PrototipoUnidades = React.memo(({
           <DialogFooter className="px-6 pb-6">
             <Button 
               variant="outline" 
-              onClick={() => setGenerarUnidadesModalOpen(false)}
+              onClick={handleCloseModal}
               disabled={isGenerating}
+              type="button"
             >
               Cancelar
             </Button>
             <Button 
               onClick={handleGenerarUnidades}
               disabled={isGenerating}
+              type="button"
             >
               {isGenerating ? 'Generando...' : 'Generar'}
             </Button>

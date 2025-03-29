@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { FormValues } from './types';
@@ -26,17 +25,8 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
   lead_id,
   defaultValues = {}
 }) => {
-  console.log('CotizacionDialog: Initial defaultValues:', defaultValues);
-  
-  // Explicitly ensure isExistingClient exists in defaultValues
-  const initialIsExistingClient = defaultValues.isExistingClient !== undefined 
-    ? defaultValues.isExistingClient 
-    : resourceId ? true : false; // Default to true if editing, false if new
-  
-  console.log('CotizacionDialog: initialIsExistingClient:', initialIsExistingClient);
-  
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  const [isExistingClient, setIsExistingClient] = useState(initialIsExistingClient);
+  const [isExistingClient, setIsExistingClient] = useState(true);
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string | null>(null);
   const [newClientData, setNewClientData] = useState({ nombre: '', email: '', telefono: '' });
   const [selectedStatus, setSelectedStatus] = useState<string | null>('nuevo');
@@ -49,8 +39,6 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     monto_finiquito: 0,
     ...defaultValues
   };
-
-  console.log('CotizacionDialog: Using mergedDefaultValues:', mergedDefaultValues);
 
   const resourceType = 'cotizaciones';
 
@@ -100,16 +88,8 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
       if (desarrolloId) {
         setSelectedDesarrolloId(desarrolloId);
       }
-      
-      // Make sure isExistingClient is correctly set when dialog opens
-      console.log("Setting isExistingClient to:", initialIsExistingClient);
-      setIsExistingClient(initialIsExistingClient);
-      
-      if (!resourceId) {
-        setNewClientData({ nombre: '', email: '', telefono: '' });
-      }
     }
-  }, [open, desarrolloId, resourceId, initialIsExistingClient]);
+  }, [open, desarrolloId]);
 
   const handleChange = (values: FormValues) => {
     if (resource) {
@@ -193,13 +173,6 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     setIsSubmitting(true);
     
     try {
-      if (!isExistingClient && !resourceId) {
-        console.log("Creating new cotización with new client:", {
-          isExistingClient,
-          newClientData
-        });
-      }
-      
       const success = await saveResource(resource);
       if (success && onSuccess) {
         onSuccess();
@@ -214,12 +187,10 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
   };
 
   const handleNewClientDataChange = (field: string, value: string) => {
-    console.log(`Updating new client ${field} to:`, value);
     setNewClientData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleExistingClientChange = (isExisting: boolean) => {
-    console.log("Setting isExistingClient to:", isExisting);
     setIsExistingClient(isExisting);
   };
 

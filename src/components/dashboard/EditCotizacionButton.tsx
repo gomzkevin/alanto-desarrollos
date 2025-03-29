@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
-import { useState, useCallback, memo } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import useCotizaciones from "@/hooks/useCotizaciones";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -16,7 +16,7 @@ type EditCotizacionButtonProps = {
   className?: string;
 };
 
-const EditCotizacionButton = ({
+export const EditCotizacionButton = ({
   cotizacionId,
   onSuccess,
   buttonVariant = "outline",
@@ -29,9 +29,7 @@ const EditCotizacionButton = ({
   const { toast } = useToast();
   const { refetch } = useCotizaciones();
   
-  const fetchCotizacionData = useCallback(async () => {
-    if (!cotizacionId) return;
-    
+  const fetchCotizacionData = async () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -57,14 +55,14 @@ const EditCotizacionButton = ({
     } finally {
       setIsLoading(false);
     }
-  }, [cotizacionId, toast]);
+  };
   
-  const handleOpenDialog = useCallback(async () => {
+  const handleOpenDialog = async () => {
     await fetchCotizacionData();
     setIsDialogOpen(true);
-  }, [fetchCotizacionData]);
+  };
   
-  const handleSuccess = useCallback(() => {
+  const handleSuccess = () => {
     toast({
       title: "Cotización actualizada",
       description: "La cotización ha sido actualizada exitosamente."
@@ -77,11 +75,11 @@ const EditCotizacionButton = ({
     }
     
     setIsDialogOpen(false);
-  }, [onSuccess, refetch, toast]);
+  };
   
-  const handleUpdateCotizacion = useCallback(async (values: any) => {
+  const handleUpdateCotizacion = async (values: any) => {
     try {
-      // Asegurar que trabajamos con valores numéricos para los campos de moneda
+      // Ensure we're working with numeric values for currency fields
       const monto_anticipo = typeof values.monto_anticipo === 'string' 
         ? parseFloat(values.monto_anticipo.replace(/[^0-9.-]+/g, '')) 
         : values.monto_anticipo;
@@ -119,11 +117,7 @@ const EditCotizacionButton = ({
         variant: "destructive"
       });
     }
-  }, [cotizacionId, handleSuccess, toast]);
-  
-  const handleCloseDialog = useCallback(() => {
-    setIsDialogOpen(false);
-  }, []);
+  };
   
   return (
     <>
@@ -137,12 +131,12 @@ const EditCotizacionButton = ({
       </Button>
       
       {isDialogOpen && cotizacionData && (
-        <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-0 border border-gray-200 shadow-md">
             <CotizacionEditForm 
               cotizacion={cotizacionData} 
               onSave={handleUpdateCotizacion} 
-              onCancel={handleCloseDialog}
+              onCancel={() => setIsDialogOpen(false)}
               isLoading={isLoading}
             />
           </DialogContent>
@@ -152,5 +146,4 @@ const EditCotizacionButton = ({
   );
 };
 
-// Utilizar memo para prevenir renderizados innecesarios
-export default memo(EditCotizacionButton);
+export default EditCotizacionButton;

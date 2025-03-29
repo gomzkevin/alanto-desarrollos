@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import ResourceDialog from './index';
 import { ResourceType } from './types';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface AdminResourceDialogProps {
   resourceType: ResourceType;
@@ -34,18 +35,55 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
   onClose,
   defaultValues
 }) => {
-  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  
+  const { isLoading: isUserLoading } = useUserRole();
+  
   const { 
     canCreateDesarrollo, 
     canCreatePrototipo, 
     canCreateLead,
     canCreateCotizacion,
-    canCreateUnidad
+    canCreateUnidad,
+    hasActiveSubscription
   } = usePermissions();
 
-  // Check if button should be disabled based on resource type
+  // Update permissions loaded state - using a stable reference to hasActiveSubscription
+  useEffect(() => {
+    let isMounted = true;
+    
+    // Check if subscription info is loaded asynchronously
+    const checkPermissions = async () => {
+      if (!isUserLoading) {
+        try {
+          await hasActiveSubscription();
+          if (isMounted) {
+            setPermissionsLoaded(true);
+          }
+        } catch (error) {
+          console.error("Error checking subscription:", error);
+          if (isMounted) {
+            setPermissionsLoaded(true); // Set to true even on error to prevent UI from being perpetually locked
+          }
+        }
+      }
+    };
+    
+    checkPermissions();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [isUserLoading, hasActiveSubscription]);
+
+  // Check if button should be disabled based on resource type - with memoization to prevent recalculation
   const isDisabled = React.useMemo(() => {
-    if (resourceId) return false; // Don't disable if editing existing resource
+    // Always enable editing existing resources
+    if (resourceId) return false;
+    
+    // If permissions aren't loaded yet, disable by default
+    if (!permissionsLoaded) return true;
     
     if (resourceType === 'desarrollos') {
       return !canCreateDesarrollo();
@@ -60,7 +98,7 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
     }
     
     return false;
-  }, [resourceType, resourceId, canCreateDesarrollo, canCreatePrototipo, canCreateLead, canCreateCotizacion, canCreateUnidad]);
+  }, [resourceType, resourceId, permissionsLoaded, canCreateDesarrollo, canCreatePrototipo, canCreateLead, canCreateCotizacion, canCreateUnidad]);
 
   const handleOpen = () => {
     setDialogOpen(true);
@@ -113,4 +151,4 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
   );
 };
 
-export default AdminResourceDialog;
+export default React.memo(AdminResourceDialog);
