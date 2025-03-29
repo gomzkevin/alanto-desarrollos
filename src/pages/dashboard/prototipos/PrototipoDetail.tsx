@@ -41,8 +41,8 @@ const PrototipoDetail = () => {
   const unitCounts = useUnitCounts(safeUnidades);
   
   // Verificaciones de permisos (valores memorizados serían mejores)
-  const canAddMore = canCreatePrototipo();
-  const canAddUnidades = canCreateUnidad();
+  const canAddMore = useCallback(() => canCreatePrototipo(), [canCreatePrototipo]);
+  const canAddUnidades = useCallback(() => canCreateUnidad(), [canCreateUnidad]);
   
   // Manejador de actualización con límite de frecuencia
   const handleRefresh = useCallback(() => {
@@ -113,9 +113,9 @@ const PrototipoDetail = () => {
   // Memoize manejadores de eventos
   const handleAddUnidadClick = useCallback(() => {
     // Verificar si el usuario puede crear unidades según su plan
-    if (isAdmin() && canAddUnidades) {
+    if (isAdmin() && canCreateUnidad()) {
       setOpenAddUnidadDialog(true);
-    } else if (!canAddUnidades) {
+    } else if (!canCreateUnidad()) {
       toast({
         title: "Límite alcanzado",
         description: "Has alcanzado el límite de prototipos de tu plan. Actualiza tu suscripción para añadir más unidades.",
@@ -128,7 +128,7 @@ const PrototipoDetail = () => {
         variant: "destructive",
       });
     }
-  }, [isAdmin, canAddUnidades, toast]);
+  }, [isAdmin, canCreateUnidad, toast]);
   
   const handleEditClick = useCallback(() => {
     // Solo permitir edición si es administrador
@@ -143,35 +143,10 @@ const PrototipoDetail = () => {
     }
   }, [isAdmin, toast]);
   
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="p-6 space-y-6">
-          <div className="flex items-center">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={(e) => { e.preventDefault(); handleBack(e); }} 
-              type="button"
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Volver
-            </Button>
-          </div>
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-slate-200 rounded w-1/3"></div>
-            <div className="h-32 bg-slate-200 rounded"></div>
-            <div className="h-64 bg-slate-200 rounded"></div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-  
-  if (error || !prototipo) {
-    return (
-      <DashboardLayout>
-        <div className="p-6">
+  const renderLoadingState = () => (
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center">
           <Button 
             variant="outline" 
             size="sm" 
@@ -181,26 +156,55 @@ const PrototipoDetail = () => {
             <ChevronLeft className="mr-1 h-4 w-4" />
             Volver
           </Button>
-          
-          <Alert variant="destructive" className="mt-6">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>
-              No se pudo cargar la información del prototipo.
-              {error && <p className="mt-2">{(error as Error).message}</p>}
-            </AlertDescription>
-          </Alert>
-          
-          <Button 
-            variant="outline" 
-            className="mt-4"
-            onClick={(e) => { e.preventDefault(); refetch(); }}
-            type="button"
-          >
-            Intentar de nuevo
-          </Button>
         </div>
-      </DashboardLayout>
-    );
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-slate-200 rounded w-1/3"></div>
+          <div className="h-32 bg-slate-200 rounded"></div>
+          <div className="h-64 bg-slate-200 rounded"></div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+  
+  const renderErrorState = () => (
+    <DashboardLayout>
+      <div className="p-6">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={(e) => { e.preventDefault(); handleBack(e); }} 
+          type="button"
+        >
+          <ChevronLeft className="mr-1 h-4 w-4" />
+          Volver
+        </Button>
+        
+        <Alert variant="destructive" className="mt-6">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            No se pudo cargar la información del prototipo.
+            {error && <p className="mt-2">{(error as Error).message}</p>}
+          </AlertDescription>
+        </Alert>
+        
+        <Button 
+          variant="outline" 
+          className="mt-4"
+          onClick={(e) => { e.preventDefault(); refetch(); }}
+          type="button"
+        >
+          Intentar de nuevo
+        </Button>
+      </div>
+    </DashboardLayout>
+  );
+  
+  if (isLoading) {
+    return renderLoadingState();
+  }
+  
+  if (error || !prototipo) {
+    return renderErrorState();
   }
   
   // Estado de carga combinado para evitar estados contradictorios
@@ -227,7 +231,7 @@ const PrototipoDetail = () => {
             onAddUnidad={handleAddUnidadClick}
             onGenerateUnidades={handleGenerarUnidades}
             onRefreshUnidades={handleRefresh}
-            canAddMore={canAddUnidades}
+            canAddMore={canAddUnidades()}
           />
         </div>
       </div>

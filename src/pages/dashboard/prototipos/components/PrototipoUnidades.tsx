@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Building } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -61,7 +61,7 @@ export const PrototipoUnidades = React.memo(({
   const canCreateIndividualUnit = useMemo(() => canCreateUnidad(), [canCreateUnidad]);
 
   // Manejador para generar unidades
-  const handleGenerarUnidades = async () => {
+  const handleGenerarUnidades = useCallback(async () => {
     if (unidadesRestantes <= 0 || isGenerating) return;
     
     setIsGenerating(true);
@@ -74,11 +74,21 @@ export const PrototipoUnidades = React.memo(({
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [unidadesRestantes, prefijo, isGenerating, onGenerateUnidades]);
 
   // Manejador para clic en botón "Generar unidades"
-  const handleGenerateClick = React.useCallback(() => {
+  const handleGenerateClick = useCallback(() => {
     setGenerarUnidadesModalOpen(true);
+  }, []);
+  
+  // Manejador para cambiar prefijo
+  const handlePrefijoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setPrefijo(e.target.value);
+  }, []);
+  
+  // Manejador para cerrar modal
+  const handleCloseModal = useCallback(() => {
+    setGenerarUnidadesModalOpen(false);
   }, []);
   
   return (
@@ -197,7 +207,7 @@ export const PrototipoUnidades = React.memo(({
               <Input 
                 id="prefijo" 
                 value={prefijo} 
-                onChange={(e) => setPrefijo(e.target.value)} 
+                onChange={handlePrefijoChange} 
                 placeholder="Ej: 'Unidad-' resultará en Unidad-1, Unidad-2, etc."
               />
             </div>
@@ -206,7 +216,7 @@ export const PrototipoUnidades = React.memo(({
           <DialogFooter className="px-6 pb-6">
             <Button 
               variant="outline" 
-              onClick={() => setGenerarUnidadesModalOpen(false)}
+              onClick={handleCloseModal}
               disabled={isGenerating}
               type="button"
             >
