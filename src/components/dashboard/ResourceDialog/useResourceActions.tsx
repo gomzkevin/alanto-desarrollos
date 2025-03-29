@@ -77,31 +77,41 @@ const useResourceActions = ({
           
           console.log('Inserting new lead with data:', leadData);
           
-          const { data: newClient, error: clientError } = await supabase
-            .from('leads')
-            .insert(leadData)
-            .select()
-            .single();
-          
-          if (clientError) {
-            console.error('Error creating new client:', clientError);
+          try {
+            // Primero intentamos crear el lead directamente
+            const { data: newClient, error: clientError } = await supabase
+              .from('leads')
+              .insert(leadData)
+              .select();
+            
+            if (clientError) {
+              console.error('Error creating new client:', clientError);
+              toast({
+                title: 'Error',
+                description: `No se pudo crear el cliente: ${clientError.message}`,
+                variant: 'destructive',
+              });
+              return false;
+            }
+            
+            if (newClient && newClient.length > 0) {
+              console.log('New client created successfully:', newClient[0]);
+              dataToSave.lead_id = newClient[0].id;
+              newClientId = newClient[0].id;
+            } else {
+              console.error('No client data returned after insertion');
+              toast({
+                title: 'Error',
+                description: 'No se pudo crear el cliente, no se recibieron datos del servidor',
+                variant: 'destructive',
+              });
+              return false;
+            }
+          } catch (insertError) {
+            console.error('Exception during lead creation:', insertError);
             toast({
               title: 'Error',
-              description: `No se pudo crear el cliente: ${clientError.message}`,
-              variant: 'destructive',
-            });
-            return false;
-          }
-          
-          if (newClient) {
-            console.log('New client created:', newClient);
-            dataToSave.lead_id = newClient.id;
-            newClientId = newClient.id;
-          } else {
-            console.error('No client data returned after insertion');
-            toast({
-              title: 'Error',
-              description: 'No se pudo crear el cliente, no se recibieron datos del servidor',
+              description: 'Error interno al crear el cliente',
               variant: 'destructive',
             });
             return false;
