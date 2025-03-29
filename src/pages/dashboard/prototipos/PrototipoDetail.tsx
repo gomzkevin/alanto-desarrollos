@@ -70,16 +70,21 @@ const PrototipoDetail = () => {
   
   // Efecto para refrescar cuando cambian los diálogos
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     if (!openAddUnidadDialog && !openEditDialog) {
       // Añadir un retraso para refrescar solo después de cerrar diálogos
-      const timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         handleRefresh();
       }, 1000);
-      return () => clearTimeout(timeoutId);
     }
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [openAddUnidadDialog, openEditDialog, handleRefresh]);
   
-  const handleGenerarUnidades = async (cantidad: number, prefijo: string) => {
+  const handleGenerarUnidades = useCallback(async (cantidad: number, prefijo: string) => {
     if (!id || cantidad <= 0) return;
     
     try {
@@ -104,7 +109,40 @@ const PrototipoDetail = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [id, createMultipleUnidades, toast, handleRefresh]);
+  
+  // Memoize event handlers
+  const handleAddUnidadClick = useCallback(() => {
+    // Verificar si el usuario puede crear unidades basado en su plan
+    if (isAdmin() && canAddUnidades) {
+      setOpenAddUnidadDialog(true);
+    } else if (!canAddUnidades) {
+      toast({
+        title: "Límite alcanzado",
+        description: "Has alcanzado el límite de prototipos de tu plan. Actualiza tu suscripción para añadir más unidades.",
+        variant: "warning",
+      });
+    } else {
+      toast({
+        title: "Permisos insuficientes",
+        description: "Solo los administradores pueden añadir unidades.",
+        variant: "destructive",
+      });
+    }
+  }, [isAdmin, canAddUnidades, toast]);
+  
+  const handleEditClick = useCallback(() => {
+    // Solo permitir editar si es administrador
+    if (isAdmin()) {
+      setOpenEditDialog(true);
+    } else {
+      toast({
+        title: "Permisos insuficientes",
+        description: "Solo los administradores pueden editar prototipos.",
+        variant: "destructive",
+      });
+    }
+  }, [isAdmin, toast]);
   
   if (isLoading) {
     return (
@@ -164,18 +202,7 @@ const PrototipoDetail = () => {
         <PrototipoHeader 
           prototipo={prototipo} 
           onBack={handleBack} 
-          onEdit={() => {
-            // Solo permitir editar si es administrador
-            if (isAdmin()) {
-              setOpenEditDialog(true);
-            } else {
-              toast({
-                title: "Permisos insuficientes",
-                description: "Solo los administradores pueden editar prototipos.",
-                variant: "destructive",
-              });
-            }
-          }} 
+          onEdit={handleEditClick} 
           updatePrototipoImage={updatePrototipoImage}
         />
         
@@ -187,24 +214,7 @@ const PrototipoDetail = () => {
             unidades={safeUnidades}
             unidadesLoading={combinedLoadingState}
             unitCounts={unitCounts}
-            onAddUnidad={() => {
-              // Verificar si el usuario puede crear unidades basado en su plan
-              if (isAdmin() && canAddUnidades) {
-                setOpenAddUnidadDialog(true);
-              } else if (!canAddUnidades) {
-                toast({
-                  title: "Límite alcanzado",
-                  description: "Has alcanzado el límite de prototipos de tu plan. Actualiza tu suscripción para añadir más unidades.",
-                  variant: "warning",
-                });
-              } else {
-                toast({
-                  title: "Permisos insuficientes",
-                  description: "Solo los administradores pueden añadir unidades.",
-                  variant: "destructive",
-                });
-              }
-            }}
+            onAddUnidad={handleAddUnidadClick}
             onGenerateUnidades={handleGenerarUnidades}
             onRefreshUnidades={handleRefresh}
             canAddMore={canAddUnidades} // Only check canAddUnidades for individual unit creation

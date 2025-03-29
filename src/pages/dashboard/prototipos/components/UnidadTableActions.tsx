@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
@@ -14,7 +14,7 @@ interface UnidadTableActionsProps {
   permissionsLoaded?: boolean;
 }
 
-export const UnidadTableActions = ({ 
+export const UnidadTableActions = React.memo(({ 
   onAddClick, 
   onGenerateClick, 
   unidadesCount,
@@ -42,11 +42,24 @@ export const UnidadTableActions = ({
   const isGenerateButtonDisabled = !permissionsLoaded || (!canAddMore && !alwaysAllowGenerate);
   const isAddButtonDisabled = !permissionsLoaded || !canAddMore;
   
+  // Memoize click handlers to prevent re-renders
+  const handleAddClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    onAddClick();
+  }, [onAddClick]);
+  
+  const handleGenerateClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onGenerateClick) {
+      onGenerateClick();
+    }
+  }, [onGenerateClick]);
+  
   return (
     <div className="flex space-x-2">
       {shouldShowGenerateButton && (
         <Button 
-          onClick={onGenerateClick} 
+          onClick={handleGenerateClick} 
           variant={noUnidadesYet ? "default" : "outline"}
           disabled={isGenerateButtonDisabled}
         >
@@ -57,7 +70,7 @@ export const UnidadTableActions = ({
       
       {shouldShowAddButton && (
         <Button 
-          onClick={onAddClick} 
+          onClick={handleAddClick} 
           disabled={isAddButtonDisabled}
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -73,6 +86,8 @@ export const UnidadTableActions = ({
       )}
     </div>
   );
-};
+});
+
+UnidadTableActions.displayName = 'UnidadTableActions';
 
 export default UnidadTableActions;
