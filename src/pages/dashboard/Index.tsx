@@ -8,7 +8,6 @@ import useDashboardMetrics from '@/hooks/useDashboardMetrics';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
-import useDesarrolloStats from '@/hooks/useDesarrolloStats';
 import { countDesarrolloUnidadesByStatus } from '@/hooks/unidades/countUtils';
 
 const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {

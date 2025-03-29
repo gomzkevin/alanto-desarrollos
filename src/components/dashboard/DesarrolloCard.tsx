@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,10 +19,11 @@ import {
   Waves, 
   Coffee, 
   GlassWater, 
-  Check 
+  Check,
+  Building
 } from 'lucide-react';
-import { AmenitiesSelector, Amenity } from './AmenitiesSelector';
 import { supabase } from '@/integrations/supabase/client';
+import { countDesarrolloUnidadesByStatus } from '@/hooks/unidades/countUtils';
 
 type Desarrollo = Tables<"desarrollos">;
 
@@ -36,21 +38,35 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
   const [prototiposCount, setPrototiposCount] = useState<number>(0);
   const [amenidades, setAmenidades] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [unidadesStats, setUnidadesStats] = useState({
+    disponibles: 0,
+    vendidas: 0,
+    con_anticipo: 0,
+    total: 0
+  });
   
   useEffect(() => {
     const fetchCardData = async () => {
       setIsLoading(true);
       
-      // Fetch main image
-      await fetchMainImage();
-      
-      // Fetch prototipos count
-      await fetchPrototiposCount();
-      
-      // Parse amenidades
-      parseAmenidades();
-      
-      setIsLoading(false);
+      try {
+        // Fetch main image
+        await fetchMainImage();
+        
+        // Fetch prototipos count
+        await fetchPrototiposCount();
+        
+        // Parse amenidades
+        parseAmenidades();
+        
+        // Get actual unit counts from countDesarrolloUnidadesByStatus
+        const unitStats = await countDesarrolloUnidadesByStatus(desarrollo.id);
+        setUnidadesStats(unitStats);
+      } catch (error) {
+        console.error('Error loading desarrollo card data:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     fetchCardData();
@@ -141,9 +157,14 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
   };
   
   const getDesarrolloStatus = (desarrollo: Desarrollo) => {
-    if (desarrollo.avance_porcentaje === 0) {
+    // Calculate status based on actual unit stats instead of avance_porcentaje
+    const totalUnits = unidadesStats.total || desarrollo.total_unidades || 0;
+    const soldUnits = unidadesStats.vendidas + unidadesStats.con_anticipo;
+    const progressPercent = totalUnits > 0 ? Math.round((soldUnits / totalUnits) * 100) : 0;
+    
+    if (progressPercent === 0) {
       return { label: 'Pre-venta', color: 'bg-blue-100 text-blue-800' };
-    } else if (desarrollo.avance_porcentaje && desarrollo.avance_porcentaje < 100) {
+    } else if (progressPercent < 100) {
       return { label: 'En venta', color: 'bg-yellow-100 text-yellow-800' };
     } else {
       return { label: 'Vendido', color: 'bg-green-100 text-green-800' };
@@ -151,12 +172,11 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
   };
   
   const getUnitCountDisplay = () => {
-    const availableUnits = Math.min(
-      desarrollo.unidades_disponibles || 0, 
-      desarrollo.total_unidades || 0
-    );
+    // Use the actual unit stats from the database for available/total count
+    const available = unidadesStats.disponibles;
+    const total = unidadesStats.total || desarrollo.total_unidades || 0;
     
-    return `${availableUnits}/${desarrollo.total_unidades || 0}`;
+    return `${available}/${total}`;
   };
   
   const status = getDesarrolloStatus(desarrollo);
@@ -227,11 +247,20 @@ const DesarrolloCard = ({ desarrollo, onViewDetails }: DesarrolloCardProps) => {
         <div className="flex justify-between items-center text-sm">
           <div>
             <p className="text-slate-500">Unidades</p>
-            <p className="font-medium">{getUnitCountDisplay()} disponibles</p>
+            <p className="font-medium flex items-center gap-1">
+              <Building className="h-3.5 w-3.5 text-slate-400" />
+              {isLoading ? "..." : getUnitCountDisplay()} disponibles
+            </p>
           </div>
           <div>
             <p className="text-slate-500">Avance</p>
-            <p className="font-medium">{desarrollo.avance_porcentaje ?? 0}%</p>
+            <p className="font-medium">
+              {isLoading ? "..." : (
+                unidadesStats.total > 0 
+                  ? Math.round(((unidadesStats.vendidas + unidadesStats.con_anticipo) / unidadesStats.total) * 100)
+                  : 0
+              )}%
+            </p>
           </div>
         </div>
         
