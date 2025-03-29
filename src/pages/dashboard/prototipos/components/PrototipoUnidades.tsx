@@ -51,12 +51,16 @@ export const PrototipoUnidades = React.memo(({
     return unidades;
   }, [unidades, currentTab]);
   
-  // Determine remaining units
+  // Calculate remaining units
   const unidadesRestantes = useMemo(() => 
     (prototipo.total_unidades || 0) - unidades.length,
     [prototipo.total_unidades, unidades.length]
   );
   
+  // Memoize permissions check to prevent recalculation on every render
+  const canCreateIndividualUnit = useMemo(() => canCreateUnidad(), [canCreateUnidad]);
+
+  // Handler for generating units
   const handleGenerarUnidades = async () => {
     if (unidadesRestantes <= 0 || isGenerating) return;
     
@@ -71,9 +75,11 @@ export const PrototipoUnidades = React.memo(({
       setIsGenerating(false);
     }
   };
-  
-  // Memoize permissions check to prevent recalculation on every render
-  const canCreateIndividualUnit = useMemo(() => canCreateUnidad(), [canCreateUnidad]);
+
+  // Handler for "Generar unidades" button click
+  const handleGenerateClick = React.useCallback(() => {
+    setGenerarUnidadesModalOpen(true);
+  }, []);
   
   return (
     <div className="bg-slate-50 p-6 rounded-lg">
@@ -93,7 +99,7 @@ export const PrototipoUnidades = React.memo(({
         
         <UnidadTableActions
           onAddClick={onAddUnidad}
-          onGenerateClick={() => setGenerarUnidadesModalOpen(true)}
+          onGenerateClick={handleGenerateClick}
           unidadesCount={unidades.length}
           totalUnidades={prototipo.total_unidades || 0}
           showGenerateButton={true}
@@ -202,12 +208,14 @@ export const PrototipoUnidades = React.memo(({
               variant="outline" 
               onClick={() => setGenerarUnidadesModalOpen(false)}
               disabled={isGenerating}
+              type="button"
             >
               Cancelar
             </Button>
             <Button 
               onClick={handleGenerarUnidades}
               disabled={isGenerating}
+              type="button"
             >
               {isGenerating ? 'Generando...' : 'Generar'}
             </Button>

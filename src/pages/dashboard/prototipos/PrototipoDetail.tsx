@@ -25,13 +25,14 @@ const PrototipoDetail = () => {
   const { isAdmin } = useUserRole();
   const { canCreatePrototipo, canCreateUnidad } = usePermissions();
   
-  // Estados estables para las unidades
+  // Unidades fetching with stable params
+  const unidadesParams = { prototipo_id: id };
   const { 
     unidades: fetchedUnidades, 
     isLoading: unidadesLoading, 
     refetch: refetchUnidades,
     createMultipleUnidades
-  } = useUnidades({ prototipo_id: id });
+  } = useUnidades(unidadesParams);
   
   // Ensure unidades is always an array
   const safeUnidades = Array.isArray(fetchedUnidades) ? fetchedUnidades : [];
@@ -39,18 +40,16 @@ const PrototipoDetail = () => {
   // Memoize unit counts for stability
   const unitCounts = useUnitCounts(safeUnidades);
   
-  // Comprobamos si se pueden crear más prototipos (para funcionamiento del botón)
+  // Permissions checks (memoized values would be better)
   const canAddMore = canCreatePrototipo();
-  
-  // También comprobamos si se pueden crear unidades
   const canAddUnidades = canCreateUnidad();
   
-  // Controlador de refresco con limitación de frecuencia
+  // Throttled refresh handler
   const handleRefresh = useCallback(() => {
     const now = Date.now();
     const timeSinceLastRefresh = now - lastRefreshTimeRef.current;
     
-    // No permitir refrescos más frecuentes que cada 3 segundos
+    // No refreshes more frequent than every 3 seconds
     if (isRefreshing || timeSinceLastRefresh < 3000) {
       console.log('Avoiding rapid refresh:', timeSinceLastRefresh, 'ms since last refresh');
       return;
@@ -61,19 +60,19 @@ const PrototipoDetail = () => {
     lastRefreshTimeRef.current = now;
     
     refetchUnidades().finally(() => {
-      // Retrasar para evitar parpadeos
+      // Delay to avoid flashing
       setTimeout(() => {
         setIsRefreshing(false);
       }, 800);
     });
   }, [refetchUnidades, isRefreshing]);
   
-  // Efecto para refrescar cuando cambian los diálogos
+  // Effect to refresh when dialogs change
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     
     if (!openAddUnidadDialog && !openEditDialog) {
-      // Añadir un retraso para refrescar solo después de cerrar diálogos
+      // Add a delay to refresh only after closing dialogs
       timeoutId = setTimeout(() => {
         handleRefresh();
       }, 1000);
@@ -99,7 +98,7 @@ const PrototipoDetail = () => {
         description: `Se han generado ${cantidad} unidades exitosamente.`
       });
       
-      // Añadir un retraso largo antes del refresco
+      // Add a long delay before refreshing
       setTimeout(handleRefresh, 1500);
     } catch (error) {
       console.error('Error al generar unidades:', error);
@@ -113,7 +112,7 @@ const PrototipoDetail = () => {
   
   // Memoize event handlers
   const handleAddUnidadClick = useCallback(() => {
-    // Verificar si el usuario puede crear unidades basado en su plan
+    // Check if user can create units based on their plan
     if (isAdmin() && canAddUnidades) {
       setOpenAddUnidadDialog(true);
     } else if (!canAddUnidades) {
@@ -132,7 +131,7 @@ const PrototipoDetail = () => {
   }, [isAdmin, canAddUnidades, toast]);
   
   const handleEditClick = useCallback(() => {
-    // Solo permitir editar si es administrador
+    // Only allow editing if admin
     if (isAdmin()) {
       setOpenEditDialog(true);
     } else {
@@ -149,7 +148,7 @@ const PrototipoDetail = () => {
       <DashboardLayout>
         <div className="p-6 space-y-6">
           <div className="flex items-center">
-            <Button variant="outline" size="sm" onClick={handleBack}>
+            <Button variant="outline" size="sm" onClick={handleBack} type="button">
               <ChevronLeft className="mr-1 h-4 w-4" />
               Volver
             </Button>
@@ -168,7 +167,7 @@ const PrototipoDetail = () => {
     return (
       <DashboardLayout>
         <div className="p-6">
-          <Button variant="outline" size="sm" onClick={handleBack}>
+          <Button variant="outline" size="sm" onClick={handleBack} type="button">
             <ChevronLeft className="mr-1 h-4 w-4" />
             Volver
           </Button>
@@ -184,7 +183,8 @@ const PrototipoDetail = () => {
           <Button 
             variant="outline" 
             className="mt-4"
-            onClick={() => handleRefresh()}
+            onClick={() => refetch()}
+            type="button"
           >
             Intentar de nuevo
           </Button>
@@ -193,7 +193,7 @@ const PrototipoDetail = () => {
     );
   }
   
-  // Determinar el estado combinado de carga para evitar múltiples estados contradictorios
+  // Combined loading state to avoid contradictory states
   const combinedLoadingState = isRefreshing || unidadesLoading;
   
   return (
@@ -217,7 +217,7 @@ const PrototipoDetail = () => {
             onAddUnidad={handleAddUnidadClick}
             onGenerateUnidades={handleGenerarUnidades}
             onRefreshUnidades={handleRefresh}
-            canAddMore={canAddUnidades} // Only check canAddUnidades for individual unit creation
+            canAddMore={canAddUnidades}
           />
         </div>
       </div>
@@ -228,7 +228,10 @@ const PrototipoDetail = () => {
           resourceId={id}
           open={openEditDialog}
           onClose={() => setOpenEditDialog(false)}
-          onSuccess={handleRefresh}
+          onSuccess={() => {
+            refetch();
+            handleRefresh();
+          }}
         />
       )}
       
@@ -236,7 +239,9 @@ const PrototipoDetail = () => {
         resourceType="unidades"
         open={openAddUnidadDialog}
         onClose={() => setOpenAddUnidadDialog(false)}
-        onSuccess={handleRefresh}
+        onSuccess={() => {
+          setTimeout(handleRefresh, 500);
+        }}
         prototipo_id={id}
       />
     </DashboardLayout>

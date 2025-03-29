@@ -12,14 +12,20 @@ type Desarrollo = Tables<"desarrollos">;
 const fetchPrototipoById = async (id: string) => {
   if (!id) return null;
   
+  console.log(`Fetching prototipo with ID: ${id}`);
+  
   const { data, error } = await supabase
     .from('prototipos')
     .select('*, desarrollo:desarrollo_id(*)')
     .eq('id', id)
     .maybeSingle();
   
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching prototipo:', error);
+    throw error;
+  }
   
+  console.log('Prototipo fetched successfully:', data);
   return data as ExtendedPrototipo;
 };
 
@@ -28,6 +34,7 @@ export const usePrototipoDetail = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  // Use stable query configuration to prevent re-renders
   const {
     data: prototipo,
     isLoading,
@@ -39,6 +46,7 @@ export const usePrototipoDetail = () => {
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5 minutos
     retry: 1,
+    refetchOnWindowFocus: false // Prevent refetching on window focus
   });
   
   const handleBack = useCallback(() => {

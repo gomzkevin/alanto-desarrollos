@@ -25,14 +25,16 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
   });
   const navigate = useNavigate();
   
-  // Función memoizada para manejar el clic en Ver detalles
+  // Memoized function for handling the click on Ver detalles
   const handleViewDetails = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    
     if (onViewDetails) {
       onViewDetails(prototipo.id);
     } else if (onClick) {
       onClick(prototipo.id);
     } else {
+      // Use React Router's navigate instead of location change to prevent page refresh
       navigate(`/dashboard/prototipos/${prototipo.id}`);
     }
   }, [prototipo.id, onViewDetails, onClick, navigate]);

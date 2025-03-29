@@ -1,5 +1,5 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
@@ -24,14 +24,14 @@ export const UnidadTableActions = React.memo(({
   alwaysAllowGenerate = false,
   permissionsLoaded = true
 }: UnidadTableActionsProps) => {
-  // Calculate visibility conditions only once
-  const shouldShowGenerateButton = React.useMemo(() => {
+  // Memoize visibility conditions
+  const shouldShowGenerateButton = useMemo(() => {
     return showGenerateButton && 
            unidadesCount < totalUnidades &&
            (canAddMore || alwaysAllowGenerate);
   }, [showGenerateButton, unidadesCount, totalUnidades, canAddMore, alwaysAllowGenerate]);
   
-  const shouldShowAddButton = React.useMemo(() => {
+  const shouldShowAddButton = useMemo(() => {
     return unidadesCount > 0 && 
            unidadesCount < totalUnidades &&
            canAddMore;
@@ -62,6 +62,7 @@ export const UnidadTableActions = React.memo(({
           onClick={handleGenerateClick} 
           variant={noUnidadesYet ? "default" : "outline"}
           disabled={isGenerateButtonDisabled}
+          type="button"
         >
           <Plus className="mr-2 h-4 w-4" />
           Generar unidades
@@ -72,6 +73,7 @@ export const UnidadTableActions = React.memo(({
         <Button 
           onClick={handleAddClick} 
           disabled={isAddButtonDisabled}
+          type="button"
         >
           <Plus className="mr-2 h-4 w-4" />
           Agregar unidad
@@ -79,7 +81,7 @@ export const UnidadTableActions = React.memo(({
       )}
       
       {!canAddMore && unidadesCount < totalUnidades && !alwaysAllowGenerate && (
-        <Button variant="outline" disabled className="opacity-70">
+        <Button variant="outline" disabled className="opacity-70" type="button">
           <Plus className="mr-2 h-4 w-4" />
           Límite alcanzado
         </Button>
