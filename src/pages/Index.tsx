@@ -27,18 +27,24 @@ const Index = () => {
     
     revealElements.forEach(el => observer.observe(el));
     
-    // Hide loader after everything is loaded
-    window.addEventListener('load', () => {
+    // Logic for hiding loader - moved inside useEffect to prevent infinite renders
+    const hideLoader = () => {
       setIsLoading(false);
-    });
+    };
     
-    // If window already loaded, hide loader
+    // Use the window load event or check if already loaded
     if (document.readyState === 'complete') {
-      setIsLoading(false);
+      hideLoader();
+    } else {
+      window.addEventListener('load', hideLoader);
     }
     
-    return () => observer.disconnect();
-  }, []);
+    // Cleanup function to remove event listener when component unmounts
+    return () => {
+      window.removeEventListener('load', hideLoader);
+      observer.disconnect();
+    };
+  }, []); // Empty dependency array ensures this effect runs only once
 
   return (
     <div className="min-h-screen bg-white">

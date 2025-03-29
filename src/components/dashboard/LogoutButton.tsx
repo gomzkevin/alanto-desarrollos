@@ -18,20 +18,7 @@ const LogoutButton = () => {
     try {
       setIsLoggingOut(true);
       
-      // Primero obtenemos la sesión actual para confirmar que existe
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData.session) {
-        // Si no hay sesión, solo redirigimos al usuario
-        toast({
-          title: "No hay sesión activa",
-          description: "Redirigiendo a la página de inicio de sesión",
-        });
-        navigate('/auth');
-        return;
-      }
-      
-      // Si hay sesión, intentamos cerrarla
+      // Realizar el cierre de sesión directamente sin verificación previa
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -51,10 +38,8 @@ const LogoutButton = () => {
         localStorage.removeItem('supabase.auth.token');
         sessionStorage.clear();
         
-        // Esperar un momento antes de redirigir para asegurar que se complete el cierre de sesión
-        setTimeout(() => {
-          navigate('/auth', { replace: true });
-        }, 300);
+        // Redirigir al usuario a la página de autenticación
+        navigate('/auth', { replace: true });
       }
     } catch (error) {
       console.error("Error inesperado al cerrar sesión:", error);

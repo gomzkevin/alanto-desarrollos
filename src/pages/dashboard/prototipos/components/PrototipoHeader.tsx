@@ -9,10 +9,10 @@ import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 
 interface PrototipoHeaderProps {
   prototipo: ExtendedPrototipo;
-  onDelete?: () => void;
-  onEdit?: () => void;
-  onBack?: () => void; // Added this prop to match usage in PrototipoDetail
-  updatePrototipoImage?: (imageUrl: string) => Promise<boolean>; // Added this prop to match usage in PrototipoDetail
+  onDelete?: (e?: React.MouseEvent) => void;
+  onEdit?: (e?: React.MouseEvent) => void;
+  onBack?: (e?: React.MouseEvent) => void;
+  updatePrototipoImage?: (imageUrl: string) => Promise<boolean>;
 }
 
 const PrototipoHeader = ({ prototipo, onDelete, onEdit, onBack, updatePrototipoImage }: PrototipoHeaderProps) => {
@@ -40,11 +40,32 @@ const PrototipoHeader = ({ prototipo, onDelete, onEdit, onBack, updatePrototipoI
     loadUnitStats();
   }, [prototipo.id]);
   
+  const handleBackClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onBack) {
+      onBack(e);
+    }
+  };
+  
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onEdit) {
+      onEdit(e);
+    }
+  };
+  
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onDelete) {
+      onDelete(e);
+    }
+  };
+  
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
       <div className="flex items-center mb-1">
         {onBack ? (
-          <Button variant="outline" size="sm" className="mr-4" onClick={onBack}>
+          <Button variant="outline" size="sm" className="mr-4" onClick={handleBackClick} type="button">
             <ChevronLeft className="mr-1 h-4 w-4" />
             Volver al desarrollo
           </Button>
@@ -60,19 +81,19 @@ const PrototipoHeader = ({ prototipo, onDelete, onEdit, onBack, updatePrototipoI
         <div className="ml-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" type="button">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {onEdit && (
-                <DropdownMenuItem onClick={onEdit}>
+                <DropdownMenuItem onClick={handleEditClick}>
                   Editar prototipo
                 </DropdownMenuItem>
               )}
               {onDelete && (
                 <DropdownMenuItem 
-                  onClick={onDelete}
+                  onClick={handleDeleteClick}
                   className="text-red-600"
                 >
                   Eliminar prototipo
