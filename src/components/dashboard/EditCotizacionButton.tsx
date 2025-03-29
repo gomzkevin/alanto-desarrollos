@@ -154,3 +154,6 @@ const EditCotizacionButton = ({
 
 // Utilizar memo para prevenir renderizados innecesarios
 export default memo(EditCotizacionButton);
+
+// Exportación nombrada para componentes que lo importan usando una importación nombrada
+export { EditCotizacionButton };

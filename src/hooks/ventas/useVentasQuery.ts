@@ -85,7 +85,7 @@ export const useVentasQuery = (filters: VentasFilter = {}, options = { staleTime
       
       if (filters.desarrollo_id) {
         filteredData = filteredData.filter(venta => 
-          venta?.unidad?.prototipo?.desarrollo_id === filters.desarrollo_id
+          venta?.unidad?.prototipo?.desarrollo?.id === filters.desarrollo_id
         );
       }
 

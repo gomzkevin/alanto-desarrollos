@@ -4,7 +4,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { FormValues } from './types';
 import { CotizacionDialogContent } from './components/CotizacionDialogContent';
 import useResourceData from './useResourceData';
-import useResourceActions from './useResourceActions';
+import { useResourceActions } from './hooks/actions';
 import { useResourceFields } from './hooks/useResourceFields';
 
 interface CotizacionDialogProps {
