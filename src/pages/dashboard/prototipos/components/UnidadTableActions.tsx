@@ -1,5 +1,5 @@
 
-import React, { useCallback, useMemo } from 'react';
+import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
@@ -14,7 +14,7 @@ interface UnidadTableActionsProps {
   permissionsLoaded?: boolean;
 }
 
-export const UnidadTableActions = React.memo(({ 
+export const UnidadTableActions = ({ 
   onAddClick, 
   onGenerateClick, 
   unidadesCount,
@@ -24,14 +24,14 @@ export const UnidadTableActions = React.memo(({
   alwaysAllowGenerate = false,
   permissionsLoaded = true
 }: UnidadTableActionsProps) => {
-  // Memoize visibility conditions
-  const shouldShowGenerateButton = useMemo(() => {
+  // Calculate visibility conditions only once
+  const shouldShowGenerateButton = React.useMemo(() => {
     return showGenerateButton && 
            unidadesCount < totalUnidades &&
            (canAddMore || alwaysAllowGenerate);
   }, [showGenerateButton, unidadesCount, totalUnidades, canAddMore, alwaysAllowGenerate]);
   
-  const shouldShowAddButton = useMemo(() => {
+  const shouldShowAddButton = React.useMemo(() => {
     return unidadesCount > 0 && 
            unidadesCount < totalUnidades &&
            canAddMore;
@@ -42,29 +42,13 @@ export const UnidadTableActions = React.memo(({
   const isGenerateButtonDisabled = !permissionsLoaded || (!canAddMore && !alwaysAllowGenerate);
   const isAddButtonDisabled = !permissionsLoaded || !canAddMore;
   
-  // Memoize click handlers to prevent re-renders
-  const handleAddClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onAddClick();
-  }, [onAddClick]);
-  
-  const handleGenerateClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (onGenerateClick) {
-      onGenerateClick();
-    }
-  }, [onGenerateClick]);
-  
   return (
     <div className="flex space-x-2">
       {shouldShowGenerateButton && (
         <Button 
-          onClick={handleGenerateClick} 
+          onClick={onGenerateClick} 
           variant={noUnidadesYet ? "default" : "outline"}
           disabled={isGenerateButtonDisabled}
-          type="button"
         >
           <Plus className="mr-2 h-4 w-4" />
           Generar unidades
@@ -73,9 +57,8 @@ export const UnidadTableActions = React.memo(({
       
       {shouldShowAddButton && (
         <Button 
-          onClick={handleAddClick} 
+          onClick={onAddClick} 
           disabled={isAddButtonDisabled}
-          type="button"
         >
           <Plus className="mr-2 h-4 w-4" />
           Agregar unidad
@@ -83,15 +66,13 @@ export const UnidadTableActions = React.memo(({
       )}
       
       {!canAddMore && unidadesCount < totalUnidades && !alwaysAllowGenerate && (
-        <Button variant="outline" disabled className="opacity-70" type="button">
+        <Button variant="outline" disabled className="opacity-70">
           <Plus className="mr-2 h-4 w-4" />
           Límite alcanzado
         </Button>
       )}
     </div>
   );
-});
-
-UnidadTableActions.displayName = 'UnidadTableActions';
+};
 
 export default UnidadTableActions;

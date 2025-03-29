@@ -1,17 +1,17 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bed, Bath, Square, Home, Building2 } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
 import { countUnidadesByStatus } from '@/hooks/unidades/countUtils';
-import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 type PrototipoCardProps = {
   prototipo: Tables<"prototipos">;
   onClick?: (id: string) => void;
-  onViewDetails?: (id: string) => void;
+  onViewDetails?: (id: string) => void; // Added this prop to match usage in DesarrolloDetail
 };
 
 const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps) => {
@@ -23,25 +23,8 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
     con_anticipo: 0,
     total: 0
   });
-  const navigate = useNavigate();
-  
-  // Memoized function for handling the click on Ver detalles
-  const handleViewDetails = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    
-    if (onViewDetails) {
-      onViewDetails(prototipo.id);
-    } else if (onClick) {
-      onClick(prototipo.id);
-    } else {
-      // Use React Router's navigate instead of location change to prevent page refresh
-      navigate(`/dashboard/prototipos/${prototipo.id}`);
-    }
-  }, [prototipo.id, onViewDetails, onClick, navigate]);
   
   useEffect(() => {
-    let isMounted = true;
-    
     const fetchCardData = async () => {
       setIsLoading(true);
       
@@ -53,23 +36,15 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
         
         // Get actual unit counts
         const unitStats = await countUnidadesByStatus(prototipo.id);
-        if (isMounted) {
-          setUnidadesStats(unitStats);
-        }
+        setUnidadesStats(unitStats);
       } catch (error) {
         console.error('Error loading prototipo card data:', error);
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
     
     fetchCardData();
-    
-    return () => {
-      isMounted = false;
-    };
   }, [prototipo.id, prototipo.imagen_url]);
   
   const fallbackImage = "/placeholder.svg";
@@ -138,8 +113,14 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
         <Button
           variant="outline"
           className="w-full"
-          onClick={handleViewDetails}
-          type="button" // Explicitly setting button type to prevent form submission behavior
+          onClick={() => {
+            // Use onViewDetails if provided, otherwise fall back to onClick
+            if (onViewDetails) {
+              onViewDetails(prototipo.id);
+            } else if (onClick) {
+              onClick(prototipo.id);
+            }
+          }}
         >
           Ver detalles
         </Button>

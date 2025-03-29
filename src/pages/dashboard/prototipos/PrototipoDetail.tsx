@@ -25,14 +25,13 @@ const PrototipoDetail = () => {
   const { isAdmin } = useUserRole();
   const { canCreatePrototipo, canCreateUnidad } = usePermissions();
   
-  // Unidades fetching with stable params
-  const unidadesParams = { prototipo_id: id };
+  // Estados estables para las unidades
   const { 
     unidades: fetchedUnidades, 
     isLoading: unidadesLoading, 
     refetch: refetchUnidades,
     createMultipleUnidades
-  } = useUnidades(unidadesParams);
+  } = useUnidades({ prototipo_id: id });
   
   // Ensure unidades is always an array
   const safeUnidades = Array.isArray(fetchedUnidades) ? fetchedUnidades : [];
@@ -40,16 +39,18 @@ const PrototipoDetail = () => {
   // Memoize unit counts for stability
   const unitCounts = useUnitCounts(safeUnidades);
   
-  // Permissions checks (memoized values would be better)
+  // Comprobamos si se pueden crear más prototipos (para funcionamiento del botón)
   const canAddMore = canCreatePrototipo();
+  
+  // También comprobamos si se pueden crear unidades
   const canAddUnidades = canCreateUnidad();
   
-  // Throttled refresh handler
+  // Controlador de refresco con limitación de frecuencia
   const handleRefresh = useCallback(() => {
     const now = Date.now();
     const timeSinceLastRefresh = now - lastRefreshTimeRef.current;
     
-    // No refreshes more frequent than every 3 seconds
+    // No permitir refrescos más frecuentes que cada 3 segundos
     if (isRefreshing || timeSinceLastRefresh < 3000) {
       console.log('Avoiding rapid refresh:', timeSinceLastRefresh, 'ms since last refresh');
       return;
@@ -60,30 +61,25 @@ const PrototipoDetail = () => {
     lastRefreshTimeRef.current = now;
     
     refetchUnidades().finally(() => {
-      // Delay to avoid flashing
+      // Retrasar para evitar parpadeos
       setTimeout(() => {
         setIsRefreshing(false);
       }, 800);
     });
   }, [refetchUnidades, isRefreshing]);
   
-  // Effect to refresh when dialogs change
+  // Efecto para refrescar cuando cambian los diálogos
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    
     if (!openAddUnidadDialog && !openEditDialog) {
-      // Add a delay to refresh only after closing dialogs
-      timeoutId = setTimeout(() => {
+      // Añadir un retraso para refrescar solo después de cerrar diálogos
+      const timeoutId = setTimeout(() => {
         handleRefresh();
       }, 1000);
+      return () => clearTimeout(timeoutId);
     }
-    
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
   }, [openAddUnidadDialog, openEditDialog, handleRefresh]);
   
-  const handleGenerarUnidades = useCallback(async (cantidad: number, prefijo: string) => {
+  const handleGenerarUnidades = async (cantidad: number, prefijo: string) => {
     if (!id || cantidad <= 0) return;
     
     try {
@@ -98,7 +94,7 @@ const PrototipoDetail = () => {
         description: `Se han generado ${cantidad} unidades exitosamente.`
       });
       
-      // Add a long delay before refreshing
+      // Añadir un retraso largo antes del refresco
       setTimeout(handleRefresh, 1500);
     } catch (error) {
       console.error('Error al generar unidades:', error);
@@ -108,52 +104,14 @@ const PrototipoDetail = () => {
         variant: "destructive"
       });
     }
-  }, [id, createMultipleUnidades, toast, handleRefresh]);
-  
-  // Memoize event handlers
-  const handleAddUnidadClick = useCallback(() => {
-    // Check if user can create units based on their plan
-    if (isAdmin() && canAddUnidades) {
-      setOpenAddUnidadDialog(true);
-    } else if (!canAddUnidades) {
-      toast({
-        title: "Límite alcanzado",
-        description: "Has alcanzado el límite de prototipos de tu plan. Actualiza tu suscripción para añadir más unidades.",
-        variant: "warning",
-      });
-    } else {
-      toast({
-        title: "Permisos insuficientes",
-        description: "Solo los administradores pueden añadir unidades.",
-        variant: "destructive",
-      });
-    }
-  }, [isAdmin, canAddUnidades, toast]);
-  
-  const handleEditClick = useCallback(() => {
-    // Only allow editing if admin
-    if (isAdmin()) {
-      setOpenEditDialog(true);
-    } else {
-      toast({
-        title: "Permisos insuficientes",
-        description: "Solo los administradores pueden editar prototipos.",
-        variant: "destructive",
-      });
-    }
-  }, [isAdmin, toast]);
+  };
   
   if (isLoading) {
     return (
       <DashboardLayout>
         <div className="p-6 space-y-6">
           <div className="flex items-center">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={(e) => { e.preventDefault(); handleBack(); }} 
-              type="button"
-            >
+            <Button variant="outline" size="sm" onClick={handleBack}>
               <ChevronLeft className="mr-1 h-4 w-4" />
               Volver
             </Button>
@@ -172,12 +130,7 @@ const PrototipoDetail = () => {
     return (
       <DashboardLayout>
         <div className="p-6">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={(e) => { e.preventDefault(); handleBack(); }} 
-            type="button"
-          >
+          <Button variant="outline" size="sm" onClick={handleBack}>
             <ChevronLeft className="mr-1 h-4 w-4" />
             Volver
           </Button>
@@ -193,8 +146,7 @@ const PrototipoDetail = () => {
           <Button 
             variant="outline" 
             className="mt-4"
-            onClick={(e) => { e.preventDefault(); refetch(); }}
-            type="button"
+            onClick={() => handleRefresh()}
           >
             Intentar de nuevo
           </Button>
@@ -203,7 +155,7 @@ const PrototipoDetail = () => {
     );
   }
   
-  // Combined loading state to avoid contradictory states
+  // Determinar el estado combinado de carga para evitar múltiples estados contradictorios
   const combinedLoadingState = isRefreshing || unidadesLoading;
   
   return (
@@ -211,8 +163,19 @@ const PrototipoDetail = () => {
       <div className="space-y-6 p-6 pb-16">
         <PrototipoHeader 
           prototipo={prototipo} 
-          onBack={(e) => { if(e) e.preventDefault(); handleBack(); }} 
-          onEdit={(e) => { if(e) e.preventDefault(); handleEditClick(); }} 
+          onBack={handleBack} 
+          onEdit={() => {
+            // Solo permitir editar si es administrador
+            if (isAdmin()) {
+              setOpenEditDialog(true);
+            } else {
+              toast({
+                title: "Permisos insuficientes",
+                description: "Solo los administradores pueden editar prototipos.",
+                variant: "destructive",
+              });
+            }
+          }} 
           updatePrototipoImage={updatePrototipoImage}
         />
         
@@ -224,10 +187,27 @@ const PrototipoDetail = () => {
             unidades={safeUnidades}
             unidadesLoading={combinedLoadingState}
             unitCounts={unitCounts}
-            onAddUnidad={handleAddUnidadClick}
+            onAddUnidad={() => {
+              // Verificar si el usuario puede crear unidades basado en su plan
+              if (isAdmin() && canAddUnidades) {
+                setOpenAddUnidadDialog(true);
+              } else if (!canAddUnidades) {
+                toast({
+                  title: "Límite alcanzado",
+                  description: "Has alcanzado el límite de prototipos de tu plan. Actualiza tu suscripción para añadir más unidades.",
+                  variant: "warning",
+                });
+              } else {
+                toast({
+                  title: "Permisos insuficientes",
+                  description: "Solo los administradores pueden añadir unidades.",
+                  variant: "destructive",
+                });
+              }
+            }}
             onGenerateUnidades={handleGenerarUnidades}
             onRefreshUnidades={handleRefresh}
-            canAddMore={canAddUnidades}
+            canAddMore={canAddUnidades} // Only check canAddUnidades for individual unit creation
           />
         </div>
       </div>
@@ -238,10 +218,7 @@ const PrototipoDetail = () => {
           resourceId={id}
           open={openEditDialog}
           onClose={() => setOpenEditDialog(false)}
-          onSuccess={() => {
-            refetch();
-            handleRefresh();
-          }}
+          onSuccess={handleRefresh}
         />
       )}
       
@@ -249,9 +226,7 @@ const PrototipoDetail = () => {
         resourceType="unidades"
         open={openAddUnidadDialog}
         onClose={() => setOpenAddUnidadDialog(false)}
-        onSuccess={() => {
-          setTimeout(handleRefresh, 500);
-        }}
+        onSuccess={handleRefresh}
         prototipo_id={id}
       />
     </DashboardLayout>
