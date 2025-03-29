@@ -65,6 +65,7 @@ const useResourceActions = ({
       }
 
       // Handle client creation for cotizaciones if needed
+      let newClientId = null;
       if (resourceType === 'cotizaciones' && !clientConfig.isExistingClient && !resourceId) {
         const { nombre, email, telefono } = clientConfig.newClientData;
         
@@ -96,6 +97,7 @@ const useResourceActions = ({
           // Use the new client ID
           if (newClient) {
             dataToSave.lead_id = newClient.id;
+            newClientId = newClient.id;
           }
         } else {
           toast({
@@ -261,6 +263,23 @@ const useResourceActions = ({
           }
           
           result = data;
+          
+          // Show success message for creating cotización and lead if applicable
+          const successMessage = newClientId 
+            ? 'Cotización creada y nuevo cliente agregado a prospectos' 
+            : 'Cotización creada correctamente';
+            
+          toast({
+            title: 'Creado',
+            description: successMessage,
+          });
+          
+          // Return early since we already showed the toast
+          if (onSuccess) {
+            onSuccess();
+          }
+          
+          return true;
         } else if (resourceType === 'prototipos') {
           const { data, error } = await supabase
             .from(resourceType)
@@ -297,10 +316,13 @@ const useResourceActions = ({
           result = data;
         }
         
-        toast({
-          title: 'Creado',
-          description: `${resourceType} creado correctamente`,
-        });
+        // Only show toast for non-cotizaciones resources (cotizaciones has its own handling above)
+        if (resourceType !== 'cotizaciones') {
+          toast({
+            title: 'Creado',
+            description: `${resourceType} creado correctamente`,
+          });
+        }
       }
       
       console.log(`${resourceType} saved:`, result);

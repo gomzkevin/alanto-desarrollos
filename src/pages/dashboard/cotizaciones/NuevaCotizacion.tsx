@@ -2,16 +2,22 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminCotizacionDialog from '@/components/dashboard/AdminCotizacionDialog';
+import { useToast } from '@/components/ui/use-toast';
 
 const NuevaCotizacion = () => {
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(true);
+  const { toast } = useToast();
   
   const handleClose = () => {
     navigate('/dashboard/cotizaciones');
   };
   
   const handleSuccess = () => {
+    toast({
+      title: 'Cotización creada',
+      description: 'La cotización ha sido creada exitosamente.'
+    });
     navigate('/dashboard/cotizaciones');
   };
   
