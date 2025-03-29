@@ -1,20 +1,27 @@
-
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { useForm } from 'react-hook-form';
-import { Textarea } from '@/components/ui/textarea';
-import { useVentas } from '@/hooks/useVentas';
-import { formatCurrency } from '@/lib/utils';
-import { VentaWithDetail } from '@/hooks/ventaDetail';
+import { useToast } from '@/hooks/use-toast';
+import useVentas from '@/hooks/useVentas';
+import { Venta } from '@/hooks/ventas/types';
+
+const formSchema = z.object({
+  precio_total: z.number().min(0, {
+    message: "El precio total debe ser mayor o igual a 0.",
+  }),
+  es_fraccional: z.boolean().default(false),
+});
 
 interface VentaEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  venta: VentaWithDetail;
+  venta: Venta;
   onSuccess?: () => void;
 }
 
@@ -22,37 +29,37 @@ export const VentaEditDialog: React.FC<VentaEditDialogProps> = ({
   open,
   onOpenChange,
   venta,
-  onSuccess
+  onSuccess,
 }) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { updateVenta } = useVentas();
+  const { updateVenta, isUpdating } = useVentas();
+  const { toast } = useToast();
   
-  const form = useForm({
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      estado: venta.estado,
-      precio_total: venta.precio_total,
-      es_fraccional: venta.es_fraccional,
-      notas: venta.notas || ''
-    }
+      precio_total: venta?.precio_total || 0,
+      es_fraccional: venta?.es_fraccional || false,
+    },
   });
 
-  const handleSubmit = async (values: any) => {
-    setIsSubmitting(true);
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      await updateVenta.mutateAsync({
-        id: venta.id,
-        ...values
+      await updateVenta(venta.id, {
+        precio_total: values.precio_total,
+        es_fraccional: values.es_fraccional,
       });
-      
-      if (onSuccess) {
-        onSuccess();
-      }
-      
+      toast({
+        title: "Venta actualizada.",
+        description: "La información de la venta ha sido actualizada correctamente.",
+      });
+      onSuccess?.();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error updating venta:', error);
-    } finally {
-      setIsSubmitting(false);
+      toast({
+        title: "Error al actualizar",
+        description: "Hubo un error al actualizar la venta. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -63,20 +70,7 @@ export const VentaEditDialog: React.FC<VentaEditDialogProps> = ({
           <DialogTitle>Editar Venta</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="estado"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estado</FormLabel>
-                  <FormControl>
-                    <Input type="text" placeholder="Estado de la venta" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="precio_total"
@@ -110,21 +104,8 @@ export const VentaEditDialog: React.FC<VentaEditDialogProps> = ({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="notas"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notas</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Notas adicionales" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <DialogFooter>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isUpdating}>
                 Guardar cambios
               </Button>
             </DialogFooter>
@@ -134,5 +115,3 @@ export const VentaEditDialog: React.FC<VentaEditDialogProps> = ({
     </Dialog>
   );
 };
-
-export default VentaEditDialog;

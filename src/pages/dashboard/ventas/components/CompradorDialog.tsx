@@ -223,7 +223,6 @@ export const CompradorDialog = ({
                 <SelectValue placeholder="Seleccionar vendedor (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sin asignar</SelectItem>
                 {vendedores.map(vendedor => (
                   <SelectItem key={vendedor.id} value={vendedor.id}>
                     {vendedor.nombre}

@@ -1,13 +1,14 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, Building2, Home, Calendar, CreditCard, Edit, Users, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { useVentaDetail, VentaWithDetail } from '@/hooks/ventaDetail';
+import { useVentaDetail } from '@/hooks/useVentaDetail';
 import { InfoTab } from './components/InfoTab';
 import { PagosTab } from './components/PagosTab';
 import { VentaProgress } from './components/VentaProgress';
@@ -26,7 +27,6 @@ const VentaDetail = () => {
   const { 
     venta, 
     compradores, 
-    formattedCompradores,
     pagos,
     isLoading, 
     montoPagado,
@@ -36,13 +36,8 @@ const VentaDetail = () => {
     updateVentaStatus
   } = useVentaDetail(ventaId);
 
+  // Check if sale status should be updated based on payment progress
   const canMarkAsCompleted = venta?.estado === 'en_proceso' && progreso >= 100;
-
-  const handleUpdateStatus = (newStatus: string) => {
-    if (ventaId) {
-      updateVentaStatus(ventaId, newStatus);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -67,15 +62,6 @@ const VentaDetail = () => {
       </DashboardLayout>
     );
   }
-
-  // Create a compatible object for components that expect the Venta type
-  const ventaForComponents: any = {
-    ...venta,
-    unidad: {
-      ...venta.unidad,
-      prototipo_id: venta.unidad?.prototipo?.id || ""
-    }
-  };
 
   return (
     <DashboardLayout>
@@ -107,7 +93,7 @@ const VentaDetail = () => {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleUpdateStatus('completada')}>
+                    <AlertDialogAction onClick={() => updateVentaStatus('completada')}>
                       Confirmar
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -236,15 +222,15 @@ const VentaDetail = () => {
           
           <TabsContent value="info" className="space-y-4">
             <InfoTab 
-              venta={ventaForComponents}
-              compradores={formattedCompradores} 
+              venta={venta} 
+              compradores={compradores} 
               pagos={pagos}
               onAddComprador={() => setOpenCompradorDialog(true)}
             />
           </TabsContent>
           
           <TabsContent value="pagos" className="space-y-4">
-            {compradores && compradores.length > 0 ? (
+            {compradores.length > 0 ? (
               <PagosTab 
                 ventaId={venta.id} 
                 compradorVentaId={compradorVentaId}
@@ -289,7 +275,7 @@ const VentaDetail = () => {
         <VentaEditDialog
           open={openEditDialog}
           onOpenChange={setOpenEditDialog}
-          venta={ventaForComponents}
+          venta={venta}
           onSuccess={refetch}
         />
 

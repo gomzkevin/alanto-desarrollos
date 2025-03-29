@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import useDesarrollos from '@/hooks/desarrollos/useDesarrollos';
+import useDesarrollos from '@/hooks/useDesarrollos';
 import DesarrolloCard from '@/components/dashboard/DesarrolloCard';
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -38,9 +39,8 @@ const DesarrollosPage = () => {
     refetch,
     isFetched
   } = useDesarrollos({ 
-    withStats: true,
-    staleTime: 60000,
-    limit: undefined
+    withPrototipos: true,
+    empresaId // Use empresaId instead of userId
   });
   
   const { countDesarrolloUnidadesByStatus } = useUnidades();

@@ -1,4 +1,5 @@
-export { useDesarrollos } from './desarrollos';
+
+export { default as useDesarrollos } from './useDesarrollos';
 export { default as usePrototipos } from './usePrototipos';
 export { default as useLeads } from './useLeads';
 export { default as useCotizaciones } from './useCotizaciones';

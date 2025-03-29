@@ -1,167 +1,300 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Filter, ArrowUpDown, Search } from 'lucide-react';
-import { LeadStatusBadge } from '@/components/dashboard/LeadStatusBadge';
-import SyncResourcesButton from '@/components/dashboard/leads/SyncResourcesButton';
-import ResourceDialog from '@/components/dashboard/ResourceDialog';
+import { Search, Filter, Eye, Plus, Building, Home } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
+import { format } from 'date-fns';
 import useLeads from '@/hooks/useLeads';
-import { formatDate } from '@/lib/utils';
-import LeadTable from '@/components/dashboard/leads/LeadTable';
-import { LEAD_ESTADOS } from '@/constants/leadEstados';
-import LeadStatusCard from '@/components/dashboard/leads/LeadStatusCard';
-import { useDesarrollos } from '@/hooks/desarrollos';
+import useDesarrollos from '@/hooks/useDesarrollos';
+import usePrototipos from '@/hooks/usePrototipos';
+import { useUserRole } from '@/hooks';
+import useUsuarios from '@/hooks/useUsuarios';
 
-const Index = () => {
-  const [open, setOpen] = useState(false);
-  const [estadoFilter, setEstadoFilter] = useState<string | undefined>(undefined);
+const getBadgeVariant = (estado: string) => {
+  switch (estado?.toLowerCase()) {
+    case 'nuevo':
+      return 'default';
+    case 'seguimiento':
+      return 'outline';
+    case 'convertido':
+      return 'secondary';
+    case 'perdido':
+      return 'destructive';
+    default:
+      return 'secondary';
+  }
+};
+
+const LeadsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [sortBy, setSortBy] = useState<'fecha_creacion' | 'nombre'>('fecha_creacion');
-  const [desarrolloFilter, setDesarrolloFilter] = useState<string | undefined>(undefined);
+  const [selectedEstado, setSelectedEstado] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const { leads, isLoading, refetch } = useLeads({
-    estado: estadoFilter,
-    searchTerm: searchTerm,
-    sortBy: sortBy,
-    sortOrder: sortOrder,
-    desarrolloId: desarrolloFilter
+  const { empresaId, isLoading: isUserLoading } = useUserRole();
+  
+  const { 
+    leads, 
+    isLoading, 
+    refetch, 
+    statusOptions, 
+    getStatusLabel,
+    getSubstatusLabel,
+    getOriginLabel
+  } = useLeads({
+    estado: selectedEstado || undefined,
+    search: searchTerm.length > 2 ? searchTerm : undefined,
+    empresa_id: empresaId
   });
+  
   const { desarrollos } = useDesarrollos();
-
-  const handleOpen = () => {
-    setOpen(true);
+  const { prototipos } = usePrototipos();
+  const { usuarios } = useUsuarios();
+  
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
   };
 
-  const handleClose = () => {
-    setOpen(false);
-    setIsEditDialogOpen(false);
-    setSelectedLeadId(null);
-    refetch();
+  const handleFilterChange = (value: string) => {
+    setSelectedEstado(value === 'todos' ? null : value);
   };
 
-  const handleEdit = (leadId: string) => {
+  const handleViewDetails = (leadId: string) => {
     setSelectedLeadId(leadId);
-    setIsEditDialogOpen(true);
     setOpen(true);
   };
 
-  const handleEstadoFilterChange = (estado: string | undefined) => {
-    setEstadoFilter(estado);
-  };
-
-  const handleDesarrolloFilterChange = (desarrolloId: string | undefined) => {
-    setDesarrolloFilter(desarrolloId);
-  };
-
-  const handleSortChange = (newSortBy: 'fecha_creacion' | 'nombre') => {
-    setSortBy(newSortBy);
-    setSortOrder(prevSortOrder => (sortBy === newSortBy ? (prevSortOrder === 'asc' ? 'desc' : 'asc') : 'asc'));
-  };
-
-  const sortedLeads = [...leads].sort((a, b) => {
-    const order = sortOrder === 'asc' ? 1 : -1;
-    if (sortBy === 'nombre') {
-      return a.nombre.localeCompare(b.nombre) * order;
+  const formatInterest = (interesEn: string | null) => {
+    if (!interesEn) return <span className="text-gray-400">-</span>;
+    
+    if (interesEn.startsWith('desarrollo:')) {
+      const desarrolloId = interesEn.split(':')[1];
+      const desarrollo = desarrollos.find(d => d.id === desarrolloId);
+      
+      return (
+        <div className="flex items-center">
+          <Building className="mr-2 h-4 w-4 text-indigo-600" />
+          <span>{desarrollo?.nombre || 'Desarrollo no encontrado'}</span>
+        </div>
+      );
+    } else if (interesEn.startsWith('prototipo:')) {
+      const prototipoId = interesEn.split(':')[1];
+      const prototipo = prototipos.find(p => p.id === prototipoId);
+      const desarrollo = prototipo 
+        ? desarrollos.find(d => d.id === prototipo.desarrollo_id) 
+        : null;
+      
+      return (
+        <div className="flex flex-col">
+          <div className="flex items-center">
+            <Home className="mr-2 h-4 w-4 text-sky-500" />
+            <span>{prototipo?.nombre || 'Prototipo no encontrado'}</span>
+          </div>
+          {desarrollo && (
+            <div className="flex items-center text-xs text-gray-500 mt-1">
+              <Building className="mr-1 h-3 w-3 text-indigo-400" />
+              <span>{desarrollo.nombre}</span>
+            </div>
+          )}
+        </div>
+      );
     }
-    return (new Date(a.fecha_creacion).getTime() - new Date(b.fecha_creacion).getTime()) * order;
-  });
+    
+    return interesEn;
+  };
+
+  const getAgenteNombre = (agenteId: string) => {
+    const usuario = usuarios.find(u => u.id === agenteId);
+    return usuario ? usuario.nombre : agenteId;
+  };
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-10">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Leads</h1>
-          <div className="space-x-2">
-            <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" />
-              Filtrar
-            </Button>
-            <SyncResourcesButton />
-            <Button onClick={handleOpen} className="border-2 border-gray-200 shadow-sm hover:bg-indigo-600">
-              <Plus className="mr-2 h-4 w-4" />
-              Nuevo Lead
-            </Button>
+      <div className="space-y-6 p-6 pb-16">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold text-slate-800">Prospectos</h1>
+            <p className="text-slate-600">Gestiona tus prospectos y su seguimiento</p>
+          </div>
+          
+          <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => {
+            setSelectedLeadId(null);
+            setOpen(true);
+          }}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo prospecto
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+            <Input
+              className="pl-10"
+              placeholder="Buscar prospectos..."
+              value={searchTerm}
+              onChange={handleSearch}
+            />
+          </div>
+          
+          <div>
+            <Select onValueChange={handleFilterChange}>
+              <SelectTrigger>
+                <div className="flex items-center">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Filtrar por estado" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los estados</SelectItem>
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {LEAD_ESTADOS.map(estado => (
-            <LeadStatusCard
-              key={estado.value}
-              estado={estado}
-              count={leads.filter(lead => lead.estado === estado.value).length}
-              onFilter={handleEstadoFilterChange}
-            />
-          ))}
+        <div className="border rounded-md shadow-sm">
+          <h2 className="text-xl font-semibold p-4 border-b">Lista de Prospectos</h2>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50">
+                <TableHead>Nombre</TableHead>
+                <TableHead>Contacto</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Subestado</TableHead>
+                <TableHead>Interés</TableHead>
+                <TableHead>Agente</TableHead>
+                <TableHead>Origen</TableHead>
+                <TableHead>Último contacto</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(isLoading || isUserLoading) ? (
+                [1, 2, 3, 4, 5, 6].map((i) => (
+                  <TableRow key={i} className="animate-pulse">
+                    <TableCell><div className="h-4 w-32 bg-slate-100 rounded-md"></div></TableCell>
+                    <TableCell><div className="h-4 w-48 bg-slate-100 rounded-md"></div></TableCell>
+                    <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
+                    <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
+                    <TableCell><div className="h-4 w-40 bg-slate-100 rounded-md"></div></TableCell>
+                    <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
+                    <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
+                    <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
+                    <TableCell><div className="h-4 w-24 bg-slate-100 rounded-md"></div></TableCell>
+                  </TableRow>
+                ))
+              ) : leads.length > 0 ? (
+                leads.map((lead) => (
+                  <TableRow key={lead.id} className="hover:bg-slate-50">
+                    <TableCell className="font-medium">
+                      {lead.nombre}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col space-y-1">
+                        {lead.email && (
+                          <div className="flex items-center text-sm">
+                            <span className="mr-2">📧</span>
+                            {lead.email}
+                          </div>
+                        )}
+                        {lead.telefono && (
+                          <div className="flex items-center text-sm">
+                            <span className="mr-2">📱</span>
+                            {lead.telefono}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getBadgeVariant(lead.estado as string)} className="font-medium">
+                        {getStatusLabel(lead.estado)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {lead.subestado ? 
+                        <span className="text-gray-600">{getSubstatusLabel(lead.estado, lead.subestado)}</span> : 
+                        <span className="text-gray-400">No definido</span>
+                      }
+                    </TableCell>
+                    <TableCell>
+                      {formatInterest(lead.interes_en)}
+                    </TableCell>
+                    <TableCell>
+                      {lead.agente ? 
+                        <span className="text-gray-600">{getAgenteNombre(lead.agente)}</span> : 
+                        <span className="text-gray-400">Sin asignar</span>
+                      }
+                    </TableCell>
+                    <TableCell>
+                      {lead.origen ? 
+                        <span className="flex items-center">
+                          {getOriginLabel(lead.origen)}
+                        </span> : 
+                        <span className="text-gray-400">-</span>
+                      }
+                    </TableCell>
+                    <TableCell>
+                      {lead.ultimo_contacto ? 
+                        <span className="whitespace-nowrap">
+                          {format(new Date(lead.ultimo_contacto), 'dd MMM yyyy')}
+                        </span> : 
+                        'N/A'
+                      }
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50" 
+                        onClick={() => handleViewDetails(lead.id)}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ver detalles
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                    No se encontraron prospectos que coincidan con tu búsqueda.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
-
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Filtros y búsqueda</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-3">
-            <div className="col-span-1">
-              <Input
-                type="text"
-                placeholder="Buscar por nombre, email o teléfono..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Select onValueChange={handleEstadoFilterChange} defaultValue={estadoFilter}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filtrar por estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={undefined}>Todos los estados</SelectItem>
-                {LEAD_ESTADOS.map(estado => (
-                  <SelectItem key={estado.value} value={estado.value}>
-                    {estado.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select onValueChange={handleDesarrolloFilterChange} defaultValue={desarrolloFilter}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filtrar por desarrollo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={undefined}>Todos los desarrollos</SelectItem>
-                {desarrollos.map(desarrollo => (
-                  <SelectItem key={desarrollo.id} value={desarrollo.id}>
-                    {desarrollo.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-
-        <LeadTable
-          leads={sortedLeads}
-          isLoading={isLoading}
-          sortOrder={sortOrder}
-          sortBy={sortBy === 'fecha_creacion' ? 'created_at' as any : 'nombre'}
-          onSort={newSortBy => handleSortChange(newSortBy === 'created_at' ? 'fecha_creacion' as any : 'nombre')}
-          onEdit={handleEdit}
-        />
-
-        <ResourceDialog
-          open={open}
-          onClose={handleClose}
-          resourceType="leads"
-          resourceId={isEditDialogOpen ? selectedLeadId : undefined}
-          onSuccess={refetch}
-        />
       </div>
+
+      <AdminResourceDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        resourceType="leads"
+        resourceId={selectedLeadId}
+        onSuccess={() => {
+          setOpen(false);
+          refetch();
+        }}
+      />
     </DashboardLayout>
   );
 };
 
-export default Index;
+export default LeadsPage;

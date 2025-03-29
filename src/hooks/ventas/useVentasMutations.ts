@@ -1,125 +1,89 @@
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { Venta } from './types';
+import { useToast } from '@/hooks/use-toast';
+import { VentaCreate, VentaUpdate } from './types';
 
-export interface VentaCreate {
-  unidad_id: string;
-  precio_total: number;
-  es_fraccional: boolean;
-  estado?: string;
-  notas?: string;
-  fecha_inicio?: string;
-}
-
-export interface VentaUpdate {
-  id: string;
-  estado?: string;
-  precio_total?: number;
-  es_fraccional?: boolean;
-  notas?: string;
-}
-
+/**
+ * Hook para operaciones de mutación relacionadas con ventas
+ */
 export const useVentasMutations = () => {
-  const queryClient = useQueryClient();
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { toast } = useToast();
 
-  const createVenta = useMutation({
-    mutationFn: async (ventaData: VentaCreate) => {
+  /**
+   * Crea una nueva venta
+   */
+  const createVenta = async (ventaData: VentaCreate) => {
+    setIsCreating(true);
+    try {
       const { data, error } = await supabase
         .from('ventas')
-        .insert([
-          {
-            ...ventaData,
-            estado: ventaData.estado || 'en_proceso',
-            fecha_inicio: ventaData.fecha_inicio || new Date().toISOString(),
-          },
-        ])
-        .select('*');
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ventas'] });
-      toast({
-        title: 'Venta creada',
-        description: 'La venta ha sido creada exitosamente',
-      });
-    },
-    onError: (error: any) => {
-      console.error('Error creating venta:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo crear la venta',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const updateVenta = useMutation({
-    mutationFn: async (ventaData: VentaUpdate) => {
-      const { id, ...updateData } = ventaData;
-      
-      const { data, error } = await supabase
-        .from('ventas')
-        .update({
-          ...updateData,
-          fecha_actualizacion: new Date().toISOString(),
+        .insert({
+          unidad_id: ventaData.unidad_id,
+          precio_total: ventaData.precio_total,
+          es_fraccional: ventaData.es_fraccional,
+          estado: ventaData.estado || 'en_proceso'
         })
-        .eq('id', id)
-        .select('*');
+        .select();
 
       if (error) throw error;
+      
+      // También actualizar el estado de la unidad si es necesario
+      const { error: unidadError } = await supabase
+        .from('unidades')
+        .update({ estado: 'en_proceso' })
+        .eq('id', ventaData.unidad_id);
+        
+      if (unidadError) {
+        console.error('Error updating unidad estado:', unidadError);
+      }
+      
       return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ventas'] });
-      toast({
-        title: 'Venta actualizada',
-        description: 'La venta ha sido actualizada exitosamente',
-      });
-    },
-    onError: (error: any) => {
-      console.error('Error updating venta:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar la venta',
-        variant: 'destructive',
-      });
-    },
-  });
+    } catch (error) {
+      console.error('Error al crear venta:', error);
+      throw error;
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
-  const deleteVenta = useMutation({
-    mutationFn: async (ventaId: string) => {
-      const { error } = await supabase
+  /**
+   * Actualiza una venta existente
+   */
+  const updateVenta = async (id: string, updates: VentaUpdate) => {
+    setIsUpdating(true);
+    try {
+      // Asegurarse de que la fecha de actualización se actualice automáticamente
+      const updatesWithTimestamp = {
+        ...updates,
+        fecha_actualizacion: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
         .from('ventas')
-        .delete()
-        .eq('id', ventaId);
+        .update(updatesWithTimestamp)
+        .eq('id', id)
+        .select();
 
       if (error) throw error;
-      return true;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ventas'] });
-      toast({
-        title: 'Venta eliminada',
-        description: 'La venta ha sido eliminada exitosamente',
-      });
-    },
-    onError: (error: any) => {
-      console.error('Error deleting venta:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo eliminar la venta',
-        variant: 'destructive',
-      });
-    },
-  });
+      
+      return data;
+    } catch (error) {
+      console.error('Error al actualizar venta:', error);
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   return {
     createVenta,
     updateVenta,
-    deleteVenta
+    isCreating,
+    isUpdating
   };
 };
+
+export default useVentasMutations;

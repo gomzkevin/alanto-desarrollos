@@ -1,41 +1,35 @@
 
-import { UseQueryResult } from '@tanstack/react-query';
+import { Database } from '@/integrations/supabase/types';
 
+// Tipos básicos
 export interface Venta {
   id: string;
-  created_at: string;
-  lead_id?: string; 
-  unidad_id: string;
-  estado: string;
   precio_total: number;
-  fecha_inicio: string;
+  estado: string;
   es_fraccional: boolean;
+  fecha_inicio: string;
   fecha_actualizacion: string;
-  notas?: string;
-  prototipo?: {
-    id: string;
-    nombre: string;
-    precio: number;
-    desarrollo?: {
-      id: string;
-      nombre: string;
-      empresa_id: number;
-    };
-  };
-  unidad: {
+  unidad_id: string;
+  unidad?: {
     id: string;
     numero: string;
-    prototipo_id: string;
+    prototipo_id?: string;
+    prototipo?: {
+      nombre: string;
+      desarrollo_id?: string;
+      desarrollo?: {
+        nombre: string;
+        empresa_id?: number;
+      };
+    };
   };
+  progreso?: number;
 }
 
-export interface FetchVentasOptions {
-  desarrolloId?: string;
-  prototipoId?: string;
-  unidadId?: string;
+export interface VentasFilter {
+  desarrollo_id?: string;
   estado?: string;
-  limit?: number;
-  enabled?: boolean;
+  busqueda?: string;
 }
 
 export interface VentaCreate {
@@ -43,26 +37,8 @@ export interface VentaCreate {
   precio_total: number;
   es_fraccional: boolean;
   estado?: string;
-  notas?: string;
-  fecha_inicio?: string;
-  lead_id?: string;
 }
 
-export interface VentaUpdate {
-  id: string;
-  estado?: string;
-  precio_total?: number;
-  es_fraccional?: boolean;
-  notas?: string;
+export interface VentaUpdate extends Partial<Omit<Venta, 'id'>> {
   fecha_actualizacion?: string;
 }
-
-export interface VentasFilter {
-  desarrolloId?: string;
-  prototipoId?: string;
-  estado?: string;
-}
-
-export type UseVentasReturn = UseQueryResult<Venta[], Error> & {
-  ventas: Venta[];
-};

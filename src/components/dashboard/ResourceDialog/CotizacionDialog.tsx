@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { FormValues } from './types';
 import { CotizacionDialogContent } from './components/CotizacionDialogContent';
 import useResourceData from './useResourceData';
-import { useResourceActions } from './hooks/actions';
+import useResourceActions from './useResourceActions';
 import { useResourceFields } from './hooks/useResourceFields';
 
 interface CotizacionDialogProps {
@@ -28,6 +28,7 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
 }) => {
   console.log('CotizacionDialog: Initial defaultValues:', defaultValues);
   
+  // Explicitly ensure isExistingClient exists in defaultValues
   const initialIsExistingClient = defaultValues.isExistingClient !== undefined 
     ? defaultValues.isExistingClient 
     : resourceId ? true : false; // Default to true if editing, false if new
@@ -83,7 +84,7 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     return field;
   });
 
-  const { handleFormSubmit, handleImageUpload: uploadResourceImage, isLoading: isActionLoading } = useResourceActions({
+  const { saveResource, handleImageUpload: uploadResourceImage } = useResourceActions({
     resourceType,
     resourceId,
     onSuccess,
@@ -100,6 +101,7 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
         setSelectedDesarrolloId(desarrolloId);
       }
       
+      // Make sure isExistingClient is correctly set when dialog opens
       console.log("Setting isExistingClient to:", initialIsExistingClient);
       setIsExistingClient(initialIsExistingClient);
       
@@ -184,8 +186,8 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     }
   };
 
-  const saveResource = useCallback(async () => {
-    console.log("saveResource called with resource:", resource);
+  const handleSaveResource = async () => {
+    console.log("handleSaveResource called with resource:", resource);
     if (!resource) return false;
     
     setIsSubmitting(true);
@@ -198,18 +200,18 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
         });
       }
       
-      await handleFormSubmit({
-        ...resource,
-        isNewClient: !isExistingClient
-      });
-      return true;
+      const success = await saveResource(resource);
+      if (success && onSuccess) {
+        onSuccess();
+      }
+      return success;
     } catch (error) {
       console.error('Error saving resource:', error);
       return false;
     } finally {
       setIsSubmitting(false);
     }
-  }, [resource, isExistingClient, resourceId, newClientData, handleFormSubmit]);
+  };
 
   const handleNewClientDataChange = (field: string, value: string) => {
     console.log(`Updating new client ${field} to:`, value);
@@ -251,7 +253,7 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
         handleSwitchChange={handleSwitchChange}
         handleLeadSelect={handleLeadSelect}
         handleAmenitiesChange={setSelectedAmenities}
-        saveResource={saveResource}
+        saveResource={handleSaveResource}
         desarrolloId={desarrolloId}
         lead_id={lead_id}
         handleImageUpload={handleImageUpload}

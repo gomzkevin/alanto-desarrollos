@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { ResourceType, FormValues } from './types';
 import { ResourceDialogContent } from './components/ResourceDialogContent';
 import useResourceData from './useResourceData';
-import { useResourceActions } from './hooks/actions';
+import useResourceActions from './useResourceActions';
 import { useResourceFields } from './hooks/useResourceFields';
 import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from '@/components/ui/use-toast';
@@ -20,7 +21,7 @@ interface ResourceDialogProps {
   buttonText?: string;
   buttonIcon?: React.ReactNode;
   buttonVariant?: string;
-  defaultValues?: Record<string, any>;
+  defaultValues?: Record<string, any>; // Added defaultValues prop
 }
 
 const ResourceDialog: React.FC<ResourceDialogProps> = ({
@@ -65,7 +66,7 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
 
   const fields = useResourceFields(resourceType, selectedStatus);
 
-  const { handleFormSubmit, handleImageUpload: uploadResourceImage, isLoading: isActionLoading } = useResourceActions({
+  const { saveResource, handleImageUpload: uploadResourceImage } = useResourceActions({
     resourceType,
     resourceId,
     onSuccess,
@@ -192,8 +193,11 @@ const ResourceDialog: React.FC<ResourceDialogProps> = ({
     setIsSubmitting(true);
     
     try {
-      await handleFormSubmit(resource);
-      return true;
+      const success = await saveResource(resource);
+      if (success && onSuccess) {
+        onSuccess();
+      }
+      return success;
     } catch (error) {
       console.error('Error saving resource:', error);
       toast({

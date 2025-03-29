@@ -14,7 +14,6 @@ interface AdminCotizacionDialogProps {
   open?: boolean;
   onClose?: () => void;
   defaultValues?: Record<string, any>;
-  children?: React.ReactNode;
 }
 
 const AdminCotizacionDialog: React.FC<AdminCotizacionDialogProps> = ({
@@ -27,8 +26,7 @@ const AdminCotizacionDialog: React.FC<AdminCotizacionDialogProps> = ({
   resourceId,
   open,
   onClose,
-  defaultValues,
-  children
+  defaultValues
 }) => {
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
@@ -62,12 +60,8 @@ const AdminCotizacionDialog: React.FC<AdminCotizacionDialogProps> = ({
           onClick={handleOpen}
           className="border-2 border-gray-200 shadow-sm hover:bg-indigo-600"
         >
-          {children || (
-            <>
-              {buttonIcon}
-              {buttonText}
-            </>
-          )}
+          {buttonIcon}
+          {buttonText}
         </Button>
       )}
 

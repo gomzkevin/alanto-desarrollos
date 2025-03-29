@@ -1,175 +1,270 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title, Filler } from 'chart.js';
-import { Venta } from '@/hooks/ventas/types';
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import useVentas from '@/hooks/useVentas';
+import { useEffect, useState } from "react";
+import { format, parseISO, isAfter, isBefore } from "date-fns";
+import { es } from "date-fns/locale";
+import { BarChart, LineChart } from '@/components/ui/chart';
+import { useVentaDetail } from '@/hooks/useVentaDetail';
 import { formatCurrency } from '@/lib/utils';
 
-// Register ChartJS components
-ChartJS.register(
-  ArcElement, 
-  Tooltip, 
-  Legend,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Filler
-);
-
-interface VentasStatisticsProps {
-  ventas: Venta[];
-  isLoading: boolean;
-}
-
-export const VentasStatistics = ({ ventas, isLoading }: VentasStatisticsProps) => {
-  const [chartData, setChartData] = useState({
-    labels: ['En proceso', 'Completadas', 'Canceladas'],
-    datasets: [
-      {
-        label: 'Estado de ventas',
-        data: [0, 0, 0],
-        backgroundColor: [
-          'rgba(255, 206, 86, 0.6)', // yellow
-          'rgba(75, 192, 192, 0.6)', // green
-          'rgba(255, 99, 132, 0.6)', // red
-        ],
-        borderWidth: 1,
-      },
-    ],
-  });
+const VentasStatistics = () => {
+  const { ventas, isLoading } = useVentas();
+  const [chartData, setChartData] = useState([]);
+  const [distributionData, setDistributionData] = useState([]);
+  const [proximosPagos, setProximosPagos] = useState([]);
+  const [pagosRetrasados, setPagosRetrasados] = useState([]);
 
   useEffect(() => {
-    if (ventas && ventas.length > 0) {
-      // Count ventas by estado
-      const enProceso = ventas.filter(v => v.estado === 'en_proceso').length;
-      const completadas = ventas.filter(v => v.estado === 'completada').length;
-      const canceladas = ventas.filter(v => v.estado === 'cancelada').length;
-      
-      setChartData({
-        labels: ['En proceso', 'Completadas', 'Canceladas'],
-        datasets: [
-          {
-            label: 'Estado de ventas',
-            data: [enProceso, completadas, canceladas],
-            backgroundColor: [
-              'rgba(255, 206, 86, 0.6)', // yellow
-              'rgba(75, 192, 192, 0.6)', // green
-              'rgba(255, 99, 132, 0.6)', // red
-            ],
-            borderWidth: 1,
-          },
-        ],
-      });
-    }
-  }, [ventas]);
+    if (!ventas.length) return;
 
-  // Group ventas by prototipo and calculate total
-  const ventasByPrototipo = ventas.reduce((acc, venta) => {
-    const prototipoId = venta.unidad.prototipo_id;
-    const prototipoNombre = venta.prototipo?.nombre || 'Desconocido';
-    const key = `${prototipoId}-${prototipoNombre}`;
+    // Prepare monthly revenue data
+    const monthsData = {};
+    const currentYear = new Date().getFullYear();
     
-    if (!acc[key]) {
-      acc[key] = {
-        id: prototipoId,
-        nombre: prototipoNombre,
-        count: 0,
-        total: 0
+    // Initialize with all months
+    for (let i = 0; i < 12; i++) {
+      monthsData[i] = {
+        month: i,
+        name: format(new Date(currentYear, i, 1), 'MMMM', { locale: es }),
+        "Ingresos": 0
       };
     }
     
-    acc[key].count += 1;
-    acc[key].total += Number(venta.precio_total) || 0;
+    // Populate with actual data
+    ventas.forEach(venta => {
+      if (!venta.fecha_inicio) return;
+      
+      try {
+        const date = parseISO(venta.fecha_inicio);
+        if (date.getFullYear() === currentYear) {
+          const month = date.getMonth();
+          monthsData[month]["Ingresos"] += venta.precio_total || 0;
+        }
+      } catch (e) {
+        console.error("Error parsing date:", e);
+      }
+    });
     
-    return acc;
-  }, {} as Record<string, { id: string; nombre: string; count: number; total: number }>);
+    setChartData(Object.values(monthsData));
+    
+    // Prepare distribution data
+    const distribution = [
+      { name: "Individual", value: 0 },
+      { name: "Fraccional", value: 0 }
+    ];
+    
+    ventas.forEach(venta => {
+      if (venta.es_fraccional) {
+        distribution[1].value += 1;
+      } else {
+        distribution[0].value += 1;
+      }
+    });
+    
+    setDistributionData(distribution);
+  }, [ventas]);
 
-  const prototipoStats = Object.values(ventasByPrototipo).sort((a, b) => b.count - a.count);
+  // Fetch pagos for all ventas
+  useEffect(() => {
+    const fetchAllPagos = async () => {
+      if (!ventas.length) return;
+      
+      const proximos = [];
+      const retrasados = [];
+      
+      for (const venta of ventas) {
+        try {
+          const { pagos } = await useVentaDetail(venta.id);
+          
+          if (pagos && pagos.length) {
+            const today = new Date();
+            
+            pagos.forEach(pago => {
+              if (!pago.fecha) return;
+              
+              const pagoDate = parseISO(pago.fecha);
+              const isOverdue = isBefore(pagoDate, today) && pago.estado !== 'registrado';
+              const isUpcoming = isAfter(pagoDate, today) && pago.estado !== 'registrado';
+              
+              const pagoItem = {
+                id: pago.id,
+                desarrollo: venta.unidad?.prototipo?.desarrollo?.nombre,
+                unidad: `${venta.unidad?.prototipo?.nombre} - ${venta.unidad?.numero}`,
+                monto: pago.monto,
+                fecha: pago.fecha
+              };
+              
+              if (isOverdue) {
+                retrasados.push(pagoItem);
+              } else if (isUpcoming) {
+                proximos.push(pagoItem);
+              }
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching pagos for venta:", venta.id, error);
+        }
+      }
+      
+      // Sort by date
+      proximos.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+      retrasados.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()); // Most overdue first
+      
+      setProximosPagos(proximos.slice(0, 5)); // Just take the first 5
+      setPagosRetrasados(retrasados.slice(0, 5)); // Just take the first 5
+    };
+    
+    fetchAllPagos();
+  }, [ventas]);
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="col-span-2">
           <CardHeader>
-            <CardTitle>Estado de Ventas</CardTitle>
-            <CardDescription>Distribución de ventas por estado</CardDescription>
+            <CardTitle>Cargando datos...</CardTitle>
           </CardHeader>
-          <CardContent className="flex justify-center items-center h-64">
-            <div className="h-32 w-32 rounded-full bg-gray-100 animate-pulse"></div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Ventas por Prototipo</CardTitle>
-            <CardDescription>Prototipos más vendidos</CardDescription>
-          </CardHeader>
-          <CardContent className="h-64 space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-12 bg-gray-100 animate-pulse rounded"></div>
-            ))}
+          <CardContent className="h-[300px] flex items-center justify-center">
+            <Skeleton className="animate-pulse rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500" />
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  if (ventas.length === 0) {
-    return (
-      <Card>
-        <CardContent className="py-10 text-center text-muted-foreground">
-          No hay datos de ventas disponibles para mostrar estadísticas.
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <Card>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <Card className="col-span-3">
         <CardHeader>
-          <CardTitle>Estado de Ventas</CardTitle>
-          <CardDescription>Distribución de ventas por estado</CardDescription>
+          <CardTitle>Proyección de Pagos</CardTitle>
         </CardHeader>
-        <CardContent className="flex justify-center">
-          <div className="h-64 w-64">
-            <Doughnut 
-              data={chartData}
-              options={{ 
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'bottom'
-                  }
-                }
-              }} 
-            />
-          </div>
+        <CardContent>
+          <Tabs defaultValue="proximos">
+            <TabsList>
+              <TabsTrigger value="proximos">Próximos Pagos</TabsTrigger>
+              <TabsTrigger value="retrasados">Pagos Retrasados</TabsTrigger>
+            </TabsList>
+            <TabsContent value="proximos" className="pt-4">
+              {proximosPagos.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-muted/50">
+                        <th className="text-left p-2 font-medium">Desarrollo / Unidad</th>
+                        <th className="text-left p-2 font-medium">Monto</th>
+                        <th className="text-left p-2 font-medium">Fecha</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {proximosPagos.map((pago) => (
+                        <tr key={pago.id} className="border-t">
+                          <td className="p-2">
+                            <div>
+                              <p className="font-medium">{pago.desarrollo || 'Desarrollo'}</p>
+                              <p className="text-sm text-muted-foreground">{pago.unidad || 'Unidad'}</p>
+                            </div>
+                          </td>
+                          <td className="p-2">{formatCurrency(pago.monto)}</td>
+                          <td className="p-2">{format(parseISO(pago.fecha), 'dd/MM/yyyy')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center text-slate-500">
+                  No hay próximos pagos programados
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="retrasados" className="pt-4">
+              {pagosRetrasados.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-muted/50">
+                        <th className="text-left p-2 font-medium">Desarrollo / Unidad</th>
+                        <th className="text-left p-2 font-medium">Monto</th>
+                        <th className="text-left p-2 font-medium">Vencimiento</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pagosRetrasados.map((pago) => (
+                        <tr key={pago.id} className="border-t">
+                          <td className="p-2">
+                            <div>
+                              <p className="font-medium">{pago.desarrollo || 'Desarrollo'}</p>
+                              <p className="text-sm text-muted-foreground">{pago.unidad || 'Unidad'}</p>
+                            </div>
+                          </td>
+                          <td className="p-2">{formatCurrency(pago.monto)}</td>
+                          <td className="p-2">{format(parseISO(pago.fecha), 'dd/MM/yyyy')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center text-slate-500">
+                  No hay pagos retrasados
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="col-span-2">
         <CardHeader>
-          <CardTitle>Ventas por Prototipo</CardTitle>
-          <CardDescription>Prototipos más vendidos</CardDescription>
+          <CardTitle>Ingresos Mensuales</CardTitle>
         </CardHeader>
-        <CardContent className="h-64 overflow-auto">
-          <div className="space-y-4">
-            {prototipoStats.map((stat) => (
-              <div key={stat.id} className="bg-gray-50 p-3 rounded-md">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">{stat.nombre}</span>
-                  <span className="text-sm bg-gray-200 px-2 py-1 rounded">{stat.count} ventas</span>
-                </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  Total: {formatCurrency(stat.total)}
-                </div>
-              </div>
-            ))}
-          </div>
+        <CardContent className="pl-2">
+          {chartData.length > 0 ? (
+            <div className="h-[300px]">
+              <BarChart
+                data={chartData}
+                index="name"
+                categories={["Ingresos"]}
+                colors={["indigo"]}
+                valueFormatter={(value) => formatCurrency(value)}
+                yAxisWidth={80}
+              />
+            </div>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-slate-500">
+              No hay datos de ingresos para mostrar
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      
+      <Card className="col-span-1">
+        <CardHeader>
+          <CardTitle>Distribución de Ventas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {distributionData.length > 0 && distributionData.some(item => item.value > 0) ? (
+            <div className="h-[300px]">
+              <LineChart
+                data={distributionData}
+                index="name"
+                categories={["value"]}
+                colors={["emerald"]}
+                valueFormatter={(value) => `${value} ventas`}
+                showYAxis={false}
+                showLegend={false}
+              />
+            </div>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-slate-500">
+              No hay datos de distribución para mostrar
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

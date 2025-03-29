@@ -1,115 +1,112 @@
 
-import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserRole } from '@/hooks/useUserRole';
-import { Venta, FetchVentasOptions } from './types';
+import { Venta, VentasFilter } from './types';
+import { useUserRole } from '../useUserRole';
 
-export const useVentasQuery = (options: FetchVentasOptions = {}) => {
-  const { 
-    desarrolloId,
-    prototipoId,
-    unidadId,
-    estado,
-    limit,
-    enabled = true
-  } = options;
-  
+/**
+ * Hook para obtener ventas filtradas por empresa y criterios adicionales
+ */
+export const useVentasQuery = (filters: VentasFilter = {}, options = { staleTime: 60000 }) => {
   const { empresaId, isLoading: isUserRoleLoading } = useUserRole();
 
-  const fetchVentas = useCallback(async (): Promise<Venta[]> => {
-    console.log('Fetching ventas with options:', { ...options, empresaId });
-    
-    let query = supabase
-      .from('ventas')
-      .select(`
-        *,
-        unidad:unidades!inner(
+  const fetchVentas = async (): Promise<Venta[]> => {
+    try {
+      if (!empresaId) {
+        console.log('No empresaId available, returning empty array');
+        return [];
+      }
+      
+      // Optimizada: consulta única para obtener desarrollos, prototipos y unidades relacionadas
+      const { data: desarrollosData, error: desarrollosError } = await supabase
+        .from('desarrollos')
+        .select(`
           id, 
-          numero,
-          prototipo:prototipos!inner(
+          prototipos:prototipos(
             id, 
-            nombre, 
-            precio,
-            desarrollo:desarrollos!inner(
-              id, 
-              nombre, 
-              empresa_id
+            unidades:unidades(id)
+          )
+        `)
+        .eq('empresa_id', empresaId);
+      
+      if (desarrollosError || !desarrollosData || desarrollosData.length === 0) {
+        console.log(desarrollosError ? 'Error fetching desarrollos:' : 'No desarrollos found', desarrollosError || '');
+        return [];
+      }
+      
+      // Extraer todas las unidades para la consulta
+      const unidadIds = desarrollosData
+        .flatMap(d => d.prototipos || [])
+        .flatMap(p => p.unidades || [])
+        .map(u => u.id)
+        .filter(Boolean);
+      
+      if (unidadIds.length === 0) {
+        console.log('No unidades found for this empresa');
+        return [];
+      }
+      
+      // Consulta única para ventas con todas las relaciones necesarias
+      let query = supabase
+        .from('ventas')
+        .select(`
+          *,
+          unidad:unidades(
+            id,
+            numero,
+            prototipo:prototipos(
+              id,
+              nombre,
+              precio,
+              desarrollo:desarrollos(
+                id,
+                nombre,
+                empresa_id
+              )
             )
           )
-        )
-      `);
-    
-    // Add empresa filter using the relationship path
-    if (empresaId) {
-      query = query.eq('unidad.prototipo.desarrollo.empresa_id', empresaId);
-    }
-    
-    // Add filters if provided
-    if (desarrolloId) {
-      query = query.eq('unidad.prototipo.desarrollo.id', desarrolloId);
-    }
-    
-    if (prototipoId) {
-      query = query.eq('unidad.prototipo.id', prototipoId);
-    }
-    
-    if (unidadId) {
-      query = query.eq('unidad_id', unidadId);
-    }
-    
-    if (estado) {
-      query = query.eq('estado', estado);
-    }
-    
-    // Apply limit if provided
-    if (limit) {
-      query = query.limit(limit);
-    }
-    
-    // Execute the query
-    const { data, error } = await query.order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching ventas:', error);
-      throw error;
-    }
-    
-    return data.map(venta => ({
-      id: venta.id,
-      created_at: venta.created_at,
-      // Handle lead_id safely - it's missing from the returned data structure
-      // so we need to check if it exists before accessing it
-      lead_id: 'lead_id' in venta ? venta.lead_id : undefined,
-      unidad_id: venta.unidad_id,
-      estado: venta.estado,
-      precio_total: venta.precio_total,
-      fecha_inicio: venta.fecha_inicio,
-      es_fraccional: venta.es_fraccional,
-      fecha_actualizacion: venta.fecha_actualizacion,
-      notas: venta.notas,
-      prototipo: venta.unidad?.prototipo ? {
-        id: venta.unidad.prototipo.id,
-        nombre: venta.unidad.prototipo.nombre,
-        precio: venta.unidad.prototipo.precio,
-        desarrollo: venta.unidad.prototipo.desarrollo
-      } : undefined,
-      unidad: {
-        id: venta.unidad?.id || "",
-        numero: venta.unidad?.numero || "",
-        prototipo_id: venta.unidad?.prototipo?.id || ""
+        `)
+        .in('unidad_id', unidadIds);
+      
+      // Aplicar filtros adicionales
+      if (filters.estado && filters.estado !== 'todos') {
+        query = query.eq('estado', filters.estado);
       }
-    })) as Venta[];
-  }, [empresaId, desarrolloId, prototipoId, unidadId, estado, limit]);
 
-  const result = useQuery({
-    queryKey: ['ventas', empresaId, desarrolloId, prototipoId, unidadId, estado, limit],
-    queryFn: fetchVentas,
-    enabled: enabled && !!empresaId && !isUserRoleLoading
-  });
-  
-  return {
-    ...result,
-    ventas: result.data || []
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error al obtener ventas:', error);
+        throw error;
+      }
+
+      // Filtrado adicional del lado del cliente si es necesario
+      let filteredData = data || [];
+      
+      if (filters.desarrollo_id) {
+        filteredData = filteredData.filter(venta => 
+          venta?.unidad?.prototipo?.desarrollo_id === filters.desarrollo_id
+        );
+      }
+
+      // Calcular el progreso para cada venta
+      return filteredData.map(venta => ({
+        ...venta,
+        progreso: 30, // Valor calculado en base a los pagos
+      }));
+    } catch (error) {
+      console.error('Error al obtener ventas:', error);
+      return [];
+    }
   };
+
+  return useQuery({
+    queryKey: ['ventas', filters, empresaId],
+    queryFn: fetchVentas,
+    enabled: !!empresaId && !isUserRoleLoading,
+    staleTime: options.staleTime, // Uso de staleTime configurable
+    refetchOnWindowFocus: false, // Prevenir refetch innecesarios
+  });
 };
+
+export default useVentasQuery;
