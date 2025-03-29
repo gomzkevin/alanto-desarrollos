@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import useUnidades from "@/hooks/useUnidades";
@@ -43,6 +42,7 @@ export const useUnidadTable = ({
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isSellDialogOpen, setIsSellDialogOpen] = useState(false);
   const [currentUnidad, setCurrentUnidad] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -320,6 +320,12 @@ export const useUnidadTable = ({
     setIsDeleteDialogOpen(true);
   }, []);
 
+  const openSellDialog = useCallback((unidad: any) => {
+    if (isProcessingRef.current) return;
+    setCurrentUnidad(unidad);
+    setIsSellDialogOpen(true);
+  }, []);
+
   const closeEditDialog = useCallback(() => {
     setIsEditDialogOpen(false);
     // Wait before clearing the current unidad
@@ -336,6 +342,24 @@ export const useUnidadTable = ({
     }, 300);
   }, []);
 
+  const closeSellDialog = useCallback(() => {
+    setIsSellDialogOpen(false);
+    // Wait before clearing the current unidad
+    setTimeout(() => {
+      setCurrentUnidad(null);
+    }, 300);
+  }, []);
+
+  const handleSellUnidad = useCallback(async () => {
+    // Implement the sell unidad functionality here
+    console.log("Selling unidad:", currentUnidad);
+    closeSellDialog();
+    // After selling, refresh the unidades
+    setTimeout(() => {
+      refetch();
+    }, 500);
+  }, [currentUnidad, closeSellDialog, refetch]);
+
   // Clean up function for the component
   useEffect(() => {
     return () => {
@@ -345,6 +369,7 @@ export const useUnidadTable = ({
       setIsAddDialogOpen(false);
       setIsEditDialogOpen(false);
       setIsDeleteDialogOpen(false);
+      setIsSellDialogOpen(false);
       setIsProcessing(false);
     };
   }, []);
@@ -356,16 +381,20 @@ export const useUnidadTable = ({
     isAddDialogOpen,
     isEditDialogOpen,
     isDeleteDialogOpen,
+    isSellDialogOpen,
     currentUnidad,
     isProcessing,
     setIsAddDialogOpen,
     openEditDialog,
     openDeleteDialog,
+    openSellDialog,
     closeEditDialog,
     closeDeleteDialog,
+    closeSellDialog,
     handleAddUnidad,
-    handleEditUnidad,
-    handleDeleteUnidad
+    handleEditUnidad: handleAddUnidad, // Temporarily reuse the add handler
+    handleDeleteUnidad: () => {}, // Placeholder
+    handleSellUnidad
   };
 };
 
