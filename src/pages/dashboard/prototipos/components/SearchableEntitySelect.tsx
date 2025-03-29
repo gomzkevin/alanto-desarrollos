@@ -124,8 +124,8 @@ export const SearchableEntitySelect = ({
               <CommandGroup>
                 <CommandItem
                   key="empty-option"
-                  value=""
-                  onSelect={() => handleSelect("", "")}
+                  value="none"
+                  onSelect={() => handleSelect("none", "")}
                 >
                   <span>Sin asignar</span>
                 </CommandItem>

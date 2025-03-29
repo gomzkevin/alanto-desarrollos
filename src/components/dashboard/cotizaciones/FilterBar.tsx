@@ -27,14 +27,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       <div className="space-y-2 w-full sm:w-64">
         <Label htmlFor="desarrollo-filter">Desarrollo</Label>
         <Select 
-          value={selectedDesarrollo} 
-          onValueChange={(value) => onDesarrolloChange(value || undefined)}
+          value={selectedDesarrollo || ""} 
+          onValueChange={(value) => onDesarrolloChange(value === "all" ? undefined : value)}
         >
           <SelectTrigger id="desarrollo-filter">
             <SelectValue placeholder="Todos los desarrollos" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos los desarrollos</SelectItem>
+            <SelectItem value="all">Todos los desarrollos</SelectItem>
             {desarrollos.map((desarrollo) => (
               <SelectItem key={desarrollo.id} value={desarrollo.id}>
                 {desarrollo.nombre}
@@ -47,15 +47,15 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       <div className="space-y-2 w-full sm:w-64">
         <Label htmlFor="prototipo-filter">Prototipo</Label>
         <Select 
-          value={selectedPrototipo} 
-          onValueChange={(value) => onPrototipoChange(value || undefined)}
+          value={selectedPrototipo || ""}
+          onValueChange={(value) => onPrototipoChange(value === "all" ? undefined : value)}
           disabled={!selectedDesarrollo}
         >
           <SelectTrigger id="prototipo-filter">
             <SelectValue placeholder="Todos los prototipos" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos los prototipos</SelectItem>
+            <SelectItem value="all">Todos los prototipos</SelectItem>
             {prototipos.map((prototipo) => (
               <SelectItem key={prototipo.id} value={prototipo.id}>
                 {prototipo.nombre}
