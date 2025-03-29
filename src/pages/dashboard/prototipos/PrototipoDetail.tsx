@@ -22,6 +22,8 @@ const PrototipoDetail = () => {
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const lastRefreshTimeRef = useRef(Date.now());
+  
+  // Get user role and permissions - using functions rather than direct state from hooks
   const { isAdmin } = useUserRole();
   const { canCreatePrototipo, canCreateUnidad } = usePermissions();
   
@@ -41,8 +43,9 @@ const PrototipoDetail = () => {
   const unitCounts = useUnitCounts(safeUnidades);
   
   // Verificaciones de permisos (valores memorizados)
-  const canAddMore = useCallback(() => canCreatePrototipo(), [canCreatePrototipo]);
-  const canAddUnidades = useCallback(() => canCreateUnidad(), [canCreateUnidad]);
+  // Store permission results instead of functions
+  const canAddMoreValue = canCreatePrototipo();
+  const canAddUnidadesValue = canCreateUnidad();
   
   // Manejador de actualización con límite de frecuencia
   const handleRefresh = useCallback(() => {
@@ -113,7 +116,7 @@ const PrototipoDetail = () => {
   // Memoize manejadores de eventos
   const handleAddUnidadClick = useCallback(() => {
     // Verificar si el usuario puede crear unidades según su plan
-    if (canCreateUnidad()) {
+    if (canAddUnidadesValue) {
       setOpenAddUnidadDialog(true);
     } else {
       toast({
@@ -122,7 +125,7 @@ const PrototipoDetail = () => {
         variant: "warning",
       });
     }
-  }, [canCreateUnidad, toast]);
+  }, [canAddUnidadesValue, toast]);
   
   const handleEditClick = useCallback(() => {
     if (isAdmin()) {
@@ -224,7 +227,7 @@ const PrototipoDetail = () => {
             onAddUnidad={handleAddUnidadClick}
             onGenerateUnidades={handleGenerarUnidades}
             onRefreshUnidades={handleRefresh}
-            canAddMore={canAddUnidades()}
+            canAddMore={canAddUnidadesValue}
           />
         </div>
       </div>
