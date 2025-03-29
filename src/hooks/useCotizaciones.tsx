@@ -18,10 +18,12 @@ type FetchCotizacionesOptions = {
   limit?: number;
   withRelations?: boolean;
   staleTime?: number;
+  desarrolloId?: string;
+  prototipoId?: string;
 };
 
 export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
-  const { limit, withRelations = false, staleTime = 30000 } = options; // Default staleTime: 30 seconds
+  const { limit, withRelations = false, staleTime = 30000, desarrolloId, prototipoId } = options;
   const { empresaId } = useUserRole();
   
   // Function to fetch cotizaciones
@@ -62,6 +64,15 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
         `)
         .in('desarrollo_id', desarrolloIds);
       
+      // Add filters if provided
+      if (desarrolloId) {
+        query = query.eq('desarrollo_id', desarrolloId);
+      }
+      
+      if (prototipoId) {
+        query = query.eq('prototipo_id', prototipoId);
+      }
+      
       // Apply limit if provided
       if (limit) {
         query = query.limit(limit);
@@ -84,7 +95,7 @@ export const useCotizaciones = (options: FetchCotizacionesOptions = {}) => {
 
   // Use React Query to fetch and cache the data with improved caching
   const queryResult = useQuery({
-    queryKey: ['cotizaciones', limit, withRelations, empresaId],
+    queryKey: ['cotizaciones', limit, withRelations, empresaId, desarrolloId, prototipoId],
     queryFn: fetchCotizaciones,
     staleTime: staleTime, // Use configurable stale time
     enabled: !!empresaId, // Only run if empresaId exists

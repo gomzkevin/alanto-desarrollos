@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -27,6 +26,7 @@ const VentaDetail = () => {
   const { 
     venta, 
     compradores, 
+    formattedCompradores,
     pagos,
     isLoading, 
     montoPagado,
@@ -35,17 +35,6 @@ const VentaDetail = () => {
     compradorVentaId,
     updateVentaStatus
   } = useVentaDetail(ventaId);
-
-  // Cast to the format the InfoTab expects
-  const formatCompradoresForInfoTab = (compradores: any[]) => {
-    return compradores.map(c => ({
-      id: c.id,
-      comprador_id: c.id,
-      nombre: c.nombre,
-      porcentaje: c.porcentaje_propiedad || 100,
-      pagos_realizados: pagos?.filter(p => p.comprador_venta_id === c.id).length || 0
-    }));
-  };
 
   const canMarkAsCompleted = venta?.estado === 'en_proceso' && progreso >= 100;
 
@@ -80,15 +69,13 @@ const VentaDetail = () => {
   }
 
   // Create a compatible object for components that expect the Venta type
-  const ventaForComponents = {
+  const ventaForComponents: any = {
     ...venta,
     unidad: {
       ...venta.unidad,
       prototipo_id: venta.unidad?.prototipo?.id || ""
     }
   };
-
-  const compradoresFormatted = formatCompradoresForInfoTab(compradores || []);
 
   return (
     <DashboardLayout>
@@ -250,7 +237,7 @@ const VentaDetail = () => {
           <TabsContent value="info" className="space-y-4">
             <InfoTab 
               venta={ventaForComponents}
-              compradores={compradoresFormatted} 
+              compradores={formattedCompradores} 
               pagos={pagos}
               onAddComprador={() => setOpenCompradorDialog(true)}
             />

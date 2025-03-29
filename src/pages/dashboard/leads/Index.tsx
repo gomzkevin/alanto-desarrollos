@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,7 @@ const Index = () => {
   const [estadoFilter, setEstadoFilter] = useState<string | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [sortBy, setSortBy] = useState<'created_at' | 'nombre'>('created_at');
+  const [sortBy, setSortBy] = useState<'fecha_creacion' | 'nombre'>('fecha_creacion');
   const [desarrolloFilter, setDesarrolloFilter] = useState<string | undefined>(undefined);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -58,7 +59,7 @@ const Index = () => {
     setDesarrolloFilter(desarrolloId);
   };
 
-  const handleSortChange = (newSortBy: 'created_at' | 'nombre') => {
+  const handleSortChange = (newSortBy: 'fecha_creacion' | 'nombre') => {
     setSortBy(newSortBy);
     setSortOrder(prevSortOrder => (sortBy === newSortBy ? (prevSortOrder === 'asc' ? 'desc' : 'asc') : 'asc'));
   };
@@ -68,7 +69,7 @@ const Index = () => {
     if (sortBy === 'nombre') {
       return a.nombre.localeCompare(b.nombre) * order;
     }
-    return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * order;
+    return (new Date(a.fecha_creacion).getTime() - new Date(b.fecha_creacion).getTime()) * order;
   });
 
   return (
@@ -146,8 +147,8 @@ const Index = () => {
           leads={sortedLeads}
           isLoading={isLoading}
           sortOrder={sortOrder}
-          sortBy={sortBy}
-          onSort={handleSortChange}
+          sortBy={sortBy === 'fecha_creacion' ? 'created_at' as any : 'nombre'}
+          onSort={newSortBy => handleSortChange(newSortBy === 'created_at' ? 'fecha_creacion' as any : 'nombre')}
           onEdit={handleEdit}
         />
 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -9,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from '@/components/ui/button';
-import { Edit, Eye } from 'lucide-react';
+import { Eye, Edit } from 'lucide-react';
 import { useVentasQuery } from '@/hooks/ventas/useVentasQuery';
 import { formatCurrency } from '@/lib/utils';
 

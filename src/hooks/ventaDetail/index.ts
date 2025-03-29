@@ -19,6 +19,15 @@ export const useVentaDetail = (ventaId?: string) => {
 
   const progreso = venta ? (montoPagado / venta.precio_total) * 100 : 0;
 
+  // Format compradores to match the InfoTab expected format
+  const formattedCompradores = compradores.map(c => ({
+    id: c.id,
+    comprador_id: c.id,
+    nombre: c.nombre,
+    porcentaje: c.porcentaje_propiedad,
+    pagos_realizados: pagos?.filter(p => p.comprador_venta_id === c.id).length || 0
+  }));
+
   const refetch = () => {
     ventaQuery.refetch();
     pagosQuery.refetch();
@@ -28,6 +37,7 @@ export const useVentaDetail = (ventaId?: string) => {
   return {
     venta,
     compradores,
+    formattedCompradores,
     pagos,
     isLoading: ventaQuery.isLoading || pagosQuery.isLoading || compradoresQuery.isLoading,
     montoPagado,

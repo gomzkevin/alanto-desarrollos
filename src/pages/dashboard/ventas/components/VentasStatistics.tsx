@@ -1,170 +1,179 @@
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale } from 'chart.js';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title, Filler } from 'chart.js';
+import { Venta } from '@/hooks/ventas/types';
 import { formatCurrency } from '@/lib/utils';
 
-// Register Chart.js components
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale);
+// Register ChartJS components
+ChartJS.register(
+  ArcElement, 
+  Tooltip, 
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Filler
+);
 
-export function VentasStatistics({ ventas, isLoading }) {
+interface VentasStatisticsProps {
+  ventas: Venta[];
+  isLoading: boolean;
+}
+
+export const VentasStatistics = ({ ventas, isLoading }: VentasStatisticsProps) => {
   const [chartData, setChartData] = useState({
-    labels: [],
+    labels: ['En proceso', 'Completadas', 'Canceladas'],
     datasets: [
       {
-        label: 'Ventas por estado',
-        data: [],
-        backgroundColor: [],
-        borderWidth: 1
-      }
-    ]
+        label: 'Estado de ventas',
+        data: [0, 0, 0],
+        backgroundColor: [
+          'rgba(255, 206, 86, 0.6)', // yellow
+          'rgba(75, 192, 192, 0.6)', // green
+          'rgba(255, 99, 132, 0.6)', // red
+        ],
+        borderWidth: 1,
+      },
+    ],
   });
 
   useEffect(() => {
-    if (!ventas || ventas.length === 0) {
+    if (ventas && ventas.length > 0) {
+      // Count ventas by estado
+      const enProceso = ventas.filter(v => v.estado === 'en_proceso').length;
+      const completadas = ventas.filter(v => v.estado === 'completada').length;
+      const canceladas = ventas.filter(v => v.estado === 'cancelada').length;
+      
       setChartData({
-        labels: ['Sin datos'],
+        labels: ['En proceso', 'Completadas', 'Canceladas'],
         datasets: [
           {
-            label: 'Ventas por estado',
-            data: [1],
-            backgroundColor: ['#e5e7eb'],
-            borderWidth: 1
-          }
-        ]
+            label: 'Estado de ventas',
+            data: [enProceso, completadas, canceladas],
+            backgroundColor: [
+              'rgba(255, 206, 86, 0.6)', // yellow
+              'rgba(75, 192, 192, 0.6)', // green
+              'rgba(255, 99, 132, 0.6)', // red
+            ],
+            borderWidth: 1,
+          },
+        ],
       });
-      return;
     }
-
-    const countByStatus = {
-      en_proceso: 0,
-      completada: 0,
-      cancelada: 0
-    };
-
-    ventas.forEach(venta => {
-      if (countByStatus[venta.estado] !== undefined) {
-        countByStatus[venta.estado]++;
-      }
-    });
-
-    setChartData({
-      labels: ['En proceso', 'Completada', 'Cancelada'],
-      datasets: [
-        {
-          label: 'Ventas por estado',
-          data: [
-            countByStatus.en_proceso,
-            countByStatus.completada,
-            countByStatus.cancelada
-          ],
-          backgroundColor: [
-            '#f59e0b', // warning/amber for in progress
-            '#10b981', // success/emerald for completed
-            '#ef4444', // danger/red for cancelled
-          ],
-          borderWidth: 1
-        }
-      ]
-    });
   }, [ventas]);
 
-  // Calculate total ventas amount
-  const totalVentas = ventas?.reduce((sum, venta) => sum + venta.precio_total, 0) || 0;
-  
-  // Calculate average sale price
-  const avgVentaPrice = ventas && ventas.length > 0 
-    ? totalVentas / ventas.length 
-    : 0;
+  // Group ventas by prototipo and calculate total
+  const ventasByPrototipo = ventas.reduce((acc, venta) => {
+    const prototipoId = venta.unidad.prototipo_id;
+    const prototipoNombre = venta.prototipo?.nombre || 'Desconocido';
+    const key = `${prototipoId}-${prototipoNombre}`;
+    
+    if (!acc[key]) {
+      acc[key] = {
+        id: prototipoId,
+        nombre: prototipoNombre,
+        count: 0,
+        total: 0
+      };
+    }
+    
+    acc[key].count += 1;
+    acc[key].total += Number(venta.precio_total) || 0;
+    
+    return acc;
+  }, {} as Record<string, { id: string; nombre: string; count: number; total: number }>);
 
-  // Get most popular development
-  const getPopularDesarrollo = () => {
-    if (!ventas || ventas.length === 0) return 'N/A';
-    
-    const desarrolloCounts = {};
-    
-    ventas.forEach(venta => {
-      if (venta.unidad && venta.unidad.prototipo && venta.unidad.prototipo.desarrollo) {
-        const desarrolloName = venta.unidad.prototipo.desarrollo.nombre;
-        desarrolloCounts[desarrolloName] = (desarrolloCounts[desarrolloName] || 0) + 1;
-      }
-    });
-    
-    const entries = Object.entries(desarrolloCounts);
-    if (entries.length === 0) return 'N/A';
-    
-    entries.sort((a, b) => b[1] - a[1]);
-    return entries[0][0];
-  };
+  const prototipoStats = Object.values(ventasByPrototipo).sort((a, b) => b.count - a.count);
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Estado de Ventas</CardTitle>
+            <CardDescription>Distribución de ventas por estado</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center items-center h-64">
+            <div className="h-32 w-32 rounded-full bg-gray-100 animate-pulse"></div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Ventas por Prototipo</CardTitle>
+            <CardDescription>Prototipos más vendidos</CardDescription>
+          </CardHeader>
+          <CardContent className="h-64 space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-12 bg-gray-100 animate-pulse rounded"></div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (ventas.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-10 text-center text-muted-foreground">
+          No hay datos de ventas disponibles para mostrar estadísticas.
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Ventas</CardTitle>
-          <div className="h-4 w-4 rounded-full bg-emerald-500" />
+        <CardHeader>
+          <CardTitle>Estado de Ventas</CardTitle>
+          <CardDescription>Distribución de ventas por estado</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalVentas)}</div>
-          <p className="text-xs text-muted-foreground">
-            {ventas?.length || 0} unidades
-          </p>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Precio Promedio</CardTitle>
-          <div className="h-4 w-4 rounded-full bg-blue-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(avgVentaPrice)}</div>
-          <p className="text-xs text-muted-foreground">Por unidad</p>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Desarrollo Popular</CardTitle>
-          <div className="h-4 w-4 rounded-full bg-violet-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold truncate">{getPopularDesarrollo()}</div>
-          <p className="text-xs text-muted-foreground">Más unidades vendidas</p>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Estado de Ventas</CardTitle>
-          <div className="h-4 w-4 rounded-full bg-amber-500" />
-        </CardHeader>
-        <CardContent className="pt-2">
-          <div className="h-[80px] w-full">
-            {isLoading ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="h-10 w-10 rounded-full border-2 border-t-transparent border-blue-600 animate-spin"></div>
-              </div>
-            ) : (
-              <Doughnut 
-                data={chartData} 
-                options={{
-                  responsive: true, 
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: {
-                      display: false,
-                    }
+        <CardContent className="flex justify-center">
+          <div className="h-64 w-64">
+            <Doughnut 
+              data={chartData}
+              options={{ 
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'bottom'
                   }
-                }} 
-              />
-            )}
+                }
+              }} 
+            />
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Ventas por Prototipo</CardTitle>
+          <CardDescription>Prototipos más vendidos</CardDescription>
+        </CardHeader>
+        <CardContent className="h-64 overflow-auto">
+          <div className="space-y-4">
+            {prototipoStats.map((stat) => (
+              <div key={stat.id} className="bg-gray-50 p-3 rounded-md">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">{stat.nombre}</span>
+                  <span className="text-sm bg-gray-200 px-2 py-1 rounded">{stat.count} ventas</span>
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  Total: {formatCurrency(stat.total)}
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
     </div>
   );
-}
+};
 
 export default VentasStatistics;

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import CotizacionesTable from '@/components/dashboard/cotizaciones/CotizacionesTable';
@@ -8,11 +9,15 @@ import { Plus } from 'lucide-react';
 import { useCotizaciones } from '@/hooks/useCotizaciones';
 import usePrototipos from '@/hooks/usePrototipos';
 import { useDesarrollos } from '@/hooks/desarrollos';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [desarrolloId, setDesarrolloId] = useState<string | undefined>(undefined);
   const [prototipoId, setPrototipoId] = useState<string | undefined>(undefined);
-  const { cotizaciones, isLoading, refetch } = useCotizaciones({ desarrolloId, prototipoId });
+  const { cotizaciones, isLoading, refetch } = useCotizaciones({ 
+    desarrolloId, 
+    prototipoId 
+  });
   const { desarrollos } = useDesarrollos();
   const { prototipos } = usePrototipos({ desarrolloId });
 

@@ -1,69 +1,82 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { VentaWithDetail } from './types';
+import { useToast } from '@/hooks/use-toast';
 
 export const useVentaDetailMutations = () => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  const updateVentaStatus = useMutation({
-    mutationFn: async (params: { ventaId: string, newStatus: string }) => {
-      const { ventaId, newStatus } = params;
-      if (!ventaId) throw new Error('ID de venta no proporcionado');
-      if (!newStatus) throw new Error('Estado de venta no proporcionado');
-
-      const { data, error } = await supabase
+  const updateVentaStatus = async (ventaId: string, newStatus: string) => {
+    try {
+      // Update venta status
+      const { error: ventaError } = await supabase
         .from('ventas')
-        .update({
+        .update({ 
           estado: newStatus,
-          fecha_actualizacion: new Date().toISOString()
+          fecha_actualizacion: new Date().toISOString() 
         })
-        .eq('id', ventaId)
-        .select('*');
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['venta'] });
-      queryClient.invalidateQueries({ queryKey: ['ventas'] });
+        .eq('id', ventaId);
       
-      // Also update unidad status if venta is completed
-      if (data[0]?.estado === 'completada') {
-        updateUnidadStatus(data[0].unidad_id, 'vendido');
+      if (ventaError) throw ventaError;
+      
+      // If marking as completed, also update the unidad status
+      if (newStatus === 'completada') {
+        // First get the unidad_id from the venta
+        const { data: venta, error: fetchError } = await supabase
+          .from('ventas')
+          .select('unidad_id')
+          .eq('id', ventaId)
+          .single();
+        
+        if (fetchError) throw fetchError;
+        
+        // Then update the unidad status
+        const { error: unidadError } = await supabase
+          .from('unidades')
+          .update({ estado: 'vendida' })
+          .eq('id', venta.unidad_id);
+        
+        if (unidadError) throw unidadError;
       }
       
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['venta', ventaId] });
+      queryClient.invalidateQueries({ queryKey: ['ventas'] });
+      
+      // Show success toast
       toast({
-        title: 'Estado actualizado',
-        description: 'El estado de la venta ha sido actualizado exitosamente',
+        title: "Estatus actualizado",
+        description: `La venta ha sido marcada como "${newStatus}"`,
+        variant: "success",
       });
-    },
-    onError: (error: any) => {
-      console.error('Error updating venta status:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar el estado de la venta',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const updateUnidadStatus = async (unidadId: string, newStatus: string) => {
-    try {
-      await supabase
-        .from('unidades')
-        .update({ estado: newStatus })
-        .eq('id', unidadId);
+      
+      return true;
     } catch (error) {
-      console.error('Error updating unidad status:', error);
+      console.error('Error updating venta status:', error);
+      
+      // Show error toast
+      toast({
+        title: "Error al actualizar estatus",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
+      
+      return false;
     }
   };
 
+  const updateVentaMutation = useMutation({
+    mutationFn: ({ ventaId, newStatus }: { ventaId: string; newStatus: string }) => 
+      updateVentaStatus(ventaId, newStatus),
+    onSuccess: () => {
+      // Additional success handling if needed
+    }
+  });
+
   return {
     updateVentaStatus: (ventaId: string, newStatus: string) => 
-      updateVentaStatus.mutate({ ventaId, newStatus })
+      updateVentaMutation.mutate({ ventaId, newStatus })
   };
 };
 
