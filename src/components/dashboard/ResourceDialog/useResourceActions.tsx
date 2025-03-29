@@ -316,8 +316,8 @@ const useResourceActions = ({
           result = data;
         }
         
-        // Only show toast for non-cotizaciones resources (cotizaciones has its own handling above)
-        if (resourceType !== 'cotizaciones') {
+        // Fixed: TypeScript error by changing this comparison
+        if (resourceType !== 'cotizaciones' as ResourceType) {
           toast({
             title: 'Creado',
             description: `${resourceType} creado correctamente`,
