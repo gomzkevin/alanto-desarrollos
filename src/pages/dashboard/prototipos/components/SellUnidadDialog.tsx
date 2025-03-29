@@ -1,16 +1,14 @@
 
 import React from 'react';
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle 
-} from "@/components/ui/alert-dialog";
-import { ShoppingCart } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface SellUnidadDialogProps {
   isOpen: boolean;
@@ -20,45 +18,59 @@ interface SellUnidadDialogProps {
   unidadNumero?: string;
 }
 
-export const SellUnidadDialog = ({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
+const SellUnidadDialog = ({
+  isOpen,
+  onClose,
+  onConfirm,
   isProcessing,
-  unidadNumero 
+  unidadNumero
 }: SellUnidadDialogProps) => {
+  const handleConfirm = async () => {
+    try {
+      await onConfirm();
+      onClose();
+    } catch (error) {
+      console.error("Error vendiendo unidad:", error);
+    }
+  };
+
   return (
-    <AlertDialog open={isOpen} onOpenChange={(open) => !isProcessing && !open && onClose()}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5 text-primary" />
-            Iniciar proceso de venta
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            Esta acción creará una nueva venta para la unidad {unidadNumero || ""} y serás 
-            redirigido a la pantalla de gestión de ventas para continuar con el proceso.
-            <br /><br />
-            <span className="font-medium text-amber-600">
-              ¿Estás seguro de que deseas continuar?
-            </span>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isProcessing}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction 
-            onClick={(e) => {
-              e.preventDefault();
-              onConfirm();
-            }}
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isProcessing && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Vender Unidad</DialogTitle>
+          <DialogDescription>
+            Esta acción cambiará el estado de la unidad {unidadNumero || ""} a "vendido".
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="py-4">
+          <p className="text-sm text-slate-600">
+            ¿Estás seguro que deseas proceder con la venta de esta unidad?
+            Esta operación creará un registro de venta y actualizará el inventario.
+          </p>
+        </div>
+        
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={onClose}
             disabled={isProcessing}
-            className="bg-primary"
+            type="button"
           >
-            {isProcessing ? "Procesando..." : "Iniciar venta"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            Cancelar
+          </Button>
+          <Button
+            variant="default"
+            onClick={handleConfirm}
+            disabled={isProcessing}
+            type="button"
+          >
+            {isProcessing ? "Procesando..." : "Confirmar Venta"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

@@ -17,7 +17,7 @@ export const UnidadTableRow = memo(({ unidad, onEdit, onSell, isDisabled = false
   const precioLista = unidad.prototipo?.precio || 0;
   
   return (
-    <TableRow key={unidad.id}>
+    <TableRow>
       <TableCell className="font-medium">{unidad.numero}</TableCell>
       <TableCell>{unidad.nivel || '-'}</TableCell>
       <TableCell><StatusBadge estado={unidad.estado} /></TableCell>
