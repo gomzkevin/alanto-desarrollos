@@ -1,7 +1,9 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { ResourceType, FormValues } from './types';
+import { useUserRole } from '@/hooks';
 
 interface UseResourceActionsProps {
   resourceType: ResourceType;
