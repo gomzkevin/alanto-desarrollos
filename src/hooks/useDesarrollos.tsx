@@ -67,12 +67,12 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
       return data.map(desarrollo => {
         // Manejo seguro de amenidades
         let amenidadesArray: string[] = [];
-        if (desarrollo.amenidades) {
+        if (desarrollo && 'amenidades' in desarrollo && desarrollo.amenidades) {
           try {
             if (typeof desarrollo.amenidades === 'string') {
               amenidadesArray = JSON.parse(desarrollo.amenidades);
             } else if (Array.isArray(desarrollo.amenidades)) {
-              amenidadesArray = desarrollo.amenidades;
+              amenidadesArray = desarrollo.amenidades.map(val => String(val));
             } else if (typeof desarrollo.amenidades === 'object' && desarrollo.amenidades !== null) {
               amenidadesArray = Object.values(desarrollo.amenidades).map(val => String(val));
             }
@@ -121,13 +121,19 @@ export const useDesarrollos = (options: FetchDesarrollosOptions = {}) => {
     }
   };
 
-  return useQuery({
+  const queryResult = useQuery({
     queryKey: ['desarrollos', empresaId, withStats, limit],
     queryFn: fetchDesarrollos,
     enabled: !!empresaId && !isUserRoleLoading,
     staleTime: staleTime,
     refetchOnWindowFocus: false
   });
-};
+
+  // Agregar propiedad desarrollos para compatibilidad
+  return {
+    ...queryResult,
+    desarrollos: queryResult.data || []
+  };
+}
 
 export default useDesarrollos;
