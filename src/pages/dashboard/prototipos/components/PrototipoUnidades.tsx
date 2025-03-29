@@ -72,9 +72,8 @@ export const PrototipoUnidades = React.memo(({
     }
   };
   
-  // Updated: Always allow generating units for existing prototypes 
-  // Only check for canCreateUnidad for individual unit creation
-  const canCreateIndividualUnit = canCreateUnidad();
+  // Memoize permissions check to prevent recalculation on every render
+  const canCreateIndividualUnit = useMemo(() => canCreateUnidad(), [canCreateUnidad]);
   
   return (
     <div className="bg-slate-50 p-6 rounded-lg">
@@ -99,7 +98,7 @@ export const PrototipoUnidades = React.memo(({
           totalUnidades={prototipo.total_unidades || 0}
           showGenerateButton={true}
           canAddMore={canCreateIndividualUnit} // Only apply limit to individual unit creation
-          alwaysAllowGenerate={true} // New prop to allow generating units even if limits reached
+          alwaysAllowGenerate={true} // Allow generating units even if limits reached
         />
       </div>
       
