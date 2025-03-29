@@ -25,17 +25,17 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
   });
   const navigate = useNavigate();
   
-  // Memoize el manejador de clic para evitar re-renderizados
+  // Memoize click handler to prevent re-renders
   const handleViewDetails = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    e.stopPropagation(); // Detener propagación para evitar comportamientos inesperados
+    e.stopPropagation(); // Stop propagation to avoid unexpected behaviors
     
     if (onViewDetails) {
       onViewDetails(prototipo.id);
     } else if (onClick) {
       onClick(prototipo.id);
     } else {
-      // Usar navigate en lugar de cambiar location.href para evitar recargas
+      // Use navigate instead of changing location.href to avoid reloads
       navigate(`/dashboard/prototipos/${prototipo.id}`);
     }
   }, [prototipo.id, onViewDetails, onClick, navigate]);
@@ -47,12 +47,12 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
       setIsLoading(true);
       
       try {
-        // Cargar imagen si está disponible
+        // Load image if available
         if (prototipo.imagen_url) {
           setImageUrl(prototipo.imagen_url);
         }
         
-        // Obtener conteo real de unidades
+        // Get actual unit counts
         const unitStats = await countUnidadesByStatus(prototipo.id);
         if (isMounted) {
           setUnidadesStats(unitStats);
@@ -76,7 +76,7 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
   const fallbackImage = "/placeholder.svg";
   
   const getUnitCountDisplay = () => {
-    // Usar estadísticas de unidades reales de la base de datos
+    // Use actual unit statistics from database
     const available = unidadesStats.disponibles;
     const total = unidadesStats.total || prototipo.total_unidades || 0;
     
@@ -140,7 +140,7 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
           variant="outline"
           className="w-full"
           onClick={handleViewDetails}
-          type="button" // Establecemos explícitamente el tipo para evitar comportamiento de submit
+          type="button" // Explicitly set type to prevent submit behavior
         >
           Ver detalles
         </Button>

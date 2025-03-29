@@ -35,18 +35,18 @@ export const usePrototipoDetail = () => {
   const { toast } = useToast();
   const [isUpdatingImage, setIsUpdatingImage] = useState(false);
   
-  // Consulta estable que no cambia entre renderizados
+  // Stable query that doesn't change between renders
   const queryResult = useQuery({
     queryKey: ['prototipo', id],
     queryFn: () => fetchPrototipoById(id as string),
     enabled: !!id,
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 1,
-    refetchOnWindowFocus: false // Prevenir recargas al cambiar de ventana
+    refetchOnWindowFocus: false // Prevent reloads when changing window
   });
   
   const handleBack = useCallback((e?: React.MouseEvent) => {
-    // Prevenir comportamiento por defecto si se proporciona un evento
+    // Prevent default behavior if an event is provided
     if (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -62,7 +62,7 @@ export const usePrototipoDetail = () => {
   
   const updatePrototipoImage = useCallback(async (imageUrl: string) => {
     if (isUpdatingImage || !id) {
-      console.error('No se puede actualizar la imagen: ID no disponible o actualización en progreso');
+      console.error('Cannot update image: ID not available or update in progress');
       if (!id) {
         toast({
           title: "Error",
@@ -73,7 +73,7 @@ export const usePrototipoDetail = () => {
       return false;
     }
     
-    console.log(`Actualizando imagen del prototipo ${id} con URL:`, imageUrl);
+    console.log(`Updating prototipo ${id} image with URL:`, imageUrl);
     
     try {
       setIsUpdatingImage(true);
@@ -84,7 +84,7 @@ export const usePrototipoDetail = () => {
         .eq('id', id);
       
       if (error) {
-        console.error('Error al actualizar imagen del prototipo en la base de datos:', error);
+        console.error('Error updating prototipo image in database:', error);
         toast({
           title: "Error",
           description: `No se pudo guardar la imagen: ${error.message}`,
@@ -93,9 +93,9 @@ export const usePrototipoDetail = () => {
         return false;
       }
       
-      console.log('Imagen de prototipo actualizada exitosamente en la base de datos');
+      console.log('Prototipo image successfully updated in database');
       
-      // Refrescar los datos después de la actualización
+      // Refresh data after update
       queryResult.refetch();
       
       toast({
@@ -105,7 +105,7 @@ export const usePrototipoDetail = () => {
       
       return true;
     } catch (error: any) {
-      console.error('Error al actualizar imagen del prototipo:', error);
+      console.error('Error updating prototipo image:', error);
       return false;
     } finally {
       setIsUpdatingImage(false);
