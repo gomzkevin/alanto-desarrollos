@@ -29,7 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import CotizacionDetailDialog from '@/components/dashboard/cotizaciones/CotizacionDetailDialog';
-import { EditCotizacionButton } from '@/components/dashboard/EditCotizacionButton';
+import EditCotizacionButton from '@/components/dashboard/EditCotizacionButton';
 
 const formatter = new Intl.NumberFormat('es-MX', {
   style: 'currency',

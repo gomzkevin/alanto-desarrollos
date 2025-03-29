@@ -146,4 +146,5 @@ export const EditCotizacionButton = ({
   );
 };
 
+// Add a default export alongside the named export to fix the import error
 export default EditCotizacionButton;

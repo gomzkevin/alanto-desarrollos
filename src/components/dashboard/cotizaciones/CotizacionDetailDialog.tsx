@@ -50,7 +50,7 @@ import {
   GlassWater
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { EditCotizacionButton } from '@/components/dashboard/EditCotizacionButton';
+import EditCotizacionButton from '@/components/dashboard/EditCotizacionButton';
 
 interface CotizacionDetailDialogProps {
   open: boolean;
