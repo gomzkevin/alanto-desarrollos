@@ -1,6 +1,6 @@
 
 import React, { memo, useCallback } from 'react';
-import { MoreHorizontal, Edit, Trash2, CreditCard } from 'lucide-react';
+import { MoreHorizontal, Edit, CreditCard } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,

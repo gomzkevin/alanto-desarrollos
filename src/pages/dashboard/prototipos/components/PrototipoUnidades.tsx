@@ -132,7 +132,7 @@ export const PrototipoUnidades = React.memo(({
             <span className="ml-3 text-lg text-slate-600">Cargando unidades...</span>
           </div>
         ) : (
-          <TabsContent value={currentTab} key={currentTab}>
+          <TabsContent value={currentTab} key={`tab-${currentTab}`}>
             <UnidadTable 
               prototipo={prototipo}
               unidades={filteredUnidades} 

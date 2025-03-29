@@ -109,7 +109,7 @@ export const UnidadTable = React.memo(({
           <TableBody>
             {sortedUnidades.map((unidad) => (
               <UnidadTableRow 
-                key={unidad.id || `${unidad.numero}-${unidad.nivel || 'default'}`}
+                key={unidad.id || `unidad-${unidad.numero}-${unidad.nivel || 'default'}`}
                 unidad={unidad}
                 onEdit={openEditDialog}
                 onSell={openSellDialog}

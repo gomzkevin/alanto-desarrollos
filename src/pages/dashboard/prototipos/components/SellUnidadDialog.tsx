@@ -29,11 +29,13 @@ const SellUnidadDialog = ({
   const handleConfirm = useCallback(async () => {
     try {
       await onConfirm();
-      onClose();
+      if (!isProcessing) {
+        onClose();
+      }
     } catch (error) {
       console.error("Error vendiendo unidad:", error);
     }
-  }, [onConfirm, onClose]);
+  }, [onConfirm, onClose, isProcessing]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isProcessing && onClose()}>
