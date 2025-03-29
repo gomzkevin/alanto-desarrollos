@@ -8,7 +8,9 @@ export const useVentaDetailMutations = () => {
   const queryClient = useQueryClient();
 
   const updateVentaStatus = useMutation({
-    mutationFn: async (newStatus: string) => {
+    mutationFn: async (params: { ventaId: string, newStatus: string }) => {
+      const { ventaId, newStatus } = params;
+      if (!ventaId) throw new Error('ID de venta no proporcionado');
       if (!newStatus) throw new Error('Estado de venta no proporcionado');
 
       const { data, error } = await supabase
@@ -60,7 +62,8 @@ export const useVentaDetailMutations = () => {
   };
 
   return {
-    updateVentaStatus: (newStatus: string) => updateVentaStatus.mutate(newStatus)
+    updateVentaStatus: (ventaId: string, newStatus: string) => 
+      updateVentaStatus.mutate({ ventaId, newStatus })
   };
 };
 

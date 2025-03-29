@@ -1,55 +1,58 @@
 
-import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Comprador } from './types';
 
-const fetchCompradores = async (ventaId: string): Promise<Comprador[]> => {
-  if (!ventaId) return [];
-
-  try {
-    const { data, error } = await supabase
-      .from('compradores_venta')
-      .select(`
-        id,
-        comprador_id,
-        porcentaje_propiedad,
-        monto_comprometido,
-        venta_id,
-        comprador:comprador_id (
-          id,
-          nombre,
-          email,
-          telefono
-        )
-      `)
-      .eq('venta_id', ventaId);
-
-    if (error) throw error;
-
-    // Format the data to match the Comprador type
-    return data.map(item => ({
-      id: item.id,
-      nombre: item.comprador?.nombre || '',
-      email: item.comprador?.email || '',
-      telefono: item.comprador?.telefono || '',
-      porcentaje_propiedad: item.porcentaje_propiedad,
-      monto_comprometido: item.monto_comprometido
-    }));
-  } catch (error) {
-    console.error('Error fetching compradores:', error);
-    throw error;
-  }
-};
-
 export const useCompradoresQuery = (ventaId?: string) => {
-  const queryKey = useCallback(() => ['compradores', ventaId], [ventaId]);
-
-  const query = useQuery({
-    queryKey: queryKey(),
-    queryFn: () => fetchCompradores(ventaId || ''),
-    enabled: !!ventaId,
+  const fetchCompradores = async (): Promise<Comprador[]> => {
+    if (!ventaId) return [];
+    
+    try {
+      // Get compradores_venta records
+      const { data: compradoresVenta, error } = await supabase
+        .from('compradores_venta')
+        .select(`
+          id,
+          comprador_id,
+          porcentaje_propiedad,
+          monto_comprometido,
+          usuarios:comprador_id(
+            nombre,
+            email,
+            telefono
+          )
+        `)
+        .eq('venta_id', ventaId);
+        
+      if (error) {
+        console.error('Error fetching compradores:', error);
+        return [];
+      }
+      
+      if (!compradoresVenta || compradoresVenta.length === 0) {
+        return [];
+      }
+      
+      // Map data to the required format
+      return compradoresVenta.map(item => ({
+        id: item.id,
+        nombre: item.usuarios?.nombre || 'Sin nombre',
+        email: item.usuarios?.email || '',
+        telefono: item.usuarios?.telefono || '',
+        porcentaje_propiedad: item.porcentaje_propiedad,
+        monto_comprometido: item.monto_comprometido
+      }));
+    } catch (err) {
+      console.error('Error in fetchCompradores:', err);
+      return [];
+    }
+  };
+  
+  return useQuery({
+    queryKey: ['compradores', ventaId],
+    queryFn: fetchCompradores,
+    enabled: !!ventaId
   });
-
-  return query;
 };
+
+export default useCompradoresQuery;

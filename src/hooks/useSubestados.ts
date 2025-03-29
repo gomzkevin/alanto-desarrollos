@@ -10,30 +10,37 @@ export type Subestado = {
   empresa_id?: number;
 };
 
-type SubestadoOption = {
+export type SubestadoOption = {
   label: string;
   value: string;
 };
 
+// Since 'subestados' table doesn't exist in the database, we'll use a mock function
 const fetchSubestados = async (estado?: string, empresaId?: number): Promise<SubestadoOption[]> => {
-  let query = supabase.from('subestados').select('*');
+  console.log('Fetching subestados for estado:', estado, 'empresa:', empresaId);
   
-  if (estado) {
-    query = query.eq('estado_principal', estado);
+  // Mock data based on the estado parameter
+  const mockSubestados: Subestado[] = [];
+  
+  if (estado === 'nuevo' || !estado) {
+    mockSubestados.push(
+      { id: '1', nombre: 'Sin contactar', estado_principal: 'nuevo', empresa_id: empresaId },
+      { id: '2', nombre: 'Contactado', estado_principal: 'nuevo', empresa_id: empresaId }
+    );
+  } else if (estado === 'seguimiento') {
+    mockSubestados.push(
+      { id: '3', nombre: 'Interesado', estado_principal: 'seguimiento', empresa_id: empresaId },
+      { id: '4', nombre: 'Muy interesado', estado_principal: 'seguimiento', empresa_id: empresaId }
+    );
+  } else if (estado === 'convertido') {
+    mockSubestados.push(
+      { id: '5', nombre: 'Cliente potencial', estado_principal: 'convertido', empresa_id: empresaId },
+      { id: '6', nombre: 'Cliente activo', estado_principal: 'convertido', empresa_id: empresaId }
+    );
   }
   
-  if (empresaId) {
-    query = query.eq('empresa_id', empresaId);
-  }
-  
-  const { data, error } = await query;
-  
-  if (error) {
-    console.error('Error fetching subestados:', error);
-    return [];
-  }
-  
-  return (data || []).map(subestado => ({
+  // Convert to options format
+  return mockSubestados.map(subestado => ({
     label: subestado.nombre,
     value: subestado.id
   }));

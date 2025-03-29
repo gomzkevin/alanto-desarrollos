@@ -1,112 +1,170 @@
+
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { useVentas } from '@/hooks/useVentas';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale } from 'chart.js';
 import { formatCurrency } from '@/lib/utils';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+// Register Chart.js components
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale);
 
-interface VentasStatisticsProps {
-  desarrolloId?: string;
-  prototipoId?: string;
-}
-
-const VentasStatistics = ({ desarrolloId, prototipoId }: VentasStatisticsProps) => {
+export function VentasStatistics({ ventas, isLoading }) {
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [
       {
-        label: 'Ventas por Prototipo',
+        label: 'Ventas por estado',
         data: [],
         backgroundColor: [],
-        borderWidth: 0,
-      },
-    ],
+        borderWidth: 1
+      }
+    ]
   });
 
-  const { ventas, isLoading, isError } = useVentas({ desarrolloId, prototipoId });
-
   useEffect(() => {
-    if (!isLoading && !isError) {
-      const data = renderPrototipoChartData();
-      setChartData(data);
+    if (!ventas || ventas.length === 0) {
+      setChartData({
+        labels: ['Sin datos'],
+        datasets: [
+          {
+            label: 'Ventas por estado',
+            data: [1],
+            backgroundColor: ['#e5e7eb'],
+            borderWidth: 1
+          }
+        ]
+      });
+      return;
     }
-  }, [ventas, isLoading, isError]);
 
-  const renderPrototipoChartData = () => {
-    if (!ventas || ventas.length === 0) return [];
-
-    const ventasPorPrototipo: { [key: string]: { count: number; nombre: string } } = {};
+    const countByStatus = {
+      en_proceso: 0,
+      completada: 0,
+      cancelada: 0
+    };
 
     ventas.forEach(venta => {
-      if (venta.prototipo) {
-        // Use venta.prototipo directly which is defined in the Venta type
-        const prototipoId = venta.prototipo.id;
-        const prototipoNombre = venta.prototipo.nombre;
-        
-        if (!ventasPorPrototipo[prototipoId]) {
-          ventasPorPrototipo[prototipoId] = { count: 0, nombre: prototipoNombre };
-        }
-        
-        ventasPorPrototipo[prototipoId].count += 1;
+      if (countByStatus[venta.estado] !== undefined) {
+        countByStatus[venta.estado]++;
       }
     });
 
-    const labels = Object.values(ventasPorPrototipo).map(item => item.nombre);
-    const data = Object.values(ventasPorPrototipo).map(item => item.count);
-    const backgroundColor = generateColors(labels.length);
-
-    return {
-      labels: labels,
+    setChartData({
+      labels: ['En proceso', 'Completada', 'Cancelada'],
       datasets: [
         {
-          label: 'Ventas por Prototipo',
-          data: data,
-          backgroundColor: backgroundColor,
-          borderWidth: 0,
-        },
-      ],
-    };
-  };
+          label: 'Ventas por estado',
+          data: [
+            countByStatus.en_proceso,
+            countByStatus.completada,
+            countByStatus.cancelada
+          ],
+          backgroundColor: [
+            '#f59e0b', // warning/amber for in progress
+            '#10b981', // success/emerald for completed
+            '#ef4444', // danger/red for cancelled
+          ],
+          borderWidth: 1
+        }
+      ]
+    });
+  }, [ventas]);
 
-  const generateColors = (num: number) => {
-    const colors = [];
-    for (let i = 0; i < num; i++) {
-      colors.push('#' + Math.floor(Math.random() * 16777215).toString(16));
-    }
-    return colors;
-  };
+  // Calculate total ventas amount
+  const totalVentas = ventas?.reduce((sum, venta) => sum + venta.precio_total, 0) || 0;
+  
+  // Calculate average sale price
+  const avgVentaPrice = ventas && ventas.length > 0 
+    ? totalVentas / ventas.length 
+    : 0;
 
-  const totalVentas = ventas ? ventas.length : 0;
-  const totalIngresos = ventas ? ventas.reduce((acc, venta) => acc + venta.precio_total, 0) : 0;
+  // Get most popular development
+  const getPopularDesarrollo = () => {
+    if (!ventas || ventas.length === 0) return 'N/A';
+    
+    const desarrolloCounts = {};
+    
+    ventas.forEach(venta => {
+      if (venta.unidad && venta.unidad.prototipo && venta.unidad.prototipo.desarrollo) {
+        const desarrolloName = venta.unidad.prototipo.desarrollo.nombre;
+        desarrolloCounts[desarrolloName] = (desarrolloCounts[desarrolloName] || 0) + 1;
+      }
+    });
+    
+    const entries = Object.entries(desarrolloCounts);
+    if (entries.length === 0) return 'N/A';
+    
+    entries.sort((a, b) => b[1] - a[1]);
+    return entries[0][0];
+  };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Estadísticas de Ventas</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <h3 className="text-lg font-semibold">Ventas por Prototipo</h3>
-            {chartData.labels && chartData.labels.length > 0 ? (
-              <Doughnut data={chartData} />
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Ventas</CardTitle>
+          <div className="h-4 w-4 rounded-full bg-emerald-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(totalVentas)}</div>
+          <p className="text-xs text-muted-foreground">
+            {ventas?.length || 0} unidades
+          </p>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Precio Promedio</CardTitle>
+          <div className="h-4 w-4 rounded-full bg-blue-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(avgVentaPrice)}</div>
+          <p className="text-xs text-muted-foreground">Por unidad</p>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Desarrollo Popular</CardTitle>
+          <div className="h-4 w-4 rounded-full bg-violet-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold truncate">{getPopularDesarrollo()}</div>
+          <p className="text-xs text-muted-foreground">Más unidades vendidas</p>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Estado de Ventas</CardTitle>
+          <div className="h-4 w-4 rounded-full bg-amber-500" />
+        </CardHeader>
+        <CardContent className="pt-2">
+          <div className="h-[80px] w-full">
+            {isLoading ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="h-10 w-10 rounded-full border-2 border-t-transparent border-blue-600 animate-spin"></div>
+              </div>
             ) : (
-              <p className="text-muted-foreground">No hay datos de ventas para mostrar.</p>
+              <Doughnut 
+                data={chartData} 
+                options={{
+                  responsive: true, 
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      display: false,
+                    }
+                  }
+                }} 
+              />
             )}
           </div>
-          <div>
-            <h3 className="text-lg font-semibold">Información General</h3>
-            <div className="space-y-2">
-              <p>Total de Ventas: {totalVentas}</p>
-              <p>Ingresos Totales: {formatCurrency(totalIngresos)}</p>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
-};
+}
 
 export default VentasStatistics;

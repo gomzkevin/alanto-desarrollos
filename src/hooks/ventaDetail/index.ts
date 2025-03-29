@@ -10,10 +10,10 @@ export type { Comprador, VentaWithDetail };
 export const useVentaDetail = (ventaId?: string) => {
   const { data: venta, ...ventaQuery } = useVentaQuery(ventaId);
   const { data: compradores = [], ...compradoresQuery } = useCompradoresQuery(ventaId);
-  const { data: pagos = [], ...pagosQuery } = usePagosQuery(ventaId, compradores);
+  const { data: pagos = [], ...pagosQuery } = usePagosQuery(ventaId);
   const { updateVentaStatus } = useVentaDetailMutations();
 
-  const compradorVentaId = compradores.length ? compradores[0].id : null;
+  const compradorVentaId = compradores && compradores.length > 0 ? compradores[0].id : null;
 
   const montoPagado = pagos?.reduce((acc, pago) => acc + pago.monto, 0) || 0;
 

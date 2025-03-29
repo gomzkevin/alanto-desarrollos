@@ -3,9 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
-import useDesarrollos from './desarrollos';
-import usePrototipos from './usePrototipos';
-import useUserRole from './useUserRole';
+import { useDesarrollos } from './desarrollos';
+import { usePrototipos } from './usePrototipos';
+import { useUserRole } from './useUserRole';
 
 export type Lead = Tables<"leads">;
 

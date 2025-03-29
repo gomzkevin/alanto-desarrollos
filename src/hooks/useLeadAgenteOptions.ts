@@ -11,21 +11,26 @@ type AgenteOption = {
 const fetchAgentes = async (empresaId?: number): Promise<AgenteOption[]> => {
   if (!empresaId) return [];
   
-  const { data, error } = await supabase
-    .from('usuarios')
-    .select('id, nombre, email')
-    .eq('empresa_id', empresaId)
-    .eq('activo', true);
-  
-  if (error) {
-    console.error('Error fetching agentes:', error);
+  try {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('id, nombre, email')
+      .eq('empresa_id', empresaId)
+      .eq('activo', true);
+    
+    if (error) {
+      console.error('Error fetching agentes:', error);
+      return [];
+    }
+    
+    return (data || []).map(agente => ({
+      label: agente.nombre,
+      value: agente.id
+    }));
+  } catch (error) {
+    console.error('Unexpected error fetching agentes:', error);
     return [];
   }
-  
-  return (data || []).map(agente => ({
-    label: agente.nombre,
-    value: agente.id
-  }));
 };
 
 export const useLeadAgenteOptions = () => {

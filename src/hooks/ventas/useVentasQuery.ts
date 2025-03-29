@@ -78,7 +78,7 @@ export const useVentasQuery = (options: FetchVentasOptions = {}) => {
     return data.map(venta => ({
       id: venta.id,
       created_at: venta.created_at,
-      lead_id: venta.lead_id,
+      lead_id: venta.lead_id || undefined, // Add lead_id with a fallback to undefined
       unidad_id: venta.unidad_id,
       estado: venta.estado,
       precio_total: venta.precio_total,
@@ -95,19 +95,14 @@ export const useVentasQuery = (options: FetchVentasOptions = {}) => {
       unidad: {
         id: venta.unidad?.id || "",
         numero: venta.unidad?.numero || "",
-        prototipo_id: venta.unidad?.prototipo?.id || ""
+        prototipo_id: venta.unidad?.prototipo?.id || "" // Add prototipo_id to match the Venta type
       }
     })) as Venta[];
   }, [empresaId, desarrolloId, prototipoId, unidadId, estado, limit]);
 
-  const result = useQuery({
+  return useQuery({
     queryKey: ['ventas', empresaId, desarrolloId, prototipoId, unidadId, estado, limit],
     queryFn: fetchVentas,
     enabled: enabled && !!empresaId && !isUserRoleLoading
   });
-
-  return {
-    ...result,
-    ventas: result.data || []
-  };
 };
