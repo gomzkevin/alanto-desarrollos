@@ -22,11 +22,11 @@ const NuevaCotizacion = () => {
   };
   
   // Configurar los valores predeterminados para asegurar que se aplica el formato currency
-  // y para establecer el modo de cliente nuevo como predeterminado
+  // y para establecer el modo de cliente nuevo como predeterminado de manera explícita
   const defaultValues = {
     monto_anticipo: 0,
     monto_finiquito: 0,
-    isExistingClient: false  // Explicitly set to false to default to creating a new client
+    isExistingClient: false  // Explicitly set to false to always default to creating a new client
   };
   
   console.log('NuevaCotizacion: Using defaultValues:', defaultValues);

@@ -32,6 +32,7 @@ const useResourceActions = ({
 
   const saveResource = async (resource: FormValues): Promise<boolean> => {
     console.log('Saving resource:', resource);
+    console.log('Client config:', clientConfig);
     
     if (!resource) {
       console.error('No resource data provided');
@@ -80,8 +81,7 @@ const useResourceActions = ({
             // Create the lead explicitly with an insert operation
             const { data: newLeads, error: leadError } = await supabase
               .from('leads')
-              .insert([leadData])
-              .select('*');
+              .insert([leadData]);
             
             if (leadError) {
               console.error('Error creating new lead:', leadError);
