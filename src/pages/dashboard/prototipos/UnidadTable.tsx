@@ -75,10 +75,15 @@ export const UnidadTable = React.memo(({
       onRefresh();
     }
   }, [onRefresh]);
+  
+  // Manejador para añadir unidad (para el EmptyState)
+  const handleAddClick = useCallback(() => {
+    setIsAddDialogOpen(true);
+  }, [setIsAddDialogOpen]);
 
   // Si no hay unidades, mostrar estado vacío
   if (!isLoading && (!sortedUnidades || sortedUnidades.length === 0)) {
-    return <EmptyUnidadState />;
+    return <EmptyUnidadState onAddClick={handleAddClick} />;
   }
 
   return (

@@ -132,43 +132,13 @@ export const PrototipoUnidades = React.memo(({
             <span className="ml-3 text-lg text-slate-600">Cargando unidades...</span>
           </div>
         ) : (
-          <TabsContent value={currentTab}>
-            {currentTab === 'todas' && (
-              <UnidadTable 
-                key="unidades-todas"
-                prototipo={prototipo}
-                unidades={filteredUnidades} 
-                isLoading={false} 
-                onRefresh={onRefreshUnidades}
-              />
-            )}
-            {currentTab === 'disponibles' && (
-              <UnidadTable 
-                key="unidades-disponibles"
-                prototipo={prototipo}
-                unidades={filteredUnidades} 
-                isLoading={false} 
-                onRefresh={onRefreshUnidades}
-              />
-            )}
-            {currentTab === 'apartadas' && (
-              <UnidadTable 
-                key="unidades-apartadas"
-                prototipo={prototipo}
-                unidades={filteredUnidades} 
-                isLoading={false} 
-                onRefresh={onRefreshUnidades}
-              />
-            )}
-            {currentTab === 'vendidas' && (
-              <UnidadTable 
-                key="unidades-vendidas"
-                prototipo={prototipo}
-                unidades={filteredUnidades} 
-                isLoading={false} 
-                onRefresh={onRefreshUnidades}
-              />
-            )}
+          <TabsContent value={currentTab} key={currentTab}>
+            <UnidadTable 
+              prototipo={prototipo}
+              unidades={filteredUnidades} 
+              isLoading={false} 
+              onRefresh={onRefreshUnidades}
+            />
           </TabsContent>
         )}
       </Tabs>

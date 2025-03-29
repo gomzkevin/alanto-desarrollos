@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import useUnidades from "@/hooks/useUnidades";
@@ -246,7 +247,7 @@ export const useUnidadTable = ({
   }, [currentUnidad, updateUnidad, toast, refetch]);
 
   const handleDeleteUnidad = useCallback(async () => {
-    if (!currentUnidad) return;
+    if (!currentUnidad) return Promise.resolve();
     
     if (isProcessingRef.current) {
       // Queue the operation for later if already processing
@@ -271,7 +272,7 @@ export const useUnidadTable = ({
       };
       
       pendingOperationRef.current = operation;
-      return;
+      return Promise.resolve();
     }
     
     isProcessingRef.current = true;
@@ -296,6 +297,8 @@ export const useUnidadTable = ({
           setIsProcessing(false);
         }, 500);
       }, 500);
+      
+      return Promise.resolve();
     } catch (error: any) {
       console.error("Error deleting unidad:", error);
       toast({
@@ -305,6 +308,7 @@ export const useUnidadTable = ({
       });
       isProcessingRef.current = false;
       setIsProcessing(false);
+      return Promise.reject(error);
     }
   }, [currentUnidad, deleteUnidad, toast, refetch]);
 
@@ -358,6 +362,8 @@ export const useUnidadTable = ({
     setTimeout(() => {
       refetch();
     }, 500);
+    
+    return Promise.resolve();
   }, [currentUnidad, closeSellDialog, refetch]);
 
   // Clean up function for the component
@@ -392,8 +398,8 @@ export const useUnidadTable = ({
     closeDeleteDialog,
     closeSellDialog,
     handleAddUnidad,
-    handleEditUnidad: handleAddUnidad, // Temporarily reuse the add handler
-    handleDeleteUnidad: () => {}, // Placeholder
+    handleEditUnidad,
+    handleDeleteUnidad,
     handleSellUnidad
   };
 };
