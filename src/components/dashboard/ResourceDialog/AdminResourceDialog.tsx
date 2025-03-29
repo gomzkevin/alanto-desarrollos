@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import ResourceDialog from './index';
 import { ResourceType } from './types';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface AdminResourceDialogProps {
   resourceType: ResourceType;
@@ -35,17 +36,39 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
   defaultValues
 }) => {
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+  
+  const { isLoading: isUserLoading } = useUserRole();
+  
   const { 
     canCreateDesarrollo, 
     canCreatePrototipo, 
     canCreateLead,
     canCreateCotizacion,
-    canCreateUnidad
+    canCreateUnidad,
+    hasActiveSubscription
   } = usePermissions();
+
+  // Update permissions loaded state
+  useEffect(() => {
+    // Check if subscription info is loaded asynchronously
+    const checkPermissions = async () => {
+      if (!isUserLoading) {
+        await hasActiveSubscription();
+        setPermissionsLoaded(true);
+      }
+    };
+    
+    checkPermissions();
+  }, [isUserLoading, hasActiveSubscription]);
 
   // Check if button should be disabled based on resource type
   const isDisabled = React.useMemo(() => {
-    if (resourceId) return false; // Don't disable if editing existing resource
+    // Always enable editing existing resources
+    if (resourceId) return false;
+    
+    // If permissions aren't loaded yet, disable by default
+    if (!permissionsLoaded) return true;
     
     if (resourceType === 'desarrollos') {
       return !canCreateDesarrollo();
@@ -60,7 +83,7 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
     }
     
     return false;
-  }, [resourceType, resourceId, canCreateDesarrollo, canCreatePrototipo, canCreateLead, canCreateCotizacion, canCreateUnidad]);
+  }, [resourceType, resourceId, permissionsLoaded, canCreateDesarrollo, canCreatePrototipo, canCreateLead, canCreateCotizacion, canCreateUnidad]);
 
   const handleOpen = () => {
     setDialogOpen(true);
@@ -82,6 +105,13 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
 
   // Use provided open state if it exists, otherwise use internal state
   const isOpen = open !== undefined ? open : dialogOpen;
+
+  // Log states for debugging
+  console.log(`AdminResourceDialog for ${resourceType}:`, {
+    permissionsLoaded,
+    isDisabled,
+    resourceId: resourceId || 'none'
+  });
 
   return (
     <>

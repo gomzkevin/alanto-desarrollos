@@ -11,6 +11,7 @@ interface UnidadTableActionsProps {
   showGenerateButton?: boolean;
   canAddMore?: boolean;
   alwaysAllowGenerate?: boolean; // New prop to allow generating units regardless of subscription limits
+  permissionsLoaded?: boolean; // New prop to track if permissions have loaded
 }
 
 export const UnidadTableActions = ({ 
@@ -20,7 +21,8 @@ export const UnidadTableActions = ({
   totalUnidades,
   showGenerateButton = true,
   canAddMore = true,
-  alwaysAllowGenerate = false // Default to false for backward compatibility
+  alwaysAllowGenerate = false, // Default to false for backward compatibility
+  permissionsLoaded = true // Default to true for backward compatibility
 }: UnidadTableActionsProps) => {
   // Mostrar botón de generar unidades solo cuando:
   // 1. Se solicita mostrar el botón (showGenerateButton)
@@ -42,8 +44,12 @@ export const UnidadTableActions = ({
   const noUnidadesYet = unidadesCount === 0;
   
   // Determine if generate button should be disabled
-  // It should NOT be disabled if alwaysAllowGenerate is true
-  const isGenerateButtonDisabled = !canAddMore && !alwaysAllowGenerate;
+  // It should be disabled if permissions haven't loaded yet OR
+  // (subscription limits reached AND alwaysAllowGenerate is false)
+  const isGenerateButtonDisabled = !permissionsLoaded || (!canAddMore && !alwaysAllowGenerate);
+  
+  // Determine if add button should be disabled
+  const isAddButtonDisabled = !permissionsLoaded || !canAddMore;
   
   return (
     <div className="flex space-x-2">
@@ -51,7 +57,6 @@ export const UnidadTableActions = ({
         <Button 
           onClick={onGenerateClick} 
           variant={noUnidadesYet ? "default" : "outline"}
-          // Only disable if subscription limits reached AND alwaysAllowGenerate is false
           disabled={isGenerateButtonDisabled}
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -60,7 +65,10 @@ export const UnidadTableActions = ({
       )}
       
       {shouldShowAddButton && (
-        <Button onClick={onAddClick} disabled={!canAddMore}>
+        <Button 
+          onClick={onAddClick} 
+          disabled={isAddButtonDisabled}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Agregar unidad
         </Button>
