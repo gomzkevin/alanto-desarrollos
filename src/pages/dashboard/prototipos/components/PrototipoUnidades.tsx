@@ -117,48 +117,40 @@ export const PrototipoUnidades = React.memo(({
             <span className="ml-3 text-lg text-slate-600">Cargando unidades...</span>
           </div>
         ) : (
-          <TabsContent value={currentTab} forceMount>
-            <div style={{ display: currentTab === 'todas' ? 'block' : 'none' }}>
-              {currentTab === 'todas' && (
-                <UnidadTable 
-                  prototipo={prototipo}
-                  unidades={filteredUnidades} 
-                  isLoading={false} 
-                  onRefresh={onRefreshUnidades}
-                />
-              )}
-            </div>
-            <div style={{ display: currentTab === 'disponibles' ? 'block' : 'none' }}>
-              {currentTab === 'disponibles' && (
-                <UnidadTable 
-                  prototipo={prototipo}
-                  unidades={filteredUnidades} 
-                  isLoading={false} 
-                  onRefresh={onRefreshUnidades}
-                />
-              )}
-            </div>
-            <div style={{ display: currentTab === 'apartadas' ? 'block' : 'none' }}>
-              {currentTab === 'apartadas' && (
-                <UnidadTable 
-                  prototipo={prototipo}
-                  unidades={filteredUnidades} 
-                  isLoading={false} 
-                  onRefresh={onRefreshUnidades}
-                />
-              )}
-            </div>
-            <div style={{ display: currentTab === 'vendidas' ? 'block' : 'none' }}>
-              {currentTab === 'vendidas' && (
-                <UnidadTable 
-                  prototipo={prototipo}
-                  unidades={filteredUnidades} 
-                  isLoading={false} 
-                  onRefresh={onRefreshUnidades}
-                />
-              )}
-            </div>
-          </TabsContent>
+          <>
+            <TabsContent value="todas">
+              <UnidadTable 
+                prototipo={prototipo}
+                unidades={filteredUnidades} 
+                isLoading={false} 
+                onRefresh={onRefreshUnidades}
+              />
+            </TabsContent>
+            <TabsContent value="disponibles">
+              <UnidadTable 
+                prototipo={prototipo}
+                unidades={filteredUnidades} 
+                isLoading={false} 
+                onRefresh={onRefreshUnidades}
+              />
+            </TabsContent>
+            <TabsContent value="apartadas">
+              <UnidadTable 
+                prototipo={prototipo}
+                unidades={filteredUnidades} 
+                isLoading={false} 
+                onRefresh={onRefreshUnidades}
+              />
+            </TabsContent>
+            <TabsContent value="vendidas">
+              <UnidadTable 
+                prototipo={prototipo}
+                unidades={filteredUnidades} 
+                isLoading={false} 
+                onRefresh={onRefreshUnidades}
+              />
+            </TabsContent>
+          </>
         )}
       </Tabs>
       
