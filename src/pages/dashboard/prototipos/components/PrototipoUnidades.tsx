@@ -42,7 +42,7 @@ export const PrototipoUnidades = React.memo(({
   const [isGenerating, setIsGenerating] = useState(false);
   const { canCreateUnidad } = usePermissions();
   
-  // Memoize filtered units to prevent unnecessary re-renders
+  // Memoize unidades filtradas para prevenir re-renderizados innecesarios
   const filteredUnidades = useMemo(() => {
     if (currentTab === "todas") return unidades;
     if (currentTab === "disponibles") return unidades.filter(u => u.estado === 'disponible');
@@ -51,16 +51,16 @@ export const PrototipoUnidades = React.memo(({
     return unidades;
   }, [unidades, currentTab]);
   
-  // Calculate remaining units
+  // Calcular unidades restantes
   const unidadesRestantes = useMemo(() => 
     (prototipo.total_unidades || 0) - unidades.length,
     [prototipo.total_unidades, unidades.length]
   );
   
-  // Memoize permissions check to prevent recalculation on every render
+  // Memoize verificación de permisos para prevenir recálculo en cada renderizado
   const canCreateIndividualUnit = useMemo(() => canCreateUnidad(), [canCreateUnidad]);
 
-  // Handler for generating units
+  // Manejador para generar unidades
   const handleGenerarUnidades = async () => {
     if (unidadesRestantes <= 0 || isGenerating) return;
     
@@ -76,7 +76,7 @@ export const PrototipoUnidades = React.memo(({
     }
   };
 
-  // Handler for "Generar unidades" button click
+  // Manejador para clic en botón "Generar unidades"
   const handleGenerateClick = React.useCallback(() => {
     setGenerarUnidadesModalOpen(true);
   }, []);
@@ -103,8 +103,8 @@ export const PrototipoUnidades = React.memo(({
           unidadesCount={unidades.length}
           totalUnidades={prototipo.total_unidades || 0}
           showGenerateButton={true}
-          canAddMore={canCreateIndividualUnit} // Only apply limit to individual unit creation
-          alwaysAllowGenerate={true} // Allow generating units even if limits reached
+          canAddMore={canCreateIndividualUnit} // Solo aplicar límite a creación individual de unidades
+          alwaysAllowGenerate={true} // Permitir generar unidades incluso si se alcanzaron los límites
         />
       </div>
       

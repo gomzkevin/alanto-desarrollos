@@ -35,40 +35,41 @@ export const usePrototipoDetail = () => {
   const { toast } = useToast();
   const [isUpdatingImage, setIsUpdatingImage] = useState(false);
   
-  // Use stable query configuration to prevent re-renders
-  const {
-    data: prototipo,
-    isLoading,
-    error,
-    refetch
-  } = useQuery({
+  // Consulta estable que no cambia entre renderizados
+  const queryResult = useQuery({
     queryKey: ['prototipo', id],
     queryFn: () => fetchPrototipoById(id as string),
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5 minutos
     retry: 1,
-    refetchOnWindowFocus: false // Prevent refetching on window focus
+    refetchOnWindowFocus: false // Prevenir recargas al cambiar de ventana
   });
   
-  const handleBack = useCallback(() => {
-    const desarrollo = prototipo?.desarrollo as Desarrollo | undefined;
+  const handleBack = useCallback((e?: React.MouseEvent) => {
+    // Prevenir comportamiento por defecto si se proporciona un evento
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    const desarrollo = queryResult.data?.desarrollo as Desarrollo | undefined;
     if (desarrollo?.id) {
       navigate(`/dashboard/desarrollos/${desarrollo.id}`);
     } else {
       navigate('/dashboard/desarrollos');
     }
-  }, [prototipo?.desarrollo, navigate]);
+  }, [queryResult.data?.desarrollo, navigate]);
   
   const updatePrototipoImage = useCallback(async (imageUrl: string) => {
-    if (isUpdatingImage) return false;
-    
-    if (!id) {
-      console.error('No se puede actualizar la imagen: ID del prototipo no disponible');
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar la imagen: ID no válido",
-        variant: "destructive"
-      });
+    if (isUpdatingImage || !id) {
+      console.error('No se puede actualizar la imagen: ID no disponible o actualización en progreso');
+      if (!id) {
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar la imagen: ID no válido",
+          variant: "destructive"
+        });
+      }
       return false;
     }
     
@@ -89,13 +90,13 @@ export const usePrototipoDetail = () => {
           description: `No se pudo guardar la imagen: ${error.message}`,
           variant: "destructive"
         });
-        throw error;
+        return false;
       }
       
       console.log('Imagen de prototipo actualizada exitosamente en la base de datos');
       
       // Refrescar los datos después de la actualización
-      await refetch();
+      queryResult.refetch();
       
       toast({
         title: "Éxito",
@@ -109,14 +110,14 @@ export const usePrototipoDetail = () => {
     } finally {
       setIsUpdatingImage(false);
     }
-  }, [id, toast, refetch, isUpdatingImage]);
+  }, [id, toast, queryResult.refetch, isUpdatingImage]);
   
   return {
     id,
-    prototipo,
-    isLoading,
-    error,
-    refetch,
+    prototipo: queryResult.data,
+    isLoading: queryResult.isLoading,
+    error: queryResult.error,
+    refetch: queryResult.refetch,
     handleBack,
     updatePrototipoImage
   };

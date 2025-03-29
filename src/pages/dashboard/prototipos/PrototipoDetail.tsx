@@ -25,8 +25,8 @@ const PrototipoDetail = () => {
   const { isAdmin } = useUserRole();
   const { canCreatePrototipo, canCreateUnidad } = usePermissions();
   
-  // Unidades fetching with stable params
-  const unidadesParams = { prototipo_id: id };
+  // Consulta de unidades con parámetros estables
+  const unidadesParams = id ? { prototipo_id: id } : undefined;
   const { 
     unidades: fetchedUnidades, 
     isLoading: unidadesLoading, 
@@ -34,45 +34,45 @@ const PrototipoDetail = () => {
     createMultipleUnidades
   } = useUnidades(unidadesParams);
   
-  // Ensure unidades is always an array
+  // Asegurar que unidades siempre sea un array
   const safeUnidades = Array.isArray(fetchedUnidades) ? fetchedUnidades : [];
   
-  // Memoize unit counts for stability
+  // Memoize conteo de unidades para estabilidad
   const unitCounts = useUnitCounts(safeUnidades);
   
-  // Permissions checks (memoized values would be better)
+  // Verificaciones de permisos (valores memorizados serían mejores)
   const canAddMore = canCreatePrototipo();
   const canAddUnidades = canCreateUnidad();
   
-  // Throttled refresh handler
+  // Manejador de actualización con límite de frecuencia
   const handleRefresh = useCallback(() => {
     const now = Date.now();
     const timeSinceLastRefresh = now - lastRefreshTimeRef.current;
     
-    // No refreshes more frequent than every 3 seconds
+    // No permitir actualizaciones más frecuentes que cada 3 segundos
     if (isRefreshing || timeSinceLastRefresh < 3000) {
-      console.log('Avoiding rapid refresh:', timeSinceLastRefresh, 'ms since last refresh');
+      console.log('Evitando actualización rápida:', timeSinceLastRefresh, 'ms desde la última actualización');
       return;
     }
     
     setIsRefreshing(true);
-    console.log('Manual refresh triggered at', new Date().toISOString());
+    console.log('Actualización manual iniciada en', new Date().toISOString());
     lastRefreshTimeRef.current = now;
     
     refetchUnidades().finally(() => {
-      // Delay to avoid flashing
+      // Retraso para evitar parpadeo
       setTimeout(() => {
         setIsRefreshing(false);
       }, 800);
     });
   }, [refetchUnidades, isRefreshing]);
   
-  // Effect to refresh when dialogs change
+  // Efecto para actualizar cuando cambian los diálogos
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     
     if (!openAddUnidadDialog && !openEditDialog) {
-      // Add a delay to refresh only after closing dialogs
+      // Agregar un retraso para actualizar solo después de cerrar los diálogos
       timeoutId = setTimeout(() => {
         handleRefresh();
       }, 1000);
@@ -98,7 +98,7 @@ const PrototipoDetail = () => {
         description: `Se han generado ${cantidad} unidades exitosamente.`
       });
       
-      // Add a long delay before refreshing
+      // Agregar un retraso largo antes de actualizar
       setTimeout(handleRefresh, 1500);
     } catch (error) {
       console.error('Error al generar unidades:', error);
@@ -110,9 +110,9 @@ const PrototipoDetail = () => {
     }
   }, [id, createMultipleUnidades, toast, handleRefresh]);
   
-  // Memoize event handlers
+  // Memoize manejadores de eventos
   const handleAddUnidadClick = useCallback(() => {
-    // Check if user can create units based on their plan
+    // Verificar si el usuario puede crear unidades según su plan
     if (isAdmin() && canAddUnidades) {
       setOpenAddUnidadDialog(true);
     } else if (!canAddUnidades) {
@@ -131,7 +131,7 @@ const PrototipoDetail = () => {
   }, [isAdmin, canAddUnidades, toast]);
   
   const handleEditClick = useCallback(() => {
-    // Only allow editing if admin
+    // Solo permitir edición si es administrador
     if (isAdmin()) {
       setOpenEditDialog(true);
     } else {
@@ -151,7 +151,7 @@ const PrototipoDetail = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={(e) => { e.preventDefault(); handleBack(); }} 
+              onClick={(e) => { e.preventDefault(); handleBack(e); }} 
               type="button"
             >
               <ChevronLeft className="mr-1 h-4 w-4" />
@@ -175,7 +175,7 @@ const PrototipoDetail = () => {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={(e) => { e.preventDefault(); handleBack(); }} 
+            onClick={(e) => { e.preventDefault(); handleBack(e); }} 
             type="button"
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
@@ -203,7 +203,7 @@ const PrototipoDetail = () => {
     );
   }
   
-  // Combined loading state to avoid contradictory states
+  // Estado de carga combinado para evitar estados contradictorios
   const combinedLoadingState = isRefreshing || unidadesLoading;
   
   return (
@@ -211,8 +211,8 @@ const PrototipoDetail = () => {
       <div className="space-y-6 p-6 pb-16">
         <PrototipoHeader 
           prototipo={prototipo} 
-          onBack={(e) => { if(e) e.preventDefault(); handleBack(); }} 
-          onEdit={(e) => { if(e) e.preventDefault(); handleEditClick(); }} 
+          onBack={(e) => { if(e) { e.preventDefault(); } handleBack(e); }} 
+          onEdit={(e) => { if(e) { e.preventDefault(); } handleEditClick(); }} 
           updatePrototipoImage={updatePrototipoImage}
         />
         

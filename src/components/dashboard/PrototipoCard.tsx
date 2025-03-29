@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bed, Bath, Square, Home, Building2 } from 'lucide-react';
+import { Bed, Bath, Square, Building2 } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
 import { countUnidadesByStatus } from '@/hooks/unidades/countUtils';
 import { useNavigate } from 'react-router-dom';
@@ -25,16 +25,17 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
   });
   const navigate = useNavigate();
   
-  // Memoized function for handling the click on Ver detalles
+  // Memoize el manejador de clic para evitar re-renderizados
   const handleViewDetails = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Detener propagación para evitar comportamientos inesperados
     
     if (onViewDetails) {
       onViewDetails(prototipo.id);
     } else if (onClick) {
       onClick(prototipo.id);
     } else {
-      // Use React Router's navigate instead of location change to prevent page refresh
+      // Usar navigate en lugar de cambiar location.href para evitar recargas
       navigate(`/dashboard/prototipos/${prototipo.id}`);
     }
   }, [prototipo.id, onViewDetails, onClick, navigate]);
@@ -46,12 +47,12 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
       setIsLoading(true);
       
       try {
-        // Fetch image if available
+        // Cargar imagen si está disponible
         if (prototipo.imagen_url) {
           setImageUrl(prototipo.imagen_url);
         }
         
-        // Get actual unit counts
+        // Obtener conteo real de unidades
         const unitStats = await countUnidadesByStatus(prototipo.id);
         if (isMounted) {
           setUnidadesStats(unitStats);
@@ -75,7 +76,7 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
   const fallbackImage = "/placeholder.svg";
   
   const getUnitCountDisplay = () => {
-    // Use the actual unit stats from the database for available/total count
+    // Usar estadísticas de unidades reales de la base de datos
     const available = unidadesStats.disponibles;
     const total = unidadesStats.total || prototipo.total_unidades || 0;
     
@@ -139,7 +140,7 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
           variant="outline"
           className="w-full"
           onClick={handleViewDetails}
-          type="button" // Explicitly setting button type to prevent form submission behavior
+          type="button" // Establecemos explícitamente el tipo para evitar comportamiento de submit
         >
           Ver detalles
         </Button>

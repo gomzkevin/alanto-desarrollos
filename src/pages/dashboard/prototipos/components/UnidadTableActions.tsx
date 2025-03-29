@@ -24,7 +24,7 @@ export const UnidadTableActions = React.memo(({
   alwaysAllowGenerate = false,
   permissionsLoaded = true
 }: UnidadTableActionsProps) => {
-  // Memoize visibility conditions
+  // Memoize las condiciones de visibilidad
   const shouldShowGenerateButton = useMemo(() => {
     return showGenerateButton && 
            unidadesCount < totalUnidades &&
@@ -42,7 +42,7 @@ export const UnidadTableActions = React.memo(({
   const isGenerateButtonDisabled = !permissionsLoaded || (!canAddMore && !alwaysAllowGenerate);
   const isAddButtonDisabled = !permissionsLoaded || !canAddMore;
   
-  // Memoize click handlers to prevent re-renders
+  // Memoize los manejadores de clic para prevenir re-renderizados
   const handleAddClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
