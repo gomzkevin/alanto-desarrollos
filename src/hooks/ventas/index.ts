@@ -1,12 +1,11 @@
 
 import { useVentasQuery } from './useVentasQuery';
 import { useVentasMutations } from './useVentasMutations';
-export type { FetchVentasOptions } from './useVentasQuery';
+import { Venta, VentasFilter, FetchVentasOptions } from './types';
 
-// Re-export the useVentasQuery hook and other hooks related to ventas
 export { useVentasQuery, useVentasMutations };
+export type { Venta, VentasFilter, FetchVentasOptions };
 
-// Export a wrapper hook that combines the functionality of both hooks
 export const useVentas = (options: FetchVentasOptions = {}) => {
   const query = useVentasQuery(options);
   const mutations = useVentasMutations();
@@ -16,3 +15,5 @@ export const useVentas = (options: FetchVentasOptions = {}) => {
     ...mutations
   };
 };
+
+export default useVentas;

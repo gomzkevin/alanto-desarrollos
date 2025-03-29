@@ -1,20 +1,15 @@
+
 import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Venta } from './types';
-
-export interface FetchVentasOptions {
-  desarrolloId?: string;
-  prototipoId?: string;
-  estado?: string;
-  limit?: number;
-}
+import { Venta, FetchVentasOptions } from './types';
 
 export const useVentasQuery = (options: FetchVentasOptions = {}) => {
   const { 
     desarrolloId,
     prototipoId,
+    unidadId,
     estado,
     limit,
     enabled = true
@@ -22,7 +17,7 @@ export const useVentasQuery = (options: FetchVentasOptions = {}) => {
   
   const { empresaId, isLoading: isUserRoleLoading } = useUserRole();
 
-  const fetchVentas = useCallback(async (options: FetchVentasOptions = {}): Promise<Venta[]> => {
+  const fetchVentas = useCallback(async (): Promise<Venta[]> => {
     console.log('Fetching ventas with options:', { ...options, empresaId });
     
     let query = supabase
@@ -90,6 +85,7 @@ export const useVentasQuery = (options: FetchVentasOptions = {}) => {
       fecha_inicio: venta.fecha_inicio,
       es_fraccional: venta.es_fraccional,
       fecha_actualizacion: venta.fecha_actualizacion,
+      notas: venta.notas,
       prototipo: venta.unidad?.prototipo ? {
         id: venta.unidad.prototipo.id,
         nombre: venta.unidad.prototipo.nombre,

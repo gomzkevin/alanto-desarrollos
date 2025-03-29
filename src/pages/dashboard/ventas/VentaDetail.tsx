@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -161,7 +162,7 @@ const VentaDetail = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Última actualización</p>
-                  <p className="font-medium">{new Date(venta.created_at).toLocaleDateString()}</p>
+                  <p className="font-medium">{new Date(venta.fecha_actualizacion).toLocaleDateString()}</p>
                 </div>
               </div>
               

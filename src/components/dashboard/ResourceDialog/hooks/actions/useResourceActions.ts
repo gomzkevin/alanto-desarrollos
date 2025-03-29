@@ -92,17 +92,24 @@ export const useResourceActions = ({
         };
 
         // Remove fields that should not be sent to the database
-        delete processedData.image;
-        delete processedData.isNewClient;
+        const finalData = { ...processedData };
+        
+        if ('image' in finalData) {
+          delete finalData.image;
+        }
+        
+        if ('isNewClient' in finalData) {
+          delete finalData.isNewClient;
+        }
 
         let result: ResourceOperationResult | null = null;
 
         if (resourceId) {
           // Update existing resource
-          result = await updateResource(resourceType, resourceId, processedData);
+          result = await updateResource(resourceType, resourceId, finalData);
         } else {
           // Create new resource
-          result = await createResource(resourceType, processedData);
+          result = await createResource(resourceType, finalData);
         }
 
         if (result && result.success) {
@@ -165,3 +172,5 @@ export const useResourceActions = ({
     handleImageUpload,
   };
 };
+
+export default useResourceActions;

@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,13 +45,11 @@ const fetchCompradores = async (ventaId: string): Promise<Comprador[]> => {
 export const useCompradoresQuery = (ventaId?: string) => {
   const queryKey = useCallback(() => ['compradores', ventaId], [ventaId]);
 
-  const query = useQuery(
-    queryKey(),
-    () => fetchCompradores(ventaId || ''),
-    {
-      enabled: !!ventaId,
-    }
-  );
+  const query = useQuery({
+    queryKey: queryKey(),
+    queryFn: () => fetchCompradores(ventaId || ''),
+    enabled: !!ventaId,
+  });
 
   return query;
 };

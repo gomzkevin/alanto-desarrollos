@@ -1,10 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
 import { Textarea } from '@/components/ui/textarea';
 import { useVentas } from '@/hooks/useVentas';
@@ -39,7 +39,7 @@ export const VentaEditDialog: React.FC<VentaEditDialogProps> = ({
   const handleSubmit = async (values: any) => {
     setIsSubmitting(true);
     try {
-      await updateVenta({
+      await updateVenta.mutateAsync({
         id: venta.id,
         ...values
       });
@@ -134,3 +134,5 @@ export const VentaEditDialog: React.FC<VentaEditDialogProps> = ({
     </Dialog>
   );
 };
+
+export default VentaEditDialog;

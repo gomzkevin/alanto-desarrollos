@@ -1,16 +1,21 @@
+
 import { useState, useEffect } from 'react';
 import { FieldDefinition, ResourceType } from '../types';
-import useCategorias from '@/hooks/useCategorias';
-import useSubestados from '@/hooks/useSubestados';
-import useLeadAgenteOptions from '@/hooks/useLeadAgenteOptions';
 import { useDesarrollos } from '@/hooks/desarrollos';
+
+// Mock categories and statuses until the real hooks are created
+const useMockCategories = () => ({ categorias: [] });
+const useMockSubestados = () => ({ subestados: [] });
+const useMockLeadAgenteOptions = () => ({ leadAgenteOptions: [] });
 
 export const useResourceFields = (resourceType: ResourceType, selectedStatus?: string) => {
   const [fields, setFields] = useState<FieldDefinition[]>([]);
-  const { categorias: intereses } = useCategorias();
-  const { subestados } = useSubestados(selectedStatus);
-  const { leadAgenteOptions } = useLeadAgenteOptions();
   const { desarrollos } = useDesarrollos();
+  
+  // Use mock data temporarily
+  const { categorias: intereses } = useMockCategories();
+  const { subestados } = useMockSubestados();
+  const { leadAgenteOptions } = useMockLeadAgenteOptions();
 
   useEffect(() => {
     let newFields: FieldDefinition[] = [];
@@ -140,3 +145,5 @@ const LEAD_ESTADOS = [
   { label: 'Cerrado', value: 'cerrado' },
   { label: 'Descartado', value: 'descartado' },
 ];
+
+export default useResourceFields;

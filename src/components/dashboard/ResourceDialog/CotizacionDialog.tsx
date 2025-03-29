@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { FormValues } from './types';
 import { CotizacionDialogContent } from './components/CotizacionDialogContent';
@@ -183,8 +184,8 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     }
   };
 
-  const handleSaveResource = async () => {
-    console.log("handleSaveResource called with resource:", resource);
+  const saveResource = useCallback(async () => {
+    console.log("saveResource called with resource:", resource);
     if (!resource) return false;
     
     setIsSubmitting(true);
@@ -197,7 +198,10 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
         });
       }
       
-      await handleFormSubmit(resource);
+      await handleFormSubmit({
+        ...resource,
+        isNewClient: !isExistingClient
+      });
       return true;
     } catch (error) {
       console.error('Error saving resource:', error);
@@ -205,7 +209,7 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [resource, isExistingClient, resourceId, newClientData, handleFormSubmit]);
 
   const handleNewClientDataChange = (field: string, value: string) => {
     console.log(`Updating new client ${field} to:`, value);
@@ -247,7 +251,7 @@ const CotizacionDialog: React.FC<CotizacionDialogProps> = ({
         handleSwitchChange={handleSwitchChange}
         handleLeadSelect={handleLeadSelect}
         handleAmenitiesChange={setSelectedAmenities}
-        saveResource={handleSaveResource}
+        saveResource={saveResource}
         desarrolloId={desarrolloId}
         lead_id={lead_id}
         handleImageUpload={handleImageUpload}
