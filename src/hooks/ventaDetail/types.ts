@@ -1,39 +1,36 @@
 
-import { Venta } from '../ventas/types';
-import { Pago } from '../usePagos';
-
-export interface Comprador {
+export type Comprador = {
   id: string;
-  comprador_id: string;
   nombre: string;
-  porcentaje: number;
-  pagos_realizados?: number;
-  total_pagos?: number;
-}
+  email: string;
+  telefono: string;
+  porcentaje_propiedad: number;
+  monto_comprometido: number;
+};
 
-// Extended Venta interface to ensure unidad has the id property
-export interface VentaWithDetail extends Omit<Venta, 'unidad'> {
-  unidad?: {
+export type VentaWithDetail = {
+  id: string;
+  unidad_id: string;
+  estado: string;
+  precio_total: number;
+  fecha_inicio: string;
+  es_fraccional: boolean;
+  created_at: string;
+  fecha_actualizacion: string;
+  notas?: string;
+  lead_id?: string;
+  unidad: {
     id: string;
     numero: string;
     prototipo?: {
-      nombre: string;
+      id?: string;
+      nombre?: string;
+      precio?: number;
       desarrollo?: {
-        nombre: string;
+        id?: string;
+        nombre?: string;
         empresa_id?: number;
       };
     };
   };
-}
-
-export interface UseVentaDetailReturn {
-  venta: VentaWithDetail | null;
-  compradores: Comprador[];
-  pagos: Pago[];
-  isLoading: boolean;
-  montoPagado: number;
-  progreso: number;
-  refetch: () => Promise<void>;
-  compradorVentaId: string;
-  updateVentaStatus: (newStatus: string) => Promise<boolean>;
-}
+};

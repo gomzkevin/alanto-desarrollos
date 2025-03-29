@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -36,7 +35,6 @@ const VentaDetail = () => {
     updateVentaStatus
   } = useVentaDetail(ventaId);
 
-  // Check if sale status should be updated based on payment progress
   const canMarkAsCompleted = venta?.estado === 'en_proceso' && progreso >= 100;
 
   if (isLoading) {
@@ -163,7 +161,7 @@ const VentaDetail = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Última actualización</p>
-                  <p className="font-medium">{new Date(venta.fecha_actualizacion).toLocaleDateString()}</p>
+                  <p className="font-medium">{new Date(venta.fecha_actualizacion || venta.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
               
@@ -222,7 +220,7 @@ const VentaDetail = () => {
           
           <TabsContent value="info" className="space-y-4">
             <InfoTab 
-              venta={venta} 
+              venta={venta as any}
               compradores={compradores} 
               pagos={pagos}
               onAddComprador={() => setOpenCompradorDialog(true)}
@@ -275,7 +273,7 @@ const VentaDetail = () => {
         <VentaEditDialog
           open={openEditDialog}
           onOpenChange={setOpenEditDialog}
-          venta={venta}
+          venta={venta as any}
           onSuccess={refetch}
         />
 

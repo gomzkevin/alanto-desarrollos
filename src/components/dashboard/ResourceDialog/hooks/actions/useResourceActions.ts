@@ -6,10 +6,11 @@ import { useUserRole } from '@/hooks';
 import { useResourceOperations } from './useResourceOperations';
 import { useImageUpload } from './useImageUpload';
 import { useClientCreation } from './useClientCreation';
-import { ResourceData, ResourceFormValues } from '../../types';
+import { FormValues, ResourceType } from '../../types';
+import { ResourceData, ResourceOperationResult } from './types';
 
 export const useResourceActions = (
-  resourceType: string,
+  resourceType: ResourceType,
   resourceId?: string,
   onSuccess?: () => void
 ) => {
@@ -18,15 +19,38 @@ export const useResourceActions = (
   
   const { 
     createResource, 
-    updateResource, 
-    deleteResource 
+    updateResource 
   } = useResourceOperations();
   
-  const { uploadImage } = useImageUpload();
-  const { createClientIfNeeded } = useClientCreation();
+  const { handleImageUpload } = useImageUpload();
+  const { createNewClient } = useClientCreation();
+
+  // Add the deleteResource function
+  const deleteResource = useCallback(async (resourceType: ResourceType, resourceId: string) => {
+    try {
+      const { error } = await supabase
+        .from(resourceType)
+        .delete()
+        .eq('id', resourceId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      return true;
+    } catch (error: any) {
+      console.error(`Error deleting ${resourceType}:`, error);
+      toast({
+        title: 'Error',
+        description: error.message || `No se pudo eliminar el ${resourceType}`,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  }, []);
 
   const handleFormSubmit = useCallback(
-    async (values: ResourceFormValues) => {
+    async (values: FormValues) => {
       if (!empresaId) {
         toast({
           title: 'Error',
@@ -42,12 +66,19 @@ export const useResourceActions = (
         // Process image if present
         let imageUrl = values.imagen_url;
         if (values.image && values.image instanceof File) {
-          imageUrl = await uploadImage(values.image, resourceType, resourceId);
+          imageUrl = await handleImageUpload(values.image);
         }
 
         // Create client if needed for leads
         if (resourceType === 'leads' && values.isNewClient) {
-          await createClientIfNeeded(values);
+          await createNewClient({
+            isExistingClient: false,
+            newClientData: {
+              nombre: values.nombre,
+              email: values.email,
+              telefono: values.telefono
+            }
+          }, empresaId);
         }
 
         // Prepare the data and determine if we're creating or updating
@@ -62,7 +93,7 @@ export const useResourceActions = (
         delete processedData.image;
         delete processedData.isNewClient;
 
-        let result: ResourceData | null = null;
+        let result: ResourceOperationResult | null = null;
 
         if (resourceId) {
           // Update existing resource
@@ -72,11 +103,10 @@ export const useResourceActions = (
           result = await createResource(resourceType, processedData);
         }
 
-        if (result) {
+        if (result && result.success) {
           toast({
             title: resourceId ? 'Actualizado' : 'Creado',
             description: `${resourceType} ${resourceId ? 'actualizado' : 'creado'} exitosamente`,
-            variant: 'success',
           });
 
           if (onSuccess) {
@@ -94,7 +124,7 @@ export const useResourceActions = (
         setIsLoading(false);
       }
     },
-    [resourceType, resourceId, empresaId, userId, onSuccess, uploadImage, createClientIfNeeded, createResource, updateResource]
+    [resourceType, resourceId, empresaId, userId, onSuccess, handleImageUpload, createNewClient, createResource, updateResource]
   );
 
   const handleDelete = useCallback(async () => {
@@ -129,5 +159,7 @@ export const useResourceActions = (
     isLoading,
     handleFormSubmit,
     handleDelete,
+    deleteResource,
+    handleImageUpload,
   };
 };

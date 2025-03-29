@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { format } from 'date-fns';
 import useLeads from '@/hooks/useLeads';
-import useDesarrollos from '@/hooks/useDesarrollos';
+import useDesarrollos from '@/hooks/desarrollos';
 import usePrototipos from '@/hooks/usePrototipos';
 import { useUserRole } from '@/hooks';
 import useUsuarios from '@/hooks/useUsuarios';

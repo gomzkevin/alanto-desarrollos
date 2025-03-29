@@ -1,86 +1,99 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserRole } from '../useUserRole';
-import { Prototipo } from '../usePrototipos';
+import { useUserRole } from '@/hooks';
+import { Venta } from './types';
 
-type Venta = {
-  id: string;
-  created_at: string;
-  lead_id: string;
-  prototipo: {
-    id: string;
-    nombre: string;
-    precio: number;
-    desarrollo: {
-      id: string;
-      nombre: string;
-      empresa_id: number;
-    };
-  };
-};
-
-type FetchVentasOptions = {
-  limit?: number;
+export type FetchVentasOptions = {
   desarrolloId?: string;
+  prototipoId?: string;
+  unidadId?: string;
+  estado?: string;
+  limit?: number;
+  enabled?: boolean;
 };
 
 export const useVentasQuery = (options: FetchVentasOptions = {}) => {
-  const { limit = 10, desarrolloId } = options;
-  const { empresaId } = useUserRole();
+  const { 
+    desarrolloId,
+    prototipoId,
+    unidadId,
+    estado,
+    limit,
+    enabled = true
+  } = options;
+  
+  const { empresaId, isLoading: isUserRoleLoading } = useUserRole();
 
   const fetchVentas = async (): Promise<Venta[]> => {
-    if (!empresaId) {
-      console.log('No empresaId available, returning empty array');
-      return [];
-    }
-
-    try {
-      let query = supabase
-        .from('ventas')
-        .select(`
-          id,
-          created_at,
-          lead_id,
-          prototipo:prototipos(
-            id,
-            nombre,
+    console.log('Fetching ventas with options:', { ...options, empresaId });
+    
+    let query = supabase
+      .from('ventas')
+      .select(`
+        *,
+        unidad:unidades!inner(
+          id, 
+          numero,
+          prototipo:prototipos!inner(
+            id, 
+            nombre, 
             precio,
-            desarrollo:desarrollos(
-              id,
-              nombre,
+            desarrollo:desarrollos!inner(
+              id, 
+              nombre, 
               empresa_id
             )
           )
-        `)
-        .limit(limit);
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching ventas:', error);
-        throw error;
-      }
-
-      // Filter prototipos based on desarrolloId
-      const filteredVentas = (data as any[]).filter(venta => {
-        const prototipo = venta.prototipo;
-        if (!prototipo) return false;
-        return !desarrolloId || (prototipo.desarrollo && prototipo.desarrollo.id === desarrolloId);
-      });
-
-      console.log('Ventas fetched:', filteredVentas.length, 'results');
-      return filteredVentas as Venta[];
-    } catch (error) {
-      console.error('Error in fetchVentas:', error);
-      return [];
+        )
+      `);
+    
+    // Add empresa filter using the relationship path
+    if (empresaId) {
+      query = query.eq('unidad.prototipo.desarrollo.empresa_id', empresaId);
     }
+    
+    // Add filters if provided
+    if (desarrolloId) {
+      query = query.eq('unidad.prototipo.desarrollo.id', desarrolloId);
+    }
+    
+    if (prototipoId) {
+      query = query.eq('unidad.prototipo.id', prototipoId);
+    }
+    
+    if (unidadId) {
+      query = query.eq('unidad_id', unidadId);
+    }
+    
+    if (estado) {
+      query = query.eq('estado', estado);
+    }
+    
+    // Apply limit if provided
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    // Execute the query
+    const { data, error } = await query.order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching ventas:', error);
+      throw error;
+    }
+    
+    return data as Venta[];
   };
 
-  return useQuery({
-    queryKey: ['ventas', limit, empresaId, desarrolloId],
+  const result = useQuery({
+    queryKey: ['ventas', empresaId, desarrolloId, prototipoId, unidadId, estado, limit],
     queryFn: fetchVentas,
-    enabled: !!empresaId,
-    refetchOnWindowFocus: false
+    enabled: enabled && !!empresaId && !isUserRoleLoading
   });
+
+  return {
+    ...result,
+    ventas: result.data || []
+  };
 };

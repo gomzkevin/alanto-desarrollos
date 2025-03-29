@@ -1,5 +1,5 @@
 
-import { ResourceType } from '../../types';
+import { ResourceType, FormValues } from '../../types';
 
 export interface ClientConfig {
   isExistingClient: boolean;
@@ -24,3 +24,7 @@ export interface ResourceOperationResult {
   error?: any;
   message?: string;
 }
+
+// Add ResourceData type
+export type ResourceData = Record<string, any>;
+export type ResourceFormValues = FormValues;

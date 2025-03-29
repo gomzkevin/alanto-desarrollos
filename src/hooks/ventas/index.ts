@@ -1,7 +1,7 @@
 
 import { useVentasQuery } from './useVentasQuery';
 import { useVentasMutations } from './useVentasMutations';
-import type { FetchVentasOptions } from './useVentasQuery';
+export type { FetchVentasOptions } from './useVentasQuery';
 
 // Re-export the useVentasQuery hook and other hooks related to ventas
 export { useVentasQuery, useVentasMutations };
