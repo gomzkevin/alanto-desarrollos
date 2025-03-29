@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
     total: 0
   });
   const navigate = useNavigate();
+  const isMounted = useRef(true);
   
   // Memoize click handler to prevent re-renders
   const handleViewDetails = useCallback((e: React.MouseEvent) => {
@@ -41,9 +42,10 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
   }, [prototipo.id, onViewDetails, onClick, navigate]);
   
   useEffect(() => {
-    let isMounted = true;
+    isMounted.current = true;
     
     const fetchCardData = async () => {
+      if (!isMounted.current) return;
       setIsLoading(true);
       
       try {
@@ -54,13 +56,13 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
         
         // Get actual unit counts
         const unitStats = await countUnidadesByStatus(prototipo.id);
-        if (isMounted) {
+        if (isMounted.current) {
           setUnidadesStats(unitStats);
         }
       } catch (error) {
         console.error('Error loading prototipo card data:', error);
       } finally {
-        if (isMounted) {
+        if (isMounted.current) {
           setIsLoading(false);
         }
       }
@@ -69,7 +71,7 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
     fetchCardData();
     
     return () => {
-      isMounted = false;
+      isMounted.current = false;
     };
   }, [prototipo.id, prototipo.imagen_url]);
   

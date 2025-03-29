@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
 import { Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef } from 'react';
 
 type Desarrollo = Tables<"desarrollos">;
 
@@ -34,11 +34,17 @@ export const usePrototipoDetail = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isUpdatingImage, setIsUpdatingImage] = useState(false);
+  const prototipoIdRef = useRef(id); // Use ref to track previous ID
+  
+  // We need to make sure the query function is stable
+  const queryFn = useCallback(() => {
+    return fetchPrototipoById(id as string);
+  }, [id]);
   
   // Stable query that doesn't change between renders
   const queryResult = useQuery({
     queryKey: ['prototipo', id],
-    queryFn: () => fetchPrototipoById(id as string),
+    queryFn,
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 1,
@@ -61,7 +67,7 @@ export const usePrototipoDetail = () => {
   }, [queryResult.data?.desarrollo, navigate]);
   
   const updatePrototipoImage = useCallback(async (imageUrl: string) => {
-    if (isUpdatingImage || !id) {
+    if (!id || isUpdatingImage) {
       console.error('Cannot update image: ID not available or update in progress');
       if (!id) {
         toast({
@@ -73,10 +79,9 @@ export const usePrototipoDetail = () => {
       return false;
     }
     
-    console.log(`Updating prototipo ${id} image with URL:`, imageUrl);
-    
     try {
       setIsUpdatingImage(true);
+      console.log(`Updating prototipo ${id} image with URL:`, imageUrl);
       
       const { error } = await supabase
         .from('prototipos')
