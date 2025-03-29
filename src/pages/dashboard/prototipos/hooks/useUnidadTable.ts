@@ -43,7 +43,6 @@ export const useUnidadTable = ({
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isSellDialogOpen, setIsSellDialogOpen] = useState(false);
   const [currentUnidad, setCurrentUnidad] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -247,7 +246,7 @@ export const useUnidadTable = ({
   }, [currentUnidad, updateUnidad, toast, refetch]);
 
   const handleDeleteUnidad = useCallback(async () => {
-    if (!currentUnidad) return Promise.resolve();
+    if (!currentUnidad) return;
     
     if (isProcessingRef.current) {
       // Queue the operation for later if already processing
@@ -272,7 +271,7 @@ export const useUnidadTable = ({
       };
       
       pendingOperationRef.current = operation;
-      return Promise.resolve();
+      return;
     }
     
     isProcessingRef.current = true;
@@ -297,8 +296,6 @@ export const useUnidadTable = ({
           setIsProcessing(false);
         }, 500);
       }, 500);
-      
-      return Promise.resolve();
     } catch (error: any) {
       console.error("Error deleting unidad:", error);
       toast({
@@ -308,7 +305,6 @@ export const useUnidadTable = ({
       });
       isProcessingRef.current = false;
       setIsProcessing(false);
-      return Promise.reject(error);
     }
   }, [currentUnidad, deleteUnidad, toast, refetch]);
 
@@ -322,12 +318,6 @@ export const useUnidadTable = ({
     if (isProcessingRef.current) return;
     setCurrentUnidad(unidad);
     setIsDeleteDialogOpen(true);
-  }, []);
-
-  const openSellDialog = useCallback((unidad: any) => {
-    if (isProcessingRef.current) return;
-    setCurrentUnidad(unidad);
-    setIsSellDialogOpen(true);
   }, []);
 
   const closeEditDialog = useCallback(() => {
@@ -346,26 +336,6 @@ export const useUnidadTable = ({
     }, 300);
   }, []);
 
-  const closeSellDialog = useCallback(() => {
-    setIsSellDialogOpen(false);
-    // Wait before clearing the current unidad
-    setTimeout(() => {
-      setCurrentUnidad(null);
-    }, 300);
-  }, []);
-
-  const handleSellUnidad = useCallback(async () => {
-    // Implement the sell unidad functionality here
-    console.log("Selling unidad:", currentUnidad);
-    closeSellDialog();
-    // After selling, refresh the unidades
-    setTimeout(() => {
-      refetch();
-    }, 500);
-    
-    return Promise.resolve();
-  }, [currentUnidad, closeSellDialog, refetch]);
-
   // Clean up function for the component
   useEffect(() => {
     return () => {
@@ -375,7 +345,6 @@ export const useUnidadTable = ({
       setIsAddDialogOpen(false);
       setIsEditDialogOpen(false);
       setIsDeleteDialogOpen(false);
-      setIsSellDialogOpen(false);
       setIsProcessing(false);
     };
   }, []);
@@ -387,20 +356,16 @@ export const useUnidadTable = ({
     isAddDialogOpen,
     isEditDialogOpen,
     isDeleteDialogOpen,
-    isSellDialogOpen,
     currentUnidad,
     isProcessing,
     setIsAddDialogOpen,
     openEditDialog,
     openDeleteDialog,
-    openSellDialog,
     closeEditDialog,
     closeDeleteDialog,
-    closeSellDialog,
     handleAddUnidad,
     handleEditUnidad,
-    handleDeleteUnidad,
-    handleSellUnidad
+    handleDeleteUnidad
   };
 };
 

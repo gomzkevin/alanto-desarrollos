@@ -19,7 +19,6 @@ const DesarrollosPage = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [desarrollosWithRealCounts, setDesarrollosWithRealCounts] = useState<Desarrollo[]>([]);
   const [hasTriedInitialLoad, setHasTriedInitialLoad] = useState(false);
-  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   
   // Get user info from useUserRole hook
   const { 
@@ -30,7 +29,7 @@ const DesarrollosPage = () => {
   } = useUserRole();
   
   // Use permissions hook to check if user can create desarrollos
-  const { canCreateDesarrollo, hasActiveSubscription } = usePermissions();
+  const { canCreateDesarrollo } = usePermissions();
   
   // Use empresa_id instead of user_id for filtering desarrollos
   const { 
@@ -54,20 +53,6 @@ const DesarrollosPage = () => {
       setHasTriedInitialLoad(true);
     }
   }, [empresaId, refetch, hasTriedInitialLoad]);
-
-  // Update permissions loaded state
-  useEffect(() => {
-    // Check if user data and subscription info are loaded
-    if (!isUserLoading && empresaId !== null) {
-      // Perform an async check to ensure subscription data is loaded
-      const checkPermissions = async () => {
-        await hasActiveSubscription();
-        setPermissionsLoaded(true);
-      };
-      
-      checkPermissions();
-    }
-  }, [isUserLoading, empresaId, hasActiveSubscription]);
 
   // Update unit counts when desarrollos change
   useEffect(() => {
@@ -142,15 +127,10 @@ const DesarrollosPage = () => {
     isLoading,
     isFetched,
     hasTriedInitialLoad,
-    permissionsLoaded,
     desarrollosCount: desarrollos.length,
     displayDesarrollosCount: displayDesarrollos.length,
     canCreateDesarrollo: canCreateDesarrollo()
   });
-
-  // Determine if the create button should be disabled
-  // Button is disabled by default until permissions are fully loaded
-  const isCreateButtonDisabled = !permissionsLoaded || !canCreateDesarrollo();
 
   return (
     <DashboardLayout>
@@ -165,7 +145,7 @@ const DesarrollosPage = () => {
             <Button 
               onClick={() => setOpenDialog(true)}
               className="flex items-center gap-2"
-              disabled={isCreateButtonDisabled}
+              disabled={!canCreateDesarrollo()}
             >
               Nuevo desarrollo
             </Button>
@@ -205,7 +185,7 @@ const DesarrollosPage = () => {
               <Button 
                 className="mt-4"
                 onClick={() => setOpenDialog(true)}
-                disabled={isCreateButtonDisabled}
+                disabled={!canCreateDesarrollo()}
               >
                 Crear tu primer desarrollo
               </Button>

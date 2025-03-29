@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Building } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -42,7 +42,7 @@ export const PrototipoUnidades = React.memo(({
   const [isGenerating, setIsGenerating] = useState(false);
   const { canCreateUnidad } = usePermissions();
   
-  // Memoize unidades filtradas para prevenir re-renderizados innecesarios
+  // Memoize filtered units to prevent unnecessary re-renders
   const filteredUnidades = useMemo(() => {
     if (currentTab === "todas") return unidades;
     if (currentTab === "disponibles") return unidades.filter(u => u.estado === 'disponible');
@@ -51,17 +51,13 @@ export const PrototipoUnidades = React.memo(({
     return unidades;
   }, [unidades, currentTab]);
   
-  // Calcular unidades restantes
+  // Determine remaining units
   const unidadesRestantes = useMemo(() => 
     (prototipo.total_unidades || 0) - unidades.length,
     [prototipo.total_unidades, unidades.length]
   );
   
-  // Memoize verificación de permisos para prevenir recálculo en cada renderizado
-  const canCreateIndividualUnit = useMemo(() => canCreateUnidad(), [canCreateUnidad]);
-
-  // Manejador para generar unidades
-  const handleGenerarUnidades = useCallback(async () => {
+  const handleGenerarUnidades = async () => {
     if (unidadesRestantes <= 0 || isGenerating) return;
     
     setIsGenerating(true);
@@ -74,22 +70,11 @@ export const PrototipoUnidades = React.memo(({
     } finally {
       setIsGenerating(false);
     }
-  }, [unidadesRestantes, prefijo, isGenerating, onGenerateUnidades]);
-
-  // Manejador para clic en botón "Generar unidades"
-  const handleGenerateClick = useCallback(() => {
-    setGenerarUnidadesModalOpen(true);
-  }, []);
+  };
   
-  // Manejador para cambiar prefijo
-  const handlePrefijoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setPrefijo(e.target.value);
-  }, []);
-  
-  // Manejador para cerrar modal
-  const handleCloseModal = useCallback(() => {
-    setGenerarUnidadesModalOpen(false);
-  }, []);
+  // Updated: Always allow generating units for existing prototypes 
+  // Only check for canCreateUnidad for individual unit creation
+  const canCreateIndividualUnit = canCreateUnidad();
   
   return (
     <div className="bg-slate-50 p-6 rounded-lg">
@@ -109,12 +94,12 @@ export const PrototipoUnidades = React.memo(({
         
         <UnidadTableActions
           onAddClick={onAddUnidad}
-          onGenerateClick={handleGenerateClick}
+          onGenerateClick={() => setGenerarUnidadesModalOpen(true)}
           unidadesCount={unidades.length}
           totalUnidades={prototipo.total_unidades || 0}
           showGenerateButton={true}
-          canAddMore={canCreateIndividualUnit} // Solo aplicar límite a creación individual de unidades
-          alwaysAllowGenerate={true} // Permitir generar unidades incluso si se alcanzaron los límites
+          canAddMore={canCreateIndividualUnit} // Only apply limit to individual unit creation
+          alwaysAllowGenerate={true} // New prop to allow generating units even if limits reached
         />
       </div>
       
@@ -132,13 +117,47 @@ export const PrototipoUnidades = React.memo(({
             <span className="ml-3 text-lg text-slate-600">Cargando unidades...</span>
           </div>
         ) : (
-          <TabsContent value={currentTab} key={`tab-${currentTab}`}>
-            <UnidadTable 
-              prototipo={prototipo}
-              unidades={filteredUnidades} 
-              isLoading={false} 
-              onRefresh={onRefreshUnidades}
-            />
+          <TabsContent value={currentTab} forceMount>
+            <div style={{ display: currentTab === 'todas' ? 'block' : 'none' }}>
+              {currentTab === 'todas' && (
+                <UnidadTable 
+                  prototipo={prototipo}
+                  unidades={filteredUnidades} 
+                  isLoading={false} 
+                  onRefresh={onRefreshUnidades}
+                />
+              )}
+            </div>
+            <div style={{ display: currentTab === 'disponibles' ? 'block' : 'none' }}>
+              {currentTab === 'disponibles' && (
+                <UnidadTable 
+                  prototipo={prototipo}
+                  unidades={filteredUnidades} 
+                  isLoading={false} 
+                  onRefresh={onRefreshUnidades}
+                />
+              )}
+            </div>
+            <div style={{ display: currentTab === 'apartadas' ? 'block' : 'none' }}>
+              {currentTab === 'apartadas' && (
+                <UnidadTable 
+                  prototipo={prototipo}
+                  unidades={filteredUnidades} 
+                  isLoading={false} 
+                  onRefresh={onRefreshUnidades}
+                />
+              )}
+            </div>
+            <div style={{ display: currentTab === 'vendidas' ? 'block' : 'none' }}>
+              {currentTab === 'vendidas' && (
+                <UnidadTable 
+                  prototipo={prototipo}
+                  unidades={filteredUnidades} 
+                  isLoading={false} 
+                  onRefresh={onRefreshUnidades}
+                />
+              )}
+            </div>
           </TabsContent>
         )}
       </Tabs>
@@ -173,7 +192,7 @@ export const PrototipoUnidades = React.memo(({
               <Input 
                 id="prefijo" 
                 value={prefijo} 
-                onChange={handlePrefijoChange} 
+                onChange={(e) => setPrefijo(e.target.value)} 
                 placeholder="Ej: 'Unidad-' resultará en Unidad-1, Unidad-2, etc."
               />
             </div>
@@ -182,16 +201,14 @@ export const PrototipoUnidades = React.memo(({
           <DialogFooter className="px-6 pb-6">
             <Button 
               variant="outline" 
-              onClick={handleCloseModal}
+              onClick={() => setGenerarUnidadesModalOpen(false)}
               disabled={isGenerating}
-              type="button"
             >
               Cancelar
             </Button>
             <Button 
               onClick={handleGenerarUnidades}
               disabled={isGenerating}
-              type="button"
             >
               {isGenerating ? 'Generando...' : 'Generar'}
             </Button>

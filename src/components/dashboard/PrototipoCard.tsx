@@ -1,17 +1,17 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bed, Bath, Square, Building2 } from 'lucide-react';
+import { Bed, Bath, Square, Home, Building2 } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
 import { countUnidadesByStatus } from '@/hooks/unidades/countUtils';
-import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 type PrototipoCardProps = {
   prototipo: Tables<"prototipos">;
   onClick?: (id: string) => void;
-  onViewDetails?: (id: string) => void;
+  onViewDetails?: (id: string) => void; // Added this prop to match usage in DesarrolloDetail
 };
 
 const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps) => {
@@ -23,62 +23,34 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
     con_anticipo: 0,
     total: 0
   });
-  const navigate = useNavigate();
-  const isMounted = useRef(true);
-  
-  // Memoize click handler to prevent re-renders
-  const handleViewDetails = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation(); // Stop propagation to avoid unexpected behaviors
-    
-    if (onViewDetails) {
-      onViewDetails(prototipo.id);
-    } else if (onClick) {
-      onClick(prototipo.id);
-    } else {
-      // Use navigate instead of changing location.href to avoid reloads
-      navigate(`/dashboard/prototipos/${prototipo.id}`);
-    }
-  }, [prototipo.id, onViewDetails, onClick, navigate]);
   
   useEffect(() => {
-    isMounted.current = true;
-    
     const fetchCardData = async () => {
-      if (!isMounted.current) return;
       setIsLoading(true);
       
       try {
-        // Load image if available
+        // Fetch image if available
         if (prototipo.imagen_url) {
           setImageUrl(prototipo.imagen_url);
         }
         
         // Get actual unit counts
         const unitStats = await countUnidadesByStatus(prototipo.id);
-        if (isMounted.current) {
-          setUnidadesStats(unitStats);
-        }
+        setUnidadesStats(unitStats);
       } catch (error) {
         console.error('Error loading prototipo card data:', error);
       } finally {
-        if (isMounted.current) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
     
     fetchCardData();
-    
-    return () => {
-      isMounted.current = false;
-    };
   }, [prototipo.id, prototipo.imagen_url]);
   
   const fallbackImage = "/placeholder.svg";
   
   const getUnitCountDisplay = () => {
-    // Use actual unit statistics from database
+    // Use the actual unit stats from the database for available/total count
     const available = unidadesStats.disponibles;
     const total = unidadesStats.total || prototipo.total_unidades || 0;
     
@@ -141,8 +113,14 @@ const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps
         <Button
           variant="outline"
           className="w-full"
-          onClick={handleViewDetails}
-          type="button" // Explicitly set type to prevent submit behavior
+          onClick={() => {
+            // Use onViewDetails if provided, otherwise fall back to onClick
+            if (onViewDetails) {
+              onViewDetails(prototipo.id);
+            } else if (onClick) {
+              onClick(prototipo.id);
+            }
+          }}
         >
           Ver detalles
         </Button>

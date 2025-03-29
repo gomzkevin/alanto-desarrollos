@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import Features from '@/components/Features';
@@ -8,11 +8,6 @@ import Footer from '@/components/Footer';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
-
-  // Memoize the hideLoader function to prevent recreation on each render
-  const hideLoader = useCallback(() => {
-    setIsLoading(false);
-  }, []);
 
   useEffect(() => {
     // Add scroll reveal functionality
@@ -32,19 +27,18 @@ const Index = () => {
     
     revealElements.forEach(el => observer.observe(el));
     
-    // Check if already loaded
+    // Hide loader after everything is loaded
+    window.addEventListener('load', () => {
+      setIsLoading(false);
+    });
+    
+    // If window already loaded, hide loader
     if (document.readyState === 'complete') {
-      hideLoader();
-    } else {
-      window.addEventListener('load', hideLoader);
+      setIsLoading(false);
     }
     
-    // Cleanup function
-    return () => {
-      window.removeEventListener('load', hideLoader);
-      observer.disconnect();
-    };
-  }, [hideLoader]); // Add hideLoader to dependencies
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">

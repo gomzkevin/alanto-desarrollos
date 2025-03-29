@@ -1,133 +1,252 @@
 
-import React, { useCallback, useMemo } from 'react';
-import { Table, TableBody, TableHead } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { RefreshCcw } from "lucide-react";
+import React, { useState, useCallback } from 'react';
+import { Table, TableBody } from "@/components/ui/table";
 import { ExtendedPrototipo } from '@/hooks/usePrototipos';
-import EmptyUnidadState from './components/EmptyUnidadState';
-import UnidadTableHeader from './components/UnidadTableHeader';
 import UnidadTableRow from './components/UnidadTableRow';
+import UnidadTableHeader from './components/UnidadTableHeader';
+import EmptyUnidadState from './components/EmptyUnidadState';
 import UnidadDialogs from './components/UnidadDialogs';
-import useUnidadTable from './hooks/useUnidadTable';
+import { useToast } from "@/hooks/use-toast";
+import useLeads from "@/hooks/useLeads";
+import useUnidades from '@/hooks/useUnidades';
+import useUnitSale from '@/hooks/useUnitSale';
 
-interface UnidadTableProps {
+export interface UnidadTableProps {
   prototipo: ExtendedPrototipo;
   unidades: any[];
   isLoading?: boolean;
   onRefresh?: () => void;
 }
 
-export const UnidadTable = React.memo(({
-  prototipo,
-  unidades = [],
+export const UnidadTable = ({ 
+  prototipo, 
+  unidades = [], 
   isLoading = false,
   onRefresh
 }: UnidadTableProps) => {
-  const {
-    leads,
-    isAddDialogOpen,
-    isEditDialogOpen,
-    isDeleteDialogOpen,
-    isSellDialogOpen,
-    currentUnidad,
-    isProcessing,
-    setIsAddDialogOpen,
-    openEditDialog,
-    openDeleteDialog,
-    openSellDialog,
-    closeEditDialog,
-    closeDeleteDialog,
-    closeSellDialog,
-    handleAddUnidad,
-    handleEditUnidad,
-    handleDeleteUnidad,
-    handleSellUnidad
-  } = useUnidadTable({ 
-    prototipo, 
-    externalUnidades: unidades, 
-    externalLoading: isLoading,
-    externalRefresh: onRefresh
-  });
+  const { toast } = useToast();
+  const { leads = [] } = useLeads();
+  const { createUnidad, updateUnidad, deleteUnidad, refetch } = useUnidades({ prototipo_id: prototipo.id });
+  const { createSaleAndRedirect, isLoading: isCreatingSale } = useUnitSale();
   
-  // Usar memo para evitar recálculos innecesarios
-  const sortedUnidades = useMemo(() => {
-    if (!unidades || unidades.length === 0) return [];
-    
-    // Ordenar primero por nivel (si existe) y luego por número
-    return [...unidades].sort((a, b) => {
-      // Si ambos tienen nivel, ordenar por nivel primero
-      if (a.nivel && b.nivel) {
-        const nivelComparison = a.nivel.localeCompare(b.nivel);
-        if (nivelComparison !== 0) return nivelComparison;
-      }
-      
-      // Si niveles son iguales o no existen, ordenar por número
-      const aNum = parseInt(a.numero.toString().replace(/\D/g, '')) || 0;
-      const bNum = parseInt(b.numero.toString().replace(/\D/g, '')) || 0;
-      
-      return aNum - bNum;
-    });
-  }, [unidades]);
+  // Estados simplificados
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isSellDialogOpen, setIsSellDialogOpen] = useState(false);
+  const [currentUnidad, setCurrentUnidad] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Manejador para actualizar unidades
+  // Refrescar datos
   const handleRefresh = useCallback(() => {
     if (onRefresh) {
       onRefresh();
+    } else {
+      refetch();
     }
-  }, [onRefresh]);
-  
-  // Manejador para añadir unidad (para el EmptyState)
-  const handleAddClick = useCallback(() => {
-    setIsAddDialogOpen(true);
-  }, [setIsAddDialogOpen]);
+  }, [onRefresh, refetch]);
 
-  // Si no hay unidades, mostrar estado vacío
-  if (!isLoading && (!sortedUnidades || sortedUnidades.length === 0)) {
-    return <EmptyUnidadState onAddClick={handleAddClick} />;
+  // Agregar unidad
+  const handleAddUnidad = useCallback(async (data: any) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      await createUnidad({
+        prototipo_id: prototipo.id,
+        numero: data.numero,
+        estado: data.estado || 'disponible',
+        nivel: data.nivel
+      });
+      
+      toast({
+        title: "Unidad creada",
+        description: "La unidad ha sido creada exitosamente"
+      });
+      
+      setIsAddDialogOpen(false);
+      handleRefresh();
+    } catch (error: any) {
+      console.error("Error creating unidad:", error);
+      toast({
+        title: "Error",
+        description: `No se pudo crear la unidad: ${error.message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [createUnidad, handleRefresh, prototipo.id, toast, isSubmitting]);
+
+  // Editar unidad
+  const handleEditUnidad = useCallback(async (data: any) => {
+    if (!currentUnidad || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      const unidadId = currentUnidad.id;
+      
+      await updateUnidad({
+        id: unidadId,
+        numero: data.numero,
+        estado: data.estado || 'disponible',
+        nivel: data.nivel
+      });
+      
+      toast({
+        title: "Unidad actualizada",
+        description: "La unidad ha sido actualizada exitosamente"
+      });
+      
+      setIsEditDialogOpen(false);
+      setCurrentUnidad(null);
+      handleRefresh();
+    } catch (error: any) {
+      console.error("Error updating unidad:", error);
+      toast({
+        title: "Error",
+        description: `No se pudo actualizar la unidad: ${error.message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [currentUnidad, handleRefresh, toast, updateUnidad, isSubmitting]);
+
+  // Eliminar unidad
+  const handleDeleteUnidad = useCallback(async () => {
+    if (!currentUnidad || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      const unidadId = currentUnidad.id;
+      await deleteUnidad(unidadId);
+      
+      toast({
+        title: "Unidad eliminada",
+        description: "La unidad ha sido eliminada exitosamente"
+      });
+      
+      setIsDeleteDialogOpen(false);
+      setCurrentUnidad(null);
+      handleRefresh();
+    } catch (error: any) {
+      console.error("Error deleting unidad:", error);
+      toast({
+        title: "Error",
+        description: `No se pudo eliminar la unidad: ${error.message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [currentUnidad, deleteUnidad, handleRefresh, toast, isSubmitting]);
+
+  // Vender unidad
+  const handleSellUnidad = useCallback(async () => {
+    if (!currentUnidad) return;
+    
+    try {
+      await createSaleAndRedirect(currentUnidad);
+      setIsSellDialogOpen(false);
+      setCurrentUnidad(null);
+    } catch (error) {
+      console.error("Error en proceso de venta:", error);
+    }
+  }, [currentUnidad, createSaleAndRedirect]);
+
+  // Funciones para abrir dialogs
+  const openEditDialog = useCallback((unidad: any) => {
+    if (isSubmitting || isCreatingSale) return;
+    setCurrentUnidad(unidad);
+    setIsEditDialogOpen(true);
+  }, [isSubmitting, isCreatingSale]);
+
+  const openDeleteDialog = useCallback((unidad: any) => {
+    if (isSubmitting || isCreatingSale) return;
+    setCurrentUnidad(unidad);
+    setIsDeleteDialogOpen(true);
+  }, [isSubmitting, isCreatingSale]);
+
+  const openSellDialog = useCallback((unidad: any) => {
+    if (isSubmitting || isCreatingSale) return;
+    setCurrentUnidad(unidad);
+    setIsSellDialogOpen(true);
+  }, [isSubmitting, isCreatingSale]);
+  
+  // Funciones para cerrar dialogs
+  const closeEditDialog = useCallback(() => {
+    if (isSubmitting) return;
+    setIsEditDialogOpen(false);
+    setTimeout(() => setCurrentUnidad(null), 300);
+  }, [isSubmitting]);
+  
+  const closeDeleteDialog = useCallback(() => {
+    if (isSubmitting) return;
+    setIsDeleteDialogOpen(false);
+    setTimeout(() => setCurrentUnidad(null), 300);
+  }, [isSubmitting]);
+
+  const closeSellDialog = useCallback(() => {
+    if (isCreatingSale) return;
+    setIsSellDialogOpen(false);
+    setTimeout(() => setCurrentUnidad(null), 300);
+  }, [isCreatingSale]);
+
+  // Renderizar estado de carga si es necesario
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="animate-spin h-8 w-8 rounded-full border-4 border-primary border-t-transparent"></div>
+        <span className="ml-3 text-slate-600">Cargando unidades...</span>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh}
-          disabled={isLoading}
-          type="button"
-        >
-          <RefreshCcw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-          Actualizar
-        </Button>
-      </div>
-      
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHead>
+      {/* Tabla o estado vacío */}
+      {!unidades || unidades.length === 0 ? (
+        <EmptyUnidadState onAddClick={() => setIsAddDialogOpen(true)} />
+      ) : (
+        <div className="border rounded-md overflow-hidden">
+          <Table>
             <UnidadTableHeader />
-          </TableHead>
-          <TableBody>
-            {sortedUnidades.map((unidad) => (
-              <UnidadTableRow 
-                key={unidad.id || `unidad-${unidad.numero}-${unidad.nivel || 'default'}`}
-                unidad={unidad}
-                onEdit={openEditDialog}
-                onSell={openSellDialog}
-                isDisabled={isProcessing}
-              />
-            ))}
-          </TableBody>
-        </Table>
+            <TableBody>
+              {unidades.map((unidad) => (
+                <UnidadTableRow 
+                  key={unidad.id}
+                  unidad={unidad}
+                  onEdit={openEditDialog}
+                  onSell={openSellDialog}
+                  isDisabled={isSubmitting || isCreatingSale}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+      
+      {/* Botón agregar unidad */}
+      <div className="flex justify-end">
+        <button
+          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90"
+          onClick={() => setIsAddDialogOpen(true)}
+          disabled={isSubmitting || isCreatingSale}
+        >
+          Agregar Unidad
+        </button>
       </div>
       
-      <UnidadDialogs 
+      {/* Diálogos */}
+      <UnidadDialogs
         isAddDialogOpen={isAddDialogOpen}
         isEditDialogOpen={isEditDialogOpen}
         isDeleteDialogOpen={isDeleteDialogOpen}
         isSellDialogOpen={isSellDialogOpen}
-        isSubmitting={isProcessing}
+        isSubmitting={isSubmitting || isCreatingSale}
         currentUnidad={currentUnidad}
-        leads={leads || []}
+        leads={leads}
         setIsAddDialogOpen={setIsAddDialogOpen}
         closeEditDialog={closeEditDialog}
         closeDeleteDialog={closeDeleteDialog}
@@ -139,8 +258,8 @@ export const UnidadTable = React.memo(({
       />
     </div>
   );
-});
+};
 
 UnidadTable.displayName = 'UnidadTable';
 
-export default UnidadTable;
+export default React.memo(UnidadTable);
