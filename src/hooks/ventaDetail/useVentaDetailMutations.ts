@@ -44,11 +44,11 @@ export const useVentaDetailMutations = () => {
       queryClient.invalidateQueries({ queryKey: ['venta', ventaId] });
       queryClient.invalidateQueries({ queryKey: ['ventas'] });
       
-      // Show success toast
+      // Show success toast - changing 'success' to 'default' as it's a valid variant
       toast({
         title: "Estatus actualizado",
         description: `La venta ha sido marcada como "${newStatus}"`,
-        variant: "success",
+        variant: "default", // Changed from 'success' to 'default'
       });
       
       return true;

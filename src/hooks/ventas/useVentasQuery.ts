@@ -78,7 +78,9 @@ export const useVentasQuery = (options: FetchVentasOptions = {}) => {
     return data.map(venta => ({
       id: venta.id,
       created_at: venta.created_at,
-      lead_id: venta.lead_id || undefined, // Ensure lead_id is handled even if not in the type
+      // Handle lead_id safely - it's missing from the returned data structure
+      // so we need to check if it exists before accessing it
+      lead_id: 'lead_id' in venta ? venta.lead_id : undefined,
       unidad_id: venta.unidad_id,
       estado: venta.estado,
       precio_total: venta.precio_total,
