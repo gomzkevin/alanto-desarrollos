@@ -78,10 +78,11 @@ const useResourceActions = ({
           console.log('Inserting new lead with data:', leadData);
           
           try {
-            // Create the lead explicitly with an insert operation
-            const { data: newLeads, error: leadError } = await supabase
+            // Create the lead explicitly with an insert operation and specify the return type
+            const { data, error: leadError } = await supabase
               .from('leads')
-              .insert([leadData]);
+              .insert([leadData])
+              .select('id, nombre');
             
             if (leadError) {
               console.error('Error creating new lead:', leadError);
@@ -93,12 +94,12 @@ const useResourceActions = ({
               return false;
             }
             
-            console.log('Lead creation response:', newLeads);
+            console.log('Lead creation response:', data);
             
-            if (newLeads && newLeads.length > 0) {
-              console.log('New client created successfully:', newLeads[0]);
-              dataToSave.lead_id = newLeads[0].id;
-              newClientId = newLeads[0].id;
+            if (data && data.length > 0) {
+              console.log('New client created successfully:', data[0]);
+              dataToSave.lead_id = data[0].id;
+              newClientId = data[0].id;
             } else {
               console.error('No lead data returned after insertion');
               toast({
