@@ -40,7 +40,7 @@ const PrototipoDetail = () => {
   // Memoize conteo de unidades para estabilidad
   const unitCounts = useUnitCounts(safeUnidades);
   
-  // Verificaciones de permisos (valores memorizados serían mejores)
+  // Verificaciones de permisos (valores memorizados)
   const canAddMore = useCallback(() => canCreatePrototipo(), [canCreatePrototipo]);
   const canAddUnidades = useCallback(() => canCreateUnidad(), [canCreateUnidad]);
   
@@ -113,25 +113,18 @@ const PrototipoDetail = () => {
   // Memoize manejadores de eventos
   const handleAddUnidadClick = useCallback(() => {
     // Verificar si el usuario puede crear unidades según su plan
-    if (isAdmin() && canCreateUnidad()) {
+    if (canCreateUnidad()) {
       setOpenAddUnidadDialog(true);
-    } else if (!canCreateUnidad()) {
+    } else {
       toast({
         title: "Límite alcanzado",
         description: "Has alcanzado el límite de prototipos de tu plan. Actualiza tu suscripción para añadir más unidades.",
         variant: "warning",
       });
-    } else {
-      toast({
-        title: "Permisos insuficientes",
-        description: "Solo los administradores pueden añadir unidades.",
-        variant: "destructive",
-      });
     }
-  }, [isAdmin, canCreateUnidad, toast]);
+  }, [canCreateUnidad, toast]);
   
   const handleEditClick = useCallback(() => {
-    // Solo permitir edición si es administrador
     if (isAdmin()) {
       setOpenEditDialog(true);
     } else {
@@ -150,7 +143,7 @@ const PrototipoDetail = () => {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={(e) => { e.preventDefault(); handleBack(e); }} 
+            onClick={handleBack} 
             type="button"
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
@@ -172,7 +165,7 @@ const PrototipoDetail = () => {
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={(e) => { e.preventDefault(); handleBack(e); }} 
+          onClick={handleBack} 
           type="button"
         >
           <ChevronLeft className="mr-1 h-4 w-4" />
@@ -190,7 +183,7 @@ const PrototipoDetail = () => {
         <Button 
           variant="outline" 
           className="mt-4"
-          onClick={(e) => { e.preventDefault(); refetch(); }}
+          onClick={() => refetch()}
           type="button"
         >
           Intentar de nuevo
@@ -215,8 +208,8 @@ const PrototipoDetail = () => {
       <div className="space-y-6 p-6 pb-16">
         <PrototipoHeader 
           prototipo={prototipo} 
-          onBack={(e) => { if(e) { e.preventDefault(); } handleBack(e); }} 
-          onEdit={(e) => { if(e) { e.preventDefault(); } handleEditClick(); }} 
+          onBack={handleBack} 
+          onEdit={handleEditClick} 
           updatePrototipoImage={updatePrototipoImage}
         />
         
