@@ -29,6 +29,7 @@ const SellUnidadDialog = ({
   const handleConfirm = useCallback(async () => {
     try {
       await onConfirm();
+      // Only close if not processing - this avoids recursive state updates
       if (!isProcessing) {
         onClose();
       }
@@ -38,7 +39,15 @@ const SellUnidadDialog = ({
   }, [onConfirm, onClose, isProcessing]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && !isProcessing && onClose()}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        // Only allow closure if not processing
+        if (!open && !isProcessing) {
+          onClose();
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Vender Unidad</DialogTitle>

@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import useUnidades from "@/hooks/useUnidades";
@@ -358,7 +357,7 @@ export const useUnidadTable = ({
     if (!currentUnidad) return Promise.resolve();
     
     if (isProcessingRef.current) {
-      // Queue the operation for later
+      // Queue the operation for later if already processing
       const operation = async () => {
         try {
           await updateUnidad({
