@@ -35,7 +35,7 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
   onClose,
   defaultValues
 }) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
   const [permissionsLoaded, setPermissionsLoaded] = useState(false);
   
   const { isLoading: isUserLoading } = useUserRole();
@@ -49,35 +49,20 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
     hasActiveSubscription
   } = usePermissions();
 
-  // Update permissions loaded state - using a stable reference to hasActiveSubscription
+  // Update permissions loaded state
   useEffect(() => {
-    let isMounted = true;
-    
     // Check if subscription info is loaded asynchronously
     const checkPermissions = async () => {
       if (!isUserLoading) {
-        try {
-          await hasActiveSubscription();
-          if (isMounted) {
-            setPermissionsLoaded(true);
-          }
-        } catch (error) {
-          console.error("Error checking subscription:", error);
-          if (isMounted) {
-            setPermissionsLoaded(true); // Set to true even on error to prevent UI from being perpetually locked
-          }
-        }
+        await hasActiveSubscription();
+        setPermissionsLoaded(true);
       }
     };
     
     checkPermissions();
-    
-    return () => {
-      isMounted = false;
-    };
   }, [isUserLoading, hasActiveSubscription]);
 
-  // Check if button should be disabled based on resource type - with memoization to prevent recalculation
+  // Check if button should be disabled based on resource type
   const isDisabled = React.useMemo(() => {
     // Always enable editing existing resources
     if (resourceId) return false;
@@ -121,6 +106,13 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
   // Use provided open state if it exists, otherwise use internal state
   const isOpen = open !== undefined ? open : dialogOpen;
 
+  // Log states for debugging
+  console.log(`AdminResourceDialog for ${resourceType}:`, {
+    permissionsLoaded,
+    isDisabled,
+    resourceId: resourceId || 'none'
+  });
+
   return (
     <>
       {/* Only render button if open is not controlled externally */}
@@ -151,4 +143,4 @@ const AdminResourceDialog: React.FC<AdminResourceDialogProps> = ({
   );
 };
 
-export default React.memo(AdminResourceDialog);
+export default AdminResourceDialog;
