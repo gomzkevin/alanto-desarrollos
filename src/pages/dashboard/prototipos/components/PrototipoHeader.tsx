@@ -11,9 +11,11 @@ interface PrototipoHeaderProps {
   prototipo: ExtendedPrototipo;
   onDelete?: () => void;
   onEdit?: () => void;
+  onBack?: () => void; // Added this prop to match usage in PrototipoDetail
+  updatePrototipoImage?: (imageUrl: string) => Promise<boolean>; // Added this prop to match usage in PrototipoDetail
 }
 
-const PrototipoHeader = ({ prototipo, onDelete, onEdit }: PrototipoHeaderProps) => {
+const PrototipoHeader = ({ prototipo, onDelete, onEdit, onBack, updatePrototipoImage }: PrototipoHeaderProps) => {
   const [unitStats, setUnitStats] = useState({
     disponibles: 0,
     vendidas: 0,
@@ -41,12 +43,19 @@ const PrototipoHeader = ({ prototipo, onDelete, onEdit }: PrototipoHeaderProps) 
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
       <div className="flex items-center mb-1">
-        <Button variant="outline" size="sm" asChild className="mr-4">
-          <Link to={`/dashboard/desarrollos/${prototipo.desarrollo_id}`}>
+        {onBack ? (
+          <Button variant="outline" size="sm" className="mr-4" onClick={onBack}>
             <ChevronLeft className="mr-1 h-4 w-4" />
             Volver al desarrollo
-          </Link>
-        </Button>
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" asChild className="mr-4">
+            <Link to={`/dashboard/desarrollos/${prototipo.desarrollo_id}`}>
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Volver al desarrollo
+            </Link>
+          </Button>
+        )}
         
         <div className="ml-auto">
           <DropdownMenu>

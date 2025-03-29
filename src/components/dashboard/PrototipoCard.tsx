@@ -11,9 +11,10 @@ import { supabase } from '@/integrations/supabase/client';
 type PrototipoCardProps = {
   prototipo: Tables<"prototipos">;
   onClick?: (id: string) => void;
+  onViewDetails?: (id: string) => void; // Added this prop to match usage in DesarrolloDetail
 };
 
-const PrototipoCard = ({ prototipo, onClick }: PrototipoCardProps) => {
+const PrototipoCard = ({ prototipo, onClick, onViewDetails }: PrototipoCardProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [unidadesStats, setUnidadesStats] = useState({
@@ -112,7 +113,14 @@ const PrototipoCard = ({ prototipo, onClick }: PrototipoCardProps) => {
         <Button
           variant="outline"
           className="w-full"
-          onClick={() => onClick?.(prototipo.id)}
+          onClick={() => {
+            // Use onViewDetails if provided, otherwise fall back to onClick
+            if (onViewDetails) {
+              onViewDetails(prototipo.id);
+            } else if (onClick) {
+              onClick(prototipo.id);
+            }
+          }}
         >
           Ver detalles
         </Button>
