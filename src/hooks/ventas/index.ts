@@ -1,26 +1,18 @@
 
 import { useVentasQuery } from './useVentasQuery';
 import { useVentasMutations } from './useVentasMutations';
-import { VentasFilter, Venta, VentaCreate, VentaUpdate } from './types';
+import type { FetchVentasOptions } from './useVentasQuery';
 
-/**
- * Hook principal que combina consultas y mutaciones de ventas
- */
-export const useVentas = (filters: VentasFilter = {}) => {
-  const { data = [], isLoading, error, refetch } = useVentasQuery(filters);
-  const { createVenta, updateVenta, isCreating, isUpdating } = useVentasMutations();
+// Re-export the useVentasQuery hook and other hooks related to ventas
+export { useVentasQuery, useVentasMutations };
 
+// Export a wrapper hook that combines the functionality of both hooks
+export const useVentas = (options: FetchVentasOptions = {}) => {
+  const query = useVentasQuery(options);
+  const mutations = useVentasMutations();
+  
   return {
-    ventas: data,
-    isLoading,
-    error,
-    refetch,
-    createVenta,
-    updateVenta,
-    isCreating,
-    isUpdating
+    ...query,
+    ...mutations
   };
 };
-
-export type { VentasFilter, Venta, VentaCreate, VentaUpdate };
-export default useVentas;

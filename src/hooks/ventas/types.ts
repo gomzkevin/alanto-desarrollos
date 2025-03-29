@@ -1,44 +1,33 @@
 
-import { Database } from '@/integrations/supabase/types';
-
-// Tipos básicos
-export interface Venta {
+export type Venta = {
   id: string;
-  precio_total: number;
-  estado: string;
-  es_fraccional: boolean;
-  fecha_inicio: string;
-  fecha_actualizacion: string;
+  created_at: string;
+  lead_id: string;
   unidad_id: string;
-  unidad?: {
+  estado: string;
+  precio_total: number;
+  fecha_inicio: string;
+  es_fraccional: boolean;
+  prototipo?: {
     id: string;
-    numero: string;
-    prototipo_id?: string;
-    prototipo?: {
+    nombre: string;
+    precio: number;
+    desarrollo: {
+      id: string;
       nombre: string;
-      desarrollo_id?: string;
-      desarrollo?: {
-        nombre: string;
-        empresa_id?: number;
-      };
+      empresa_id: number;
     };
   };
-  progreso?: number;
-}
+  unidad?: {
+    id: string; 
+    numero: string;
+    prototipo_id: string;
+  };
+};
 
-export interface VentasFilter {
-  desarrollo_id?: string;
+export type VentasFilter = {
+  desarrolloId?: string;
+  prototipoId?: string;
+  limit?: number;
   estado?: string;
-  busqueda?: string;
-}
-
-export interface VentaCreate {
-  unidad_id: string;
-  precio_total: number;
-  es_fraccional: boolean;
-  estado?: string;
-}
-
-export interface VentaUpdate extends Partial<Omit<Venta, 'id'>> {
-  fecha_actualizacion?: string;
-}
+};

@@ -80,7 +80,6 @@ const EditCotizacionButton = ({
   
   const handleUpdateCotizacion = useCallback(async (values: any) => {
     try {
-      // Asegurar que trabajamos con valores numéricos para los campos de moneda
       const monto_anticipo = typeof values.monto_anticipo === 'string' 
         ? parseFloat(values.monto_anticipo.replace(/[^0-9.-]+/g, '')) 
         : values.monto_anticipo;
@@ -151,8 +150,6 @@ const EditCotizacionButton = ({
   );
 };
 
-// Utilizar memo para prevenir renderizados innecesarios
 export default memo(EditCotizacionButton);
 
-// Exportación nombrada para componentes que lo importan usando una importación nombrada
 export { EditCotizacionButton };

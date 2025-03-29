@@ -1,150 +1,133 @@
 
-import { useState } from 'react';
-import { useToast } from '@/components/ui/use-toast';
-import { FormValues } from '../../types';
-import { UseResourceActionsProps } from './types';
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks';
-import useClientCreation from './useClientCreation';
-import useImageUpload from './useImageUpload';
-import useResourceOperations from './useResourceOperations';
+import { useResourceOperations } from './useResourceOperations';
+import { useImageUpload } from './useImageUpload';
+import { useClientCreation } from './useClientCreation';
+import { ResourceData, ResourceFormValues } from '../../types';
 
-const useResourceActions = ({
-  resourceType,
-  resourceId,
-  onSuccess,
-  selectedAmenities = [],
-  clientConfig = { isExistingClient: true, newClientData: { nombre: '', email: '', telefono: '' } }
-}: UseResourceActionsProps) => {
-  const { toast } = useToast();
-  const { empresaId } = useUserRole();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export const useResourceActions = (
+  resourceType: string,
+  resourceId?: string,
+  onSuccess?: () => void
+) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const { empresaId, userId } = useUserRole();
   
-  const { handleImageUpload, isUploading } = useImageUpload();
-  const { createNewClient } = useClientCreation();
-  const { updateResource, createResource } = useResourceOperations();
+  const { 
+    createResource, 
+    updateResource, 
+    deleteResource 
+  } = useResourceOperations();
+  
+  const { uploadImage } = useImageUpload();
+  const { createClientIfNeeded } = useClientCreation();
 
-  const saveResource = async (resource: FormValues): Promise<boolean> => {
-    console.log('Guardando recurso:', resource);
-    console.log('Client config:', clientConfig);
+  const handleFormSubmit = useCallback(
+    async (values: ResourceFormValues) => {
+      if (!empresaId) {
+        toast({
+          title: 'Error',
+          description: 'No se pudo determinar la empresa',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        // Process image if present
+        let imageUrl = values.imagen_url;
+        if (values.image && values.image instanceof File) {
+          imageUrl = await uploadImage(values.image, resourceType, resourceId);
+        }
+
+        // Create client if needed for leads
+        if (resourceType === 'leads' && values.isNewClient) {
+          await createClientIfNeeded(values);
+        }
+
+        // Prepare the data and determine if we're creating or updating
+        const processedData = {
+          ...values,
+          imagen_url: imageUrl,
+          empresa_id: empresaId,
+          user_id: userId,
+        };
+
+        // Remove fields that should not be sent to the database
+        delete processedData.image;
+        delete processedData.isNewClient;
+
+        let result: ResourceData | null = null;
+
+        if (resourceId) {
+          // Update existing resource
+          result = await updateResource(resourceType, resourceId, processedData);
+        } else {
+          // Create new resource
+          result = await createResource(resourceType, processedData);
+        }
+
+        if (result) {
+          toast({
+            title: resourceId ? 'Actualizado' : 'Creado',
+            description: `${resourceType} ${resourceId ? 'actualizado' : 'creado'} exitosamente`,
+            variant: 'success',
+          });
+
+          if (onSuccess) {
+            onSuccess();
+          }
+        }
+      } catch (error: any) {
+        console.error(`Error ${resourceId ? 'updating' : 'creating'} ${resourceType}:`, error);
+        toast({
+          title: 'Error',
+          description: error.message || `No se pudo ${resourceId ? 'actualizar' : 'crear'} el ${resourceType}`,
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [resourceType, resourceId, empresaId, userId, onSuccess, uploadImage, createClientIfNeeded, createResource, updateResource]
+  );
+
+  const handleDelete = useCallback(async () => {
+    if (!resourceId) return;
     
-    if (!resource) {
-      console.error('No se proporcionaron datos del recurso');
-      return false;
-    }
-
-    setIsSubmitting(true);
+    setIsLoading(true);
     
     try {
-      let dataToSave = { ...resource };
-
-      // Procesamiento específico por tipo de recurso
-      if (resourceType === 'desarrollos') {
-        if (selectedAmenities && selectedAmenities.length > 0) {
-          dataToSave.amenidades = selectedAmenities;
-        }
-        
-        if (!dataToSave.empresa_id && empresaId) {
-          dataToSave.empresa_id = empresaId;
-        }
-      } else if (resourceType === 'leads') {
-        if (!dataToSave.empresa_id && empresaId) {
-          dataToSave.empresa_id = empresaId;
-        }
-      }
-
-      // Crear nuevo cliente si es necesario para cotizaciones
-      let newClientId = null;
-      if (resourceType === ('cotizaciones' as ResourceType) && !clientConfig.isExistingClient && !resourceId) {
-        const clientResult = await createNewClient(clientConfig, empresaId);
-        
-        if (!clientResult.success) {
-          setIsSubmitting(false);
-          return false;
-        }
-        
-        if (clientResult.clientId) {
-          dataToSave.lead_id = clientResult.clientId;
-          newClientId = clientResult.clientId;
-        }
-      }
-
-      // Ejecutar la operación de guardado apropiada
-      let result;
-      let success = false;
+      await deleteResource(resourceType, resourceId);
       
-      if (resourceId) {
-        // Actualizar recurso existente
-        const updateResult = await updateResource(resourceType, resourceId, dataToSave);
-        success = updateResult.success;
-        result = updateResult.data;
-        
-        if (!success) {
-          toast({
-            title: 'Error',
-            description: updateResult.message || 'Error al actualizar',
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: 'Actualizado',
-            description: `${resourceType} actualizado correctamente`,
-          });
-        }
-      } else {
-        // Crear nuevo recurso
-        const createResult = await createResource(resourceType, dataToSave);
-        success = createResult.success;
-        result = createResult.data;
-        
-        if (!success) {
-          toast({
-            title: 'Error',
-            description: createResult.message || 'Error al crear',
-            variant: 'destructive',
-          });
-        } else if (resourceType === ('cotizaciones' as ResourceType)) {
-          const successMessage = newClientId 
-            ? 'Cotización creada y nuevo cliente agregado a prospectos' 
-            : 'Cotización creada correctamente';
-            
-          toast({
-            title: 'Creado',
-            description: successMessage,
-          });
-        } else {
-          toast({
-            title: 'Creado',
-            description: `${resourceType} creado correctamente`,
-          });
-        }
-      }
+      toast({
+        title: 'Eliminado',
+        description: `${resourceType} eliminado exitosamente`,
+      });
       
-      console.log(`${resourceType} guardado:`, result);
-      
-      if (success && onSuccess) {
+      if (onSuccess) {
         onSuccess();
       }
-      
-      return success;
-    } catch (error) {
-      console.error(`Error guardando ${resourceType}:`, error);
+    } catch (error: any) {
+      console.error(`Error deleting ${resourceType}:`, error);
       toast({
         title: 'Error',
-        description: 'Ocurrió un error inesperado',
+        description: error.message || `No se pudo eliminar el ${resourceType}`,
         variant: 'destructive',
       });
-      return false;
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
-  };
+  }, [resourceType, resourceId, onSuccess, deleteResource]);
 
   return {
-    saveResource,
-    handleImageUpload,
-    isSubmitting,
-    isUploading
+    isLoading,
+    handleFormSubmit,
+    handleDelete,
   };
 };
-
-export default useResourceActions;
