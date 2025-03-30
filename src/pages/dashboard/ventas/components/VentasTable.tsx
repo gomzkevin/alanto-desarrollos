@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 interface VentasTableProps {
   refreshTrigger?: number;
   estadoFilter?: string;
+  initialLoading?: boolean;
 }
 
 type VentaWithPayments = {
@@ -23,14 +24,14 @@ type VentaWithPayments = {
   montoPagado: number;
 }
 
-export const VentasTable = ({ refreshTrigger = 0, estadoFilter }: VentasTableProps) => {
+export const VentasTable = ({ refreshTrigger = 0, estadoFilter, initialLoading = false }: VentasTableProps) => {
   const { ventas, isLoading, refetch } = useVentas({ estado: estadoFilter });
   const [ventasPayments, setVentasPayments] = useState<Record<string, VentaWithPayments>>({});
   const [loadingPayments, setLoadingPayments] = useState(false);
   const { empresaId, isLoading: isUserRoleLoading } = useUserRole();
   const navigate = useNavigate();
   
-  const isInitialLoading = isLoading || isUserRoleLoading;
+  const isInitialLoading = isLoading || isUserRoleLoading || initialLoading;
   
   console.log('VentasTable rendered with empresaId:', empresaId, 'ventas:', ventas.length, 'isLoading:', isLoading);
   

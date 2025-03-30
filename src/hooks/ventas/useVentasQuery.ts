@@ -142,6 +142,8 @@ export const useVentasQuery = (filters: VentasFilter = {}) => {
     refetchOnMount: true,
     // Prevenir que muestre estado de cargando cuando tenemos datos en caché
     placeholderData: (previousData) => previousData || [],
+    // Configuración de inicialización: permanece en carga hasta que los datos estén realmente disponibles
+    keepPreviousData: true,
   });
 };
 

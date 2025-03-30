@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import VentasTable from './components/VentasTable';
 import { useUserRole } from '@/hooks/useUserRole';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const VentasPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -15,6 +16,7 @@ const VentasPage = () => {
   const [statusFilter, setStatusFilter] = useState('todos');
   const { empresaId, isLoading: isUserRoleLoading } = useUserRole();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -29,6 +31,10 @@ const VentasPage = () => {
   useEffect(() => {
     if (empresaId && !isUserRoleLoading) {
       handleRefresh();
+      // Después de obtener los datos y el primer renderizado, marcar como cargado inicialmente
+      setTimeout(() => {
+        setInitialLoading(false);
+      }, 1000);
     }
   }, [empresaId, isUserRoleLoading]);
 
@@ -42,57 +48,72 @@ const VentasPage = () => {
           </p>
         </div>
 
-        {/* Sales Table Section */}
-        <div>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-            <div className="flex flex-grow max-w-md relative">
-              <Input
-                placeholder="Buscar ventas..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10"
-              />
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        {/* Mostrar un loading skeleton mientras se está cargando inicialmente */}
+        {isUserRoleLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-full max-w-md rounded-md mb-4" />
+            <div className="flex justify-between">
+              <Skeleton className="h-10 w-32 rounded-md" />
+              <Skeleton className="h-10 w-24 rounded-md" />
             </div>
+            <Skeleton className="h-64 w-full rounded-md" />
+          </div>
+        ) : (
+          <>
+            {/* Sales Table Section */}
+            <div>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                <div className="flex flex-grow max-w-md relative">
+                  <Input
+                    placeholder="Buscar ventas..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pr-10"
+                  />
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                </div>
 
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="status-filter" className="whitespace-nowrap">Estado:</Label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger id="status-filter" className="w-[130px]">
-                    <SelectValue placeholder="Estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="en_proceso">En proceso</SelectItem>
-                    <SelectItem value="completada">Completada</SelectItem>
-                    <SelectItem value="cancelada">Cancelada</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="status-filter" className="whitespace-nowrap">Estado:</Label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger id="status-filter" className="w-[130px]">
+                        <SelectValue placeholder="Estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        <SelectItem value="en_proceso">En proceso</SelectItem>
+                        <SelectItem value="completada">Completada</SelectItem>
+                        <SelectItem value="cancelada">Cancelada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button 
+                    onClick={handleRefresh} 
+                    variant="outline"
+                    disabled={isRefreshing}
+                  >
+                    {isRefreshing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Actualizando...
+                      </>
+                    ) : (
+                      "Actualizar"
+                    )}
+                  </Button>
+                </div>
               </div>
 
-              <Button 
-                onClick={handleRefresh} 
-                variant="outline"
-                disabled={isRefreshing}
-              >
-                {isRefreshing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Actualizando...
-                  </>
-                ) : (
-                  "Actualizar"
-                )}
-              </Button>
+              <VentasTable 
+                refreshTrigger={refreshTrigger} 
+                estadoFilter={statusFilter !== 'todos' ? statusFilter : undefined}
+                initialLoading={initialLoading}
+              />
             </div>
-          </div>
-
-          <VentasTable 
-            refreshTrigger={refreshTrigger} 
-            estadoFilter={statusFilter !== 'todos' ? statusFilter : undefined}
-          />
-        </div>
+          </>
+        )}
       </div>
     </DashboardLayout>
   );
