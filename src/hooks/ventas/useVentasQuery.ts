@@ -142,8 +142,8 @@ export const useVentasQuery = (filters: VentasFilter = {}) => {
     refetchOnMount: true,
     // Prevenir que muestre estado de cargando cuando tenemos datos en caché
     placeholderData: (previousData) => previousData || [],
-    // Configuración de inicialización: permanece en carga hasta que los datos estén realmente disponibles
-    keepPreviousData: true,
+    // Usar esta opción para mantener los datos anteriores mientras se cargan los nuevos
+    gcTime: 1000 * 60 * 10, // 10 minutos - tiempo para mantener los datos en caché después de que no se usen
   });
 };
 
