@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface VentasTableProps {
   refreshTrigger?: number;
@@ -26,10 +27,12 @@ export const VentasTable = ({ refreshTrigger = 0, estadoFilter }: VentasTablePro
   const { ventas, isLoading, refetch } = useVentas({ estado: estadoFilter });
   const [ventasPayments, setVentasPayments] = useState<Record<string, VentaWithPayments>>({});
   const [loadingPayments, setLoadingPayments] = useState(false);
-  const { empresaId } = useUserRole();
+  const { empresaId, isLoading: isUserRoleLoading } = useUserRole();
   const navigate = useNavigate();
   
-  console.log('VentasTable rendered with empresaId:', empresaId, 'ventas:', ventas.length);
+  const isInitialLoading = isLoading || isUserRoleLoading;
+  
+  console.log('VentasTable rendered with empresaId:', empresaId, 'ventas:', ventas.length, 'isLoading:', isLoading);
   
   useEffect(() => {
     if (refreshTrigger > 0) {
@@ -153,10 +156,72 @@ export const VentasTable = ({ refreshTrigger = 0, estadoFilter }: VentasTablePro
     navigate(`/dashboard/ventas/${ventaId}`);
   };
 
-  if (isLoading || loadingPayments) {
+  // Mostrar esqueletos durante la carga inicial
+  if (isInitialLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <p className="text-muted-foreground">Cargando ventas...</p>
+      <div className="space-y-4">
+        <Card className="overflow-hidden">
+          <div className="p-4">
+            <Skeleton className="h-6 w-3/4 mb-4" />
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Loading de pagos, mostramos la tabla pero con un indicador
+  if (loadingPayments && ventas.length > 0) {
+    return (
+      <div className="space-y-4">
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="text-left p-4 font-medium w-[35%]">Desarrollo / Unidad</th>
+                  <th className="text-left p-4 font-medium w-[12%]">Tipo</th>
+                  <th className="text-left p-4 font-medium w-[15%]">Precio Total</th>
+                  <th className="text-left p-4 font-medium w-[25%]">Progreso</th>
+                  <th className="text-left p-4 font-medium w-[13%]">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ventas.map((venta) => (
+                  <tr 
+                    key={venta.id} 
+                    className="border-t hover:bg-muted/30 cursor-pointer"
+                  >
+                    <td className="p-4">
+                      <div>
+                        <p className="font-medium">{venta.unidad?.prototipo?.desarrollo?.nombre || 'Desarrollo'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {venta.unidad?.prototipo?.nombre || 'Prototipo'} - Unidad {venta.unidad?.numero || 'N/A'}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      {venta.es_fraccional ? (
+                        <Badge variant="outline">Fraccional</Badge>
+                      ) : (
+                        <Badge variant="outline">Individual</Badge>
+                      )}
+                    </td>
+                    <td className="p-4">{formatCurrency(venta.precio_total)}</td>
+                    <td className="p-4">
+                      <Skeleton className="h-5 w-full" />
+                    </td>
+                    <td className="p-4">{getEstadoBadge(venta.estado)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       </div>
     );
   }

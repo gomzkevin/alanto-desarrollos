@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search } from 'lucide-react';
+import { PlusCircle, Search, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import VentasTable from './components/VentasTable';
@@ -13,11 +13,24 @@ const VentasPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
-  const { empresaId } = useUserRole();
+  const { empresaId, isLoading: isUserRoleLoading } = useUserRole();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = () => {
+    setIsRefreshing(true);
     setRefreshTrigger(prev => prev + 1);
+    // Simular un tiempo mínimo de carga para evitar flasheos
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 500);
   };
+
+  // Al cargar la página, iniciar con un refresh automático
+  useEffect(() => {
+    if (empresaId && !isUserRoleLoading) {
+      handleRefresh();
+    }
+  }, [empresaId, isUserRoleLoading]);
 
   return (
     <DashboardLayout>
@@ -58,8 +71,19 @@ const VentasPage = () => {
                 </Select>
               </div>
 
-              <Button onClick={handleRefresh} variant="outline">
-                Actualizar
+              <Button 
+                onClick={handleRefresh} 
+                variant="outline"
+                disabled={isRefreshing}
+              >
+                {isRefreshing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Actualizando...
+                  </>
+                ) : (
+                  "Actualizar"
+                )}
               </Button>
             </div>
           </div>

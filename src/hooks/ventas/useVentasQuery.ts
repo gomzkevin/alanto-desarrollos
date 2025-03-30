@@ -136,6 +136,12 @@ export const useVentasQuery = (filters: VentasFilter = {}) => {
     queryKey: ['ventas', filters, empresaId],
     queryFn: fetchVentas,
     enabled: !!empresaId && !isUserRoleLoading, // Only run the query if empresaId exists and user role is loaded
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    // Prevenir múltiples renderizaciones con estos ajustes
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    // Prevenir que muestre estado de cargando cuando tenemos datos en caché
+    placeholderData: (previousData) => previousData || [],
   });
 };
 
