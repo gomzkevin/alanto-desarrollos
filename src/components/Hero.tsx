@@ -24,7 +24,7 @@ const Hero = () => {
           
           {/* Main heading */}
           <h1 className="mt-5 text-slate-800 opacity-0 animate-fade-in stagger-1">
-            Despega tus ventas con lo más moderno en <span className="text-indigo-600">gestión comercial</span>
+            Despega tus ventas con lo más moderno en <span className="text-indigo-600">analítica avanzada y gestión comercial</span>
           </h1>
           
           {/* Subheading */}
