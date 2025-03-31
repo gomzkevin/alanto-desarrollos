@@ -15,6 +15,7 @@ import { VentaProgress } from './components/VentaProgress';
 import { PagoDialog } from './components/PagoDialog';
 import { VentaEditDialog } from './components/VentaEditDialog';
 import { CompradorDialog } from './components/CompradorDialog';
+import { ContractTab } from './components/ContractTab';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const VentaDetail = () => {
@@ -218,6 +219,7 @@ const VentaDetail = () => {
             <TabsTrigger value="info">Compradores</TabsTrigger>
             <TabsTrigger value="pagos">Pagos</TabsTrigger>
             <TabsTrigger value="plan">Plan de Pagos</TabsTrigger>
+            <TabsTrigger value="contrato">Contrato</TabsTrigger>
           </TabsList>
           
           <TabsContent value="info" className="space-y-4">
@@ -260,6 +262,14 @@ const VentaDetail = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="contrato" className="space-y-4">
+            <ContractTab
+              venta={venta}
+              compradores={compradores}
+              pagos={pagos}
+            />
           </TabsContent>
         </Tabs>
         
