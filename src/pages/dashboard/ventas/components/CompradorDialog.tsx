@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 import useLeads from '@/hooks/useLeads';
+import useUsuarios from '@/hooks/useUsuarios';
 
 interface CompradorDialogProps {
   open: boolean;
@@ -28,29 +29,13 @@ export const CompradorDialog = ({
   const [porcentaje, setPorcentaje] = useState<string>('100');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [vendedorId, setVendedorId] = useState<string>('');
-  const [vendedores, setVendedores] = useState<any[]>([]);
   
   const { leads, isLoading: isLoadingLeads } = useLeads();
+  const { usuarios, isLoading: isLoadingUsuarios } = useUsuarios();
   const { toast } = useToast();
   
-  // Fetch vendedores
-  useEffect(() => {
-    const fetchVendedores = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('usuarios')
-          .select('*')
-          .eq('rol', 'vendedor');
-          
-        if (error) throw error;
-        setVendedores(data || []);
-      } catch (error) {
-        console.error('Error al obtener vendedores:', error);
-      }
-    };
-    
-    fetchVendedores();
-  }, []);
+  // Filtrar solo los usuarios con rol "vendedor"
+  const vendedores = usuarios.filter(user => user.rol === 'vendedor' && user.activo);
   
   // If it's not a fractional sale, set porcentaje to 100 and disable editing
   useEffect(() => {
