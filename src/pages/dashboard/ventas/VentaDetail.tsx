@@ -16,6 +16,7 @@ import { PagoDialog } from './components/PagoDialog';
 import { VentaEditDialog } from './components/VentaEditDialog';
 import { CompradorDialog } from './components/CompradorDialog';
 import { ContractTab } from './components/ContractTab';
+import { PlanPagosTab } from './components/PlanPagosTab';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const VentaDetail = () => {
@@ -252,16 +253,22 @@ const VentaDetail = () => {
           </TabsContent>
           
           <TabsContent value="plan" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Plan de Pagos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-center h-40 text-slate-500">
-                  Información del plan de pagos (próximamente)
-                </div>
-              </CardContent>
-            </Card>
+            {compradores.length > 0 ? (
+              <PlanPagosTab 
+                venta={venta}
+                compradorVentaId={compradorVentaId}
+                pagos={pagos}
+                refetchPagos={refetch}
+              />
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center py-4 text-muted-foreground">
+                    No hay compradores asignados a esta venta. Debe asignar al menos un comprador para crear un plan de pagos.
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="contrato" className="space-y-4">
