@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -232,7 +233,8 @@ export const useResourceFields = (resourceType: ResourceType, status?: string | 
               required: true
             },
             { name: 'usar_finiquito', label: 'Liquidar con finiquito', type: 'switch' },
-            { name: 'monto_anticipo', 
+            { 
+              name: 'monto_anticipo', 
               label: 'Monto de anticipo', 
               type: 'number',
               tab: 'financiamiento',
@@ -240,7 +242,8 @@ export const useResourceFields = (resourceType: ResourceType, status?: string | 
               required: true 
             },
             { name: 'numero_pagos', label: 'Número de Pagos', type: 'number', placeholder: '0', required: true },
-            { name: 'monto_finiquito', 
+            { 
+              name: 'monto_finiquito', 
               label: 'Monto de finiquito', 
               type: 'number', 
               tab: 'financiamiento',
