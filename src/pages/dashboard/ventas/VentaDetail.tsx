@@ -10,9 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import { useVentaDetail } from '@/hooks/useVentaDetail';
 import { InfoTab } from './components/InfoTab';
-import { PagosTab } from './components/PagosTab';
 import { VentaProgress } from './components/VentaProgress';
-import { PagoDialog } from './components/PagoDialog';
+import { AplicarPagoDialog } from './components/AplicarPagoDialog';
 import { VentaEditDialog } from './components/VentaEditDialog';
 import { CompradorDialog } from './components/CompradorDialog';
 import { ContractTab } from './components/ContractTab';
@@ -218,7 +217,6 @@ const VentaDetail = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="info">Compradores</TabsTrigger>
-            <TabsTrigger value="pagos">Pagos</TabsTrigger>
             <TabsTrigger value="plan">Plan de Pagos</TabsTrigger>
             <TabsTrigger value="contrato">Contrato</TabsTrigger>
           </TabsList>
@@ -230,26 +228,6 @@ const VentaDetail = () => {
               pagos={pagos}
               onAddComprador={() => setOpenCompradorDialog(true)}
             />
-          </TabsContent>
-          
-          <TabsContent value="pagos" className="space-y-4">
-            {compradores.length > 0 ? (
-              <PagosTab 
-                ventaId={venta.id} 
-                compradorVentaId={compradorVentaId}
-                pagos={pagos}
-                isLoading={isLoading}
-                refetchPagos={refetch}
-              />
-            ) : (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center py-4 text-muted-foreground">
-                    No hay compradores asignados a esta venta. Debe asignar al menos un comprador para registrar pagos.
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </TabsContent>
           
           <TabsContent value="plan" className="space-y-4">
@@ -281,10 +259,11 @@ const VentaDetail = () => {
         </Tabs>
         
         {compradorVentaId && (
-          <PagoDialog
+          <AplicarPagoDialog
             open={openPagoDialog}
             onOpenChange={setOpenPagoDialog}
             compradorVentaId={compradorVentaId}
+            pagoCalendarizado={null}
             onSuccess={refetch}
           />
         )}

@@ -27,6 +27,8 @@ export interface PagoCalendarizado {
   descripcion: string;
   estado: 'pendiente' | 'pagado' | 'atrasado';
   pagado_id?: string;
+  pagos_aplicados?: Pago[]; // Added to track multiple payments applied to a scheduled payment
+  monto_pendiente?: number; // Added to track remaining amount for partial payments
 }
 
 export const usePlanPagos = (compradorVentaId?: string) => {
@@ -72,22 +74,45 @@ export const usePlanPagos = (compradorVentaId?: string) => {
     const schedule: PagoCalendarizado[] = [];
     const today = new Date();
     
+    // Group payments by month/year to handle partial payments
+    const pagosPorFecha: Record<string, Pago[]> = {};
+    
+    pagos.forEach(pago => {
+      const pagoDate = new Date(pago.fecha);
+      const key = `${pagoDate.getFullYear()}-${pagoDate.getMonth() + 1}`;
+      
+      if (!pagosPorFecha[key]) {
+        pagosPorFecha[key] = [];
+      }
+      
+      pagosPorFecha[key].push(pago);
+    });
+    
     // Add down payment if it exists
     if (plan.anticipo > 0 && plan.fecha_anticipo) {
       const anticipoDate = new Date(plan.fecha_anticipo);
-      const pagosAnticipoMatch = pagos.filter(pago => 
-        Math.abs(pago.monto - plan.anticipo) < 0.01 && 
-        new Date(pago.fecha).toDateString() === anticipoDate.toDateString()
-      );
+      const anticipoKey = `${anticipoDate.getFullYear()}-${anticipoDate.getMonth() + 1}`;
+      const pagosAnticipo = pagosPorFecha[anticipoKey] || [];
+      
+      // Find payments that could be for anticipo
+      const pagosAnticipoMatch = pagosAnticipo.filter(pago => {
+        const pagoDate = new Date(pago.fecha);
+        // Match payments that are +/- 5 days from the anticipo date
+        return Math.abs(pagoDate.getTime() - anticipoDate.getTime()) <= 5 * 24 * 60 * 60 * 1000;
+      });
+      
+      const totalPagado = pagosAnticipoMatch.reduce((sum, pago) => sum + pago.monto, 0);
+      const montoPendiente = Math.max(0, plan.anticipo - totalPagado);
       
       schedule.push({
         numero: 0,
         fecha: plan.fecha_anticipo,
         monto: plan.anticipo,
         descripcion: 'Anticipo',
-        estado: pagosAnticipoMatch.length > 0 ? 'pagado' : 
+        estado: montoPendiente <= 0 ? 'pagado' : 
                 (anticipoDate < today ? 'atrasado' : 'pendiente'),
-        pagado_id: pagosAnticipoMatch.length > 0 ? pagosAnticipoMatch[0].id : undefined
+        pagos_aplicados: pagosAnticipoMatch,
+        monto_pendiente: montoPendiente
       });
     }
     
@@ -100,41 +125,57 @@ export const usePlanPagos = (compradorVentaId?: string) => {
       paymentDate.setMonth(paymentDate.getMonth() + i + 1); // Start next month
       
       const formattedDate = paymentDate.toISOString();
+      const pagoKey = `${paymentDate.getFullYear()}-${paymentDate.getMonth() + 1}`;
+      const pagosMensuales = pagosPorFecha[pagoKey] || [];
       
-      // Check if payment matches any recorded payments
-      const matchingPayment = pagos.find(pago => 
-        Math.abs(pago.monto - plan.monto_mensual) < 0.01 && 
-        new Date(pago.fecha).getMonth() === paymentDate.getMonth() &&
-        new Date(pago.fecha).getFullYear() === paymentDate.getFullYear()
-      );
+      // Find payments for this month
+      const pagosMensualesMatch = pagosMensuales.filter(pago => {
+        const pagoDate = new Date(pago.fecha);
+        // Match payments that are within the same month or specifically tagged for this payment
+        return pagoDate.getMonth() === paymentDate.getMonth() && 
+               pagoDate.getFullYear() === paymentDate.getFullYear();
+      });
+      
+      const totalPagado = pagosMensualesMatch.reduce((sum, pago) => sum + pago.monto, 0);
+      const montoPendiente = Math.max(0, plan.monto_mensual - totalPagado);
       
       schedule.push({
         numero: i + 1,
         fecha: formattedDate,
         monto: plan.monto_mensual,
         descripcion: `Pago mensual ${i + 1}`,
-        estado: matchingPayment ? 'pagado' : 
+        estado: montoPendiente <= 0 ? 'pagado' : 
                 (paymentDate < today ? 'atrasado' : 'pendiente'),
-        pagado_id: matchingPayment?.id
+        pagos_aplicados: pagosMensualesMatch,
+        monto_pendiente: montoPendiente
       });
     }
     
     // Add final payment if applicable
     if (plan.incluye_finiquito && plan.monto_finiquito && plan.fecha_finiquito) {
       const finiquitoDate = new Date(plan.fecha_finiquito);
-      const pagosFiniquitoMatch = pagos.filter(pago => 
-        Math.abs(pago.monto - (plan.monto_finiquito || 0)) < 0.01 && 
-        new Date(pago.fecha).toDateString() === finiquitoDate.toDateString()
-      );
+      const finiquitoKey = `${finiquitoDate.getFullYear()}-${finiquitoDate.getMonth() + 1}`;
+      const pagosFiniquito = pagosPorFecha[finiquitoKey] || [];
+      
+      // Find payments that could be for finiquito
+      const pagosFiniquitoMatch = pagosFiniquito.filter(pago => {
+        const pagoDate = new Date(pago.fecha);
+        // Match payments that are +/- 5 days from the finiquito date
+        return Math.abs(pagoDate.getTime() - finiquitoDate.getTime()) <= 5 * 24 * 60 * 60 * 1000;
+      });
+      
+      const totalPagado = pagosFiniquitoMatch.reduce((sum, pago) => sum + pago.monto, 0);
+      const montoPendiente = Math.max(0, plan.monto_finiquito - totalPagado);
       
       schedule.push({
         numero: plan.plazo_meses + 1,
         fecha: plan.fecha_finiquito,
         monto: plan.monto_finiquito,
         descripcion: 'Finiquito',
-        estado: pagosFiniquitoMatch.length > 0 ? 'pagado' : 
+        estado: montoPendiente <= 0 ? 'pagado' : 
                 (finiquitoDate < today ? 'atrasado' : 'pendiente'),
-        pagado_id: pagosFiniquitoMatch.length > 0 ? pagosFiniquitoMatch[0].id : undefined
+        pagos_aplicados: pagosFiniquitoMatch,
+        monto_pendiente: montoPendiente
       });
     }
     

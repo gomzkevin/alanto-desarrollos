@@ -4,15 +4,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Calendar, Eye, AlertTriangle } from "lucide-react";
+import { Plus, Calendar, Eye, AlertTriangle, FileText, FileCheck, CreditCard } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { PlanPagoDialog } from "./PlanPagoDialog";
+import { AplicarPagoDialog } from "./AplicarPagoDialog"; 
 import { PlanPago, PagoCalendarizado, usePlanPagos } from "@/hooks/usePlanPagos";
 import { VentaWithDetail } from "@/hooks/ventaDetail/types";
 import { Pago } from "@/hooks/usePagos";
 import { Progress } from "@/components/ui/progress";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { PagoEditDialog } from "./PagoEditDialog";
 
 interface PlanPagosTabProps {
   venta: VentaWithDetail;
@@ -22,7 +29,11 @@ interface PlanPagosTabProps {
 }
 
 export const PlanPagosTab = ({ venta, compradorVentaId, pagos, refetchPagos }: PlanPagosTabProps) => {
-  const [openDialog, setOpenDialog] = useState(false);
+  const [openPlanDialog, setOpenPlanDialog] = useState(false);
+  const [openPagoDialog, setOpenPagoDialog] = useState(false);
+  const [openEditPagoDialog, setOpenEditPagoDialog] = useState(false);
+  const [selectedPago, setSelectedPago] = useState<Pago | null>(null);
+  const [selectedPagoCalendarizado, setSelectedPagoCalendarizado] = useState<PagoCalendarizado | null>(null);
   
   const { 
     planPagos, 
@@ -60,6 +71,16 @@ export const PlanPagosTab = ({ venta, compradorVentaId, pagos, refetchPagos }: P
     }
   };
   
+  const handleAplicarPago = (pago: PagoCalendarizado) => {
+    setSelectedPagoCalendarizado(pago);
+    setOpenPagoDialog(true);
+  };
+  
+  const handleViewPago = (pago: Pago) => {
+    setSelectedPago(pago);
+    setOpenEditPagoDialog(true);
+  };
+  
   // Find next payment
   const proximoPago = pagosPendientes.length > 0 
     ? pagosPendientes.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())[0]
@@ -85,7 +106,7 @@ export const PlanPagosTab = ({ venta, compradorVentaId, pagos, refetchPagos }: P
                 <p className="text-muted-foreground text-sm">
                   Crea un plan de pagos para esta venta para visualizar el calendario de pagos.
                 </p>
-                <Button onClick={() => setOpenDialog(true)}>
+                <Button onClick={() => setOpenPlanDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" /> Crear Plan de Pagos
                 </Button>
               </div>
@@ -147,6 +168,13 @@ export const PlanPagosTab = ({ venta, compradorVentaId, pagos, refetchPagos }: P
                       <Badge variant="outline" className="mt-1">
                         {proximoPago.descripcion}
                       </Badge>
+                      <Button 
+                        className="mt-2" 
+                        size="sm"
+                        onClick={() => handleAplicarPago(proximoPago)}
+                      >
+                        <CreditCard className="h-4 w-4 mr-1" /> Aplicar Pago
+                      </Button>
                     </>
                   ) : (
                     <div className="text-center py-2">
@@ -161,14 +189,22 @@ export const PlanPagosTab = ({ venta, compradorVentaId, pagos, refetchPagos }: P
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-lg">Calendario de Pagos</CardTitle>
-              <Button 
-                size="sm"
-                variant="outline"
-                onClick={() => setOpenDialog(true)}
-                className="h-8"
-              >
-                <Eye className="h-4 w-4 mr-1" /> Editar Plan
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm"
+                  onClick={() => setOpenPagoDialog(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Registrar Pago
+                </Button>
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setOpenPlanDialog(true)}
+                  className="h-8"
+                >
+                  <Eye className="h-4 w-4 mr-1" /> Editar Plan
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {pagosAtrasados.length > 0 && (
@@ -193,11 +229,12 @@ export const PlanPagosTab = ({ venta, compradorVentaId, pagos, refetchPagos }: P
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[80px]">No.</TableHead>
+                      <TableHead className="w-[60px]">No.</TableHead>
                       <TableHead>Fecha</TableHead>
                       <TableHead>Descripción</TableHead>
                       <TableHead>Monto</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -206,8 +243,73 @@ export const PlanPagosTab = ({ venta, compradorVentaId, pagos, refetchPagos }: P
                         <TableCell className="font-medium">{pago.numero}</TableCell>
                         <TableCell>{formatDate(pago.fecha)}</TableCell>
                         <TableCell>{pago.descripcion}</TableCell>
-                        <TableCell>{formatCurrency(pago.monto)}</TableCell>
+                        <TableCell>
+                          <div>
+                            {formatCurrency(pago.monto)}
+                            {pago.pagos_aplicados && pago.pagos_aplicados.length > 0 && (
+                              <div className="text-xs text-green-600 mt-1">
+                                Pagado: {formatCurrency(pago.pagos_aplicados.reduce((sum, p) => sum + p.monto, 0))}
+                              </div>
+                            )}
+                            {pago.monto_pendiente !== undefined && pago.monto_pendiente > 0 && (
+                              <div className="text-xs text-amber-600 mt-1">
+                                Pendiente: {formatCurrency(pago.monto_pendiente)}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{getEstadoBadge(pago.estado)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {/* Payments popover if there are applied payments */}
+                            {pago.pagos_aplicados && pago.pagos_aplicados.length > 0 && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80">
+                                  <div className="space-y-2">
+                                    <h4 className="font-medium">Pagos aplicados</h4>
+                                    <div className="border rounded divide-y">
+                                      {pago.pagos_aplicados.map((pagoAplicado) => (
+                                        <div key={pagoAplicado.id} className="p-2 text-sm flex justify-between items-center">
+                                          <div>
+                                            <div>{format(new Date(pagoAplicado.fecha), "d MMM yyyy")}</div>
+                                            <div className="text-green-600 font-medium">{formatCurrency(pagoAplicado.monto)}</div>
+                                            <div className="text-xs text-muted-foreground">{pagoAplicado.metodo_pago}</div>
+                                          </div>
+                                          <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="h-7"
+                                            onClick={() => handleViewPago(pagoAplicado)}
+                                          >
+                                            <Eye className="h-3 w-3 mr-1" /> Ver
+                                          </Button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            )}
+                            
+                            {/* Apply payment button */}
+                            <Button 
+                              variant={pago.estado === 'pagado' ? "ghost" : "default"} 
+                              size="sm"
+                              onClick={() => handleAplicarPago(pago)}
+                              disabled={pago.estado === 'pagado' && pago.monto_pendiente === 0}
+                            >
+                              {pago.estado === 'pagado' ? 
+                                <><FileCheck className="h-4 w-4 mr-1" /> Pagado</> : 
+                                <><CreditCard className="h-4 w-4 mr-1" /> Aplicar Pago</>
+                              }
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -219,8 +321,8 @@ export const PlanPagosTab = ({ venta, compradorVentaId, pagos, refetchPagos }: P
       )}
       
       <PlanPagoDialog
-        open={openDialog}
-        onOpenChange={setOpenDialog}
+        open={openPlanDialog}
+        onOpenChange={setOpenPlanDialog}
         venta={venta}
         existingPlan={planPagos}
         compradorVentaId={compradorVentaId}
@@ -228,6 +330,24 @@ export const PlanPagosTab = ({ venta, compradorVentaId, pagos, refetchPagos }: P
           refetch();
           refetchPagos();
         }}
+      />
+      
+      <AplicarPagoDialog
+        open={openPagoDialog}
+        onOpenChange={setOpenPagoDialog}
+        compradorVentaId={compradorVentaId}
+        pagoCalendarizado={selectedPagoCalendarizado}
+        onSuccess={() => {
+          refetchPagos();
+          setSelectedPagoCalendarizado(null);
+        }}
+      />
+      
+      <PagoEditDialog
+        open={openEditPagoDialog}
+        onOpenChange={setOpenEditPagoDialog}
+        pago={selectedPago}
+        onSuccess={refetchPagos}
       />
     </div>
   );
