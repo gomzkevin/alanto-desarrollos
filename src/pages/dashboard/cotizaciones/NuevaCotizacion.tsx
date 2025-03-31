@@ -15,11 +15,11 @@ const NuevaCotizacion = () => {
     navigate('/dashboard/cotizaciones');
   };
   
-  // Configurar los valores predeterminados para asegurar que se aplica el formato currency
+  // Set proper numeric values to ensure currency formatting works
   const defaultValues = {
     monto_anticipo: 0,
     monto_finiquito: 0,
-    // otros valores predeterminados si son necesarios
+    numero_pagos: 0
   };
   
   return (
