@@ -66,7 +66,7 @@ const Header = () => {
             <a href="#hero" className="text-slate-700 hover:text-indigo-600 transition-colors">Inicio</a>
             <a href="#features" className="text-slate-700 hover:text-indigo-600 transition-colors">Características</a>
             <a href="#properties" className="text-slate-700 hover:text-indigo-600 transition-colors">Propiedades</a>
-            <a href="#calculator" className="text-slate-700 hover:text-indigo-600 transition-colors">Calculadora</a>
+            <a href="#planes" className="text-slate-700 hover:text-indigo-600 transition-colors">Precios</a>
             {isCheckingAuth ? (
               <Button disabled className="opacity-75">Cargando...</Button>
             ) : isLoggedIn ? (
@@ -122,11 +122,11 @@ const Header = () => {
               Propiedades
             </a>
             <a 
-              href="#calculator" 
+              href="#planes" 
               className="block px-3 py-2 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md"
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              Calculadora
+              Precios
             </a>
             {isCheckingAuth ? (
               <Button disabled className="w-full opacity-75">Cargando...</Button>
