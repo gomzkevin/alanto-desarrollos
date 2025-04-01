@@ -87,7 +87,7 @@ const SubscriptionPackages = () => {
         { name: "SLA garantizado", included: true },
       ],
       buttonText: "Contáctanos",
-      buttonLink: "https://api.whatsapp.com/send/?phone=+15557340499&text&type=phone_number&app_absent=0",
+      buttonLink: "https://wa.me/15557340499",
       buttonVariant: "success",
     },
   ];
