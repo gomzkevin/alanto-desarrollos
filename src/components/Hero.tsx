@@ -42,7 +42,7 @@ const Hero = () => {
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <a href="https://api.whatsapp.com/send/?phone=+15557340499&text&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer">
+            <a href="https://wa.me/15557340499&text&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer">
               <Button variant="outline" className="py-6 px-8 rounded-full border-slate-300 hover:border-indigo-600 transition-all hover:text-indigo-600">
                 Ver cómo funciona
               </Button>
