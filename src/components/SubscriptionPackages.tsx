@@ -25,13 +25,13 @@ const SubscriptionPackages = () => {
   const plans: PricingPlan[] = [
     {
       name: "Básico",
-      price: "$199/mes",
+      price: "$199 USD/mes",
       description: "Ideal para pequeños desarrolladores inmobiliarios",
       icon: <BarChart className="h-8 w-8 text-indigo-600" />,
       features: [
         { name: "Hasta 3 desarrollos", included: true },
-        { name: "Gestión de ventas básica", included: true },
-        { name: "Reportes mensuales", included: true },
+        { name: "Hasta 5 prototipos", included: true },
+        { name: "Hasta 2 vendedores", included: true },
         { name: "Soporte por email", included: true },
         { name: "Personalización avanzada", included: false },
         { name: "API de integración", included: false },
@@ -41,14 +41,14 @@ const SubscriptionPackages = () => {
     },
     {
       name: "Intermedio",
-      price: "$499/mes",
+      price: "$499 USD/mes",
       description: "Para desarrolladores en crecimiento",
       icon: <Users className="h-8 w-8 text-indigo-600" />,
       popular: true,
       features: [
         { name: "Hasta 10 desarrollos", included: true },
-        { name: "Gestión de ventas avanzada", included: true },
-        { name: "Reportes en tiempo real", included: true },
+        { name: "Hasta 20 prototipos", included: true },
+        { name: "Hasta 5 vendedores", included: true },
         { name: "Soporte prioritario", included: true },
         { name: "Personalización básica", included: true },
         { name: "API de integración", included: false },
@@ -59,13 +59,13 @@ const SubscriptionPackages = () => {
     },
     {
       name: "Completo",
-      price: "$999/mes",
+      price: "$999 USD/mes",
       description: "Solución integral para desarrolladores establecidos",
       icon: <Building2 className="h-8 w-8 text-indigo-600" />,
       features: [
         { name: "Desarrollos ilimitados", included: true },
-        { name: "Suite completa de gestión", included: true },
-        { name: "Analítica avanzada", included: true },
+        { name: "Prototipos ilimitados", included: true },
+        { name: "Hasta 15 vendedores", included: true },
         { name: "Soporte 24/7", included: true },
         { name: "Personalización completa", included: true },
         { name: "API de integración", included: true },
@@ -80,7 +80,7 @@ const SubscriptionPackages = () => {
       icon: <Briefcase className="h-8 w-8 text-indigo-600" />,
       features: [
         { name: "Infraestructura dedicada", included: true },
-        { name: "Implementación personalizada", included: true },
+        { name: "Vendedores ilimitados", included: true },
         { name: "Integraciones a medida", included: true },
         { name: "Gerente de cuenta dedicado", included: true },
         { name: "Formación para equipos", included: true },
