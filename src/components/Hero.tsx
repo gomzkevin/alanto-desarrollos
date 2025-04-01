@@ -1,6 +1,7 @@
 
 import { ChevronRight, ClipboardList, TrendingUp, BarChart4 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Hero = () => {
   return (
@@ -35,13 +36,17 @@ const Hero = () => {
           
           {/* CTA Buttons */}
           <div className="mt-10 flex flex-col sm:flex-row gap-4 opacity-0 animate-fade-in stagger-3">
-            <Button className="py-6 px-8 rounded-full bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white button-glow">
-              <span>Comenzar ahora</span>
-              <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button variant="outline" className="py-6 px-8 rounded-full border-slate-300 hover:border-indigo-600 transition-all hover:text-indigo-600">
-              Ver cómo funciona
-            </Button>
+            <Link to="/auth">
+              <Button className="py-6 px-8 rounded-full bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white button-glow">
+                <span>Comenzar ahora</span>
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <a href="https://api.whatsapp.com/send/?phone=+15557340499&text&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="py-6 px-8 rounded-full border-slate-300 hover:border-indigo-600 transition-all hover:text-indigo-600">
+                Ver cómo funciona
+              </Button>
+            </a>
           </div>
           
           {/* Stats/features */}

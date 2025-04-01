@@ -5,6 +5,7 @@ import Hero from '@/components/Hero';
 import Features from '@/components/Features';
 import Properties from '@/components/Properties';
 import Footer from '@/components/Footer';
+import SubscriptionPackages from '@/components/SubscriptionPackages';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +41,14 @@ const Index = () => {
     return () => observer.disconnect();
   }, []);
 
+  // Function to scroll to top
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Page loader */}
@@ -54,19 +63,20 @@ const Index = () => {
         <Hero />
         <Features />
         <Properties />
+        <SubscriptionPackages />
       </main>
       <Footer />
       
       {/* Back to top button */}
-      <a 
-        href="#" 
+      <button 
+        onClick={scrollToTop}
         className="fixed bottom-8 right-8 w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-colors z-20"
         aria-label="Volver arriba"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
-      </a>
+      </button>
     </div>
   );
 };
