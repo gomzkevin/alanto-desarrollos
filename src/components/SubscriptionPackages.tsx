@@ -74,7 +74,7 @@ const SubscriptionPackages = () => {
       buttonLink: "/auth",
     },
     {
-      name: "Empresarial",
+      name: "Customizado",
       price: "Personalizado",
       description: "Soluciones a medida para grandes desarrolladores",
       icon: <Briefcase className="h-8 w-8 text-indigo-600" />,
