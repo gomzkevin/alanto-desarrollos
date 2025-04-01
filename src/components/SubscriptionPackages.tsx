@@ -96,18 +96,18 @@ const SubscriptionPackages = () => {
     <section id="planes" className="py-20 bg-slate-50">
       <div className="container px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl font-display">
             Planes adaptados a tu negocio
           </h2>
-          <p className="mt-4 text-lg text-slate-600">
+          <p className="mt-4 text-lg text-slate-600 font-sans">
             Elige el plan que mejor se adapte a las necesidades de tu desarrollo inmobiliario
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {plans.map((plan) => (
+          {plans.map((plan, index) => (
             <div 
-              key={plan.name}
+              key={`${plan.name}-${index}`}
               className={`relative rounded-2xl border bg-white p-6 shadow-sm transition-all hover:shadow-md ${
                 plan.popular ? 'border-indigo-600 ring-1 ring-indigo-600' : 'border-slate-200'
               }`}
@@ -124,23 +124,23 @@ const SubscriptionPackages = () => {
                 {plan.icon}
               </div>
               
-              <h3 className="text-xl font-semibold text-center text-slate-900">{plan.name}</h3>
+              <h3 className="text-xl font-semibold text-center text-slate-900 font-display">{plan.name}</h3>
               
               <div className="mt-4 text-center">
-                <span className="text-3xl font-bold text-slate-900">{plan.price}</span>
+                <span className="text-3xl font-bold text-slate-900 font-display">{plan.price}</span>
               </div>
               
-              <p className="mt-2 text-sm text-slate-500 text-center h-12">{plan.description}</p>
+              <p className="mt-2 text-sm text-slate-500 text-center h-12 font-sans">{plan.description}</p>
               
               <ul className="mt-6 space-y-3">
-                {plan.features.map((feature, index) => (
-                  <li key={index} className="flex items-start">
+                {plan.features.map((feature, idx) => (
+                  <li key={idx} className="flex items-start">
                     {feature.included ? (
                       <Check className="h-5 w-5 text-green-500 shrink-0 mr-2" />
                     ) : (
                       <X className="h-5 w-5 text-slate-300 shrink-0 mr-2" />
                     )}
-                    <span className={`text-sm ${feature.included ? 'text-slate-700' : 'text-slate-400'}`}>
+                    <span className={`text-sm font-sans ${feature.included ? 'text-slate-700' : 'text-slate-400'}`}>
                       {feature.name}
                     </span>
                   </li>
@@ -148,11 +148,11 @@ const SubscriptionPackages = () => {
               </ul>
               
               <div className="mt-8">
-                {plan.name === "Empresarial" ? (
+                {plan.name === "Empresarial" && plan.price === "Personalizado" ? (
                   <a href={plan.buttonLink} target="_blank" rel="noopener noreferrer" className="w-full">
                     <Button 
                       variant={plan.buttonVariant || "default"} 
-                      className="w-full"
+                      className="w-full font-sans"
                     >
                       {plan.buttonText}
                     </Button>
@@ -161,7 +161,7 @@ const SubscriptionPackages = () => {
                   <Link to={plan.buttonLink} className="w-full">
                     <Button 
                       variant={plan.buttonVariant || "default"} 
-                      className={`w-full ${plan.popular ? 'bg-indigo-600 hover:bg-indigo-700' : ''}`}
+                      className={`w-full font-sans ${plan.popular ? 'bg-indigo-600 hover:bg-indigo-700' : ''}`}
                     >
                       {plan.buttonText}
                     </Button>
