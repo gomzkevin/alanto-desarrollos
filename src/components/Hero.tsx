@@ -106,14 +106,6 @@ const Hero = () => {
                 </span> con nuestra plataforma de gestión comercial
               </h1>
               
-              {/* Value proposition with specific benefits */}
-              <p className="mt-6 text-lg md:text-xl text-slate-600 max-w-3xl opacity-0 animate-fade-in stagger-2">
-                Optimiza la gestión tu inventario de vivienda y 
-                <strong className="font-medium"> simplifica el seguimiento de ventas </strong> 
-                con la plataforma más moderna para 
-                <strong className="font-medium"> Desarrolladores Inmobiliarios</strong>.
-              </p>
-              
               {/* Key benefits checkmarks */}
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3 opacity-0 animate-fade-in stagger-3">
                 {[
