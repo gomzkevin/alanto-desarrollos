@@ -38,7 +38,7 @@ const Hero = () => {
           <div className="mt-10 flex flex-col sm:flex-row gap-4 opacity-0 animate-fade-in stagger-3">
             <Link to="/auth">
               <Button className="py-6 px-8 rounded-full bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 text-white button-glow">
-                <span>Comenzar gratis</span>
+                <span>Comenzar Gratis</span>
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
