@@ -97,9 +97,9 @@ const Hero = () => {
               </div>
             </div>
             
-            {/* Right column: Visual elements - Updated with luxury apartment building */}
+            {/* Right column: Visual elements - Updated with modern vertical development */}
             <div className="hidden lg:block relative">
-              {/* Luxury apartment building render in a "window" frame */}
+              {/* Modern vertical development in a "window" frame */}
               <div className="relative bg-white rounded-xl shadow-xl overflow-hidden transition-all hover:shadow-2xl transform hover:-translate-y-2 duration-500">
                 <div className="h-8 bg-slate-100 flex items-center px-4 border-b border-slate-200">
                   <div className="flex space-x-2">
@@ -108,17 +108,17 @@ const Hero = () => {
                     <div className="h-3 w-3 rounded-full bg-green-400"></div>
                   </div>
                 </div>
-                <div className="relative aspect-[4/3] overflow-hidden">
+                <div className="relative aspect-[3/4] overflow-hidden">
                   <img 
-                    src="/lovable-uploads/dcd54b98-2f08-4a64-a045-7f984e107c6c.png" 
-                    alt="Desarrollo inmobiliario de lujo" 
+                    src="/lovable-uploads/14639cf2-26a6-49d9-87f5-1ff66f39dea5.png" 
+                    alt="Desarrollo inmobiliario moderno" 
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-indigo-600/40 to-transparent"></div>
                 </div>
                 
-                {/* Floating stats card - Positioned inside the image */}
-                <div className="absolute top-28 right-8 bg-white p-4 rounded-lg shadow-lg transform rotate-6 z-40 animate-float">
+                {/* Floating stats card - Positioned to ensure it's fully visible */}
+                <div className="absolute top-1/4 right-6 bg-white p-4 rounded-lg shadow-lg transform rotate-6 z-40 animate-float">
                   <div className="flex items-center">
                     <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
                       <TrendingUp className="h-4 w-4 text-green-600" />
@@ -130,8 +130,8 @@ const Hero = () => {
                   </div>
                 </div>
                 
-                {/* Calendar card - Positioned inside the image */}
-                <div className="absolute bottom-28 left-8 bg-white p-4 rounded-lg shadow-lg z-40 animate-subtle-bounce">
+                {/* Calendar card - Repositioned for visibility */}
+                <div className="absolute bottom-1/3 left-6 bg-white p-4 rounded-lg shadow-lg z-40 animate-subtle-bounce">
                   <div className="flex items-center">
                     <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
                       <Calendar className="h-4 w-4 text-indigo-600" />
@@ -144,8 +144,8 @@ const Hero = () => {
                 </div>
               </div>
               
-              {/* Testimonial floating element - Positioned to overlap the image edge */}
-              <div className="absolute -bottom-4 right-10 bg-white p-4 rounded-lg shadow-lg max-w-xs z-40 animate-fade-in stagger-6">
+              {/* Testimonial floating element - Positioned to be fully visible */}
+              <div className="absolute -bottom-6 right-12 bg-white p-4 rounded-lg shadow-lg max-w-xs z-40 animate-fade-in stagger-6">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
                     <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
