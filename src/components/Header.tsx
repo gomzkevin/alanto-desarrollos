@@ -59,11 +59,14 @@ const Header = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <img 
-                src="/lovable-uploads/b85c95f1-cfe4-4a8f-9176-4b3b3539146b.png" 
-                alt="Alanto Logo" 
-                className="h-12 md:h-16" // Ajustando el tamaño para que sea más grande en móvil y aún mejor en desktop
-              />
+              {/* Logo con tamaño 30% más grande que el original */}
+              <div className="w-auto h-auto">
+                <img 
+                  src="/lovable-uploads/b85c95f1-cfe4-4a8f-9176-4b3b3539146b.png" 
+                  alt="Alanto Logo" 
+                  className="h-16 md:h-20 w-auto object-contain"
+                />
+              </div>
             </Link>
           </div>
 
