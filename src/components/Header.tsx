@@ -60,7 +60,7 @@ const Header = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <img 
-                src="/lovable-uploads/c5186f3e-7273-4c5b-9568-24c99ee65983.png" 
+                src="/lovable-uploads/b85c95f1-cfe4-4a8f-9176-4b3b3539146b.png" 
                 alt="Alanto Logo" 
                 className="h-8 md:h-10"
               />
