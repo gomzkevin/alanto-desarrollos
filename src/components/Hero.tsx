@@ -97,9 +97,9 @@ const Hero = () => {
               </div>
             </div>
             
-            {/* Right column: Visual elements - Updated with luxury apartment building */}
+            {/* Right column: Visual elements - Updated with modern apartment tower */}
             <div className="hidden lg:block relative">
-              {/* Luxury apartment building render in a "window" frame */}
+              {/* Modern apartment building in a "window" frame */}
               <div className="relative bg-white rounded-xl shadow-xl overflow-hidden transition-all hover:shadow-2xl transform hover:-translate-y-2 duration-500">
                 <div className="h-8 bg-slate-100 flex items-center px-4 border-b border-slate-200">
                   <div className="flex space-x-2">
@@ -110,7 +110,7 @@ const Hero = () => {
                 </div>
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img 
-                    src="/lovable-uploads/d73a70e5-4a0c-4031-b72d-6f434321e742.png" 
+                    src="/lovable-uploads/e28fa15b-8bda-489e-8e7e-51bf381aaf4a.png" 
                     alt="Desarrollo inmobiliario de lujo" 
                     className="w-full h-full object-cover"
                   />
