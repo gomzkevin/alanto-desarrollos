@@ -103,7 +103,7 @@ const Hero = () => {
                   <svg className="absolute -bottom-2 left-0 w-full h-3 text-indigo-100 -z-10" viewBox="0 0 100 15" preserveAspectRatio="none">
                     <path d="M0,15 Q50,0 100,15" fill="currentColor" />
                   </svg>
-                </span> con nuestra plataforma de gestión comercial
+                </span> con nuestra plataforma de gestión comercial.
               </h1>
               
               {/* Key benefits checkmarks */}
