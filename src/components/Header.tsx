@@ -64,7 +64,7 @@ const Header = () => {
                 <img 
                   src="/lovable-uploads/b85c95f1-cfe4-4a8f-9176-4b3b3539146b.png" 
                   alt="Alanto Logo" 
-                  className="h-12 md:h-16 w-auto object-contain"
+                  className="h-24 md:h-28 w-auto object-contain"
                 />
               </div>
             </a>

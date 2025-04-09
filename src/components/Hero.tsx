@@ -33,13 +33,13 @@ const Hero = () => {
                   <span className="flex items-center justify-center w-4 h-4 mr-1.5 rounded-full bg-indigo-600 text-white text-[10px]">
                     <Building className="h-2.5 w-2.5" />
                   </span>
-                  <span>Exclusivo para desarrolladores inmobiliarios</span>
+                  <span>Plataforma para desarrolladores inmobiliarios</span>
                 </div>
               </div>
               
               {/* Social proof counter */}
               <div className="mt-4 inline-block bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-sm border border-slate-100 text-sm text-slate-600 opacity-0 animate-fade-in stagger-1">
-                <span className="font-semibold text-indigo-600">+120</span> desarrolladoras confían en nosotros
+                <span className="font-semibold text-indigo-600">+120</span> desarrolladores confían en nosotros
               </div>
               
               {/* Main heading with benefit */}
