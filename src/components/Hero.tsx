@@ -124,7 +124,7 @@ const Hero = () => {
                       <TrendingUp className="h-4 w-4 text-green-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-800">Ventas</p>
+                      <p className="text-sm font-medium text-slate-800">Ventas de Departamentos</p>
                       <p className="text-lg font-bold text-green-600">+24%</p>
                     </div>
                   </div>
@@ -137,8 +137,8 @@ const Hero = () => {
                       <Calendar className="h-4 w-4 text-indigo-600" />
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">Próxima</p>
-                      <p className="text-sm font-medium text-slate-800">Cita con cliente</p>
+                      <p className="text-xs text-slate-500">Próximo</p>
+                      <p className="text-sm font-medium text-slate-800">Pago de cuota mensual</p>
                     </div>
                   </div>
                 </div>
