@@ -62,7 +62,7 @@ const Header = () => {
               <img 
                 src="/lovable-uploads/b85c95f1-cfe4-4a8f-9176-4b3b3539146b.png" 
                 alt="Alanto Logo" 
-                className="h-17 md:h-20" // Aumentando el tamaño 1.2 veces más desde h-14 md:h-17 a h-17 md:h-20
+                className="h-10 md:h-14" // Ajustando el tamaño a dimensiones más apropiadas
               />
             </Link>
           </div>
