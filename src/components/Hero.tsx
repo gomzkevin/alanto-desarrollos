@@ -63,10 +63,10 @@ const Hero = () => {
               {/* Key benefits checkmarks */}
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3 opacity-0 animate-fade-in stagger-3">
                 {[
-                  "Dashboard centralizado de ventas", 
-                  "Seguimiento automático de leads", 
-                  "Reportes personalizables", 
-                  "Integración con WhatsApp"
+                  "Inventario en tiempo real para todos tus brokers", 
+                  "Cotizaciones automatizadas sin usar Excel", 
+                  "Generación de contratos con un solo clic", 
+                  "Control total del proceso de pagos"
                 ].map((benefit, i) => (
                   <div key={i} className="flex items-center">
                     <CheckCircle2 className="h-5 w-5 mr-2 text-indigo-600" />
