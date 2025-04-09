@@ -58,7 +58,13 @@ const Header = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/" className="text-xl font-bold text-indigo-600">Alanto</Link>
+            <Link to="/" className="flex items-center">
+              <img 
+                src="/lovable-uploads/bfb0f60f-2062-4468-86f4-7223572663ad.png" 
+                alt="Alanto Logo" 
+                className="h-8 md:h-10"
+              />
+            </Link>
           </div>
 
           {/* Desktop navigation */}
