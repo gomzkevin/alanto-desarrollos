@@ -58,16 +58,16 @@ const Header = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center">
-              {/* Logo con tamaño 30% más grande que el original */}
+            <a href="#hero" className="flex items-center cursor-pointer">
+              {/* Logo con tamaño más grande que el original */}
               <div className="w-auto h-auto">
                 <img 
                   src="/lovable-uploads/b85c95f1-cfe4-4a8f-9176-4b3b3539146b.png" 
                   alt="Alanto Logo" 
-                  className="h-28 md:h-40 w-auto object-contain"
+                  className="h-28 md:h-36 w-auto object-contain"
                 />
               </div>
-            </Link>
+            </a>
           </div>
 
           {/* Desktop navigation */}
