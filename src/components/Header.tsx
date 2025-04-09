@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { isAuthenticated } from '@/lib/supabase';
 import { supabase } from '@/integrations/supabase/client';
+import { Phone } from 'lucide-react';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -59,12 +60,11 @@ const Header = () => {
           {/* Logo */}
           <div className="flex items-center">
             <a href="#hero" className="flex items-center cursor-pointer">
-              {/* Logo con tamaño más grande que el original */}
               <div className="w-auto h-auto">
                 <img 
                   src="/lovable-uploads/b85c95f1-cfe4-4a8f-9176-4b3b3539146b.png" 
                   alt="Alanto Logo" 
-                  className="h-28 md:h-32 w-auto object-contain"
+                  className="h-12 md:h-16 w-auto object-contain"
                 />
               </div>
             </a>
@@ -72,10 +72,14 @@ const Header = () => {
 
           {/* Desktop navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#hero" className="text-slate-700 hover:text-indigo-600 transition-colors">Inicio</a>
-            <a href="#features" className="text-slate-700 hover:text-indigo-600 transition-colors">Características</a>
-            <a href="#properties" className="text-slate-700 hover:text-indigo-600 transition-colors">Propiedades</a>
-            <a href="#planes" className="text-slate-700 hover:text-indigo-600 transition-colors">Precios</a>
+            <a href="#hero" className="text-slate-700 hover:text-indigo-600 transition-colors font-medium">Inicio</a>
+            <a href="#features" className="text-slate-700 hover:text-indigo-600 transition-colors font-medium">Características</a>
+            <a href="#properties" className="text-slate-700 hover:text-indigo-600 transition-colors font-medium">Propiedades</a>
+            <a href="#planes" className="text-slate-700 hover:text-indigo-600 transition-colors font-medium">Precios</a>
+            <a href="https://wa.me/15557340499" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 transition-colors font-medium flex items-center">
+              <Phone className="h-4 w-4 mr-1" /> 
+              <span>Agendar demo</span>
+            </a>
             {isCheckingAuth ? (
               <Button disabled className="opacity-75">Cargando...</Button>
             ) : isLoggedIn ? (
@@ -84,7 +88,7 @@ const Header = () => {
               </Link>
             ) : (
               <Link to="/auth">
-                <Button>Acceder</Button>
+                <Button className="bg-indigo-600 hover:bg-indigo-700">Acceder</Button>
               </Link>
             )}
           </nav>
@@ -111,31 +115,41 @@ const Header = () => {
           <div className="px-4 pt-2 pb-4 space-y-3">
             <a 
               href="#hero" 
-              className="block px-3 py-2 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md"
+              className="block px-3 py-2 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Inicio
             </a>
             <a 
               href="#features" 
-              className="block px-3 py-2 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md"
+              className="block px-3 py-2 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Características
             </a>
             <a 
               href="#properties" 
-              className="block px-3 py-2 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md"
+              className="block px-3 py-2 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Propiedades
             </a>
             <a 
               href="#planes" 
-              className="block px-3 py-2 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md"
+              className="block px-3 py-2 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-md font-medium"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Precios
+            </a>
+            <a 
+              href="https://wa.me/15557340499"
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block px-3 py-2 text-indigo-600 hover:bg-indigo-50 rounded-md font-medium flex items-center"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <Phone className="h-4 w-4 mr-2" /> 
+              Agendar demo
             </a>
             {isCheckingAuth ? (
               <Button disabled className="w-full opacity-75">Cargando...</Button>
@@ -151,7 +165,7 @@ const Header = () => {
             ) : (
               <Link to="/auth" className="block px-3 py-2">
                 <Button 
-                  className="w-full"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Acceder
