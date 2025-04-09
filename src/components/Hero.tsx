@@ -3,15 +3,66 @@ import { ChevronRight, ClipboardList, TrendingUp, BarChart4, Calendar, Building,
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Hero = () => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const isMobile = useIsMobile();
   
   const testimonials = [
     { name: "Carlos Rodríguez", company: "Grupo Desarrolla", quote: "Incrementamos 37% nuestras ventas en el primer trimestre" },
     { name: "Ana Martínez", company: "Constructora Horizonte", quote: "La gestión centralizada revolucionó nuestra operación" },
     { name: "Roberto González", company: "Inmobiliaria Cenit", quote: "El mejor ROI en cualquier herramienta que hemos usado" }
   ];
+  
+  // Hero Image component for mobile
+  const HeroImage = () => (
+    <div className="relative my-6 w-full max-w-md mx-auto">
+      <div className="relative bg-white rounded-xl shadow-xl overflow-hidden transition-all">
+        <div className="h-8 bg-slate-100 flex items-center px-4 border-b border-slate-200">
+          <div className="flex space-x-2">
+            <div className="h-3 w-3 rounded-full bg-red-400"></div>
+            <div className="h-3 w-3 rounded-full bg-amber-400"></div>
+            <div className="h-3 w-3 rounded-full bg-green-400"></div>
+          </div>
+        </div>
+        <div className="relative aspect-[4/3] overflow-hidden">
+          <img 
+            src="/lovable-uploads/e28fa15b-8bda-489e-8e7e-51bf381aaf4a.png" 
+            alt="Desarrollo inmobiliario de lujo" 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-indigo-600/40 to-transparent"></div>
+        </div>
+        
+        {/* Floating stats card - Positioned inside the image */}
+        <div className="absolute top-16 right-4 bg-white p-3 rounded-lg shadow-lg transform rotate-6 z-40 animate-float scale-75">
+          <div className="flex items-center">
+            <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
+              <TrendingUp className="h-4 w-4 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-800">Ventas de Departamentos</p>
+              <p className="text-lg font-bold text-green-600">+24%</p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Calendar card - Positioned inside the image */}
+        <div className="absolute bottom-16 left-4 bg-white p-3 rounded-lg shadow-lg z-40 animate-subtle-bounce scale-75">
+          <div className="flex items-center">
+            <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+              <Calendar className="h-4 w-4 text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Próximo</p>
+              <p className="text-sm font-medium text-slate-800">Pago de cuota mensual</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
   
   return (
     <section className="relative pt-28 pb-20 md:pt-32 md:pb-32 overflow-hidden">
@@ -41,6 +92,9 @@ const Hero = () => {
               <div className="mt-4 inline-block bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-sm border border-slate-100 text-sm text-slate-600 opacity-0 animate-fade-in stagger-1">
                 <span className="font-semibold text-indigo-600">+120</span> desarrolladores confían en nosotros
               </div>
+              
+              {/* Show hero image on mobile between chips and heading */}
+              {isMobile && <HeroImage />}
               
               {/* Main heading with benefit */}
               <h1 className="mt-5 text-4xl md:text-5xl font-bold leading-tight text-slate-800 opacity-0 animate-fade-in stagger-1">
@@ -97,7 +151,7 @@ const Hero = () => {
               </div>
             </div>
             
-            {/* Right column: Visual elements - Updated with modern apartment tower */}
+            {/* Right column: Visual elements - Only show on desktop */}
             <div className="hidden lg:block relative">
               {/* Modern apartment building in a "window" frame */}
               <div className="relative bg-white rounded-xl shadow-xl overflow-hidden transition-all hover:shadow-2xl transform hover:-translate-y-2 duration-500">
