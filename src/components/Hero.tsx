@@ -54,10 +54,10 @@ const Hero = () => {
               
               {/* Value proposition with specific benefits */}
               <p className="mt-6 text-lg md:text-xl text-slate-600 max-w-3xl opacity-0 animate-fade-in stagger-2">
-                Optimiza la gestión comercial de tus desarrollos, 
-                <strong className="font-medium"> aumenta conversiones </strong> 
-                y simplifica el seguimiento de ventas con la plataforma más completa para 
-                <strong className="font-medium"> maximizar tu ROI</strong>.
+                Optimiza la gestión tus desarrollos, y 
+                <strong className="font-medium"> simplifica el seguimiento de ventas </strong> 
+                con la plataforma más moderna para 
+                <strong className="font-medium"> Desarrolladores Inmobiliarios</strong>.
               </p>
               
               {/* Key benefits checkmarks */}
