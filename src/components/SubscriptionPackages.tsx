@@ -19,6 +19,7 @@ interface PricingPlan {
   buttonText: string;
   buttonLink: string;
   buttonVariant?: "default" | "outline" | "secondary" | "success";
+  productId?: string; // Added productId for reference
 }
 
 const SubscriptionPackages = () => {
@@ -38,6 +39,7 @@ const SubscriptionPackages = () => {
       ],
       buttonText: "Comenzar",
       buttonLink: "/auth",
+      productId: "prod_S6JeOdnRQLuPxV" // Updated with production product ID
     },
     {
       name: "Intermedio",
@@ -56,6 +58,7 @@ const SubscriptionPackages = () => {
       buttonText: "Comenzar prueba",
       buttonLink: "/auth",
       buttonVariant: "default",
+      productId: "prod_S6Jf7bfigy1c1v" // Updated with production product ID
     },
     {
       name: "Empresarial",
@@ -72,6 +75,7 @@ const SubscriptionPackages = () => {
       ],
       buttonText: "Comenzar",
       buttonLink: "/auth",
+      productId: "prod_S6JfAXjNpoiwTl" // Updated with production product ID
     },
     {
       name: "Customizado",

@@ -58,7 +58,8 @@ serve(async (req) => {
     console.log("Webhook v2: Longitud del cuerpo recibido:", rawBody.length);
     
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "whsec_Nc7JtPRL5RN953irfYvCDmzfBassGNqF";
+    // Updated to use production webhook secret
+    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
     
     if (!stripeSecretKey) {
       console.error("Webhook v2: Configuración de Stripe incompleta - falta STRIPE_SECRET_KEY");

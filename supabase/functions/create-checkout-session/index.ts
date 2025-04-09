@@ -96,7 +96,7 @@ serve(async (req) => {
       );
     }
 
-    // Inicializar Stripe
+    // Inicializar Stripe con la clave secreta de producción
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     
     if (!stripeSecretKey) {
@@ -134,6 +134,7 @@ serve(async (req) => {
       }
     });
 
+    // Updated to use the production Stripe API key
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2025-02-24.acacia",
       httpClient: Stripe.createFetchHttpClient(), // Asegurar que usamos Fetch como cliente HTTP

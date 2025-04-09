@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import Stripe from 'https://esm.sh/stripe@14.0.0';
@@ -63,7 +64,8 @@ serve(async (req) => {
     
     // Initialize Stripe
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "whsec_Nc7JtPRL5RN953irfYvCDmzfBassGNqF";
+    // Updated to use production webhook secret or empty string
+    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
     
     if (!stripeSecretKey || !webhookSecret) {
       console.error("Missing Stripe configuration", { 
