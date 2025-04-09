@@ -15,15 +15,6 @@ export const useCreateCheckout = () => {
   const { userId } = useUserRole();
   
   const createCheckoutSession = async ({ priceId, planId, successPath }: CreateCheckoutOptions) => {
-    if (!userId) {
-      toast({
-        title: 'Error',
-        description: 'Debes iniciar sesión para suscribirte',
-        variant: 'destructive',
-      });
-      return null;
-    }
-    
     setIsLoading(true);
     
     try {
@@ -33,15 +24,44 @@ export const useCreateCheckout = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        throw new Error('No hay sesión de autenticación activa');
+        toast({
+          title: 'Error',
+          description: 'No hay sesión de autenticación activa',
+          variant: 'destructive',
+        });
+        return null;
       }
+      
+      const authUserId = session.user.id;
+      
+      // Verificar si el usuario existe en la tabla usuarios
+      const { data: userData, error: userError } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('auth_id', authUserId)
+        .single();
+
+      // Si el usuario no existe en la base de datos, mostramos un error más claro
+      if (userError || !userData) {
+        console.error('Error obteniendo datos del usuario:', userError);
+        toast({
+          title: 'Error',
+          description: 'Tu perfil de usuario no está configurado correctamente. Por favor, contacta con soporte.',
+          variant: 'destructive',
+        });
+        return null;
+      }
+      
+      console.log('Datos del usuario encontrados:', userData);
       
       // Llamar a nuestro endpoint de Supabase Edge Function con autenticación explícita
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           priceId,
           planId,
-          userId,
+          userId: authUserId, // Usar el ID de auth directamente
+          empresaId: userData.empresa_id, // Incluir el empresa_id
+          email: userData.email,
           successPath
         },
         headers: {

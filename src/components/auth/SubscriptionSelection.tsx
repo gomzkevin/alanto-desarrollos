@@ -4,6 +4,7 @@ import { Check, BarChart, Users, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCreateCheckout } from '@/hooks/useCreateCheckout';
 import { toast } from '@/components/ui/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface PlanProps {
   name: string;
@@ -80,6 +81,7 @@ const PlanCard: React.FC<PlanProps> = ({
 export function SubscriptionSelection() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const { createCheckoutSession, isLoading } = useCreateCheckout();
+  const navigate = useNavigate();
   
   const plans = [
     {
@@ -139,6 +141,19 @@ export function SubscriptionSelection() {
 
     const plan = plans.find(p => p.priceId === selectedPlan);
     if (!plan) return;
+
+    // Verificar si el usuario está autenticado
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    if (!sessionData.session) {
+      toast({
+        title: "Inicia sesión",
+        description: "Debes iniciar sesión antes de suscribirte",
+        variant: "destructive"
+      });
+      navigate("/auth", { state: { redirectAfterAuth: "/dashboard/configuracion" } });
+      return;
+    }
 
     try {
       await createCheckoutSession({

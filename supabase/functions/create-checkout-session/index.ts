@@ -39,7 +39,9 @@ serve(async (req) => {
 
     // Obtener el cuerpo de la solicitud
     const body = await req.json();
-    const { priceId, planId, userId, successPath } = body;
+    const { priceId, planId, userId, empresaId, email, successPath } = body;
+
+    console.log("Received request body:", JSON.stringify(body, null, 2));
 
     if (!priceId || !planId || !userId) {
       console.error("Missing required parameters:", { priceId, planId, userId });
@@ -75,27 +77,6 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Obtener información del usuario
-    const { data: userData, error: userError } = await supabase
-      .from('usuarios')
-      .select('*')
-      .eq('auth_id', userId)
-      .single();
-      
-    if (userError) {
-      console.error("Error retrieving user data:", userError);
-      return new Response(
-        JSON.stringify({ error: "Could not find user information" }),
-        {
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-          status: 404,
-        }
-      );
-    }
-
     // Inicializar Stripe con la clave secreta de producción
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     
@@ -120,24 +101,53 @@ serve(async (req) => {
     const successUrl = `${origin}${successPath || "/dashboard/configuracion"}?success=true&plan_id=${planId}`;
     const cancelUrl = `${origin}${successPath || "/dashboard/configuracion"}?canceled=true`;
     
+    // Verificar si tenemos un empresaId o necesitamos obtenerlo
+    let userEmpresaId = empresaId;
+    let userEmail = email;
+    
+    if (!userEmpresaId || !userEmail) {
+      // Obtener información del usuario
+      const { data: userData, error: userError } = await supabase
+        .from('usuarios')
+        .select('empresa_id, email')
+        .eq('auth_id', userId)
+        .single();
+        
+      if (userError) {
+        console.error("Error retrieving user data:", userError);
+        return new Response(
+          JSON.stringify({ error: "Could not find user information" }),
+          {
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+            status: 404,
+          }
+        );
+      }
+      
+      userEmpresaId = userData.empresa_id;
+      userEmail = userData.email;
+    }
+    
     console.log("Creating Stripe checkout session with: ", {
       priceId,
       domain: origin,
       successUrl,
       cancelUrl,
-      customerEmail: userData.email,
+      customerEmail: userEmail,
       metadata: {
         user_id: userId,
         plan_id: planId,
-        empresa_id: userData.empresa_id,
-        user_email: userData.email
+        empresa_id: userEmpresaId
       }
     });
 
     // Updated to use the production Stripe API key
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2025-02-24.acacia",
-      httpClient: Stripe.createFetchHttpClient(), // Asegurar que usamos Fetch como cliente HTTP
+      apiVersion: "2025-02-24.acacia", // Ver de actualizar esto según la versión compatible
+      httpClient: Stripe.createFetchHttpClient(),
     });
 
     // Crear parámetros para la sesión de checkout
@@ -151,20 +161,18 @@ serve(async (req) => {
       mode: "subscription",
       success_url: successUrl,
       cancel_url: cancelUrl,
-      customer_email: userData.email,
+      customer_email: userEmail,
       client_reference_id: userId,
       metadata: {
         user_id: userId,
         plan_id: planId,
-        empresa_id: userData.empresa_id,
-        user_email: userData.email
+        empresa_id: userEmpresaId
       },
       subscription_data: {
         metadata: {
           user_id: userId,
           plan_id: planId,
-          empresa_id: userData.empresa_id,
-          user_email: userData.email
+          empresa_id: userEmpresaId
         }
       }
     };
