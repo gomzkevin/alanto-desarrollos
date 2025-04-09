@@ -110,7 +110,7 @@ const Hero = () => {
                 </div>
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img 
-                    src="/lovable-uploads/dcd54b98-2f08-4a64-a045-7f984e107c6c.png" 
+                    src="/lovable-uploads/d73a70e5-4a0c-4031-b72d-6f434321e742.png" 
                     alt="Desarrollo inmobiliario de lujo" 
                     className="w-full h-full object-cover"
                   />
@@ -162,15 +162,48 @@ const Hero = () => {
             </div>
           </div>
           
-          {/* Industry recognition */}
+          {/* Industry recognition - UPDATED with logos instead of text */}
           <div className="mt-16 md:mt-20 border-t border-slate-200 pt-8 opacity-0 animate-fade-in stagger-5">
             <p className="text-sm text-slate-500 text-center mb-6">Especialistas en el sector inmobiliario</p>
             <div className="flex flex-wrap justify-center gap-8 md:gap-12 items-center">
-              {["CMIC", "CANADEVI", "AMPI", "Asociación de Desarrolladores"].map((org, i) => (
-                <div key={i} className="text-slate-400 font-medium text-sm md:text-base">
-                  {org}
+              {/* Replaced text with logos */}
+              <div className="flex flex-wrap justify-center gap-8 md:gap-12 items-center">
+                {/* CMIC Logo */}
+                <div className="h-10 md:h-12">
+                  <img 
+                    src="/lovable-uploads/166cf195-ba28-4803-a473-65ab461b18f8.png" 
+                    alt="CMIC Logo" 
+                    className="h-full object-contain"
+                  />
                 </div>
-              ))}
+                
+                {/* CANADEVI Logo */}
+                <div className="h-8 md:h-10">
+                  <img 
+                    src="/lovable-uploads/8fe483e9-c61f-4943-86fa-dab3ada19699.png" 
+                    alt="CANADEVI Logo" 
+                    className="h-full object-contain"
+                  />
+                </div>
+                
+                {/* AMPI Logo */}
+                <div className="h-12 md:h-14">
+                  <img 
+                    src="/lovable-uploads/0dbca38f-020c-4766-a6e2-e67b654fa775.png" 
+                    alt="AMPI Logo" 
+                    className="h-full object-contain"
+                  />
+                </div>
+                
+                {/* ADI Logo */}
+                <div className="h-10 md:h-12">
+                  <img 
+                    src="/lovable-uploads/d73a70e5-4a0c-4031-b72d-6f434321e742.png" 
+                    alt="Asociación de Desarrolladores Inmobiliarios Logo" 
+                    className="h-full object-contain"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           
