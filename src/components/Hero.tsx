@@ -44,7 +44,7 @@ const Hero = () => {
             </Link>
             <a href="https://wa.me/15557340499" target="_blank" rel="noopener noreferrer">
               <Button variant="outline" className="py-6 px-8 rounded-full border-slate-300 hover:border-indigo-600 transition-all hover:text-indigo-600">
-                Conocer más
+                Whatsapp
               </Button>
             </a>
           </div>
