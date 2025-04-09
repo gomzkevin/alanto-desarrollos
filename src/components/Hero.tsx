@@ -97,9 +97,9 @@ const Hero = () => {
               </div>
             </div>
             
-            {/* Right column: Visual elements - Updated with vertical real estate development */}
+            {/* Right column: Visual elements - Updated with luxury apartment building */}
             <div className="hidden lg:block relative">
-              {/* Vertical real estate development render in a "window" frame */}
+              {/* Luxury apartment building render in a "window" frame */}
               <div className="relative bg-white rounded-xl shadow-xl overflow-hidden transition-all hover:shadow-2xl transform hover:-translate-y-2 duration-500">
                 <div className="h-8 bg-slate-100 flex items-center px-4 border-b border-slate-200">
                   <div className="flex space-x-2">
@@ -110,15 +110,15 @@ const Hero = () => {
                 </div>
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img 
-                    src="https://images.unsplash.com/photo-1486325212027-8081e485255e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" 
-                    alt="Desarrollo inmobiliario vertical" 
+                    src="/lovable-uploads/dcd54b98-2f08-4a64-a045-7f984e107c6c.png" 
+                    alt="Desarrollo inmobiliario de lujo" 
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-indigo-600/40 to-transparent"></div>
                 </div>
                 
-                {/* Floating stats card - Positioned to be fully visible within the image */}
-                <div className="absolute top-20 right-4 bg-white p-4 rounded-lg shadow-lg transform rotate-6 z-30 animate-float">
+                {/* Floating stats card - Positioned inside the image */}
+                <div className="absolute top-28 right-8 bg-white p-4 rounded-lg shadow-lg transform rotate-6 z-40 animate-float">
                   <div className="flex items-center">
                     <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
                       <TrendingUp className="h-4 w-4 text-green-600" />
@@ -130,8 +130,8 @@ const Hero = () => {
                   </div>
                 </div>
                 
-                {/* Calendar card - Repositioned to be fully visible */}
-                <div className="absolute bottom-20 left-4 bg-white p-4 rounded-lg shadow-lg z-30 animate-subtle-bounce">
+                {/* Calendar card - Positioned inside the image */}
+                <div className="absolute bottom-28 left-8 bg-white p-4 rounded-lg shadow-lg z-40 animate-subtle-bounce">
                   <div className="flex items-center">
                     <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
                       <Calendar className="h-4 w-4 text-indigo-600" />
@@ -144,8 +144,8 @@ const Hero = () => {
                 </div>
               </div>
               
-              {/* Testimonial floating element - Fully visible and positioned to overlap the image edge */}
-              <div className="absolute -bottom-4 right-4 bg-white p-4 rounded-lg shadow-lg max-w-xs z-30 animate-fade-in stagger-6">
+              {/* Testimonial floating element - Positioned to overlap the image edge */}
+              <div className="absolute -bottom-4 right-10 bg-white p-4 rounded-lg shadow-lg max-w-xs z-40 animate-fade-in stagger-6">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
                     <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
