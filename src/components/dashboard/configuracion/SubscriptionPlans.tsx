@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { useCreateCheckout } from "@/hooks/useCreateCheckout";
 
-const STRIPE_CUSTOMER_PORTAL_URL = "https://billing.stripe.com/p/login/00g9C0fz89xB2KQ288";
+const STRIPE_CUSTOMER_PORTAL_URL = "https://billing.stripe.com/p/login/test_6oE1601ki9u10hy8ww";
 
 interface SubscriptionPlan {
   id: string;

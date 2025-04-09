@@ -3,7 +3,6 @@ import React from 'react';
 import { Check, X, BarChart, Users, Building2, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { useCreateCheckout } from '@/hooks/useCreateCheckout';
 
 interface PlanFeature {
   name: string;
@@ -20,23 +19,9 @@ interface PricingPlan {
   buttonText: string;
   buttonLink: string;
   buttonVariant?: "default" | "outline" | "secondary" | "success";
-  productId?: string; // Product ID from Stripe
-  priceId?: string; // Price ID from Stripe
 }
 
 const SubscriptionPackages = () => {
-  const { createCheckoutSession, isLoading } = useCreateCheckout();
-  
-  const handleSubscribe = async (plan: PricingPlan) => {
-    if (!plan.priceId) return;
-    
-    await createCheckoutSession({
-      priceId: plan.priceId,
-      planId: plan.productId || '',
-      successPath: "/dashboard/configuracion"
-    });
-  };
-  
   const plans: PricingPlan[] = [
     {
       name: "Básico",
@@ -53,8 +38,6 @@ const SubscriptionPackages = () => {
       ],
       buttonText: "Comenzar",
       buttonLink: "/auth",
-      productId: "prod_S6JeOdnRQLuPxV", // Product ID
-      priceId: "price_1R4sdgAmHdZStjAGho30y55V" // Price ID
     },
     {
       name: "Intermedio",
@@ -73,8 +56,6 @@ const SubscriptionPackages = () => {
       buttonText: "Comenzar prueba",
       buttonLink: "/auth",
       buttonVariant: "default",
-      productId: "prod_S6Jf7bfigy1c1v", // Product ID
-      priceId: "price_1R4sfRAmHdZStjAGBiqhMf0q" // Price ID
     },
     {
       name: "Empresarial",
@@ -91,8 +72,6 @@ const SubscriptionPackages = () => {
       ],
       buttonText: "Comenzar",
       buttonLink: "/auth",
-      productId: "prod_S6JfAXjNpoiwTl", // Product ID
-      priceId: "price_1R4sgRAmHdZStjAGiOLRYlXp" // Price ID
     },
     {
       name: "Customizado",
@@ -169,7 +148,7 @@ const SubscriptionPackages = () => {
               </ul>
               
               <div className="mt-8">
-                {plan.name === "Customizado" ? (
+                {plan.name === "Empresarial" && plan.price === "Personalizado" ? (
                   <a href={plan.buttonLink} target="_blank" rel="noopener noreferrer" className="w-full">
                     <Button 
                       variant={plan.buttonVariant || "default"} 
@@ -178,15 +157,6 @@ const SubscriptionPackages = () => {
                       {plan.buttonText}
                     </Button>
                   </a>
-                ) : plan.priceId ? (
-                  <Button 
-                    variant={plan.buttonVariant || "default"} 
-                    className={`w-full font-sans ${plan.popular ? 'bg-indigo-600 hover:bg-indigo-700' : ''}`}
-                    onClick={() => handleSubscribe(plan)}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Procesando...' : plan.buttonText}
-                  </Button>
                 ) : (
                   <Link to={plan.buttonLink} className="w-full">
                     <Button 

@@ -8,7 +8,6 @@ import SubscriptionCheck from '@/components/dashboard/SubscriptionCheck';
 
 // Pages
 import HomePage from '@/pages/Index';
-import PlanesPage from '@/pages/Planes';
 import DesarrolloPreview from '@/pages/DesarrolloPreview';
 import AuthPage from '@/pages/auth/Auth';
 import DashboardPage from '@/pages/dashboard/Index';
@@ -107,7 +106,6 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
-          <Route path="/planes" element={<PlanesPage />} />
           <Route path="/desarrollo/:id" element={<DesarrolloPreview />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/404" element={<NotFoundPage />} />
