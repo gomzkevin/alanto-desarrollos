@@ -42,6 +42,13 @@ export type Database = {
             foreignKeyName: "compradores_venta_comprador_id_fkey"
             columns: ["comprador_id"]
             isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "compradores_venta_comprador_id_fkey"
+            columns: ["comprador_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -49,8 +56,22 @@ export type Database = {
             foreignKeyName: "compradores_venta_vendedor_id_fkey"
             columns: ["vendedor_id"]
             isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["vendedor_id"]
+          },
+          {
+            foreignKeyName: "compradores_venta_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
             referencedRelation: "usuarios"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compradores_venta_venta_id_fkey"
+            columns: ["venta_id"]
+            isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["venta_id"]
           },
           {
             foreignKeyName: "compradores_venta_venta_id_fkey"
@@ -115,6 +136,13 @@ export type Database = {
             foreignKeyName: "configuracion_financiera_desarrollo_id_fkey"
             columns: ["desarrollo_id"]
             isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["desarrollo_id"]
+          },
+          {
+            foreignKeyName: "configuracion_financiera_desarrollo_id_fkey"
+            columns: ["desarrollo_id"]
+            isOneToOne: false
             referencedRelation: "desarrollos"
             referencedColumns: ["id"]
           },
@@ -168,6 +196,13 @@ export type Database = {
             foreignKeyName: "cotizaciones_desarrollo_id_fkey"
             columns: ["desarrollo_id"]
             isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["desarrollo_id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_desarrollo_id_fkey"
+            columns: ["desarrollo_id"]
+            isOneToOne: false
             referencedRelation: "desarrollos"
             referencedColumns: ["id"]
           },
@@ -175,8 +210,22 @@ export type Database = {
             foreignKeyName: "cotizaciones_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_prototipo_id_fkey"
+            columns: ["prototipo_id"]
+            isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["prototipo_id"]
           },
           {
             foreignKeyName: "cotizaciones_prototipo_id_fkey"
@@ -213,6 +262,13 @@ export type Database = {
           url?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "desarrollo_imagenes_desarrollo_id_fkey"
+            columns: ["desarrollo_id"]
+            isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["desarrollo_id"]
+          },
           {
             foreignKeyName: "desarrollo_imagenes_desarrollo_id_fkey"
             columns: ["desarrollo_id"]
@@ -305,6 +361,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "desarrollos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_metrics_view"
+            referencedColumns: ["empresa_id"]
+          },
           {
             foreignKeyName: "desarrollos_empresa_id_fkey"
             columns: ["empresa_id"]
@@ -476,6 +539,13 @@ export type Database = {
             foreignKeyName: "pagos_comprador_venta_id_fkey"
             columns: ["comprador_venta_id"]
             isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["comprador_venta_id"]
+          },
+          {
+            foreignKeyName: "pagos_comprador_venta_id_fkey"
+            columns: ["comprador_venta_id"]
+            isOneToOne: false
             referencedRelation: "compradores_venta"
             referencedColumns: ["id"]
           },
@@ -529,6 +599,13 @@ export type Database = {
             foreignKeyName: "plan_pagos_comprador_venta_id_fkey"
             columns: ["comprador_venta_id"]
             isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["comprador_venta_id"]
+          },
+          {
+            foreignKeyName: "plan_pagos_comprador_venta_id_fkey"
+            columns: ["comprador_venta_id"]
+            isOneToOne: false
             referencedRelation: "compradores_venta"
             referencedColumns: ["id"]
           },
@@ -575,6 +652,13 @@ export type Database = {
           tipo?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "propiedades_desarrollo_id_fkey"
+            columns: ["desarrollo_id"]
+            isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["desarrollo_id"]
+          },
           {
             foreignKeyName: "propiedades_desarrollo_id_fkey"
             columns: ["desarrollo_id"]
@@ -640,6 +724,13 @@ export type Database = {
           unidades_vendidas?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "prototipos_desarrollo_id_fkey"
+            columns: ["desarrollo_id"]
+            isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["desarrollo_id"]
+          },
           {
             foreignKeyName: "prototipos_desarrollo_id_fkey"
             columns: ["desarrollo_id"]
@@ -730,6 +821,13 @@ export type Database = {
             foreignKeyName: "subscriptions_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
+            referencedRelation: "dashboard_metrics_view"
+            referencedColumns: ["empresa_id"]
+          },
+          {
+            foreignKeyName: "subscriptions_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
             referencedRelation: "empresa_info"
             referencedColumns: ["id"]
           },
@@ -790,6 +888,13 @@ export type Database = {
             foreignKeyName: "unidades_comprador_id_fkey"
             columns: ["comprador_id"]
             isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "unidades_comprador_id_fkey"
+            columns: ["comprador_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -797,8 +902,22 @@ export type Database = {
             foreignKeyName: "unidades_prototipo_id_fkey"
             columns: ["prototipo_id"]
             isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["prototipo_id"]
+          },
+          {
+            foreignKeyName: "unidades_prototipo_id_fkey"
+            columns: ["prototipo_id"]
+            isOneToOne: false
             referencedRelation: "prototipos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unidades_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["vendedor_id"]
           },
           {
             foreignKeyName: "unidades_vendedor_id_fkey"
@@ -854,6 +973,13 @@ export type Database = {
             foreignKeyName: "usuarios_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
+            referencedRelation: "dashboard_metrics_view"
+            referencedColumns: ["empresa_id"]
+          },
+          {
+            foreignKeyName: "usuarios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
             referencedRelation: "empresa_info"
             referencedColumns: ["id"]
           },
@@ -898,6 +1024,13 @@ export type Database = {
             foreignKeyName: "ventas_unidad_id_fkey"
             columns: ["unidad_id"]
             isOneToOne: false
+            referencedRelation: "company_ventas_view"
+            referencedColumns: ["unidad_id"]
+          },
+          {
+            foreignKeyName: "ventas_unidad_id_fkey"
+            columns: ["unidad_id"]
+            isOneToOne: false
             referencedRelation: "unidades"
             referencedColumns: ["id"]
           },
@@ -905,7 +1038,73 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      company_ventas_view: {
+        Row: {
+          comprador_email: string | null
+          comprador_nombre: string | null
+          comprador_telefono: string | null
+          comprador_venta_id: string | null
+          desarrollo_id: string | null
+          desarrollo_nombre: string | null
+          desarrollo_ubicacion: string | null
+          empresa_id: number | null
+          es_fraccional: boolean | null
+          fecha_actualizacion: string | null
+          fecha_inicio: string | null
+          lead_id: string | null
+          monto_comprometido: number | null
+          notas: string | null
+          pagos_pendientes: number | null
+          porcentaje_propiedad: number | null
+          precio_total: number | null
+          progreso_pago_porcentaje: number | null
+          prototipo_id: string | null
+          prototipo_nombre: string | null
+          prototipo_precio: number | null
+          prototipo_tipo: string | null
+          total_pagado: number | null
+          unidad_estado: string | null
+          unidad_id: string | null
+          unidad_nivel: string | null
+          unidad_numero: string | null
+          vendedor_id: string | null
+          vendedor_nombre: string | null
+          venta_estado: string | null
+          venta_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "desarrollos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_metrics_view"
+            referencedColumns: ["empresa_id"]
+          },
+          {
+            foreignKeyName: "desarrollos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa_info"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_metrics_view: {
+        Row: {
+          empresa_id: number | null
+          empresa_nombre: string | null
+          ingresos_mes_actual: number | null
+          prospectos_activos: number | null
+          total_cotizaciones: number | null
+          total_leads: number | null
+          total_unidades: number | null
+          total_ventas: number | null
+          unidades_disponibles: number | null
+          unidades_reservadas: number | null
+          unidades_vendidas: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_subscription_limit: {
@@ -919,6 +1118,14 @@ export type Database = {
       count_company_resources: {
         Args: { company_id: number; resource_type: string }
         Returns: number
+      }
+      get_company_subscription_status: {
+        Args: { company_id: number }
+        Returns: Json
+      }
+      get_revenue_by_period: {
+        Args: { company_id: number; period_months?: number }
+        Returns: Json
       }
       get_subscription_status: {
         Args: { company_id: number }
