@@ -9,6 +9,7 @@ import { toast } from "@/components/ui/use-toast";
 import { signUpWithEmailPassword } from "@/services/authService";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { PasswordStrengthIndicator } from "./PasswordStrengthIndicator";
 
 interface SignupFormProps {
   onSuccess?: () => void;
@@ -175,9 +176,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <p className="text-xs text-slate-500 mt-1">
-            La contraseña debe tener al menos 6 caracteres
-          </p>
+          <PasswordStrengthIndicator password={password} />
         </div>
       </CardContent>
       <CardFooter className="flex flex-col space-y-2">

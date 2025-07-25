@@ -110,7 +110,7 @@ export const tryConfirmEmail = async (userId: string, email: string, password: s
 };
 
 /**
- * Secure sign in with email and password - no authentication bypass attempts
+ * Enhanced secure sign in with email and password - with advanced rate limiting and security logging
  */
 export const signInWithEmailPassword = async (email: string, password: string) => {
   try {
@@ -131,24 +131,70 @@ export const signInWithEmailPassword = async (email: string, password: string) =
       };
     }
 
-    // Enforce minimum password length (8 characters minimum)
-    if (password.length < 8) {
+    // Enhanced password validation (12 characters minimum for better security)
+    if (password.length < 12) {
       return { 
         success: false, 
-        error: "La contraseña debe tener al menos 8 caracteres" 
+        error: "La contraseña debe tener al menos 12 caracteres" 
       };
     }
 
-    // Rate limiting check (basic implementation)
-    const now = Date.now();
-    const lastAttempt = localStorage.getItem(`last_login_attempt_${email}`);
-    if (lastAttempt && (now - parseInt(lastAttempt)) < 1000) { // 1 second rate limit
+    // Check password complexity
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[^a-zA-Z0-9]/.test(password);
+
+    if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
       return {
         success: false,
-        error: "Demasiados intentos. Por favor, espere un momento."
+        error: "La contraseña debe contener al menos una letra mayúscula, una minúscula, un número y un carácter especial"
       };
     }
-    localStorage.setItem(`last_login_attempt_${email}`, now.toString());
+
+    // Advanced rate limiting check using database
+    try {
+      const { data: rateLimitData, error: rateLimitError } = await supabase.rpc('check_rate_limit', {
+        p_identifier: email,
+        p_action_type: 'login',
+        p_max_attempts: 5,
+        p_window_minutes: 15,
+        p_block_minutes: 30
+      });
+
+      if (rateLimitError) {
+        console.warn('Rate limit check failed, falling back to local rate limiting:', rateLimitError);
+        // Fallback to local rate limiting
+        const now = Date.now();
+        const lastAttempt = localStorage.getItem(`last_login_attempt_${email}`);
+        if (lastAttempt && (now - parseInt(lastAttempt)) < 2000) { // 2 second rate limit
+          return {
+            success: false,
+            error: "Demasiados intentos. Por favor, espere un momento."
+          };
+        }
+        localStorage.setItem(`last_login_attempt_${email}`, now.toString());
+      } else if ((rateLimitData as any)?.is_blocked) {
+        // Log security event for blocked login attempt
+        try {
+          await supabase.rpc('log_security_event', {
+            p_event_type: 'blocked_login_attempt',
+            p_email: email,
+            p_details: { attempts_left: (rateLimitData as any).attempts_left },
+            p_severity: 'high'
+          });
+        } catch (error) {
+          console.warn('Failed to log security event:', error);
+        }
+
+        return {
+          success: false,
+          error: `Cuenta temporalmente bloqueada debido a múltiples intentos fallidos. Intente nuevamente más tarde.`
+        };
+      }
+    } catch (error) {
+      console.warn('Rate limiting failed, continuing with login attempt:', error);
+    }
     
     // Attempt secure sign in
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -158,6 +204,18 @@ export const signInWithEmailPassword = async (email: string, password: string) =
 
     if (error) {
       console.log("Error de inicio de sesión:", error.message);
+      
+      // Log failed login attempt
+      try {
+        await supabase.rpc('log_security_event', {
+          p_event_type: 'failed_login',
+          p_email: email,
+          p_details: { error_message: error.message },
+          p_severity: 'medium'
+        });
+      } catch (logError) {
+        console.warn('Failed to log security event:', logError);
+      }
       
       // Provide user-friendly error messages without revealing system details
       if (error.message.includes("Email not confirmed")) {
@@ -188,6 +246,18 @@ export const signInWithEmailPassword = async (email: string, password: string) =
     if (data.user && data.session) {
       console.log("Inicio de sesión exitoso para:", email);
       
+      // Log successful login
+      try {
+        await supabase.rpc('log_security_event', {
+          p_event_type: 'successful_login',
+          p_user_id: data.user.id,
+          p_email: email,
+          p_severity: 'low'
+        });
+      } catch (logError) {
+        console.warn('Failed to log security event:', logError);
+      }
+      
       // Ensure user exists in the database with proper validation
       await ensureUserInDatabase(data.user.id, data.user.email || email);
       
@@ -208,7 +278,7 @@ export const signInWithEmailPassword = async (email: string, password: string) =
 };
 
 /**
- * Signs up with email and password
+ * Enhanced signs up with email and password - with password complexity validation
  */
 export const signUpWithEmailPassword = async (
   email: string, 
@@ -219,6 +289,60 @@ export const signUpWithEmailPassword = async (
 ) => {
   try {
     console.log("Iniciando registro con email:", email, "rol:", userRole);
+    
+    // Enhanced password validation using database function
+    try {
+      const { data: passwordValidation, error: validationError } = await supabase.rpc('validate_password_complexity', {
+        password: password
+      });
+
+      if (validationError) {
+        console.warn('Password validation failed, using client-side validation:', validationError);
+        // Fallback to client-side validation
+        if (password.length < 12) {
+          return { success: false, error: "La contraseña debe tener al menos 12 caracteres" };
+        }
+        const hasUppercase = /[A-Z]/.test(password);
+        const hasLowercase = /[a-z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        const hasSpecial = /[^a-zA-Z0-9]/.test(password);
+        
+        if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
+          return {
+            success: false,
+            error: "La contraseña debe contener al menos una letra mayúscula, una minúscula, un número y un carácter especial"
+          };
+        }
+      } else if (!(passwordValidation as any)?.valid) {
+        const errors = (passwordValidation as any)?.errors || [];
+        return {
+          success: false,
+          error: errors.length > 0 ? errors[0] : "La contraseña no cumple con los requisitos de seguridad"
+        };
+      }
+    } catch (error) {
+      console.warn('Password complexity check failed, continuing with signup:', error);
+    }
+
+    // Rate limiting for signup attempts
+    try {
+      const { data: rateLimitData, error: rateLimitError } = await supabase.rpc('check_rate_limit', {
+        p_identifier: email,
+        p_action_type: 'signup',
+        p_max_attempts: 3,
+        p_window_minutes: 60,
+        p_block_minutes: 120
+      });
+
+      if (!rateLimitError && (rateLimitData as any)?.is_blocked) {
+        return {
+          success: false,
+          error: "Demasiados intentos de registro. Por favor, intente más tarde."
+        };
+      }
+    } catch (error) {
+      console.warn('Signup rate limiting failed, continuing:', error);
+    }
     
     // First check if user already exists in auth system
     if (autoSignIn) {
