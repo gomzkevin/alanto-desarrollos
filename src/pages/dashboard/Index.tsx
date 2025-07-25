@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Building2, Users, BarChart3, TrendingUp, AlertTriangle } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Link } from 'react-router-dom';
-import useDashboardMetrics from '@/hooks/useDashboardMetrics';
+import { useOptimizedDashboardMetrics } from '@/hooks/optimized/useDashboardMetrics';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
@@ -14,10 +14,10 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
   if (active && payload && payload.length) {
     return (
       <div className="bg-white p-3 border rounded shadow-md">
-        <p className="font-semibold">{label}</p>
+        <p className="font-semibold">{`${label}`}</p>
         {payload.map((entry, index) => (
-          <p key={`item-${index}`} style={{ color: entry.color }}>
-            {entry.name === 'ingresos' ? `Ingresos: ${formatCurrency(entry.value)}` : `${entry.name}: ${entry.value}`}
+          <p key={index} style={{ color: entry.color }}>
+            {`${entry.dataKey}: ${entry.value}`}
           </p>
         ))}
       </div>
@@ -26,22 +26,9 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
   return null;
 };
 
-const COLORS = ['#4F46E5', '#14B8A6', '#F97066'];
-
-interface DesarrolloWithStats {
-  id: string;
-  nombre: string;
-  ubicacion: string;
-  unidades_disponibles: number;
-  total_unidades: number;
-  unidades_vendidas?: number;
-  avance_porcentaje: number;
-  [key: string]: any;
-}
-
 const Dashboard = () => {
-  const { metrics, isLoading, error, refetch } = useDashboardMetrics();
-  const [desarrollosWithStats, setDesarrollosWithStats] = useState<DesarrolloWithStats[]>([]);
+  const { data: metrics, isLoading, error, refetch } = useOptimizedDashboardMetrics();
+  const [desarrollosWithStats, setDesarrollosWithStats] = useState<any[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   
   const salesMetrics = {
@@ -50,357 +37,351 @@ const Dashboard = () => {
     cotizaciones: metrics?.cotizaciones || 0,
     ventas: metrics?.ventas || 0
   };
-  
-  const desarrollos = metrics?.desarrollos || [];
-  const salesData = metrics?.salesData || [];
-  const inventoryData = metrics?.inventoryData || [];
 
-  const hasError = error !== null;
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   useEffect(() => {
-    const loadDesarrolloStats = async () => {
-      if (!desarrollos.length) return;
-      
+    if (!metrics?.desarrollos || metrics.desarrollos.length === 0) {
+      return;
+    }
+
+    const fetchStats = async () => {
       setIsLoadingStats(true);
-      
       try {
-        const desarrollosWithUpdatedStats = await Promise.all(
-          desarrollos.map(async (desarrollo) => {
-            try {
-              const counts = await countDesarrolloUnidadesByStatus(desarrollo.id);
-              
-              const totalUnidades = counts.total || desarrollo.total_unidades || 0;
-              const unidadesDisponibles = counts.disponibles;
-              const unidadesVendidas = counts.vendidas;
-              const unidadesConAnticipo = counts.con_anticipo;
-              
-              const totalVentas = unidadesVendidas + unidadesConAnticipo;
-              
-              const avance = totalUnidades > 0 
-                ? Math.round((totalVentas / totalUnidades) * 100) 
-                : 0;
-              
-              return {
-                ...desarrollo,
-                total_unidades: totalUnidades,
-                unidades_disponibles: unidadesDisponibles,
-                unidades_vendidas: totalVentas,
-                avance_porcentaje: avance
-              };
-            } catch (err) {
-              console.error(`Error al cargar stats para desarrollo ${desarrollo.id}:`, err);
-              const totalUnidades = desarrollo.total_unidades || 0;
-              const unidadesDisponibles = Math.min(desarrollo.unidades_disponibles || 0, totalUnidades);
-              const unidadesVendidas = totalUnidades - unidadesDisponibles;
-              const avance = totalUnidades > 0 
-                ? Math.round((unidadesVendidas / totalUnidades) * 100) 
-                : 0;
-              
-              return {
-                ...desarrollo,
-                unidades_vendidas: unidadesVendidas,
-                avance_porcentaje: avance
-              };
-            }
-          })
-        );
-        
-        console.log("Desarrollos con estadísticas actualizadas:", desarrollosWithUpdatedStats);
-        setDesarrollosWithStats(desarrollosWithUpdatedStats);
-      } catch (error) {
-        console.error('Error cargando estadísticas de desarrollos:', error);
-        const fallbackDesarrollos = desarrollos.map(desarrollo => {
-          const totalUnidades = desarrollo.total_unidades || 0;
-          const unidadesDisponibles = Math.min(desarrollo.unidades_disponibles || 0, totalUnidades);
-          const unidadesVendidas = totalUnidades - unidadesDisponibles;
-          const avance = totalUnidades > 0 
-            ? Math.round((unidadesVendidas / totalUnidades) * 100) 
-            : 0;
-          
-          return {
-            ...desarrollo,
-            unidades_vendidas: unidadesVendidas,
-            avance_porcentaje: avance
-          };
+        const desarrollosWithStatsPromises = metrics.desarrollos.map(async (desarrollo) => {
+          try {
+            const unidadesData = await countDesarrolloUnidadesByStatus(desarrollo.id);
+            const totalUnidades = unidadesData.total || 0;
+            const unidadesDisponibles = unidadesData.disponibles || 0;
+            const unidadesVendidas = unidadesData.vendidas || 0;
+            
+            console.log(`Desarrollo ${desarrollo.nombre}:`, {
+              totalUnidades,
+              unidadesDisponibles,
+              unidadesVendidas,
+              progreso: desarrollo.avance_porcentaje
+            });
+            
+            return {
+              ...desarrollo,
+              total_unidades: totalUnidades,
+              unidades_disponibles: unidadesDisponibles,
+              unidades_vendidas: unidadesVendidas,
+              avance_porcentaje: desarrollo.avance_porcentaje
+            };
+          } catch (error) {
+            console.error(`Error fetching stats for desarrollo ${desarrollo.id}:`, error);
+            return {
+              ...desarrollo,
+              total_unidades: 0,
+              unidades_disponibles: 0,
+              unidades_vendidas: 0,
+              avance_porcentaje: desarrollo.avance_porcentaje
+            };
+          }
         });
-        
-        setDesarrollosWithStats(fallbackDesarrollos);
+
+        const desarrollosWithStatsResolved = await Promise.all(desarrollosWithStatsPromises);
+        setDesarrollosWithStats(desarrollosWithStatsResolved);
+      } catch (error) {
+        console.error('Error fetching desarrollo stats:', error);
+        const desarrollosWithStatsFiltered = metrics.desarrollos.map(desarrollo => ({
+          ...desarrollo,
+          total_unidades: 0,
+          unidades_disponibles: 0,
+          unidades_vendidas: 0,
+          avance_porcentaje: desarrollo.avance_porcentaje
+        }));
+        setDesarrollosWithStats(desarrollosWithStatsFiltered);
       } finally {
         setIsLoadingStats(false);
       }
     };
-    
-    loadDesarrolloStats();
-  }, [desarrollos]);
+
+    fetchStats();
+  }, [metrics?.desarrollos]);
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6 p-6">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+            <div className="h-96 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6 p-6">
+          <div className="text-center py-12">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Error al cargar el dashboard
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Hubo un problema al cargar los datos. Por favor, intenta de nuevo.
+            </p>
+            <Button onClick={() => refetch()} variant="outline">
+              Intentar de nuevo
+            </Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-6 pb-16">
-        <div className="flex justify-between items-center">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-slate-800">Dashboard</h1>
-            <p className="text-slate-600">Visualiza las métricas clave de ventas e inventario.</p>
-          </div>
-          
-          <Button 
-            variant="outline" 
-            onClick={() => refetch()}
-            disabled={isLoading}
-            className="flex items-center gap-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
-            >
-              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-              <path d="M21 3v5h-5" />
-              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-              <path d="M3 21v-5h5" />
-            </svg>
-            Actualizar
-          </Button>
+      <div className="space-y-6 p-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Resumen general de tu actividad de ventas
+          </p>
         </div>
-      
-        {hasError && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="p-4 flex items-center gap-3 text-red-700">
-              <AlertTriangle className="h-5 w-5" />
-              <div>
-                <p className="font-medium">Error al cargar los datos del dashboard</p>
-                <p className="text-sm">Por favor intenta de nuevo más tarde o contacta a soporte.</p>
-              </div>
+
+        {/* Sales Metrics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Leads</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{salesMetrics.leads}</div>
+              <p className="text-xs text-muted-foreground">
+                Clientes potenciales
+              </p>
             </CardContent>
           </Card>
-        )}
-      
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="shadow-sm">
-            <CardHeader className="pb-2">
-              <CardDescription>Total de Leads</CardDescription>
-              <CardTitle className="text-2xl font-bold text-indigo-600 flex justify-between items-center">
-                {isLoading ? (
-                  <div className="h-8 w-16 bg-indigo-100 animate-pulse rounded"></div>
-                ) : (
-                  salesMetrics.leads
-                )}
-                <Users className="h-5 w-5 text-indigo-400" />
-              </CardTitle>
-            </CardHeader>
-            <CardFooter className="pt-2">
-              <Link to="/dashboard/leads" className="text-xs text-indigo-600 hover:underline">
-                Ver todos los leads →
-              </Link>
-            </CardFooter>
-          </Card>
           
-          <Card className="shadow-sm">
-            <CardHeader className="pb-2">
-              <CardDescription>Prospectos Activos</CardDescription>
-              <CardTitle className="text-2xl font-bold text-indigo-600 flex justify-between items-center">
-                {isLoading ? (
-                  <div className="h-8 w-16 bg-indigo-100 animate-pulse rounded"></div>
-                ) : (
-                  salesMetrics.prospectos
-                )}
-                <Users className="h-5 w-5 text-indigo-400" />
-              </CardTitle>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Prospectos</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardFooter className="pt-2">
-              <Link to="/dashboard/leads?status=convertido" className="text-xs text-indigo-600 hover:underline">
-                Ver prospectos activos →
-              </Link>
-            </CardFooter>
+            <CardContent>
+              <div className="text-2xl font-bold">{salesMetrics.prospectos}</div>
+              <p className="text-xs text-muted-foreground">
+                Interesados activos
+              </p>
+            </CardContent>
           </Card>
-          
-          <Card className="shadow-sm">
-            <CardHeader className="pb-2">
-              <CardDescription>Cotizaciones Enviadas</CardDescription>
-              <CardTitle className="text-2xl font-bold text-indigo-600 flex justify-between items-center">
-                {isLoading ? (
-                  <div className="h-8 w-16 bg-indigo-100 animate-pulse rounded"></div>
-                ) : (
-                  salesMetrics.cotizaciones
-                )}
-                <BarChart3 className="h-5 w-5 text-indigo-400" />
-              </CardTitle>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Cotizaciones</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardFooter className="pt-2">
-              <Link to="/dashboard/cotizaciones" className="text-xs text-indigo-600 hover:underline">
-                Ver cotizaciones →
-              </Link>
-            </CardFooter>
+            <CardContent>
+              <div className="text-2xl font-bold">{salesMetrics.cotizaciones}</div>
+              <p className="text-xs text-muted-foreground">
+                Propuestas enviadas
+              </p>
+            </CardContent>
           </Card>
-          
-          <Card className="shadow-sm">
-            <CardHeader className="pb-2">
-              <CardDescription>Ventas Cerradas</CardDescription>
-              <CardTitle className="text-2xl font-bold text-teal-600 flex justify-between items-center">
-                {isLoading ? (
-                  <div className="h-8 w-16 bg-teal-100 animate-pulse rounded"></div>
-                ) : (
-                  salesMetrics.ventas
-                )}
-                <TrendingUp className="h-5 w-5 text-teal-400" />
-              </CardTitle>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Ventas</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardFooter className="pt-2">
-              <Link to="/dashboard/ventas" className="text-xs text-teal-600 hover:underline">
-                Ver ventas →
-              </Link>
-            </CardFooter>
+            <CardContent>
+              <div className="text-2xl font-bold">{salesMetrics.ventas}</div>
+              <p className="text-xs text-muted-foreground">
+                Unidades vendidas
+              </p>
+            </CardContent>
           </Card>
         </div>
-        
-        <Tabs defaultValue="ventas" className="pt-4">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="ventas">Ingresos</TabsTrigger>
-            <TabsTrigger value="inventario">Inventario</TabsTrigger>
-            <TabsTrigger value="proyecciones">Proyecciones</TabsTrigger>
+
+        {/* Charts Section */}
+        <Tabs defaultValue="sales" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="sales">Ingresos</TabsTrigger>
+            <TabsTrigger value="inventory">Inventario</TabsTrigger>
+            <TabsTrigger value="projections">Proyecciones</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="ventas" className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="text-lg font-semibold mb-4">Ingresos por mes</h3>
-            <div className="h-80">
-              {isLoading ? (
-                <div className="h-full w-full flex items-center justify-center">
-                  <div className="animate-spin h-10 w-10 rounded-full border-4 border-indigo-500 border-t-transparent"></div>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
+
+          <TabsContent value="sales" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Ingresos por Mes</CardTitle>
+                <CardDescription>
+                  Evolución de los ingresos en los últimos 6 meses
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pl-2">
+                <ResponsiveContainer width="100%" height={350}>
                   <BarChart
-                    data={salesData}
-                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    data={Array.isArray(metrics?.salesData) ? metrics.salesData : []}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis 
-                      tickFormatter={(value) => value.toLocaleString('es-MX', {
-                        notation: 'compact',
-                        compactDisplay: 'short',
-                      })}
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => formatCurrency(value)}
                     />
                     <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    <Bar dataKey="ingresos" name="Ingresos" fill="#4F46E5" />
+                    <Bar 
+                      dataKey="ingresos" 
+                      fill="currentColor" 
+                      radius={[4, 4, 0, 0]}
+                      className="fill-primary"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
-              )}
-            </div>
+              </CardContent>
+            </Card>
           </TabsContent>
-          
-          <TabsContent value="inventario" className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="text-lg font-semibold mb-4">Estado del inventario</h3>
-            <div className="h-80">
-              {isLoading ? (
-                <div className="h-full w-full flex items-center justify-center">
-                  <div className="animate-spin h-10 w-10 rounded-full border-4 border-indigo-500 border-t-transparent"></div>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
+
+          <TabsContent value="inventory" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Estado del Inventario</CardTitle>
+                <CardDescription>
+                  Distribución de unidades por estado
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={350}>
                   <PieChart>
                     <Pie
-                      data={inventoryData}
+                      data={metrics?.inventoryData || []}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      outerRadius={100}
+                      label={({ name, value }) => `${name}: ${value}`}
+                      outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
-                      nameKey="name"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                     >
-                      {inventoryData.map((entry, index) => (
+                      {(metrics?.inventoryData || []).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip />
-                    <Legend />
                   </PieChart>
                 </ResponsiveContainer>
-              )}
-            </div>
+              </CardContent>
+            </Card>
           </TabsContent>
-          
-          <TabsContent value="proyecciones" className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="text-lg font-semibold mb-4">Proyecciones financieras</h3>
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Link to="/dashboard/proyecciones">
-                <Button>Ver proyecciones</Button>
-              </Link>
-              <p className="text-slate-600 mt-4">
-                Accede a la sección de proyecciones para visualizar proyecciones financieras detalladas.
-              </p>
-            </div>
+
+          <TabsContent value="projections" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Proyecciones de Ventas</CardTitle>
+                <CardDescription>
+                  Estimaciones para los próximos meses
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">
+                    Funcionalidad de proyecciones próximamente
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
-        
-        <div className="pt-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Desarrollos destacados</h3>
-            <Link to="/dashboard/desarrollos" className="text-sm text-indigo-600 hover:underline">
-              Ver todos →
-            </Link>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading || isLoadingStats ? (
-              [1, 2, 3].map((i) => (
-                <div key={i} className="h-[250px] bg-slate-100 animate-pulse rounded-xl" />
-              ))
-            ) : desarrollos.length === 0 ? (
-              <div className="col-span-3 py-12 text-center">
-                <p className="text-slate-500 mb-4">No hay desarrollos disponibles.</p>
-                <Link to="/dashboard/desarrollos/nuevo">
-                  <Button>Crear desarrollo</Button>
-                </Link>
+
+        {/* Recent Developments */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Desarrollos Recientes</CardTitle>
+            <CardDescription>
+              Estado actual de tus desarrollos más recientes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoadingStats ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
+            ) : desarrollosWithStats.length === 0 ? (
+              <div className="text-center py-8">
+                <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-4">No hay desarrollos registrados</p>
+                <Button asChild>
+                  <Link to="/dashboard/desarrollos">
+                    Crear primer desarrollo
+                  </Link>
+                </Button>
               </div>
             ) : (
-              (desarrollosWithStats.length > 0 ? desarrollosWithStats : desarrollos).map((desarrollo) => (
-                <Card key={desarrollo.id} className="shadow-sm">
-                  <CardHeader>
-                    <CardTitle>{desarrollo.nombre}</CardTitle>
-                    <CardDescription>{desarrollo.ubicacion}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Unidades:</span>
-                        <span className="text-sm font-medium">
-                          {desarrollo.unidades_disponibles}/{desarrollo.total_unidades} disponibles
-                        </span>
+              <div className="space-y-4">
+                {desarrollosWithStats.slice(0, 3).map((desarrollo) => (
+                  <div key={desarrollo.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-lg">{desarrollo.nombre}</h3>
+                      <span className="text-sm text-gray-500">{desarrollo.avance_porcentaje}% completo</span>
+                    </div>
+                    <p className="text-gray-600 text-sm mb-3">{desarrollo.ubicacion}</p>
+                    
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Total:</span>
+                        <div className="text-lg font-bold">{desarrollo.total_unidades || 0}</div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Ventas:</span>
-                        <span className="text-sm font-medium">
-                          {desarrollo.unidades_vendidas !== undefined 
-                            ? `${desarrollo.unidades_vendidas} unidades` 
-                            : `${desarrollo.total_unidades - desarrollo.unidades_disponibles} unidades`}
-                        </span>
+                      <div>
+                        <span className="font-medium">Disponibles:</span>
+                        <div className="text-lg font-bold text-green-600">{desarrollo.unidades_disponibles || 0}</div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Avance:</span>
-                        <span className="text-sm font-medium">{desarrollo.avance_porcentaje || '0'}%</span>
+                      <div>
+                        <span className="font-medium">Vendidas:</span>
+                        <div className="text-lg font-bold text-blue-600">{desarrollo.unidades_vendidas || 0}</div>
                       </div>
                     </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Link to={`/dashboard/desarrollos/${desarrollo.id}`} className="text-indigo-600 text-sm font-medium hover:text-indigo-700">
-                      Ver detalles →
-                    </Link>
-                  </CardFooter>
-                </Card>
-              ))
+                    
+                    <div className="mt-4 flex justify-end">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={`/dashboard/desarrollos/${desarrollo.id}`}>
+                          Ver detalles
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                
+                {desarrollosWithStats.length > 3 && (
+                  <div className="text-center pt-4">
+                    <Button variant="outline" asChild>
+                      <Link to="/dashboard/desarrollos">
+                        Ver todos los desarrollos
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

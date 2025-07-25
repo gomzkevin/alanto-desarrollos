@@ -7,12 +7,15 @@ import { PlusCircle, Search, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import VentasTable from './components/VentasTable';
+import { VirtualizedVentasTable } from './components/VirtualizedVentasTable';
+import { useDebounce } from 'use-debounce';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const VentasPage = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
   const [statusFilter, setStatusFilter] = useState('todos');
   const { empresaId, isLoading: isUserRoleLoading } = useUserRole();
   const [isRefreshing, setIsRefreshing] = useState(false);

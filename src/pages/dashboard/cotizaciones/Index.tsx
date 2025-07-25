@@ -9,6 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { CalendarIcon, Plus, FileText, Search, Eye, Trash2 } from 'lucide-react';
+import { useDebounce } from 'use-debounce';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -61,10 +62,11 @@ const CotizacionesPage = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [limit, setLimit] = useState<number>(10);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
   const [showCotizacionDialog, setShowCotizacionDialog] = useState<boolean>(false);
   const [isExistingClient, setIsExistingClient] = useState<boolean>(false);
   const [searchLeadTerm, setSearchLeadTerm] = useState<string>('');
+  const [debouncedLeadTerm] = useDebounce(searchLeadTerm, 300);
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [showLeadsDropdown, setShowLeadsDropdown] = useState<boolean>(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -99,17 +101,17 @@ const CotizacionesPage = () => {
   });
 
   useEffect(() => {
-    if (searchLeadTerm.trim() !== '') {
+    if (debouncedLeadTerm.trim() !== '') {
       const filtered = leads.filter(lead => 
-        lead.nombre.toLowerCase().includes(searchLeadTerm.toLowerCase()) ||
-        (lead.email && lead.email.toLowerCase().includes(searchLeadTerm.toLowerCase())) ||
-        (lead.telefono && lead.telefono.toLowerCase().includes(searchLeadTerm.toLowerCase()))
+        lead.nombre.toLowerCase().includes(debouncedLeadTerm.toLowerCase()) ||
+        (lead.email && lead.email.toLowerCase().includes(debouncedLeadTerm.toLowerCase())) ||
+        (lead.telefono && lead.telefono.toLowerCase().includes(debouncedLeadTerm.toLowerCase()))
       );
       setFilteredLeads(filtered);
     } else {
       setFilteredLeads([]);
     }
-  }, [searchLeadTerm, leads]);
+  }, [debouncedLeadTerm, leads]);
 
   useEffect(() => {
     if (selectedDesarrolloId) {

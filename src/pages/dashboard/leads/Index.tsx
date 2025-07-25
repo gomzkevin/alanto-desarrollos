@@ -3,6 +3,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Filter, Eye, Plus, Building, Home } from 'lucide-react';
+import { useDebounce } from 'use-debounce';
 import {
   Select,
   SelectContent,
@@ -44,6 +45,7 @@ const getBadgeVariant = (estado: string) => {
 
 const LeadsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
   const [selectedEstado, setSelectedEstado] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -59,7 +61,7 @@ const LeadsPage = () => {
     getOriginLabel
   } = useLeads({
     estado: selectedEstado || undefined,
-    search: searchTerm.length > 2 ? searchTerm : undefined,
+    search: debouncedSearchTerm.length > 2 ? debouncedSearchTerm : undefined,
     empresa_id: empresaId
   });
   

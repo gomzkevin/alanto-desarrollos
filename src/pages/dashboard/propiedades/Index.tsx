@@ -3,6 +3,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Filter, ArrowUpDown } from 'lucide-react';
+import { useDebounce } from 'use-debounce';
 import PropertyCard from '@/components/PropertyCard';
 import {
   Select,
@@ -84,6 +85,7 @@ const properties = [
 
 const PropiedadesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
   const [filteredProperties, setFilteredProperties] = useState(properties);
   const [isLoading, setIsLoading] = useState(true);
   
