@@ -110,96 +110,100 @@ export const tryConfirmEmail = async (userId: string, email: string, password: s
 };
 
 /**
- * Signs in with email and password
+ * Secure sign in with email and password - no authentication bypass attempts
  */
-export const signInWithEmailPassword = async (email: string, password: string, forceConfirm = false) => {
+export const signInWithEmailPassword = async (email: string, password: string) => {
   try {
-    // Primero, verificamos si el usuario existe en la base de datos para saber su rol
-    let isVendorOrAdmin = false;
-    let userId = null;
-    
-    // Intenta obtener información del usuario desde la tabla usuarios
-    const { data: userData } = await supabase
-      .from('usuarios')
-      .select('auth_id, rol')
-      .eq('email', email)
-      .maybeSingle();
-      
-    if (userData) {
-      isVendorOrAdmin = userData.rol === 'vendedor' || userData.rol === 'admin';
-      userId = userData.auth_id;
-      console.log(`Usuario encontrado en la base de datos. Rol: ${userData.rol}, ID: ${userData.auth_id}`);
+    // Input validation
+    if (!email || !password) {
+      return { 
+        success: false, 
+        error: "Email y contraseña son requeridos" 
+      };
     }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return { 
+        success: false, 
+        error: "Formato de email inválido" 
+      };
+    }
+
+    // Enforce minimum password length (8 characters minimum)
+    if (password.length < 8) {
+      return { 
+        success: false, 
+        error: "La contraseña debe tener al menos 8 caracteres" 
+      };
+    }
+
+    // Rate limiting check (basic implementation)
+    const now = Date.now();
+    const lastAttempt = localStorage.getItem(`last_login_attempt_${email}`);
+    if (lastAttempt && (now - parseInt(lastAttempt)) < 1000) { // 1 second rate limit
+      return {
+        success: false,
+        error: "Demasiados intentos. Por favor, espere un momento."
+      };
+    }
+    localStorage.setItem(`last_login_attempt_${email}`, now.toString());
     
-    // Intenta iniciar sesión normalmente
+    // Attempt secure sign in
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    // Si hay un error de correo no confirmado
-    if (error && (error.message.includes("Email not confirmed") || error.message.includes("Correo no confirmado"))) {
-      console.log("Correo no confirmado detectado para usuario:", email);
+    if (error) {
+      console.log("Error de inicio de sesión:", error.message);
       
-      // Intentar alternativa para iniciar sesión (autoconfirmación en registro)
-      console.log("Intentando registro con autoconfirmación para:", email);
-      
-      // Para vendedores, intentamos un enfoque de registro automático 
-      // que aprovecha la opción de confirmación en los metadatos
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin + "/auth",
-          data: {
-            confirmed_at: new Date().toISOString(),
-            email_confirmed: true
-          }
-        }
-      });
-      
-      if (!signUpError && signUpData.user) {
-        console.log("Registro exitoso con datos de autoconfirmación:", signUpData.user.id);
-        
-        // Si es un usuario existente, intentar iniciar sesión inmediatamente
-        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (!loginError && loginData.user) {
-          await ensureUserInDatabase(loginData.user.id, loginData.user.email || email);
-          return { success: true, user: loginData.user };
-        }
+      // Provide user-friendly error messages without revealing system details
+      if (error.message.includes("Email not confirmed")) {
+        return { 
+          success: false, 
+          error: "Por favor, verifica tu dirección de correo electrónico antes de iniciar sesión" 
+        };
       }
-      
-      // Si todo lo anterior falla, regresamos un mensaje amigable
-      return { 
-        success: false, 
-        error: "No se pudo iniciar sesión. Por favor, contacte al administrador para verificar su cuenta." 
-      };
-    } else if (error) {
-      // Otros errores de inicio de sesión
-      let friendlyError = error.message;
       
       if (error.message.includes("Invalid login credentials")) {
-        friendlyError = "Credenciales incorrectas. Verifique su correo y contraseña.";
+        return { 
+          success: false, 
+          error: "Email o contraseña incorrectos" 
+        };
       }
       
-      return { success: false, error: friendlyError };
-    } 
-    
-    // Inicio de sesión exitoso
-    if (data.user) {
-      // Ensure user exists in the usuarios table
-      await ensureUserInDatabase(data.user.id, data.user.email || email);
-      return { success: true, user: data.user };
+      if (error.message.includes("Too many requests")) {
+        return { 
+          success: false, 
+          error: "Demasiados intentos de inicio de sesión. Por favor, intente más tarde." 
+        };
+      }
+      
+      return { success: false, error: "Error de inicio de sesión. Por favor, intente nuevamente." };
     }
     
-    return { success: false, error: "No se pudo iniciar sesión" };
+    // Successful sign in
+    if (data.user && data.session) {
+      console.log("Inicio de sesión exitoso para:", email);
+      
+      // Ensure user exists in the database with proper validation
+      await ensureUserInDatabase(data.user.id, data.user.email || email);
+      
+      // Clear rate limiting data on successful login
+      localStorage.removeItem(`last_login_attempt_${email}`);
+      
+      return { success: true, user: data.user, session: data.session };
+    }
+    
+    return { success: false, error: "No se pudo completar el inicio de sesión" };
   } catch (error) {
     console.error("Error en inicio de sesión:", error);
-    return { success: false, error: "Ocurrió un error inesperado" };
+    return { 
+      success: false, 
+      error: "Ocurrió un error inesperado. Por favor, intente nuevamente." 
+    };
   }
 };
 

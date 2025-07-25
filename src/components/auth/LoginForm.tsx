@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -39,35 +38,10 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         navigate("/dashboard");
         if (onSuccess) onSuccess();
       } else {
-        // Personalizar mensaje de error para hacerlo más amigable
-        let errorMsg = result.error || "Error desconocido al iniciar sesión";
-        
-        if (errorMsg.includes("Email not confirmed") || errorMsg.includes("Correo no confirmado")) {
-          errorMsg = "Su correo electrónico no ha sido confirmado. Intentando confirmar automáticamente...";
-          
-          // Intentamos iniciar sesión nuevamente después de un breve retraso
-          setTimeout(async () => {
-            const retryResult = await signInWithEmailPassword(email, password, true);
-            if (retryResult.success) {
-              toast({
-                title: "Inicio de sesión exitoso",
-                description: "Bienvenido de nuevo",
-              });
-              navigate("/dashboard");
-              if (onSuccess) onSuccess();
-            } else {
-              setErrorMessage(retryResult.error || "No se pudo confirmar su correo automáticamente. Por favor, contacte al administrador.");
-            }
-            setLoading(false);
-          }, 1500);
-          return;
-        } else if (errorMsg.includes("Invalid login credentials")) {
-          errorMsg = "Credenciales incorrectas. Verifique su correo y contraseña.";
-        }
-        
-        setErrorMessage(errorMsg);
-        setLoading(false);
+        // Display the secure error message from the auth service
+        setErrorMessage(result.error || "Error al iniciar sesión");
       }
+      setLoading(false);
     } catch (error) {
       console.error("Error en inicio de sesión:", error);
       setErrorMessage("Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde.");
@@ -94,6 +68,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            minLength={5}
+            maxLength={254}
           />
         </div>
         <div className="space-y-2">
@@ -104,6 +80,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={8}
+            maxLength={128}
           />
         </div>
       </CardContent>
@@ -112,7 +90,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           {loading ? "Procesando..." : "Iniciar Sesión"}
         </Button>
         <div className="text-sm text-center mt-2">
-          <Link to="/" className="text-indigo-600 hover:text-indigo-800">
+          <Link to="/" className="text-primary hover:text-primary/80">
             ¿Olvidó su contraseña?
           </Link>
         </div>
