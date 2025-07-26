@@ -41,10 +41,11 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         // Display the secure error message from the auth service
         setErrorMessage(result.error || "Error al iniciar sesión");
       }
-      setLoading(false);
     } catch (error) {
       console.error("Error en inicio de sesión:", error);
       setErrorMessage("Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde.");
+    } finally {
+      // Always set loading to false, regardless of success or failure
       setLoading(false);
     }
   };
