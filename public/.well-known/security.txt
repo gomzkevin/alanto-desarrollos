@@ -1,0 +1,19 @@
+Contact: mailto:security@alanto.mx
+Contact: https://alanto.mx/security
+Expires: 2025-12-31T23:59:59.000Z
+Encryption: https://alanto.mx/pgp-key.txt
+Acknowledgments: https://alanto.mx/security/acknowledgments
+Policy: https://alanto.mx/security/disclosure-policy
+Hiring: https://alanto.mx/careers
+
+# Security Policy
+# 
+# Alanto takes security seriously. If you discover a security vulnerability,
+# please report it responsibly through one of the contact methods above.
+#
+# Please do not report security vulnerabilities through public GitHub issues.
+#
+# We appreciate your efforts to responsibly disclose your findings and will
+# make every effort to acknowledge your contributions.
+#
+# Thank you for helping keep Alanto and our users safe!

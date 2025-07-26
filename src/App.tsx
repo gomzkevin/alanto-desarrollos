@@ -23,6 +23,7 @@ import VentaDetail from '@/pages/dashboard/ventas/VentaDetail';
 import PrototipoDetailPage from '@/pages/dashboard/prototipos/PrototipoDetail';
 import ConfiguracionPage from '@/pages/dashboard/configuracion/Index';
 import ProyeccionesPage from '@/pages/dashboard/proyecciones/Index';
+import SecurityPage from '@/pages/dashboard/security/Index';
 import NotFoundPage from '@/pages/NotFound';
 
 // Configurar el cliente QueryClient optimizado
@@ -86,6 +87,13 @@ function App() {
               <Route path="/dashboard/configuracion" element={
                 <ProtectedRoute requireSubscription={false}>
                   <ConfiguracionPage />
+                </ProtectedRoute>
+              } />
+              
+              {/* Security route - admin only */}
+              <Route path="/dashboard/security" element={
+                <ProtectedRoute requireSubscription={false}>
+                  <SecurityPage />
                 </ProtectedRoute>
               } />
               
