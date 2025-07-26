@@ -39,6 +39,8 @@ const Header = () => {
 
     // Suscribirse a cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Header: Auth state changed:', event);
+      setIsCheckingAuth(false); // Reset loading state on any auth change
       if (event === 'SIGNED_IN') {
         setIsLoggedIn(true);
       } else if (event === 'SIGNED_OUT') {
