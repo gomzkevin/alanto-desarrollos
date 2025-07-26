@@ -131,24 +131,11 @@ export const signInWithEmailPassword = async (email: string, password: string) =
       };
     }
 
-    // Enhanced password validation (12 characters minimum for better security)
-    if (password.length < 12) {
+    // Basic password validation (8 characters minimum)
+    if (password.length < 8) {
       return { 
         success: false, 
-        error: "La contraseña debe tener al menos 12 caracteres" 
-      };
-    }
-
-    // Check password complexity
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasLowercase = /[a-z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecial = /[^a-zA-Z0-9]/.test(password);
-
-    if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
-      return {
-        success: false,
-        error: "La contraseña debe contener al menos una letra mayúscula, una minúscula, un número y un carácter especial"
+        error: "La contraseña debe tener al menos 8 caracteres" 
       };
     }
 
