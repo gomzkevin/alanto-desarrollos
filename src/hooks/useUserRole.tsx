@@ -95,34 +95,43 @@ export const useUserRole = () => {
     fetchUserData();
     
     // Set up auth state change listener
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
-      
       if (event === 'SIGNED_IN' && session?.user) {
-        // User signed in, fetch their data
+        // User signed in, set basic auth state
         setUserId(session.user.id);
         setUserEmail(session.user.email);
-        
-        const { data, error } = await supabase
-          .from('usuarios')
-          .select('*')
-          .eq('auth_id', session.user.id)
-          .maybeSingle();
-        
-        if (!error && data) {
-          console.log('User data from auth change:', data);
-          setUserRole(data.rol);
-          setUserName(data.nombre);
-          
-          // Set isAdmin based on is_company_admin flag or role being 'admin'
-          const adminStatus = data.is_company_admin || data.rol === 'admin';
-          console.log('Admin status after auth change:', adminStatus);
-          setIsAdmin(adminStatus);
-          
-          // Important: Set empresaId for organization-based access
-          setEmpresaId(data.empresa_id);
-          console.log('Empresa ID after auth change:', data.empresa_id);
-        }
+
+        // Defer DB call to avoid async work inside the callback (prevents deadlocks)
+        setTimeout(async () => {
+          try {
+            const { data, error } = await supabase
+              .from('usuarios')
+              .select('*')
+              .eq('auth_id', session.user.id)
+              .maybeSingle();
+
+            if (!error && data) {
+              console.log('User data from auth change:', data);
+              setUserRole(data.rol);
+              setUserName(data.nombre);
+
+              const adminStatus = data.is_company_admin || data.rol === 'admin';
+              console.log('Admin status after auth change:', adminStatus);
+              setIsAdmin(adminStatus);
+
+              setEmpresaId(data.empresa_id);
+              console.log('Empresa ID after auth change:', data.empresa_id);
+            } else if (error) {
+              console.error('Error fetching user data after auth change:', error);
+            }
+          } catch (err) {
+            console.error('Unexpected error in auth change handler:', err);
+          } finally {
+            setAuthChecked(true);
+            setIsLoading(false);
+          }
+        }, 0);
       } else if (event === 'SIGNED_OUT') {
         // User signed out, clear their data
         setUserId(null);
@@ -131,6 +140,8 @@ export const useUserRole = () => {
         setUserName(null);
         setIsAdmin(false);
         setEmpresaId(null);
+        setAuthChecked(true);
+        setIsLoading(false);
       }
     });
     
