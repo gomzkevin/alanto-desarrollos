@@ -1251,6 +1251,10 @@ export type Database = {
         Args: { company_id: number; resource_type: string }
         Returns: number
       }
+      current_user_empresa_id: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       get_company_subscription_status: {
         Args: { company_id: number }
         Returns: Json
@@ -1273,6 +1277,14 @@ export type Database = {
       }
       has_column: {
         Args: { table_name: string; column_name: string }
+        Returns: boolean
+      }
+      is_company_admin_for: {
+        Args: { _empresa_id: number }
+        Returns: boolean
+      }
+      is_current_user_company_admin: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       log_security_event: {
