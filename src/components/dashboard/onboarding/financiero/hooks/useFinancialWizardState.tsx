@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { WizardState, FinancialWizardData } from "../../shared/types/wizard.types";
 
 const TOTAL_STEPS = 3;
@@ -113,10 +113,28 @@ export const useFinancialWizardState = (initialData?: Partial<FinancialWizardDat
     }
   }, [state.completedSteps]);
 
-  const canGoNext = useCallback(() => {
+  // Calculate canGoNext without modifying state
+  const canGoNext = useMemo(() => {
     if (state.currentStep === 0) return true;
-    return validateStep(state.currentStep);
-  }, [state.currentStep, validateStep]);
+
+    // For step 1 (Base Config), check required fields
+    if (state.currentStep === 1) {
+      return !!(
+        state.data.moneda &&
+        state.data.adr_base &&
+        state.data.adr_base > 0 &&
+        state.data.ocupacion_anual !== undefined &&
+        state.data.ocupacion_anual >= 0 &&
+        state.data.ocupacion_anual <= 100 &&
+        state.data.comision_operador !== undefined &&
+        state.data.comision_operador >= 0 &&
+        state.data.comision_operador <= 100
+      );
+    }
+
+    // For step 2 (Expenses), always allow (all optional)
+    return true;
+  }, [state.currentStep, state.data]);
 
   return {
     state,
@@ -125,7 +143,7 @@ export const useFinancialWizardState = (initialData?: Partial<FinancialWizardDat
     goToPreviousStep,
     goToStep,
     validateStep,
-    canGoNext: canGoNext(),
+    canGoNext,
     isFirstStep: state.currentStep === 0,
     isLastStep: state.currentStep === TOTAL_STEPS - 1,
   };

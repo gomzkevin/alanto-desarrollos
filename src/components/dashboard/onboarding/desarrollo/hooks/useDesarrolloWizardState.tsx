@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { WizardState, DesarrolloWizardData } from "../../shared/types/wizard.types";
 import { toast } from "sonner";
 
@@ -135,13 +135,34 @@ export const useDesarrolloWizardState = (empresaId: number | null) => {
     }
   }, [empresaId]);
 
-  const canGoNext = useCallback(() => {
+  // Calculate canGoNext without modifying state
+  const canGoNext = useMemo(() => {
     // Always allow navigation from welcome step
     if (state.currentStep === 0) return true;
 
-    // For other steps, validate
-    return validateStep(state.currentStep);
-  }, [state.currentStep, validateStep]);
+    // For step 1 (Basic Info), check required fields
+    if (state.currentStep === 1) {
+      return !!(
+        state.data.nombre?.trim() &&
+        state.data.ubicacion?.trim() &&
+        state.data.total_unidades &&
+        state.data.total_unidades >= 1
+      );
+    }
+
+    // For step 2 (Amenities), always allow (optional)
+    if (state.currentStep === 2) return true;
+
+    // For step 3 (Dates & Media), check date logic if both dates exist
+    if (state.currentStep === 3) {
+      if (state.data.fecha_inicio && state.data.fecha_entrega) {
+        return new Date(state.data.fecha_entrega) > new Date(state.data.fecha_inicio);
+      }
+      return true; // Allow if dates are not filled
+    }
+
+    return true;
+  }, [state.currentStep, state.data]);
 
   return {
     state,
@@ -152,7 +173,7 @@ export const useDesarrolloWizardState = (empresaId: number | null) => {
     validateStep,
     saveToLocalStorage,
     clearDraft,
-    canGoNext: canGoNext(),
+    canGoNext,
     isFirstStep: state.currentStep === 0,
     isLastStep: state.currentStep === TOTAL_STEPS - 1,
   };
