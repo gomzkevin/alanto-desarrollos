@@ -210,6 +210,7 @@ export function UserManagementTable() {
       console.log("Creating user with role:", newUser.rol);
       
       // Pass the selected role to the signup function with autoSignIn set to false to prevent automatic login
+      // El rol se pasa en los metadatos para que el trigger lo use
       const authResult = await signUpWithEmailPassword(
         newUser.email, 
         newUser.password, 
@@ -248,15 +249,25 @@ export function UserManagementTable() {
           .maybeSingle();
 
         if (existingAuthUser) {
+          // Actualizar usuario en tabla usuarios
           const { error: updateError } = await supabase
             .from('usuarios')
             .update({
               nombre: newUser.nombre,
-              rol: newUser.rol, // Ensure role is explicitly set
+              rol: newUser.rol,
               activo: true,
               empresa_id: empresaId
             })
             .eq('auth_id', authUserId);
+
+          // Actualizar rol en user_roles
+          await supabase
+            .from('user_roles')
+            .upsert({
+              user_id: authUserId,
+              role: newUser.rol,
+              created_by: userId
+            });
 
           if (updateError) {
             console.error("Error updating existing user:", updateError);
@@ -273,7 +284,7 @@ export function UserManagementTable() {
             auth_id: authUserId,
             nombre: newUser.nombre,
             email: newUser.email,
-            rol: newUser.rol, // Ensure role is explicitly set
+            rol: newUser.rol,
             empresa_id: empresaId,
             activo: true
           };
@@ -283,6 +294,17 @@ export function UserManagementTable() {
           const { error: userError } = await supabase
             .from('usuarios')
             .insert(userData);
+
+          // Insertar rol en user_roles
+          if (!userError) {
+            await supabase
+              .from('user_roles')
+              .insert({
+                user_id: authUserId,
+                role: newUser.rol,
+                created_by: userId
+              });
+          }
 
           if (userError) {
             console.error("Error creating user record:", userError);
