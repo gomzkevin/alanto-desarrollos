@@ -6,53 +6,81 @@ export const usePermissions = () => {
   const { canCreateResource, isAdmin, empresaId } = useUserRole();
   const { subscriptionInfo } = useSubscriptionInfo();
   
-  // Check if the user has active subscription
-  const hasActiveSubscription = () => {
-    return subscriptionInfo.isActive;
+  // FASE 1 & 5: Verificar si el usuario tiene cualquier plan (incluido Free)
+  const hasAnyPlan = () => {
+    return subscriptionInfo.currentPlan !== null;
   };
   
-  // Check if user has exceeded resource limits
+  // Mantener compatibilidad con código existente
+  const hasActiveSubscription = () => {
+    return hasAnyPlan();
+  };
+  
+  // Obtener información del plan actual
+  const getCurrentPlanInfo = () => {
+    const planName = subscriptionInfo.currentPlan?.name || 'Free';
+    const desarrolloLimit = subscriptionInfo.desarrolloLimit || 1;
+    const prototipoLimit = subscriptionInfo.prototipoLimit || 0;
+    const vendorLimit = subscriptionInfo.vendorLimit || 1;
+    const desarrolloCount = subscriptionInfo.desarrolloCount || 0;
+    const prototipoCount = subscriptionInfo.prototipoCount || 0;
+    const vendorCount = subscriptionInfo.vendorCount || 0;
+    
+    return {
+      planName,
+      desarrolloLimit,
+      prototipoLimit,
+      vendorLimit,
+      desarrolloCount,
+      prototipoCount,
+      vendorCount
+    };
+  };
+  
+  // FASE 5: Verificar límites por tipo de recurso con mensajes mejorados
   const isWithinResourceLimits = (resourceType?: 'desarrollo' | 'prototipo') => {
-    // Verificar si el usuario pertenece a una empresa sin suscripción activa
-    if (empresaId && !hasActiveSubscription()) {
-      return false; // Cualquier usuario de una empresa sin suscripción no puede crear recursos
-    }
+    const { 
+      planName, 
+      desarrolloLimit, 
+      prototipoLimit, 
+      desarrolloCount, 
+      prototipoCount 
+    } = getCurrentPlanInfo();
     
     // Verificar límites específicos para desarrollos
-    if (resourceType === 'desarrollo' && 
-        subscriptionInfo.desarrolloCount !== undefined && 
-        subscriptionInfo.desarrolloLimit !== undefined && 
-        subscriptionInfo.desarrolloCount >= subscriptionInfo.desarrolloLimit) {
-      console.log(`Límite de desarrollos alcanzado: ${subscriptionInfo.desarrolloCount}/${subscriptionInfo.desarrolloLimit}`);
+    if (resourceType === 'desarrollo' && desarrolloCount >= desarrolloLimit) {
+      toast({
+        title: "Límite alcanzado",
+        description: `Tu plan ${planName} permite ${desarrolloLimit} desarrollo(s). Actualmente tienes ${desarrolloCount}. Actualiza tu plan para agregar más.`,
+        variant: "destructive",
+      });
       return false;
     }
     
     // Verificar límites específicos para prototipos
-    if (resourceType === 'prototipo' && 
-        subscriptionInfo.prototipoCount !== undefined && 
-        subscriptionInfo.prototipoLimit !== undefined && 
-        subscriptionInfo.prototipoCount >= subscriptionInfo.prototipoLimit) {
-      console.log(`Límite de prototipos alcanzado: ${subscriptionInfo.prototipoCount}/${subscriptionInfo.prototipoLimit}`);
+    if (resourceType === 'prototipo' && prototipoCount >= prototipoLimit) {
+      toast({
+        title: "Límite alcanzado",
+        description: `Tu plan ${planName} permite ${prototipoLimit} prototipo(s). Actualmente tienes ${prototipoCount}. Actualiza tu plan para agregar más.`,
+        variant: "destructive",
+      });
       return false;
     }
     
     return true;
   };
   
-  // Check if user has exceeded vendor limits
+  // FASE 5: Verificar límites de vendedores con mensaje mejorado
   const isWithinVendorLimits = () => {
-    // Verificar si el usuario pertenece a una empresa sin suscripción activa
-    if (empresaId && !hasActiveSubscription()) {
-      return false; // Cualquier usuario de una empresa sin suscripción no puede crear vendedores
-    }
+    const { planName, vendorLimit, vendorCount } = getCurrentPlanInfo();
     
-    if (subscriptionInfo.vendorCount !== undefined && 
-        subscriptionInfo.vendorLimit !== undefined &&
-        subscriptionInfo.vendorCount >= subscriptionInfo.vendorLimit) {
-      
-      // No mostramos toast aquí para evitar duplicación
-      console.log(`Límite de vendedores alcanzado: ${subscriptionInfo.vendorCount}/${subscriptionInfo.vendorLimit}`);
-      return false; // Sobre el límite de vendedores
+    if (vendorCount >= vendorLimit) {
+      toast({
+        title: "Límite alcanzado",
+        description: `Tu plan ${planName} permite ${vendorLimit} usuario(s). Actualmente tienes ${vendorCount}. Actualiza tu plan para invitar más usuarios.`,
+        variant: "destructive",
+      });
+      return false;
     }
     
     return true;
@@ -238,9 +266,11 @@ export const usePermissions = () => {
     canCreateUnidad,
     canCreateVendedor,
     hasActiveSubscription,
+    hasAnyPlan,
     isWithinResourceLimits,
     isWithinVendorLimits,
-    validateRequiredFields
+    validateRequiredFields,
+    getCurrentPlanInfo
   };
 };
 

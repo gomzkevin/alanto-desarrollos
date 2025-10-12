@@ -47,14 +47,17 @@ import {
   Loader2, 
   Check, 
   AlertCircle, 
-  X 
+  X,
+  Mail
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSubscriptionInfo } from "@/hooks/useSubscriptionInfo";
 import { usePermissions } from "@/hooks/usePermissions";
 import { signUpWithEmailPassword } from "@/services/authService";
+import UserInvitations from "./UserInvitations";
 
 type User = {
   id: string;
@@ -397,14 +400,14 @@ export function UserManagementTable() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader>
         <div>
           <CardTitle>Gestión de Usuarios</CardTitle>
           <CardDescription>
-            Administra los usuarios que tienen acceso a la plataforma.
+            Administra los usuarios e invitaciones de tu empresa
             {vendorLimit > 0 && (
               <p className="mt-1">
-                Vendedores activos: {activeVendorCount} / {vendorLimit}
+                Usuarios activos: {activeVendorCount} / {vendorLimit}
                 {isAtVendorLimit && (
                   <span className="text-red-500 ml-2">
                     (Límite alcanzado)
@@ -412,194 +415,205 @@ export function UserManagementTable() {
                 )}
               </p>
             )}
-            {!subscriptionInfo.isActive && (
-              <p className="text-red-500 mt-1">
-                Necesitas una suscripción activa para gestionar usuarios.
-              </p>
-            )}
           </CardDescription>
         </div>
-        <Dialog open={isNewUserDialogOpen} onOpenChange={setIsNewUserDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              size="sm"
-              disabled={isLoading || !subscriptionInfo.isActive || (newUser.rol === 'vendedor' && isAtVendorLimit)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Usuario
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Crear Nuevo Usuario</DialogTitle>
-              <DialogDescription>
-                Añade un nuevo usuario con acceso a la plataforma.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="grid w-full items-center gap-2">
-                <Label htmlFor="nombre">Nombre</Label>
-                <Input
-                  id="nombre"
-                  name="nombre"
-                  placeholder="Nombre completo"
-                  value={newUser.nombre}
-                  onChange={handleNewUserChange}
-                  className={validationErrors.nombre ? "border-red-500" : ""}
-                />
-                {validationErrors.nombre && (
-                  <p className="text-sm text-red-500">{validationErrors.nombre}</p>
-                )}
-              </div>
-              <div className="grid w-full items-center gap-2">
-                <Label htmlFor="email">Correo Electrónico</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="correo@ejemplo.com"
-                  value={newUser.email}
-                  onChange={handleNewUserChange}
-                  className={validationErrors.email ? "border-red-500" : ""}
-                />
-                {validationErrors.email && (
-                  <p className="text-sm text-red-500">{validationErrors.email}</p>
-                )}
-              </div>
-              <div className="grid w-full items-center gap-2">
-                <Label htmlFor="password">Contraseña</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Contraseña segura"
-                  value={newUser.password}
-                  onChange={handleNewUserChange}
-                  className={validationErrors.password ? "border-red-500" : ""}
-                />
-                {validationErrors.password && (
-                  <p className="text-sm text-red-500">{validationErrors.password}</p>
-                )}
-              </div>
-              <div className="grid w-full items-center gap-2">
-                <Label htmlFor="rol">Rol</Label>
-                <Select 
-                  value={newUser.rol}
-                  onValueChange={handleRoleChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un rol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                    <SelectItem value="vendedor">Vendedor</SelectItem>
-                  </SelectContent>
-                </Select>
-                {newUser.rol === 'vendedor' && isAtVendorLimit && (
-                  <p className="text-sm text-red-500">
-                    Has alcanzado el límite de vendedores de tu plan ({vendorLimit}). 
-                    Actualiza tu suscripción para añadir más.
-                  </p>
-                )}
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsNewUserDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button 
-                onClick={createNewUser} 
-                disabled={isCreatingUser || (newUser.rol === 'vendedor' && isAtVendorLimit)}
-              >
-                {isCreatingUser ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creando...
-                  </>
-                ) : (
-                  "Crear Usuario"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center py-6">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <p className="ml-2">Cargando usuarios...</p>
-          </div>
-        ) : users.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <User className="h-10 w-10 text-slate-400" />
-            <h3 className="mt-4 text-lg font-semibold">No hay usuarios</h3>
-            <p className="mt-2 text-sm text-slate-500">
-              Aún no se han creado usuarios en el sistema.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Correo</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.nombre}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={user.rol === 'admin' ? "default" : "outline"}
+        <Tabs defaultValue="users" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="users">Usuarios</TabsTrigger>
+            <TabsTrigger value="invitations">Invitaciones</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="users">
+            <div className="flex flex-row items-center justify-between mb-4">
+              <Dialog open={isNewUserDialogOpen} onOpenChange={setIsNewUserDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    disabled={isLoading || (newUser.rol === 'vendedor' && isAtVendorLimit)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Crear Usuario Directamente
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+                    <CardDescription>
+                      Crea un usuario directamente sin enviar invitación
+                    </CardDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="grid w-full items-center gap-2">
+                      <Label htmlFor="nombre">Nombre</Label>
+                      <Input
+                        id="nombre"
+                        name="nombre"
+                        placeholder="Nombre completo"
+                        value={newUser.nombre}
+                        onChange={handleNewUserChange}
+                        className={validationErrors.nombre ? "border-red-500" : ""}
+                      />
+                      {validationErrors.nombre && (
+                        <p className="text-sm text-red-500">{validationErrors.nombre}</p>
+                      )}
+                    </div>
+                    <div className="grid w-full items-center gap-2">
+                      <Label htmlFor="email">Correo Electrónico</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="correo@ejemplo.com"
+                        value={newUser.email}
+                        onChange={handleNewUserChange}
+                        className={validationErrors.email ? "border-red-500" : ""}
+                      />
+                      {validationErrors.email && (
+                        <p className="text-sm text-red-500">{validationErrors.email}</p>
+                      )}
+                    </div>
+                    <div className="grid w-full items-center gap-2">
+                      <Label htmlFor="password">Contraseña</Label>
+                      <Input
+                        id="password"
+                        name="password"
+                        type="password"
+                        placeholder="Contraseña segura"
+                        value={newUser.password}
+                        onChange={handleNewUserChange}
+                        className={validationErrors.password ? "border-red-500" : ""}
+                      />
+                      {validationErrors.password && (
+                        <p className="text-sm text-red-500">{validationErrors.password}</p>
+                      )}
+                    </div>
+                    <div className="grid w-full items-center gap-2">
+                      <Label htmlFor="rol">Rol</Label>
+                      <Select 
+                        value={newUser.rol}
+                        onValueChange={handleRoleChange}
                       >
-                        {user.rol === 'admin' ? 'Administrador' : 'Vendedor'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={user.activo ? "success" : "destructive"}
-                        className="flex w-fit items-center"
-                      >
-                        {user.activo ? (
-                          <>
-                            <Check className="mr-1 h-3 w-3" /> Activo
-                          </>
-                        ) : (
-                          <>
-                            <X className="mr-1 h-3 w-3" /> Inactivo
-                          </>
-                        )}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
-                            onClick={() => toggleUserStatus(user.id, user.activo)}
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un rol" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Administrador</SelectItem>
+                          <SelectItem value="vendedor">Vendedor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {newUser.rol === 'vendedor' && isAtVendorLimit && (
+                        <p className="text-sm text-red-500">
+                          Has alcanzado el límite de vendedores de tu plan ({vendorLimit}). 
+                          Actualiza tu suscripción para añadir más.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsNewUserDialogOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={createNewUser} 
+                      disabled={isCreatingUser || (newUser.rol === 'vendedor' && isAtVendorLimit)}
+                    >
+                      {isCreatingUser ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creando...
+                        </>
+                      ) : (
+                        "Crear Usuario"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {isLoading ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <p className="ml-2">Cargando usuarios...</p>
+              </div>
+            ) : users.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <User className="h-10 w-10 text-slate-400" />
+                <h3 className="mt-4 text-lg font-semibold">No hay usuarios</h3>
+                <p className="mt-2 text-sm text-slate-500">
+                  Aún no se han creado usuarios en el sistema.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Correo</TableHead>
+                      <TableHead>Rol</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.nombre}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={user.rol === 'admin' ? "default" : "outline"}
                           >
-                            {user.activo ? 'Desactivar' : 'Activar'} Usuario
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                            {user.rol === 'admin' ? 'Administrador' : 'Vendedor'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={user.activo ? "success" : "destructive"}
+                            className="flex w-fit items-center"
+                          >
+                            {user.activo ? (
+                              <>
+                                <Check className="mr-1 h-3 w-3" /> Activo
+                              </>
+                            ) : (
+                              <>
+                                <X className="mr-1 h-3 w-3" /> Inactivo
+                              </>
+                            )}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={() => toggleUserStatus(user.id, user.activo)}
+                              >
+                                {user.activo ? 'Desactivar' : 'Activar'} Usuario
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="invitations">
+            <UserInvitations />
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

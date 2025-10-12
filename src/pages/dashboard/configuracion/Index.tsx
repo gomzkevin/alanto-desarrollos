@@ -127,6 +127,7 @@ export function ConfiguracionPage() {
           className="space-y-6"
         >
           <TabsList className="mb-6">
+            <TabsTrigger value="cuenta">Mi Cuenta</TabsTrigger>
             {adminStatus && (
               <>
                 <TabsTrigger value="perfil">Perfil de Empresa</TabsTrigger>
@@ -134,12 +135,22 @@ export function ConfiguracionPage() {
                 <TabsTrigger value="suscripcion">Suscripción</TabsTrigger>
               </>
             )}
-            <TabsTrigger value="cuenta">Mi Cuenta</TabsTrigger>
           </TabsList>
 
-          {adminStatus && (
-            <>
-              <TabsContent value="perfil" className="space-y-6">
+          <TabsContent value="cuenta" className="space-y-6">
+            {!subscriptionInfo.isActive && empresaId && (
+              <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                <AlertTitle className="text-amber-800">
+                  Plan Free Activo
+                </AlertTitle>
+                <AlertDescription className="text-amber-700">
+                  Tu empresa está usando el plan gratuito. Algunas funcionalidades están limitadas.
+                  {isAdmin() && " Actualiza tu plan para desbloquear más recursos."}
+                </AlertDescription>
+              </Alert>
+            )}
+            <AccountSettings />
+          </TabsContent>
                 {!subscriptionInfo.isActive && (
                   <Alert variant="warning" className="bg-amber-50 border-amber-200">
                     <AlertTitle className="text-amber-800">

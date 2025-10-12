@@ -1282,6 +1282,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      generate_invitation_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_company_subscription_status: {
         Args: { company_id: number }
         Returns: Json
@@ -1297,6 +1301,18 @@ export type Database = {
       get_user_subscription_status: {
         Args: { user_uuid: string }
         Returns: Json
+      }
+      get_valid_invitation: {
+        Args: { p_token: string }
+        Returns: {
+          email: string
+          empresa_id: number
+          es_valida: boolean
+          estado: string
+          fecha_expiracion: string
+          id: string
+          rol: string
+        }[]
       }
       has_active_subscription: {
         Args: { user_uuid: string }
