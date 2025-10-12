@@ -74,8 +74,13 @@ export const FeatureGate = ({
           <Card className="max-w-md mx-4 border-2 relative">
             {/* Botón cerrar */}
             <button 
-              onClick={() => navigate(-1)}
-              className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted transition-colors"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                navigate('/dashboard');
+              }}
+              className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted transition-colors z-10"
               aria-label="Cerrar"
             >
               <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
