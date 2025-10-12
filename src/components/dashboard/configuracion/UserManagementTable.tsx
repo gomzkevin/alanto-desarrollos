@@ -249,7 +249,6 @@ export function UserManagementTable() {
           .maybeSingle();
 
         if (existingAuthUser) {
-          // Actualizar usuario en tabla usuarios
           const { error: updateError } = await supabase
             .from('usuarios')
             .update({
@@ -259,15 +258,6 @@ export function UserManagementTable() {
               empresa_id: empresaId
             })
             .eq('auth_id', authUserId);
-
-          // Actualizar rol en user_roles
-          await supabase
-            .from('user_roles')
-            .upsert({
-              user_id: authUserId,
-              role: newUser.rol,
-              created_by: userId
-            });
 
           if (updateError) {
             console.error("Error updating existing user:", updateError);
@@ -294,17 +284,6 @@ export function UserManagementTable() {
           const { error: userError } = await supabase
             .from('usuarios')
             .insert(userData);
-
-          // Insertar rol en user_roles
-          if (!userError) {
-            await supabase
-              .from('user_roles')
-              .insert({
-                user_id: authUserId,
-                role: newUser.rol,
-                created_by: userId
-              });
-          }
 
           if (userError) {
             console.error("Error creating user record:", userError);

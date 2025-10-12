@@ -360,15 +360,19 @@ export const signUpWithEmailPassword = async (
     
     // Si el usuario no existe o las credenciales son incorrectas, intentamos registrarlo
     // con autoconfirmación aprovechando los metadatos
+    const redirectUrl = `${window.location.origin}/auth`;
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin + "/auth",
+        emailRedirectTo: redirectUrl,
         data: {
-          confirmed_at: new Date().toISOString(), // Intento de marcar como confirmado automáticamente
-          user_role: userRole, // Almacenamos el rol en los metadatos de usuario
-          email_confirmed: true
+          nombre: email.split('@')[0],
+          user_role: userRole || 'vendedor',
+          empresa_id: empresaId,
+          is_company_admin: userRole === 'admin',
+          email_confirm: true
         }
       }
     });

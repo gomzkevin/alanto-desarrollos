@@ -186,43 +186,4 @@ export const useUserRole = () => {
   };
 };
 
-// Nueva función para verificar roles específicos usando el sistema seguro de roles
-export const useHasRole = (role: 'admin' | 'vendedor' | 'superadmin') => {
-  const { userId } = useUserRole();
-  const [hasRole, setHasRole] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  useEffect(() => {
-    if (!userId) {
-      setHasRole(false);
-      setIsLoading(false);
-      return;
-    }
-    
-    const checkRole = async () => {
-      try {
-        const { data, error } = await supabase.rpc('has_role', {
-          _user_id: userId,
-          _role: role
-        });
-        
-        if (!error && data !== null) {
-          setHasRole(data);
-        } else {
-          setHasRole(false);
-        }
-      } catch (err) {
-        console.error('Error checking role:', err);
-        setHasRole(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkRole();
-  }, [userId, role]);
-  
-  return { hasRole, isLoading };
-};
-
 export default useUserRole;
