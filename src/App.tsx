@@ -80,6 +80,7 @@ function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<HomePage />} />
+              <Route path="/auth" element={<AuthPage />} />
               <Route path="/desarrollo/:id" element={<DesarrolloPreview />} />
               <Route path="/auth/accept-invitation" element={<AcceptInvitation />} />
               <Route path="/404" element={<NotFoundPage />} />
