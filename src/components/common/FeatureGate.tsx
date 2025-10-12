@@ -70,7 +70,7 @@ export const FeatureGate = ({
         </div>
         
         {/* Overlay con botón de upgrade */}
-        <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+        <div className="fixed inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm z-50">
           <Card className="max-w-md mx-4 border-2">
             <CardHeader>
               <div className="flex items-center gap-2">

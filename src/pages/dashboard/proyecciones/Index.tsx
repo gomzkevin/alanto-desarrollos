@@ -65,7 +65,7 @@ export const ProyeccionesPage = () => {
 
   return (
     <DashboardLayout>
-      <FeatureGate feature="analytics_avanzado" mode="block">
+      <FeatureGate feature="analytics_avanzado" mode="overlay">
         <div className="space-y-6 p-6 pb-16 bg-gradient-to-br from-white to-slate-50" ref={contentRef} id="proyeccion-content">
           <div className="space-y-1">
             <h1 className="text-3xl font-bold text-indigo-800">Proyecciones Financieras</h1>
