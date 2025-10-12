@@ -4,6 +4,8 @@ import { useChartData } from '@/hooks';
 import { ProyeccionView } from './components/ProyeccionView';
 import { toast } from "sonner";
 import { FeatureGate } from '@/components/common/FeatureGate';
+import { useDesarrollos } from '@/hooks/useDesarrollos';
+import { ConfigFinancieraWizard } from '@/components/dashboard/onboarding/financiero/ConfigFinancieraWizard';
 
 export const ProyeccionesPage = () => {
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('global');
@@ -16,14 +18,35 @@ export const ProyeccionesPage = () => {
     avgROI: 56.8
   });
   const [shouldCalculate, setShouldCalculate] = useState(false);
+  const [showFinancialWizard, setShowFinancialWizard] = useState(false);
+  const [selectedDesarrolloForConfig, setSelectedDesarrolloForConfig] = useState<any>(null);
   
   // Usamos el hook para procesar los datos
   const chartData = useChartData(rawChartData);
   const contentRef = useRef<HTMLDivElement>(null);
+  const { desarrollos } = useDesarrollos({ empresaId: null });
 
   const handleDesarrolloChange = (value: string) => {
     setSelectedDesarrolloId(value);
     setSelectedPrototipoId('global');
+    
+    // Check if the desarrollo has financial config
+    if (value !== 'global') {
+      const desarrollo = desarrollos?.find(d => d.id === value);
+      if (desarrollo && !hasFinancialConfig(desarrollo)) {
+        setSelectedDesarrolloForConfig(desarrollo);
+        setShowFinancialWizard(true);
+      }
+    }
+  };
+  
+  const hasFinancialConfig = (desarrollo: any): boolean => {
+    return !!(
+      desarrollo.moneda &&
+      desarrollo.adr_base &&
+      desarrollo.ocupacion_anual !== null &&
+      desarrollo.comision_operador !== null
+    );
   };
 
   const handlePrototipoChange = (value: string) => {
@@ -86,6 +109,23 @@ export const ProyeccionesPage = () => {
           />
         </div>
       </FeatureGate>
+
+      {/* Financial Configuration Wizard */}
+      {selectedDesarrolloForConfig && (
+        <ConfigFinancieraWizard
+          open={showFinancialWizard}
+          onClose={() => {
+            setShowFinancialWizard(false);
+            setSelectedDesarrolloForConfig(null);
+          }}
+          onSuccess={() => {
+            setShowFinancialWizard(false);
+            setSelectedDesarrolloForConfig(null);
+            toast.success("Configuración guardada. Calculando proyección...");
+          }}
+          desarrollo={selectedDesarrolloForConfig}
+        />
+      )}
     </DashboardLayout>
   );
 };
