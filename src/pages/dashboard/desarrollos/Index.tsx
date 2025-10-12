@@ -5,18 +5,18 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import useDesarrollos from '@/hooks/useDesarrollos';
 import DesarrolloCard from '@/components/dashboard/DesarrolloCard';
-import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Tables } from '@/integrations/supabase/types';
 import useUnidades from '@/hooks/useUnidades';
 import { toast } from '@/hooks/use-toast';
 import { usePermissions } from '@/hooks/usePermissions';
+import { DesarrolloWizard } from '@/components/dashboard/onboarding/desarrollo/DesarrolloWizard';
 
 type Desarrollo = Tables<"desarrollos">;
 
 const DesarrollosPage = () => {
   const navigate = useNavigate();
-  const [openDialog, setOpenDialog] = useState(false);
+  const [openWizard, setOpenWizard] = useState(false);
   const [desarrollosWithRealCounts, setDesarrollosWithRealCounts] = useState<Desarrollo[]>([]);
   const [hasTriedInitialLoad, setHasTriedInitialLoad] = useState(false);
   
@@ -143,7 +143,7 @@ const DesarrollosPage = () => {
           
           {isAdmin() && (
             <Button 
-              onClick={() => setOpenDialog(true)}
+              onClick={() => setOpenWizard(true)}
               className="flex items-center gap-2"
               disabled={!canCreateDesarrollo()}
             >
@@ -151,13 +151,13 @@ const DesarrollosPage = () => {
             </Button>
           )}
           
-          <AdminResourceDialog 
-            resourceType="desarrollos" 
-            buttonText="Nuevo desarrollo" 
-            onSuccess={refetch}
-            open={openDialog}
-            onClose={() => setOpenDialog(false)}
-            defaultValues={empresaId ? { empresa_id: empresaId } : undefined}
+          <DesarrolloWizard
+            open={openWizard}
+            onClose={() => setOpenWizard(false)}
+            onSuccess={() => {
+              refetch();
+              setOpenWizard(false);
+            }}
           />
         </div>
 
@@ -184,7 +184,7 @@ const DesarrollosPage = () => {
             {isAdmin() && (
               <Button 
                 className="mt-4"
-                onClick={() => setOpenDialog(true)}
+                onClick={() => setOpenWizard(true)}
                 disabled={!canCreateDesarrollo()}
               >
                 Crear tu primer desarrollo

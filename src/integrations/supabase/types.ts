@@ -430,6 +430,72 @@ export type Database = {
           },
         ]
       }
+      desarrollos_borradores: {
+        Row: {
+          amenidades: Json | null
+          completed_steps: Json | null
+          created_at: string | null
+          descripcion: string | null
+          empresa_id: number | null
+          fecha_entrega: string | null
+          fecha_inicio: string | null
+          id: string
+          imagen_url: string | null
+          last_modified: string | null
+          nombre: string | null
+          total_unidades: number | null
+          ubicacion: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amenidades?: Json | null
+          completed_steps?: Json | null
+          created_at?: string | null
+          descripcion?: string | null
+          empresa_id?: number | null
+          fecha_entrega?: string | null
+          fecha_inicio?: string | null
+          id?: string
+          imagen_url?: string | null
+          last_modified?: string | null
+          nombre?: string | null
+          total_unidades?: number | null
+          ubicacion?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amenidades?: Json | null
+          completed_steps?: Json | null
+          created_at?: string | null
+          descripcion?: string | null
+          empresa_id?: number | null
+          fecha_entrega?: string | null
+          fecha_inicio?: string | null
+          id?: string
+          imagen_url?: string | null
+          last_modified?: string | null
+          nombre?: string | null
+          total_unidades?: number | null
+          ubicacion?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "desarrollos_borradores_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_metrics_view"
+            referencedColumns: ["empresa_id"]
+          },
+          {
+            foreignKeyName: "desarrollos_borradores_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresa_info"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresa_info: {
         Row: {
           direccion: string | null
@@ -1273,6 +1339,10 @@ export type Database = {
           resources_to_add?: number
         }
         Returns: boolean
+      }
+      clean_old_desarrollos_borradores: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       count_company_resources: {
         Args: { company_id: number; resource_type: string }
