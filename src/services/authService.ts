@@ -272,7 +272,8 @@ export const signUpWithEmailPassword = async (
   password: string, 
   empresaId?: number, 
   userRole?: string,
-  autoSignIn: boolean = true // Añadir parámetro para controlar el inicio de sesión automático
+  autoSignIn: boolean = true, // Añadir parámetro para controlar el inicio de sesión automático
+  empresaNombre?: string // Nuevo parámetro para nombre de empresa
 ) => {
   try {
     console.log("Iniciando registro con email:", email, "rol:", userRole);
@@ -372,6 +373,7 @@ export const signUpWithEmailPassword = async (
           user_role: userRole || 'vendedor',
           empresa_id: empresaId,
           is_company_admin: userRole === 'admin',
+          empresa_nombre: empresaNombre, // Agregar nombre de empresa a metadatos
           email_confirm: true
         }
       }

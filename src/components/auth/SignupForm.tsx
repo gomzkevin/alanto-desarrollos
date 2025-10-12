@@ -27,84 +27,18 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     setLoading(true);
     
     try {
-      // Try to create the company record with a unique ID
-      let empresaId = null;
-      let retryCount = 0;
-      const maxRetries = 3;
+      console.log('Iniciando proceso de registro...');
       
-      while (empresaId === null && retryCount < maxRetries) {
-        // Get the maximum empresa_id currently in the table to generate a new one
-        const { data: maxIdData, error: maxIdError } = await supabase
-          .from('empresa_info')
-          .select('id')
-          .order('id', { ascending: false })
-          .limit(1);
-          
-        if (maxIdError) {
-          console.error("Error al obtener el ID máximo de empresa:", maxIdError);
-          toast({
-            title: "Error al crear la empresa",
-            description: maxIdError.message,
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-        
-        // Calculate new ID (max + 1, or 1 if no companies exist)
-        const newEmpresaId = maxIdData && maxIdData.length > 0 ? maxIdData[0].id + 1 : 1;
-        
-        // Try to create the company with explicit ID
-        const { data: empresaData, error: empresaError } = await supabase
-          .from('empresa_info')
-          .insert([
-            { 
-              id: newEmpresaId,
-              nombre: companyName || "Mi Empresa" 
-            }
-          ])
-          .select();
-          
-        if (empresaError) {
-          // If it's a duplicate key error, we'll retry with a new ID
-          if (empresaError.code === '23505') { // PostgreSQL unique violation code
-            console.log(`Intento ${retryCount + 1}: ID ${newEmpresaId} ya existe, intentando de nuevo...`);
-            retryCount++;
-            
-            // Small delay before retry to reduce collision likelihood
-            await new Promise(resolve => setTimeout(resolve, 100 * retryCount));
-            continue;
-          }
-          
-          // For other errors, we display the error and stop
-          console.error("Error al crear la empresa:", empresaError);
-          toast({
-            title: "Error al crear la empresa",
-            description: empresaError.message,
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-        
-        // If we got here, the company was created successfully
-        empresaId = empresaData?.[0]?.id;
-        console.log("Empresa creada con ID:", empresaId);
-      }
-      
-      // If we couldn't create a company after max retries, show an error
-      if (empresaId === null) {
-        toast({
-          title: "Error al crear la empresa",
-          description: "No se pudo generar un ID único para la empresa después de varios intentos. Por favor, inténtelo de nuevo.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-      
-      // Register the user as admin of that company
-      const result = await signUpWithEmailPassword(email, password, empresaId, "admin");
+      // Registrar usuario como admin con nombre de empresa en metadatos
+      // El trigger handle_new_user se encargará de crear la empresa automáticamente
+      const result = await signUpWithEmailPassword(
+        email, 
+        password, 
+        undefined, // empresa_id será generado por el trigger
+        "admin",
+        true, // autoSignIn
+        companyName // Pasar nombre de empresa
+      );
       
       if (result.success) {
         if (result.user || result.autoSignIn) {
