@@ -26,7 +26,7 @@ interface CompanyProviderProps {
   children: ReactNode;
 }
 
-export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) => {
+export function CompanyProvider({ children }: CompanyProviderProps) {
   const { empresaId, isLoading: userLoading } = useUserRole();
 
   // Fetch company data and subscription in parallel
@@ -79,4 +79,4 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
       {children}
     </CompanyContext.Provider>
   );
-};
+}
