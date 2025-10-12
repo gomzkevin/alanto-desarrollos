@@ -42,7 +42,7 @@ const SubscriptionPackages = () => {
     },
     {
       name: "Basic",
-      price: "$1,899 MXN/mes",
+      price: "$290 MXN/mes",
       description: "Para equipos que están creciendo",
       icon: <Users className="h-8 w-8 text-indigo-600" />,
       popular: true,
@@ -62,7 +62,7 @@ const SubscriptionPackages = () => {
     },
     {
       name: "Grow",
-      price: "$5,699 MXN/mes",
+      price: "$799 MXN/mes",
       description: "Para empresas establecidas",
       icon: <Building2 className="h-8 w-8 text-indigo-600" />,
       features: [
@@ -80,8 +80,8 @@ const SubscriptionPackages = () => {
     },
     {
       name: "Enterprise",
-      price: "Personalizado",
-      description: "Soluciones a medida para grandes empresas",
+      price: "Contactar",
+      description: "Soluciones a medida - Contacta al equipo",
       icon: <Briefcase className="h-8 w-8 text-indigo-600" />,
       features: [
         { name: "Desarrollos ilimitados", included: true },
@@ -154,7 +154,7 @@ const SubscriptionPackages = () => {
               </ul>
               
               <div className="mt-8">
-                {plan.name === "Empresarial" && plan.price === "Personalizado" ? (
+                {plan.name === "Enterprise" && plan.price === "Contactar" ? (
                   <a href={plan.buttonLink} target="_blank" rel="noopener noreferrer" className="w-full">
                     <Button 
                       variant={plan.buttonVariant || "default"} 
