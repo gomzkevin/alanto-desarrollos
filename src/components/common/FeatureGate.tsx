@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { Button } from '@/components/ui/button';
-import { Lock, Sparkles } from 'lucide-react';
+import { Lock, Sparkles, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface FeatureGateProps {
@@ -71,7 +71,16 @@ export const FeatureGate = ({
         
         {/* Overlay con botón de upgrade */}
         <div className="fixed inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm z-50">
-          <Card className="max-w-md mx-4 border-2">
+          <Card className="max-w-md mx-4 border-2 relative">
+            {/* Botón cerrar */}
+            <button 
+              onClick={() => navigate(-1)}
+              className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted transition-colors"
+              aria-label="Cerrar"
+            >
+              <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+            </button>
+            
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Lock className="h-5 w-5 text-primary" />
