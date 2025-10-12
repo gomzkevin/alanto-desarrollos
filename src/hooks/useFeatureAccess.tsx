@@ -32,7 +32,7 @@ export const useFeatureAccess = () => {
 
   const getFeatureUpgradeMessage = (featureKey: string): string => {
     const messages: FeatureMessages = {
-      analytics_avanzado: 'Las proyecciones avanzadas están disponibles desde el plan Basic ($1,899 MXN/mes)',
+      analytics_avanzado: 'Las proyecciones avanzadas están disponibles desde el plan Basic ($290 MXN/mes)',
       exportacion_avanzada: 'La exportación avanzada requiere plan Basic o superior',
       api_access: 'El acceso a API está disponible en planes Grow ($5,699 MXN/mes) y Enterprise',
       audit_logs: 'Los registros de auditoría están disponibles en planes Grow y Enterprise',
