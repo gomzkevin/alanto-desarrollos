@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -603,6 +603,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plan_features: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_name: string
+          feature_key: string
+          id: string
+          required_plan_level: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          feature_key: string
+          id?: string
+          required_plan_level: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          feature_key?: string
+          id?: string
+          required_plan_level?: number
+        }
+        Relationships: []
       }
       plan_pagos: {
         Row: {
@@ -1231,11 +1258,11 @@ export type Database = {
     Functions: {
       check_rate_limit: {
         Args: {
-          p_identifier: string
           p_action_type: string
+          p_block_minutes?: number
+          p_identifier: string
           p_max_attempts?: number
           p_window_minutes?: number
-          p_block_minutes?: number
         }
         Returns: Json
       }
@@ -1276,7 +1303,11 @@ export type Database = {
         Returns: boolean
       }
       has_column: {
-        Args: { table_name: string; column_name: string }
+        Args: { column_name: string; table_name: string }
+        Returns: boolean
+      }
+      has_feature_access: {
+        Args: { p_company_id: number; p_feature_key: string }
         Returns: boolean
       }
       is_company_admin_for: {
@@ -1289,18 +1320,18 @@ export type Database = {
       }
       log_security_event: {
         Args: {
-          p_event_type: string
-          p_user_id?: string
-          p_email?: string
-          p_ip_address?: string
-          p_user_agent?: string
           p_details?: Json
+          p_email?: string
+          p_event_type: string
+          p_ip_address?: string
           p_severity?: string
+          p_user_agent?: string
+          p_user_id?: string
         }
         Returns: string
       }
       user_belongs_to_company: {
-        Args: { user_uuid: string; company_id: number }
+        Args: { company_id: number; user_uuid: string }
         Returns: boolean
       }
       validate_password_complexity: {
@@ -1310,12 +1341,12 @@ export type Database = {
       verificar_invitacion: {
         Args: { token_invitacion: string }
         Returns: {
-          id: string
-          empresa_id: number
           email: string
-          rol: string
-          estado: string
+          empresa_id: number
           es_valida: boolean
+          estado: string
+          id: string
+          rol: string
         }[]
       }
     }

@@ -1,10 +1,9 @@
-
-import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 import useUserRole from '@/hooks/useUserRole';
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { exportToPDF } from "@/utils/exportToPDF";
+import { PremiumButton } from "@/components/common/PremiumButton";
 
 type ExportPDFButtonProps = {
   resourceName?: string;
@@ -132,7 +131,8 @@ export const ExportPDFButton = ({
   };
   
   return (
-    <Button 
+    <PremiumButton 
+      feature="exportacion_avanzada"
       variant={variant} 
       size={size} 
       onClick={handleExport}
@@ -141,7 +141,7 @@ export const ExportPDFButton = ({
     >
       <FileText className="mr-2 h-4 w-4" />
       {isLoading ? "Generando..." : buttonText}
-    </Button>
+    </PremiumButton>
   );
 };
 

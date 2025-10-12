@@ -2,6 +2,7 @@ import React from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import SecurityDashboard from '@/components/dashboard/SecurityDashboard';
 import { useProtectedRoute } from '@/hooks/optimized/useProtectedRoute';
+import { FeatureGate } from '@/components/common/FeatureGate';
 
 const SecurityPage: React.FC = () => {
   const { hasAccess, isLoading } = useProtectedRoute({ requireSubscription: false });
@@ -22,7 +23,9 @@ const SecurityPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <SecurityDashboard />
+      <FeatureGate feature="audit_logs" mode="block">
+        <SecurityDashboard />
+      </FeatureGate>
     </DashboardLayout>
   );
 };

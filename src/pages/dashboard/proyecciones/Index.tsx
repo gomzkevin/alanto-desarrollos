@@ -1,9 +1,9 @@
-
 import { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useChartData } from '@/hooks';
 import { ProyeccionView } from './components/ProyeccionView';
 import { toast } from "sonner";
+import { FeatureGate } from '@/components/common/FeatureGate';
 
 export const ProyeccionesPage = () => {
   const [selectedDesarrolloId, setSelectedDesarrolloId] = useState<string>('global');
@@ -65,25 +65,27 @@ export const ProyeccionesPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-6 pb-16 bg-gradient-to-br from-white to-slate-50" ref={contentRef} id="proyeccion-content">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-indigo-800">Proyecciones Financieras</h1>
-          <p className="text-slate-600">Calcula y compara el rendimiento potencial de inversiones inmobiliarias.</p>
-        </div>
+      <FeatureGate feature="analytics_avanzado" mode="overlay">
+        <div className="space-y-6 p-6 pb-16 bg-gradient-to-br from-white to-slate-50" ref={contentRef} id="proyeccion-content">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold text-indigo-800">Proyecciones Financieras</h1>
+            <p className="text-slate-600">Calcula y compara el rendimiento potencial de inversiones inmobiliarias.</p>
+          </div>
 
-        <ProyeccionView 
-          selectedDesarrolloId={selectedDesarrolloId}
-          selectedPrototipoId={selectedPrototipoId}
-          onDesarrolloChange={handleDesarrolloChange}
-          onPrototipoChange={handlePrototipoChange}
-          chartData={chartData}
-          summaryData={summaryData}
-          onDataUpdate={handleChartDataUpdate}
-          shouldCalculate={shouldCalculate}
-          onCreateProjection={handleCreateProjection}
-          fileName={getFileName()}
-        />
-      </div>
+          <ProyeccionView 
+            selectedDesarrolloId={selectedDesarrolloId}
+            selectedPrototipoId={selectedPrototipoId}
+            onDesarrolloChange={handleDesarrolloChange}
+            onPrototipoChange={handlePrototipoChange}
+            chartData={chartData}
+            summaryData={summaryData}
+            onDataUpdate={handleChartDataUpdate}
+            shouldCalculate={shouldCalculate}
+            onCreateProjection={handleCreateProjection}
+            fileName={getFileName()}
+          />
+        </div>
+      </FeatureGate>
     </DashboardLayout>
   );
 };
