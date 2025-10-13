@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import AdminResourceDialog from '@/components/dashboard/ResourceDialog';
+import { LeadWizard } from '@/components/dashboard/onboarding/lead/LeadWizard';
 import { format } from 'date-fns';
 import useLeads from '@/hooks/useLeads';
 import useDesarrollos from '@/hooks/useDesarrollos';
@@ -285,16 +286,29 @@ const LeadsPage = () => {
         </div>
       </div>
 
-      <AdminResourceDialog
-        open={open}
-        onClose={() => setOpen(false)}
-        resourceType="leads"
-        resourceId={selectedLeadId}
-        onSuccess={() => {
-          setOpen(false);
-          refetch();
-        }}
-      />
+      {selectedLeadId ? (
+        // Edit existing lead - use AdminResourceDialog
+        <AdminResourceDialog
+          open={open}
+          onClose={() => setOpen(false)}
+          resourceType="leads"
+          resourceId={selectedLeadId}
+          onSuccess={() => {
+            setOpen(false);
+            refetch();
+          }}
+        />
+      ) : (
+        // Create new lead - use LeadWizard
+        <LeadWizard
+          open={open}
+          onClose={() => setOpen(false)}
+          onSuccess={() => {
+            setOpen(false);
+            refetch();
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 };

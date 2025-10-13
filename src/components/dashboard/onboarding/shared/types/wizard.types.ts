@@ -38,6 +38,28 @@ export interface FinancialWizardData {
   es_impuestos_porcentaje?: boolean;
 }
 
+export interface LeadWizardData {
+  // Paso 2: Información del Prospecto
+  nombre?: string;
+  email?: string;
+  telefono?: string;
+  
+  // Paso 3: Origen e Interés
+  origen?: string;
+  interes_en?: string;
+  
+  // Paso 4: Estado y Seguimiento
+  estado?: string;
+  subestado?: string;
+  agente?: string;
+  ultimo_contacto?: string;
+  notas?: string;
+  
+  // Campos automáticos
+  empresa_id?: number;
+  fecha_creacion?: string;
+}
+
 export interface WizardState<T> {
   currentStep: number;
   completedSteps: Set<number>;
