@@ -64,9 +64,9 @@ const Header = () => {
             <a href="#hero" className="flex items-center cursor-pointer">
               <div className="w-auto h-auto">
                 <img 
-                  src="/lovable-uploads/b85c95f1-cfe4-4a8f-9176-4b3b3539146b.png" 
+                  src="/lovable-uploads/propmeteo-logo.png" 
                   alt="PropMeteo Logo" 
-                  className="h-24 md:h-28 w-auto object-contain"
+                  className="h-16 md:h-20 w-auto object-contain"
                 />
               </div>
             </a>
