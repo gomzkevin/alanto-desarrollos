@@ -202,7 +202,9 @@ export function AcceptInvitation() {
     <div className="flex items-center justify-center min-h-screen bg-slate-50 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-indigo-600 mb-2">PropMeteo</h1>
+          <div className="flex justify-center mb-4">
+            <img src="/lovable-uploads/propmeteo-logo.png" alt="PropMeteo" className="h-16 w-auto object-contain" />
+          </div>
           <p className="text-slate-600">Completa tu registro</p>
         </div>
 
