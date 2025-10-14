@@ -134,7 +134,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         
         <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out">
           <div className="flex items-center justify-between h-16 px-4 border-b">
-            <div className="text-lg font-semibold text-indigo-600">Alanto</div>
+            <div className="text-lg font-semibold text-indigo-600">PropMeteo</div>
             <button 
               onClick={() => setIsSidebarOpen(false)}
               className="p-1 rounded hover:bg-slate-100"
@@ -171,7 +171,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <div className="hidden lg:flex lg:flex-shrink-0">
         <div className="flex flex-col w-64 border-r border-slate-200 bg-white">
           <div className="flex items-center h-16 px-4 border-b">
-            <div className="text-lg font-semibold text-indigo-600">Alanto</div>
+            <div className="text-lg font-semibold text-indigo-600">PropMeteo</div>
           </div>
           
           <div className="flex flex-col flex-1 overflow-y-auto">

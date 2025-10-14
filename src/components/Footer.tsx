@@ -39,7 +39,7 @@ const Footer = () => {
           <div>
             <div className="flex items-center mb-6">
               <span className="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-300">
-                Alanto
+                PropMeteo
               </span>
             </div>
             <p className="text-slate-400 mb-6">
@@ -155,7 +155,7 @@ const Footer = () => {
         {/* Bottom footer */}
         <div className="pt-8 border-t border-slate-800/50 text-center">
           <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} Alanto. Todos los derechos reservados.
+            © {new Date().getFullYear()} PropMeteo. Todos los derechos reservados.
           </p>
         </div>
       </div>
